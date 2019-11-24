@@ -337,22 +337,22 @@
 /*
  * GPIOA setup:
  *
- * PA0  - ZIO_D32 TIM2_CH1          (input pullup).
- * PA1  - RMII_REF_CLK              (alternate 11).
- * PA2  - RMII_MDIO                 (alternate 11).
- * PA3  - ARD_A0 ADC123_IN3         (input pullup).
- * PA4  - ZIO_D24 SPI3_NSS          (input pullup).
- * PA5  - ARD_D13 SPI1_SCK          (input pullup).
- * PA6  - ARD_D12 SPI1_MISO         (input pullup).
- * PA7  - ARD_D11 SPI1_MOSI ZIO_D71 RMII_RX_DV(alternate 11).
- * PA8  - USB_SOF                   (alternate 10).
- * PA9  - USB_VBUS                  (analog).
- * PA10 - USB_ID                    (alternate 10).
- * PA11 - USB_DM                    (alternate 10).
- * PA12 - USB_DP                    (alternate 10).
- * PA13 - SWDIO                     (alternate 0).
- * PA14 - SWCLK                     (alternate 0).
- * PA15 - ZIO_D20 I2S3_WS           (input pullup).
+ * PA0  - AIN_CUR_B_DC  (analog).
+ * PA1  - AIN_CUR_B_AC  (analog).
+ * PA2  - AIN_CUR_A_DC  (analog).
+ * PA3  - AIN_CUR_A_AC  (analog).
+ * PA4  - AIN_VDD	    (analog).
+ * PA5  - AIN_BRDG_TEMP (analog).
+ * PA6  - AIN_MOT_TEMP  (analog).
+ * PA7  -               (input pullup).
+ * PA8  - PWM_AH        (alternate 1).
+ * PA9  - PWM_BH        (alternate 1).
+ * PA10 - PWM_CH        (alternate 1).
+ * PA11 - USB_DM        (alternate 10).
+ * PA12 - USB_DP        (alternate 10).
+ * PA13 - SWDIO         (alternate 0).
+ * PA14 - SWCLK         (alternate 0).
+ * PA15 - TDI	        (input pullup).
  */
 #define VAL_GPIOA_MODER             (PIN_MODE_INPUT(GPIOA_ZIO_D32) |        \
                                      PIN_MODE_ALTERNATE(GPIOA_RMII_REF_CLK) |\
