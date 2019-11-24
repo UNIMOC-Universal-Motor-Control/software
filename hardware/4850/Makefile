@@ -83,16 +83,17 @@ endif
 #
 
 # Define project name here
-PROJECT = ch
+PROJECT = unimoc_4850
 
 # Target settings.
 MCU  = cortex-m7
 
 # Imported source files and paths.
-CHIBIOS  := ../../..
+CHIBIOS  := ../../os
 CONFDIR  := ./cfg
 BUILDDIR := ./build
 DEPDIR   := ./.dep
+PROJECTDIR := ../..
 
 # Licensing files.
 include $(CHIBIOS)/os/license/license.mk
@@ -101,7 +102,7 @@ include $(CHIBIOS)/os/common/startup/ARMCMx/compilers/GCC/mk/startup_stm32f7xx.m
 # HAL-OSAL files (optional).
 include $(CHIBIOS)/os/hal/hal.mk
 include $(CHIBIOS)/os/hal/ports/STM32/STM32F7xx/platform.mk
-include $(CHIBIOS)/os/hal/boards/ST_NUCLEO144_F722ZE/board.mk
+include ./board/board.mk
 include $(CHIBIOS)/os/hal/osal/rt/osal.mk
 # RTOS files (optional).
 include $(CHIBIOS)/os/rt/rt.mk
@@ -112,6 +113,7 @@ include $(CHIBIOS)/tools/mk/autobuild.mk
 include $(CHIBIOS)/test/lib/test.mk
 include $(CHIBIOS)/test/rt/rt_test.mk
 include $(CHIBIOS)/test/oslib/oslib_test.mk
+include ${PROJECTDIR}/unimoc.mk
 
 # Define linker script file here
 LDSCRIPT= $(STARTUPLD)/STM32F722xE.ld
@@ -119,8 +121,7 @@ LDSCRIPT= $(STARTUPLD)/STM32F722xE.ld
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
 CSRC = $(ALLCSRC) \
-       $(TESTSRC) \
-       main.c
+
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -133,7 +134,7 @@ ASMSRC = $(ALLASMSRC)
 ASMXSRC = $(ALLXASMSRC)
 
 # Inclusion directories.
-INCDIR = $(CONFDIR) $(ALLINC) $(TESTINC)
+INCDIR = $(CONFDIR) $(ALLINC)
 
 # Define C warning options here.
 CWARN = -Wall -Wextra -Wundef -Wstrict-prototypes
