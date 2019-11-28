@@ -1,11 +1,8 @@
 # Base directory of Project
 BASEDIR := ../../
 
-# UAVCAN Lib directory
-UAVCANLIBDIR := ${BASEDIR}/lib/uavcan
-
 # UAVCAN Lib files
-include ${UAVCANLIBDIR}/include.mk 
+include ${BASEDIR}/libuavcan.mk 
 
 # List of all the Project related hardware independent files.
 # C code

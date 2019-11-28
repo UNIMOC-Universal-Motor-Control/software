@@ -15,7 +15,7 @@ endif
 
 # C++ specific options here (added to USE_OPT).
 ifeq ($(USE_CPPOPT),)
-  USE_CPPOPT = -fno-rtti -fno-exceptions
+  USE_CPPOPT = -fno-rtti -fno-exceptions -std=c++17
 endif
 
 # Enable this if you want the linker to remove unused code and data.
@@ -150,7 +150,10 @@ CPPWARN = -Wall -Wextra -Wundef
 #
 
 # List all user C define here, like -D_DEBUG=1
-UDEFS =
+UDEFS = -DUAVCAN_STM32_CHIBIOS=1      \
+        -DUAVCAN_STM32_TIMER_NUMBER=6 \
+        -DUAVCAN_STM32_NUM_IFACES=1   \
+        -DUAVCAN_CPP_VERSION=2017
 
 # Define ASM defines here
 UADEFS =
