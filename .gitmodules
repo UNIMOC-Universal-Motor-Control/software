@@ -2,3 +2,7 @@
 	path = libuavcan
 	url = https://github.com/UAVCAN/libuavcan.git
 	branch = master
+[submodule "libuavcan_stm32"]
+	path = libuavcan_stm32
+	url = https://github.com/UAVCAN/libuavcan_stm32.git
+	branch = master
