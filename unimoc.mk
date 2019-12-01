@@ -1,19 +1,18 @@
 # Base directory of Project
 BASEDIR := ../../
 
-# UAVCAN Lib files
-include ${BASEDIR}/libuavcan.mk 
-
 # List of all the Project related hardware independent files.
 # C code
-UNIMOCSRC := 
+UNIMOCSRC := ${BASEDIR}/libcanard/canard.c \
+             ${BASEDIR}/libcanard/drivers/stm32/canard_stm32.c \
 # Cpp code
 UNIMOCCPPSRC := ${BASEDIR}/src/main.cpp \
-                $(LIBUAVCAN_SRC) \
 
 # Required include directories
 UNIMOCINC := ${BASEDIR}/inc \
-             $(LIBUAVCAN_INC)
+             ${BASEDIR}/libcanard \
+             ${BASEDIR}/libcanard/drivers/stm32 \
+                        
 
 # Shared variables
 ALLCPPSRC += ${UNIMOCCPPSRC}
