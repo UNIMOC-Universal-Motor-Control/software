@@ -5,7 +5,7 @@
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -Og -ggdb -fomit-frame-pointer -falign-functions=16 -fsingle-precision-constant
+  USE_OPT = -O0 -ggdb -fomit-frame-pointer -falign-functions=16 -fsingle-precision-constant
 endif
 
 # C specific options here (added to USE_OPT).
@@ -55,18 +55,18 @@ endif
 # Stack size to be allocated to the Cortex-M process stack. This stack is
 # the stack used by the main() thread.
 ifeq ($(USE_PROCESS_STACKSIZE),)
-  USE_PROCESS_STACKSIZE = 0x800
+  USE_PROCESS_STACKSIZE = 0x400
 endif
 
 # Stack size to the allocated to the Cortex-M main/exceptions stack. This
 # stack is used for processing interrupts and exceptions.
 ifeq ($(USE_EXCEPTIONS_STACKSIZE),)
-  USE_EXCEPTIONS_STACKSIZE = 0x800
+  USE_EXCEPTIONS_STACKSIZE = 0x400
 endif
 
 # Enables the use of FPU (no, softfp, hard).
 ifeq ($(USE_FPU),)
-  USE_FPU = hard
+  USE_FPU = no
 endif
 
 # FPU-related options.
@@ -119,8 +119,11 @@ LDSCRIPT= $(STARTUPLD)/STM32F730x8.ld
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
-CSRC = $(ALLCSRC) usbcfg.c\
+CSRC = $(CHIBIOS)/os/various/syscalls.c \
 
+
+#$(ALLCSRC) usbcfg.c\
+       
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -150,10 +153,7 @@ CPPWARN = -Wall -Wextra -Wundef
 #
 
 # List all user C define here, like -D_DEBUG=1
-UDEFS = -DUAVCAN_STM32_CHIBIOS=1      \
-        -DUAVCAN_STM32_TIMER_NUMBER=6 \
-        -DUAVCAN_STM32_NUM_IFACES=1   \
-        -DUAVCAN_CPP_VERSION=2017
+UDEFS = 
 
 # Define ASM defines here
 UADEFS =

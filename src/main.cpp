@@ -16,7 +16,7 @@
 
 #include "ch.hpp"
 #include "hal.h"
-#include "usbcfg.h"
+//#include "usbcfg.h"
 
 using namespace chibios_rt;
 
@@ -151,24 +151,24 @@ int main(void) {
 	 */
 	halInit();
 	System::init();
-
-	/*
-	 * Initializes two serial-over-USB CDC drivers.
-	 */
-	sduObjectInit(&SDU1);
-	sduStart(&SDU1, &serusbcfg1);
-	sduObjectInit(&SDU2);
-	sduStart(&SDU2, &serusbcfg2);
-
-	/*
-	 * Activates the USB driver and then the USB bus pull-up on D+.
-	 * Note, a delay is inserted in order to not have to disconnect the cable
-	 * after a reset.
-	 */
-	usbDisconnectBus(serusbcfg1.usbp);
-	chThdSleepMilliseconds(1500);
-	usbStart(serusbcfg1.usbp, &usbcfg);
-	usbConnectBus(serusbcfg1.usbp);
+//
+//	/*
+//	 * Initializes two serial-over-USB CDC drivers.
+//	 */
+//	sduObjectInit(&SDU1);
+//	sduStart(&SDU1, &serusbcfg1);
+//	sduObjectInit(&SDU2);
+//	sduStart(&SDU2, &serusbcfg2);
+//
+//	/*
+//	 * Activates the USB driver and then the USB bus pull-up on D+.
+//	 * Note, a delay is inserted in order to not have to disconnect the cable
+//	 * after a reset.
+//	 */
+//	usbDisconnectBus(serusbcfg1.usbp);
+//	chThdSleepMilliseconds(1500);
+//	usbStart(serusbcfg1.usbp, &usbcfg);
+//	usbConnectBus(serusbcfg1.usbp);
 
 	/*
 	 * Starts several instances of the SequencerThread class, each one operating
