@@ -3,20 +3,13 @@ BASEDIR := ../../
 
 # List of all the Project related hardware independent files.
 # C code
-UNIMOCSRC := 
+UNIMOCSRC := ${BASEDIR}/src/main.c \
 
-#${BASEDIR}/libcanard/canard.c \
-             ${BASEDIR}/libcanard/drivers/stm32/canard_stm32.c \
 # Cpp code
-UNIMOCCPPSRC := ${BASEDIR}/src/main.cpp \
+UNIMOCCPPSRC := 
 
 # Required include directories
 UNIMOCINC := ${BASEDIR}/inc \
-
-
-#             ${BASEDIR}/libcanard \
-             ${BASEDIR}/libcanard/drivers/stm32 \
-                        
 
 # Shared variables
 ALLCPPSRC += ${UNIMOCCPPSRC}

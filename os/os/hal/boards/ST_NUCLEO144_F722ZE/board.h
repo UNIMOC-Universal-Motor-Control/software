@@ -60,7 +60,7 @@
 /*
  * MCU type as defined in the ST header.
  */
-#define STM32F722xx
+#define STM32F730xx
 
 /*
  * IO pins assignments.
