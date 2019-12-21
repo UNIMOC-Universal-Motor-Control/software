@@ -3,10 +3,10 @@ BASEDIR := ../../
 
 # List of all the Project related hardware independent files.
 # C code
-UNIMOCSRC := ${BASEDIR}/src/main.c \
+UNIMOCSRC := 
 
 # Cpp code
-UNIMOCCPPSRC := 
+UNIMOCCPPSRC := ${BASEDIR}/src/main.cpp \
 
 # Required include directories
 UNIMOCINC := ${BASEDIR}/inc \

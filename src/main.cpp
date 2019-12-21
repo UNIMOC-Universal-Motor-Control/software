@@ -12,11 +12,11 @@
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License.
- */
+*/
 
 #include "ch.hpp"
 #include "hal.h"
-//#include "usbcfg.h"
+
 
 using namespace chibios_rt;
 
@@ -92,7 +92,8 @@ static const seqop_t LED6_sequence[] =
  * Any sequencer is just an instance of this class, all the details are
  * totally encapsulated and hidden to the application level.
  */
-class SequencerThread : public BaseStaticThread<128> {
+class SequencerThread : public BaseStaticThread<128>
+{
 private:
 	const seqop_t *base, *curr;                   // Thread local variables.
 
@@ -142,54 +143,22 @@ static SequencerThread blinker4(LED6_sequence);
  */
 int main(void) {
 
-	/*
-	 * System initializations.
-	 * - HAL initialization, this also initializes the configured device drivers
-	 *   and performs the board-specific initializations.
-	 * - Kernel initialization, the main() function becomes a thread and the
-	 *   RTOS is active.
-	 */
-	halInit();
-	System::init();
-//
-//	/*
-//	 * Initializes two serial-over-USB CDC drivers.
-//	 */
-//	sduObjectInit(&SDU1);
-//	sduStart(&SDU1, &serusbcfg1);
-//	sduObjectInit(&SDU2);
-//	sduStart(&SDU2, &serusbcfg2);
-//
-//	/*
-//	 * Activates the USB driver and then the USB bus pull-up on D+.
-//	 * Note, a delay is inserted in order to not have to disconnect the cable
-//	 * after a reset.
-//	 */
-//	usbDisconnectBus(serusbcfg1.usbp);
-//	chThdSleepMilliseconds(1500);
-//	usbStart(serusbcfg1.usbp, &usbcfg);
-//	usbConnectBus(serusbcfg1.usbp);
+  /*
+   * System initializations.
+   * - HAL initialization, this also initializes the configured device drivers
+   *   and performs the board-specific initializations.
+   * - Kernel initialization, the main() function becomes a thread and the
+   *   RTOS is active.
+   */
+  halInit();
+  System::init();
 
-	/*
-	 * Starts several instances of the SequencerThread class, each one operating
-	 * on a different sequence.
-	 */
-	blinker1.start(NORMALPRIO + 10);
-	blinker2.start(NORMALPRIO + 10);
-	blinker3.start(NORMALPRIO + 10);
-	blinker4.start(NORMALPRIO + 10);
-
-	/*
-	 * Serves timer events.
-	 */
-	while (true) {
-		BaseThread::sleep(TIME_MS2I(500));
-	}
-
-	return 0;
+  
+  /*
+   * Normal main() thread activity, in this demo it does nothing except
+   * sleeping in a loop and check the button state.
+   */
+  while (true) {
+    BaseThread::sleep(TIME_MS2I(500));
+  }
 }
-
-
-
-
-

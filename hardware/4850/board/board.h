@@ -483,7 +483,7 @@
                                      PIN_MODE_ALTERNATE(GPIOB_SDA) | \
                                      PIN_MODE_ALTERNATE(GPIOB_CAN_RX) | \
                                      PIN_MODE_ALTERNATE(GPIOB_CAN_TX) | \
-                                     PIN_MODE_INPUT(GPIOB_LED_RUN) | \
+                                     PIN_MODE_OUTPUT(GPIOB_LED_RUN) | \
                                      PIN_MODE_OUTPUT(GPIOB_EN_PWM_OUT) | \
                                      PIN_MODE_ALTERNATE(GPIOB_PWM_BREAK) | \
                                      PIN_MODE_ALTERNATE(GPIOB_PWM_AL) | \
