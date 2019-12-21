@@ -112,6 +112,7 @@ include $(CHIBIOS)/tools/mk/autobuild.mk
 include $(CHIBIOS)/test/lib/test.mk
 include $(CHIBIOS)/test/rt/rt_test.mk
 include $(CHIBIOS)/test/oslib/oslib_test.mk
+include $(CHIBIOS)/os/various/cpp_wrappers/chcpp.mk
 
 # Define linker script file here
 LDSCRIPT= $(STARTUPLD)/STM32F303xC.ld
@@ -120,11 +121,11 @@ LDSCRIPT= $(STARTUPLD)/STM32F303xC.ld
 # setting.
 CSRC = $(ALLCSRC) \
        $(TESTSRC) \
-       main.c
+
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
-CPPSRC = $(ALLCPPSRC)
+CPPSRC = $(ALLCPPSRC) main.cpp
 
 # List ASM source files here.
 ASMSRC = $(ALLASMSRC)

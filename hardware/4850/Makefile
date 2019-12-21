@@ -5,7 +5,7 @@
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -O0 -ggdb -fomit-frame-pointer -falign-functions=16 -fsingle-precision-constant
+  USE_OPT = -Og -ggdb -fomit-frame-pointer -falign-functions=16 -fsingle-precision-constant
 endif
 
 # C specific options here (added to USE_OPT).
@@ -15,7 +15,7 @@ endif
 
 # C++ specific options here (added to USE_OPT).
 ifeq ($(USE_CPPOPT),)
-  USE_CPPOPT = -fno-rtti -fno-exceptions -std=c++17
+  USE_CPPOPT = -fno-rtti
 endif
 
 # Enable this if you want the linker to remove unused code and data.
@@ -120,6 +120,8 @@ LDSCRIPT= $(STARTUPLD)/STM32F730x8.ld
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
 CSRC = $(ALLCSRC) \
+       $(CHIBIOS)/os/various/syscalls.c \
+       usbcfg.c \
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
