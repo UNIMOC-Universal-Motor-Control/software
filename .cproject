@@ -112,5 +112,6 @@
 		<configuration configurationName="Release">
 			<resource resourceType="PROJECT" workspacePath="/unimoc"/>
 		</configuration>
+		<configuration configurationName="UNIMOC_4850"/>
 	</storageModule>
 </cproject>

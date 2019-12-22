@@ -16,9 +16,10 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef HARDWARE_INTERFACE_PWM_HPP_
-#define HARDWARE_INTERFACE_PWM_HPP_
+#ifndef HARDWARE_INTERFACE_HARDWARE_INTERFACE_HPP_
+#define HARDWARE_INTERFACE_HARDWARE_INTERFACE_HPP_
 #include <cstdint>
+#include "ch.hpp"
 
 namespace unimoc {
 	namespace hardware {
@@ -72,5 +73,5 @@ namespace unimoc {
 	} /* namespace hardware */
 } /* namespace unimoc */
 
-#endif /* HARDWARE_INTERFACE_PWM_HPP_ */
+#endif /* HARDWARE_INTERFACE_HARDWARE_INTERFACE_HPP_ */
 
