@@ -30,6 +30,9 @@ constexpr uint32_t DEADTIME = 300;
 ///< pwm frequency in Hz
 constexpr uint32_t STOCK_PWM_FREQUENCY = 32000;
 
+///< pwm driver instance
+constexpr PWMDriver* PWMP = &PWMD1;
+
 ///< pwm frequency in Hz
 uint32_t frequency = STOCK_PWM_FREQUENCY;
 
@@ -38,9 +41,19 @@ uint32_t frequency = STOCK_PWM_FREQUENCY;
  * @param freq_hz PWM frequency in Hz
  * @return ARR value in timer clock ticks
  */
-constexpr uint32_t COUNTER_MAX(uint32_t freq_hz)
+constexpr uint32_t ARR(const uint32_t freq_hz)
 {
 	return (PWM_TIMER_CLOCK/freq_hz - 1);
+}
+
+/**
+ * macro to calculate frequency from auto reload register value
+ * @param arr auto reload register value
+ * @return pwm frequency in Hz
+ */
+constexpr uint32_t FREQUENCY(const uint32_t arr)
+{
+	return (PWM_TIMER_CLOCK/(arr + 1));
 }
 
 /**
@@ -49,7 +62,7 @@ constexpr uint32_t COUNTER_MAX(uint32_t freq_hz)
 const PWMConfig pwmcfg =
 {
 		PWM_TIMER_CLOCK,
-		COUNTER_MAX(STOCK_PWM_FREQUENCY),
+		ARR(STOCK_PWM_FREQUENCY),
 		NULL,
 		{ /*  */
 				{PWM_OUTPUT_ACTIVE_HIGH | PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH, NULL},
@@ -84,13 +97,13 @@ void unimoc::hardware::pwm::Init(uint32_t freq_hz)
 	DBGMCU->APB2FZ |= DBGMCU_APB2_FZ_DBG_TIM1_STOP;
 	/* Start the PWM timer */
 	pwmStart(pwmp, &pwmcfg);
-	pwmp->tim->CR1 &=~ STM32_TIM_CR1_CEN; // timer stop
-	pwmp->tim->CR1 |= STM32_TIM_CR1_CMS(2); // center aligned mode
+	PWMP->tim->CR1 &=~ STM32_TIM_CR1_CEN; // timer stop
+	PWMP->tim->CR1 |= STM32_TIM_CR1_CMS(2); // center aligned mode
 	pwmp->tim->CR1 |= STM32_TIM_CR1_CEN; // timer start again
 
 	/* enable outputs */
-	pwmEnableChannel(pwmp, 0, COUNTER_MAX_INT/2);
-	pwmEnableChannel(pwmp, 1, COUNTER_MAX_INT/2);
+	pwmEnableChannel(PWMP, 0, COUNTER_MAX_INT/2);
+	pwmEnableChannel(PWMP, 1, COUNTER_MAX_INT/2);
 	pwmEnableChannel(pwmp, 2, COUNTER_MAX_INT/2);
 }
 
@@ -98,9 +111,19 @@ void unimoc::hardware::pwm::Init(uint32_t freq_hz)
  * Set PWM Freqency
  * @param freq_hz PWM frequency in Hz
  */
-void unimoc::hardware::pwm::SetFreqency(uint32_t freq_hz)
+bool unimoc::hardware::pwm::SetFreqency(const uint32_t freq_hz)
 {
-
+	bool result = false;
+	uint32_t new_counter_max = ARR(freq_hz);
+	if(new_counter_max < 1000 || new_counter_max > 0xFFF0)
+	{
+		result  = true;
+	}
+	else
+	{
+		frequency = freq_hz;
+		pwmChangePeriod(PWMP, new_counter_max);
+	}
 }
 
 /**
