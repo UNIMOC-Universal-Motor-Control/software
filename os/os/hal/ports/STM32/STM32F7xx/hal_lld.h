@@ -81,7 +81,7 @@
 #define PLATFORM_NAME           "STM32F756 Very High Performance with DSP and FPU"
 
 #elif defined(STM32F765xx)
-#define PLATFORM_NAME           "STM32F767 Very High Performance with DSP and DP FPU"
+#define PLATFORM_NAME           "STM32F765 Very High Performance with DSP and DP FPU"
 
 #elif defined(STM32F767xx)
 #define PLATFORM_NAME           "STM32F767 Very High Performance with DSP and DP FPU"
@@ -90,10 +90,10 @@
 #define PLATFORM_NAME           "STM32F769 Very High Performance with DSP and DP FPU"
 
 #elif defined(STM32F777xx)
-#define PLATFORM_NAME           "STM32F767 Very High Performance with DSP and DP FPU"
+#define PLATFORM_NAME           "STM32F777 Very High Performance with DSP and DP FPU"
 
 #elif defined(STM32F779xx)
-#define PLATFORM_NAME           "STM32F769 Very High Performance with DSP and DP FPU"
+#define PLATFORM_NAME           "STM32F779 Very High Performance with DSP and DP FPU"
 
 #else
 #error "STM32F7xx device not specified"
@@ -651,6 +651,13 @@
  */
 #if !defined(STM32_MCO2PRE) || defined(__DOXYGEN__)
 #define STM32_MCO2PRE                       STM32_MCO2PRE_DIV4
+#endif
+
+/**
+ * @brief   TIM clock prescaler selection.
+ */
+#if !defined(STM32_TIMPRE_ENABLE) || defined(__DOXYGEN__)
+#define STM32_TIMPRE_ENABLE                 FALSE
 #endif
 
 /**
@@ -2068,20 +2075,45 @@
 /**
  * @brief   Clock of timers connected to APB1
  */
+#if (STM32_TIMPRE_ENABLE == FALSE) || defined(__DOXYGEN__)
 #if (STM32_PPRE1 == STM32_PPRE1_DIV1) || defined(__DOXYGEN__)
 #define STM32_TIMCLK1               (STM32_PCLK1 * 1)
 #else
 #define STM32_TIMCLK1               (STM32_PCLK1 * 2)
 #endif
+#else
+#if (STM32_PPRE1 == STM32_PPRE1_DIV1) ||                                    \
+    (STM32_PPRE1 == STM32_PPRE1_DIV2) ||                                    \
+    (STM32_PPRE1 == STM32_PPRE1_DIV4)
+#define STM32_TIMCLK1               (STM32_HCLK * 1)
+#else
+#define STM32_TIMCLK1               (STM32_PCLK1 * 4)
+#endif
+#endif
 
 /**
  * @brief   Clock of timers connected to APB2.
  */
+#if (STM32_TIMPRE_ENABLE == FALSE) || defined(__DOXYGEN__)
 #if (STM32_PPRE2 == STM32_PPRE2_DIV1) || defined(__DOXYGEN__)
 #define STM32_TIMCLK2               (STM32_PCLK2 * 1)
 #else
 #define STM32_TIMCLK2               (STM32_PCLK2 * 2)
 #endif
+#else
+#if (STM32_PPRE2 == STM32_PPRE2_DIV1) ||                                    \
+    (STM32_PPRE2 == STM32_PPRE2_DIV2) ||                                    \
+    (STM32_PPRE2 == STM32_PPRE2_DIV4)
+#define STM32_TIMCLK2               (STM32_HCLK * 1)
+#else
+#define STM32_TIMCLK2               (STM32_PCLK2 * 4)
+#endif
+#endif
+
+/**
+ * @brief   RNG clock point.
+ */
+#define STM32_RNGCLK                STM32_PLL48CLK
 
 /**
  * @brief   Flash settings.

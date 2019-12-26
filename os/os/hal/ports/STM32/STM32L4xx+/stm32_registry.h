@@ -65,10 +65,10 @@
 #if defined(STM32L4S5xx) || defined(STM32L4S7xx) || defined(STM32L4S9xx) || \
     defined(__DOXYGEN__)
 #define STM32_HAS_HASH1                     TRUE
-#define STM32_HAS_AES1                      TRUE
+#define STM32_HAS_CRYP1                     TRUE
 #else
 #define STM32_HAS_HASH1                     FALSE
-#define STM32_HAS_AES1                      FALSE
+#define STM32_HAS_CRYP1                     FALSE
 #endif
 
 /*===========================================================================*/
@@ -179,6 +179,9 @@
 #define STM32_EXTI_LINE19_NUMBER            2
 #define STM32_EXTI_LINE20_NUMBER            3
 #define STM32_EXTI_LINE2122_NUMBER          64
+
+/* Flash attributes.*/
+#define STM32_FLASH_NUMBER_OF_BANKS         2
 
 /* GPIO attributes.*/
 #define STM32_HAS_GPIOA                     TRUE

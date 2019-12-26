@@ -222,7 +222,7 @@ void rtcConvertDateTimeToStructTm(const RTCDateTime *timespec,
                                   uint32_t *tv_msec) {
   int sec;
 
-  timp->tm_year  = (int)timespec->year + (1980 - 1900);
+  timp->tm_year  = (int)timespec->year + (RTC_BASE_YEAR - 1900);
   timp->tm_mon   = (int)timespec->month - 1;
   timp->tm_mday  = (int)timespec->day;
   timp->tm_isdst = (int)timespec->dstflag;
@@ -253,12 +253,12 @@ void rtcConvertStructTmToDateTime(const struct tm *timp,
                                   RTCDateTime *timespec) {
 
   /*lint -save -e9034 [10.4] Verified assignments to bit fields.*/
-  timespec->year      = (uint32_t)timp->tm_year - (1980U - 1900U);
+  timespec->year      = (uint32_t)timp->tm_year - (RTC_BASE_YEAR - 1900U);
   timespec->month     = (uint32_t)timp->tm_mon + 1U;
   timespec->day       = (uint32_t)timp->tm_mday;
   timespec->dayofweek = (uint32_t)timp->tm_wday + 1U;
   if (-1 == timp->tm_isdst) {
-    timespec->dstflag = 0U;  /* set zero if dst is unknown */
+    timespec->dstflag = 0U;  /* Set zero if dst is unknown.*/
   }
   else {
     timespec->dstflag = (uint32_t)timp->tm_isdst;
@@ -293,7 +293,7 @@ uint32_t rtcConvertDateTimeToFAT(const RTCDateTime *timespec) {
   day   = timespec->day;
   month = timespec->month;
 
-  /* handle DST flag */
+  /* Handle DST flag.*/
   if (1U == timespec->dstflag) {
     hour += 1U;
     if (hour == 24U) {

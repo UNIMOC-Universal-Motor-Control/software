@@ -55,8 +55,10 @@
 #define ST_ENABLE_CLOCK()                   rccEnableTIM2(true)
 #if defined(STM32F1XX)
 #define ST_ENABLE_STOP()                    DBGMCU->CR |= DBGMCU_CR_DBG_TIM2_STOP
-#elif defined(STM32L4XX) || defined(STM32L4XXP)
+#elif defined(STM32L4XX) || defined(STM32L4XXP) || defined(STM32G4XX)
 #define ST_ENABLE_STOP()                    DBGMCU->APB1FZR1 |= DBGMCU_APB1FZR1_DBG_TIM2_STOP
+#elif defined(STM32G0XX)
+#define ST_ENABLE_STOP()                    DBG->APBFZ1 |= DBG_APB_FZ1_DBG_TIM2_STOP
 #elif defined(STM32H7XX)
 #define ST_ENABLE_STOP()                    DBGMCU->APB1LFZ1 |= DBGMCU_APB1LFZ1_DBG_TIM2
 #else
@@ -80,8 +82,10 @@
 #define ST_ENABLE_CLOCK()                   rccEnableTIM3(true)
 #if defined(STM32F1XX)
 #define ST_ENABLE_STOP()                    DBGMCU->CR |= DBGMCU_CR_DBG_TIM3_STOP
-#elif defined(STM32L4XX) || defined(STM32L4XXP)
+#elif defined(STM32L4XX) || defined(STM32L4XXP) || defined(STM32G4XX)
 #define ST_ENABLE_STOP()                    DBGMCU->APB1FZR1 |= DBGMCU_APB1FZR1_DBG_TIM3_STOP
+#elif defined(STM32G0XX)
+#define ST_ENABLE_STOP()                    DBG->APBFZ1 |= DBG_APB_FZ1_DBG_TIM3_STOP
 #elif defined(STM32H7XX)
 #define ST_ENABLE_STOP()                    DBGMCU->APB1LFZ1 |= DBGMCU_APB1LFZ1_DBG_TIM3
 #else
@@ -105,7 +109,7 @@
 #define ST_ENABLE_CLOCK()                   rccEnableTIM4(true)
 #if defined(STM32F1XX)
 #define ST_ENABLE_STOP()                    DBGMCU->CR |= DBGMCU_CR_DBG_TIM4_STOP
-#elif defined(STM32L4XX) || defined(STM32L4XXP)
+#elif defined(STM32L4XX) || defined(STM32L4XXP) || defined(STM32G4XX)
 #define ST_ENABLE_STOP()                    DBGMCU->APB1FZR1 |= DBGMCU_APB1FZR1_DBG_TIM4_STOP
 #elif defined(STM32H7XX)
 #define ST_ENABLE_STOP()                    DBGMCU->APB1LFZ1 |= DBGMCU_APB1LFZ1_DBG_TIM4
@@ -130,7 +134,7 @@
 #define ST_ENABLE_CLOCK()                   rccEnableTIM5(true)
 #if defined(STM32F1XX)
 #define ST_ENABLE_STOP()                    DBGMCU->CR |= DBGMCU_CR_DBG_TIM5_STOP
-#elif defined(STM32L4XX) || defined(STM32L4XXP)
+#elif defined(STM32L4XX) || defined(STM32L4XXP) || defined(STM32G4XX)
 #define ST_ENABLE_STOP()                    DBGMCU->APB1FZR1 |= DBGMCU_APB1FZR1_DBG_TIM5_STOP
 #elif defined(STM32H7XX)
 #define ST_ENABLE_STOP()                    DBGMCU->APB1LFZ1 |= DBGMCU_APB1LFZ1_DBG_TIM5
@@ -251,19 +255,41 @@ OSAL_IRQ_HANDLER(SysTick_Handler) {
  * @isr
  */
 OSAL_IRQ_HANDLER(ST_HANDLER) {
+  uint32_t sr;
+  stm32_tim_t *timp = STM32_ST_TIM;
 
   OSAL_IRQ_PROLOGUE();
 
-  /* Note, under rare circumstances an interrupt can remain latched even if
-     the timer SR register has been cleared, in those cases the interrupt
-     is simply ignored.*/
-  if ((STM32_ST_TIM->SR & TIM_SR_CC1IF) != 0U) {
-    STM32_ST_TIM->SR = 0U;
+  sr  = timp->SR;
+  sr &= timp->DIER & STM32_TIM_DIER_IRQ_MASK;
+  timp->SR = ~sr;
 
+  if ((sr & TIM_SR_CC1IF) != 0U) {
     osalSysLockFromISR();
     osalOsTimerHandlerI();
     osalSysUnlockFromISR();
   }
+#if ST_LLD_NUM_ALARMS > 1
+  if ((sr & TIM_SR_CC2IF) != 0U) {
+    if (st_callbacks[2] != NULL) {
+      st_callbacks[0](1U);
+    }
+  }
+#endif
+#if ST_LLD_NUM_ALARMS > 2
+  if ((sr & TIM_SR_CC3IF) != 0U) {
+    if (st_callbacks[2] != NULL) {
+      st_callbacks[1](2U);
+    }
+  }
+#endif
+#if ST_LLD_NUM_ALARMS > 3
+  if ((sr & TIM_SR_CC4IF) != 0U) {
+    if (st_callbacks[2] != NULL) {
+      st_callbacks[2](3U);
+    }
+  }
+#endif
 
   OSAL_IRQ_EPILOGUE();
 }
@@ -294,6 +320,15 @@ void st_lld_init(void) {
   STM32_ST_TIM->ARR    = ST_ARR_INIT;
   STM32_ST_TIM->CCMR1  = 0;
   STM32_ST_TIM->CCR[0] = 0;
+#if ST_LLD_NUM_ALARMS > 1
+  STM32_ST_TIM->CCR[1] = 0;
+#endif
+#if ST_LLD_NUM_ALARMS > 2
+  STM32_ST_TIM->CCR[2] = 0;
+#endif
+#if ST_LLD_NUM_ALARMS > 3
+  STM32_ST_TIM->CCR[3] = 0;
+#endif
   STM32_ST_TIM->DIER   = 0;
   STM32_ST_TIM->CR2    = 0;
   STM32_ST_TIM->EGR    = TIM_EGR_UG;

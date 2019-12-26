@@ -31,7 +31,7 @@
  *          - STM32L485xx, STM32L486xx, STM32L4A6xx.
  *          .
  *
- * @addtogroup STM32L4xx_ISR
+ * @addtogroup HAL
  * @{
  */
 
@@ -49,7 +49,7 @@
  * @{
  */
 #if defined(STM32L432xx) || defined(STM32L433xx) || defined(STM32L443xx) || \
-    defined(STM32L471xx) || defined(STM32L475xx) ||                         \
+    defined(STM32L452xx) || defined(STM32L471xx) || defined(STM32L475xx) || \
     defined(STM32L476xx) || defined(STM32L496xx) || defined(__DOXYGEN__)
 #define PLATFORM_NAME           "STM32L4xx Ultra Low Power"
 
@@ -72,7 +72,7 @@
  * @name    Internal clock sources
  * @{
  */
-#define STM32_HSI16CLK          16000000    /**< 16MHz internal clock.  */
+#define STM32_HSI16CLK          16000000    /**< 16MHz internal clock.      */
 #define STM32_HSI48CLK          48000000    /**< 48MHz internal clock.      */
 #define STM32_LSICLK            32000       /**< Low speed internal clock.  */
 /** @} */
@@ -1233,7 +1233,7 @@
 
 #elif STM32_PLLSRC == STM32_PLLSRC_NOCLOCK
 #define STM32_PLLCLKIN              0
-      
+
 #else
 #error "invalid STM32_PLLSRC value specified"
 #endif
