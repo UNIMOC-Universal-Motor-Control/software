@@ -175,6 +175,14 @@ int main(void) {
 	usbStart(serusbcfg1.usbp, &usbcfg);
 	usbConnectBus(serusbcfg1.usbp);
 
+	/*
+	 * start led sequencer threads for cpp testing
+	 */
+	blinker1.start(NORMALPRIO);
+	blinker2.start(NORMALPRIO);
+	blinker3.start(NORMALPRIO);
+	blinker4.start(NORMALPRIO);
+
 
 	/*
 	 * Normal main() thread activity, in this demo it does nothing except
