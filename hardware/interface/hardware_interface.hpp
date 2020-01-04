@@ -36,21 +36,21 @@ namespace unimoc {
 
 			/**
 			 * Initialize PWM hardware with outputs disabled!
-			 * @param freq_hz PWM frequency in Hz
 			 */
-			extern void Init(uint32_t freq_hz);
+			extern void Init();
 
 			/**
 			 * Set PWM Freqency
 			 * @param freq_hz PWM frequency in Hz
+			 * @retval returns true if frequency is not setable
 			 */
-			extern void SetFreqency(uint32_t freq_hz);
+			extern bool SetFreqency(const uint32_t freq_hz);
 
 			/**
 			 * Get PWM Frequency
 			 * @return PWM frequency in Hz
 			 */
-			extern uint32_t GetFreqency();
+			extern uint32_t GetFreqency(void);
 
 			/**
 			 * Enable PWM Outputs.
@@ -62,6 +62,12 @@ namespace unimoc {
 			 * Disable PWM Outputs.
 			 */
 			extern void DisableOutputs(void);
+
+			/**
+			 * Get pwm output state
+			 * @return pwm output state, true = pwm active
+			 */
+			extern bool OutputActive(void);
 
 			/**
 			 * Set the normalized duty cycles for each phase

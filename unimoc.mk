@@ -10,6 +10,7 @@ UNIMOCCPPSRC := ${BASEDIR}/src/main.cpp \
 
 # Required include directories
 UNIMOCINC := ${BASEDIR}/inc \
+             ${BASEDIR}/hardware/interface \
 
 # Shared variables
 ALLCPPSRC += ${UNIMOCCPPSRC}

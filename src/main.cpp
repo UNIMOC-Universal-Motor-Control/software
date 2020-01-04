@@ -20,6 +20,7 @@
 #include "ch.hpp"
 #include "hal.h"
 #include "usbcfg.h"
+#include "hardware_interface.hpp"
 
 
 using namespace chibios_rt;
@@ -39,6 +40,15 @@ static ThreadReference sref;
 #define BITCLEAR        3
 #define BITSET          4
 #define MESSAGE         5
+
+float duty_table[4][unimoc::hardware::pwm::PHASES] =
+{
+		{ 0.0f,  0.0f,   0.0f},
+		{ 1.0f,  1.0f,   1.0f},
+		{-1.0f, -1.0f,  -1.0f},
+		{ 0.0f,  0.0f,   0.0f},
+};
+
 
 typedef struct {
 	uint8_t       action;
@@ -183,12 +193,22 @@ int main(void) {
 	blinker3.start(NORMALPRIO);
 	blinker4.start(NORMALPRIO);
 
+	unimoc::hardware::pwm::Init();
+
+
 
 	/*
 	 * Normal main() thread activity, in this demo it does nothing except
 	 * sleeping in a loop and check the button state.
 	 */
-	while (true) {
-		BaseThread::sleep(TIME_MS2I(500));
+	while (true)
+	{
+
+		unimoc::hardware::pwm::EnableOutputs();
+		BaseThread::sleep(TIME_MS2I(5000));
+		unimoc::hardware::pwm::SetDutys(duty_table[0]);
+		unimoc::hardware::pwm::DisableOutputs();
+
+		BaseThread::sleep(TIME_MS2I(2000));
 	}
 }

@@ -43,7 +43,7 @@ uint32_t frequency = STOCK_PWM_FREQUENCY;
  */
 constexpr uint32_t ARR(const uint32_t freq_hz)
 {
-	return (PWM_TIMER_CLOCK/freq_hz - 1);
+	return (PWM_TIMER_CLOCK/(2*freq_hz) - 1);
 }
 
 /**
@@ -53,7 +53,21 @@ constexpr uint32_t ARR(const uint32_t freq_hz)
  */
 constexpr uint32_t FREQUENCY(const uint32_t arr)
 {
-	return (PWM_TIMER_CLOCK/(arr + 1));
+	return (PWM_TIMER_CLOCK/((arr + 1)*2));
+}
+
+/**
+ * macro to calculate DTG value for BDTR
+ * @param deadtime in ns
+ * @return dtg value
+ */
+constexpr uint16_t DTG(const uint32_t deadtime)
+{
+	float fdeadtime = (float)deadtime * 1e-9f;
+	float clock = (float)STM32_TIMCLK2;
+	osalDbgAssert((fdeadtime * clock) >= 256.0f,
+	                "PWM: Dead too long");
+	return (uint16_t)((fdeadtime * clock) -1);
 }
 
 /**
@@ -77,8 +91,9 @@ const PWMConfig pwmcfg =
 		0,
 		/*
 		 * Break and Deadtime Register
+		 * Break input enabled with filter of 8 clock cycles
 		 */
-		STM32_TIM_BDTR_DTG((uint16_t)(PWM_DEADTIME * (float32_t)STM32_TIMCLK2 -1)),
+		STM32_TIM_BDTR_DTG(DTG(DEADTIME)) | STM32_TIM_BDTR_BKE | STM32_TIM_BDTR_BKF(3),
 		/*
 		 * DIER Register
 		 */
@@ -87,24 +102,23 @@ const PWMConfig pwmcfg =
 
 /**
  * Initialize PWM hardware with outputs disabled!
- * @param freq_hz PWM frequency in Hz
  */
-void unimoc::hardware::pwm::Init(uint32_t freq_hz)
+void unimoc::hardware::pwm::Init(void)
 {
 	/*
 	 * Set Debug register to stop Tim1 in DebugMode
 	 */
 	DBGMCU->APB2FZ |= DBGMCU_APB2_FZ_DBG_TIM1_STOP;
 	/* Start the PWM timer */
-	pwmStart(pwmp, &pwmcfg);
+	pwmStart(PWMP, &pwmcfg);
 	PWMP->tim->CR1 &=~ STM32_TIM_CR1_CEN; // timer stop
 	PWMP->tim->CR1 |= STM32_TIM_CR1_CMS(2); // center aligned mode
-	pwmp->tim->CR1 |= STM32_TIM_CR1_CEN; // timer start again
+	PWMP->tim->CR1 |= STM32_TIM_CR1_CEN; // timer start again
 
 	/* enable outputs */
-	pwmEnableChannel(PWMP, 0, COUNTER_MAX_INT/2);
-	pwmEnableChannel(PWMP, 1, COUNTER_MAX_INT/2);
-	pwmEnableChannel(pwmp, 2, COUNTER_MAX_INT/2);
+	pwmEnableChannel(PWMP, 0, PWMP->period/2);
+	pwmEnableChannel(PWMP, 1, PWMP->period/2);
+	pwmEnableChannel(PWMP, 2, PWMP->period/2);
 }
 
 /**
@@ -113,17 +127,19 @@ void unimoc::hardware::pwm::Init(uint32_t freq_hz)
  */
 bool unimoc::hardware::pwm::SetFreqency(const uint32_t freq_hz)
 {
-	bool result = false;
+	bool result = true;
 	uint32_t new_counter_max = ARR(freq_hz);
 	if(new_counter_max < 1000 || new_counter_max > 0xFFF0)
 	{
-		result  = true;
+		result  = false;
 	}
 	else
 	{
 		frequency = freq_hz;
 		pwmChangePeriod(PWMP, new_counter_max);
+		result = true;
 	}
+	return (result);
 }
 
 /**
@@ -141,7 +157,10 @@ uint32_t unimoc::hardware::pwm::GetFreqency(void)
  */
 void unimoc::hardware::pwm::EnableOutputs(void)
 {
+	palSetLine(LINE_EN_PWM_OUT);
 
+	// reset the break state
+	PWMP->tim->BDTR |= STM32_TIM_BDTR_AOE;
 }
 
 /**
@@ -149,7 +168,16 @@ void unimoc::hardware::pwm::EnableOutputs(void)
  */
 void unimoc::hardware::pwm::DisableOutputs(void)
 {
+	palClearLine(LINE_EN_PWM_OUT);
+}
 
+/**
+ * Get pwm output state
+ * @return pwm output state, true = pwm active
+ */
+bool unimoc::hardware::pwm::OutputActive(void)
+{
+	return (PWMP->tim->BDTR & STM32_TIM_BDTR_MOE);
 }
 
 /**
@@ -158,7 +186,17 @@ void unimoc::hardware::pwm::DisableOutputs(void)
  */
 void unimoc::hardware::pwm::SetDutys(float dutys[PHASES])
 {
+	int16_t mid = PWMP->period/2;
 
+	for (uint16_t i = 0; i < PHASES; ++i)
+	{
+		int16_t new_duty = mid + (int16_t)((float)mid * dutys[i]);
+
+		if(new_duty < 0) new_duty = 0;
+		if(new_duty > (int16_t)PWMP->period) new_duty = PWMP->period;
+
+		pwmEnableChannel(PWMP, i, (uint16_t)new_duty);
+	}
 }
 
 
