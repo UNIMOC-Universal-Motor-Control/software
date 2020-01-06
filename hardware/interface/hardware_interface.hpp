@@ -23,16 +23,17 @@
 
 namespace unimoc {
 	namespace hardware {
+		/**
+		 * Motor Phases. Normally fixed to 3
+		 */
+		constexpr uint8_t PHASES = 3;
+
+
 		namespace pwm {
 			/*
 			 * This interface defines the functions for pwm handling
 			 * which all hardware variants need to implement.
 			 */
-
-			/**
-			 * Motor Phases. Normally fixed to 3
-			 */
-			constexpr uint8_t PHASES = 3;
 
 			/**
 			 * Initialize PWM hardware with outputs disabled!
@@ -76,6 +77,19 @@ namespace unimoc {
 			extern void SetDutys(float dutys[PHASES]);
 
 		} /* namespace pwm */
+
+		namespace adc
+		{
+			/*
+			 * This interface defines the functions for adc handling
+			 * which all hardware variants need to implement.
+			 */
+			/**
+			 * Initialize ADC hardware with outputs disabled!
+			 */
+			extern void Init();
+
+		} /* namespace adc */
 	} /* namespace hardware */
 } /* namespace unimoc */
 

@@ -1,5 +1,5 @@
 /*
-    UNIMOC - Universal Motor Control  2019 Alexander <tecnologic86@gmail.com>
+    UNIMOC - Universal Motor Control  2019 Alexander <tecnologic86@gmail.com> Brand
 
 	This file is part of UNIMOC.
 
