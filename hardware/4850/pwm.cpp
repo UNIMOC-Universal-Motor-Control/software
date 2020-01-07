@@ -27,14 +27,9 @@ constexpr uint32_t PWM_TIMER_CLOCK = STM32_TIMCLK2;
 ///< deadtime in nano seconds
 constexpr uint32_t DEADTIME = 300;
 
-///< pwm frequency in Hz
-constexpr uint32_t STOCK_PWM_FREQUENCY = 32000;
-
 ///< pwm driver instance
 constexpr PWMDriver* PWMP = &PWMD1;
 
-///< pwm frequency in Hz
-uint32_t frequency = STOCK_PWM_FREQUENCY;
 
 /**
  * macro to calculate auto reload register value
@@ -44,16 +39,6 @@ uint32_t frequency = STOCK_PWM_FREQUENCY;
 constexpr uint32_t ARR(const uint32_t freq_hz)
 {
 	return (PWM_TIMER_CLOCK/(2*freq_hz) - 1);
-}
-
-/**
- * macro to calculate frequency from auto reload register value
- * @param arr auto reload register value
- * @return pwm frequency in Hz
- */
-constexpr uint32_t FREQUENCY(const uint32_t arr)
-{
-	return (PWM_TIMER_CLOCK/((arr + 1)*2));
 }
 
 /**
@@ -76,7 +61,7 @@ constexpr uint16_t DTG(const uint32_t deadtime)
 const PWMConfig pwmcfg =
 {
 		PWM_TIMER_CLOCK,
-		ARR(STOCK_PWM_FREQUENCY),
+		ARR(FREQUENCY),
 		NULL,
 		{ /*  */
 				{PWM_OUTPUT_ACTIVE_HIGH | PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH, NULL},
@@ -119,36 +104,6 @@ void unimoc::hardware::pwm::Init(void)
 	pwmEnableChannel(PWMP, 0, PWMP->period/2);
 	pwmEnableChannel(PWMP, 1, PWMP->period/2);
 	pwmEnableChannel(PWMP, 2, PWMP->period/2);
-}
-
-/**
- * Set PWM Freqency
- * @param freq_hz PWM frequency in Hz
- */
-bool unimoc::hardware::pwm::SetFreqency(const uint32_t freq_hz)
-{
-	bool result = true;
-	uint32_t new_counter_max = ARR(freq_hz);
-	if(new_counter_max < 1000 || new_counter_max > 0xFFF0)
-	{
-		result  = false;
-	}
-	else
-	{
-		frequency = freq_hz;
-		pwmChangePeriod(PWMP, new_counter_max);
-		result = true;
-	}
-	return (result);
-}
-
-/**
- * Get PWM Frequency
- * @return PWM frequency in Hz
- */
-uint32_t unimoc::hardware::pwm::GetFreqency(void)
-{
-	return (frequency);
 }
 
 /**

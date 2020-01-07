@@ -23,9 +23,15 @@
 ///< Each adc handles this number of channels
 constexpr uint32_t CHANNELS_PER_ADC = 4;
 
+///< External trigger delay in adc clock cycles
+constexpr uint32_t EXT_TRIG_DELAY = 2;
+
+///< Pure Conversion time in ADC Clockcycles
+constexpr uint32_t CONV_TIME = 12;
+
 
 /**
- * Structure fro ADC Channel mapping
+ * Structure from ADC Channel mapping
  *
  * Signal			Pin		ADC1	ADC2	ADC3
  * -----------------------------------------------
@@ -46,8 +52,18 @@ typedef struct
 {
 	struct
 	{
-		adcsample_t
+		adcsample_t cur_a_dc;
+		adcsample_t cur_a_ac;
+		adcsample_t vdc;
+		adcsample_t brdg_temp;
 	}adc1;
+	struct
+	{
+		adcsample_t cur_a_dc;
+		adcsample_t cur_a_ac;
+		adcsample_t vdc;
+		adcsample_t brdg_temp;
+	}adc2;
 
 };
 

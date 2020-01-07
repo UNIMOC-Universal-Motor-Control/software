@@ -34,24 +34,13 @@ namespace unimoc {
 			 * This interface defines the functions for pwm handling
 			 * which all hardware variants need to implement.
 			 */
+			///< pwm frequency in Hz
+			constexpr uint32_t FREQUENCY = 32000;
 
 			/**
 			 * Initialize PWM hardware with outputs disabled!
 			 */
 			extern void Init();
-
-			/**
-			 * Set PWM Freqency
-			 * @param freq_hz PWM frequency in Hz
-			 * @retval returns true if frequency is not setable
-			 */
-			extern bool SetFreqency(const uint32_t freq_hz);
-
-			/**
-			 * Get PWM Frequency
-			 * @return PWM frequency in Hz
-			 */
-			extern uint32_t GetFreqency(void);
 
 			/**
 			 * Enable PWM Outputs.
