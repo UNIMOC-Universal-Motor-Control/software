@@ -20,6 +20,7 @@
 #define HARDWARE_INTERFACE_HARDWARE_INTERFACE_HPP_
 #include <cstdint>
 #include "ch.hpp"
+#include "hal.h"
 
 namespace unimoc {
 	namespace hardware {
@@ -28,14 +29,29 @@ namespace unimoc {
 		 */
 		constexpr uint8_t PHASES = 3;
 
-
 		namespace pwm {
 			/*
 			 * This interface defines the functions for pwm handling
 			 * which all hardware variants need to implement.
 			 */
-			///< pwm frequency in Hz
-			constexpr uint32_t FREQUENCY = 32000;
+
+			///< PWM Timer clock in Hz
+			constexpr uint32_t TIMER_CLOCK = STM32_TIMCLK2;
+
+
+			///< deadtime in nano seconds
+			constexpr uint32_t DEADTIME = 300;
+
+			/**
+			 * PWM frequency in Hz
+			 *
+			 * The ADC sampling relies on the PWM frequency!
+			 * Each ADC samples 16 samples with a sample time of 15clk + 12clk for conversion
+			 * This gives 16*27=432clk. ADC clock is divided by 8 from PWM clock this means
+			 * The Period of the PWM needs to be greater than 3456clk. With center aligned
+			 * PWM this is the period of PWM half period.
+			 */
+			constexpr uint32_t PERIOD = 3470; // 14 clock cycles margin
 
 			/**
 			 * Initialize PWM hardware with outputs disabled!
@@ -67,6 +83,12 @@ namespace unimoc {
 
 		} /* namespace pwm */
 
+		///< Control cycle time
+		constexpr float Tc = (float)(pwm::PERIOD + 1) / (float)pwm::TIMER_CLOCK;
+
+		///< Control cycle frequency
+		constexpr float Fc = (float)pwm::TIMER_CLOCK / (float)(pwm::PERIOD + 1);
+
 		namespace adc
 		{
 			/*
@@ -77,6 +99,11 @@ namespace unimoc {
 			 * Initialize ADC hardware with outputs disabled!
 			 */
 			extern void Init();
+
+			/**
+			 * Start ADC Sampling for one control cycle
+			 */
+			extern void Start(void);
 
 		} /* namespace adc */
 	} /* namespace hardware */

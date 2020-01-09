@@ -41,7 +41,7 @@ static ThreadReference sref;
 #define BITSET          4
 #define MESSAGE         5
 
-float duty_table[4][unimoc::hardware::pwm::PHASES] =
+float duty_table[4][unimoc::hardware::PHASES] =
 {
 		{ 0.0f,  0.0f,   0.0f},
 		{ 1.0f,  1.0f,   1.0f},
@@ -194,7 +194,7 @@ int main(void) {
 	blinker4.start(NORMALPRIO);
 
 	unimoc::hardware::pwm::Init();
-
+	unimoc::hardware::adc::Init();
 
 
 	/*
