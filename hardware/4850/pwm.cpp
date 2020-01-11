@@ -21,7 +21,7 @@
 #include "hardware_interface.hpp"
 
 ///< PWM driver instance
-constexpr PWMDriver* PWMP = &PWMD1;
+PWMDriver* unimoc::hardware::pwm::PWMP = &PWMD1;
 
 ///< PWM duty counts
 uint16_t unimoc::hardware::pwm::duty_counts[PHASES] = {0};

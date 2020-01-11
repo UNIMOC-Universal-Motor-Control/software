@@ -209,6 +209,8 @@ int main(void) {
 		unimoc::hardware::pwm::SetDutys(duty_table[0]);
 		unimoc::hardware::pwm::DisableOutputs();
 
+		unimoc::hardware::adc::Start();
+
 		BaseThread::sleep(TIME_MS2I(2000));
 	}
 }

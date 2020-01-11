@@ -449,12 +449,12 @@ static void setup_sequence(ADCConversionGroup* adc_cfg, uint8_t edge_index, cons
  * Channels:    AIN_CUR_A_DC, AIN_CUR_A_AC, AIN_VDC, VREF.
  */
 static ADCConversionGroup adcgrpcfg1 = {
-		true,
+		false,
 		LENGTH_ADC_SEQ,
 		adccallback,
 		adcerrorcallback,
 		0,                                                    /* CR1   */
-		0,                                                    /* CR2   */
+		ADC_CR2_SWSTART,                                      /* CR2   */
 		ADC_SMPR1_SMP_AN12(ADC_SAMPLE_15) |
 		ADC_SMPR1_SMP_AN13(ADC_SAMPLE_15) |
 		ADC_SMPR1_SMP_VREF(ADC_SAMPLE_15),                    /* SMPR1 */
@@ -486,12 +486,12 @@ static ADCConversionGroup adcgrpcfg1 = {
  * Channels:    AIN_CUR_B_DC, AIN_CUR_B_AC, AIN_BRDG_TEMP, AIN_MOT_TEMP.
  */
 static ADCConversionGroup adcgrpcfg2 = {
-		true,
+		false,
 		LENGTH_ADC_SEQ,
 		adccallback,
 		adcerrorcallback,
 		0,                                                    /* CR1   */
-		0,                                                    /* CR2   */
+		ADC_CR2_SWSTART,                                      /* CR2   */
 		0,                                                    /* SMPR1 */
 		ADC_SMPR2_SMP_AN0(ADC_SAMPLE_15) |
 		ADC_SMPR2_SMP_AN1(ADC_SAMPLE_15) |
@@ -524,12 +524,12 @@ static ADCConversionGroup adcgrpcfg2 = {
  * Channels:    AIN_CUR_C_DC, AIN_CUR_C_AC, AIN_ACC, AIN_DCC.
  */
 static ADCConversionGroup adcgrpcfg3 = {
-		true,
+		false,
 		LENGTH_ADC_SEQ,
 		adccallback,
 		adcerrorcallback,
 		0,                                                    /* CR1   */
-		0,                                                    /* CR2   */
+		ADC_CR2_SWSTART,                                      /* CR2   */
 		ADC_SMPR1_SMP_AN10(ADC_SAMPLE_15) |
 		ADC_SMPR1_SMP_AN11(ADC_SAMPLE_15),                    /* SMPR1 */
 		ADC_SMPR2_SMP_AN2(ADC_SAMPLE_15) |
