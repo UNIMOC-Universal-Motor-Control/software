@@ -23,6 +23,9 @@
 ///< PWM driver instance
 PWMDriver* unimoc::hardware::pwm::PWMP = &PWMD1;
 
+///< ADC trigger timer driver instance
+PWMDriver* ADC_TRIGP = &PWMD4;
+
 ///< PWM duty counts
 uint16_t unimoc::hardware::pwm::duty_counts[PHASES] = {0};
 
@@ -47,11 +50,10 @@ constexpr uint16_t DTG(const uint32_t deadtime)
 static void period_callback(PWMDriver *pwmp)
 {
 	(void)pwmp;
-	unimoc::hardware::adc::Start();
 }
 
 /**
- * basic PWm configuration
+ * basic PWM configuration
  */
 const PWMConfig pwmcfg =
 {
@@ -66,9 +68,9 @@ const PWMConfig pwmcfg =
 		},
 		/*
 		 * CR2 Register
-		 *
+		 * Master mode update event on TRGO
 		 */
-		0,
+		STM32_TIM_CR2_MMS(2),
 		/*
 		 * Break and Deadtime Register
 		 * Break input enabled with filter of 8 clock cycles
@@ -81,19 +83,58 @@ const PWMConfig pwmcfg =
 };
 
 /**
+ * Configuration for ADC Trigger Timer
+ */
+const PWMConfig adctriggercfg =
+{
+		unimoc::hardware::pwm::TIMER_CLOCK,
+		0xFFFF,
+		NULL,
+		{ /*  */
+				{PWM_OUTPUT_DISABLED, NULL},
+				{PWM_OUTPUT_DISABLED, NULL},
+				{PWM_OUTPUT_DISABLED, NULL},
+				{PWM_OUTPUT_ACTIVE_HIGH, NULL}
+		},
+		/*
+		 * CR2 Register
+		 * CH4 on TRGO
+		 */
+		STM32_TIM_CR2_MMS(7),
+		/*
+		 * Break and Deadtime Register
+		 */
+		0,
+		/*
+		 * DIER Register
+		 */
+		0
+};
+
+
+/**
  * Initialize PWM hardware with outputs disabled!
  */
 void unimoc::hardware::pwm::Init(void)
 {
 	/*
-	 * Set Debug register to stop Tim1 in DebugMode
+	 * Set Debug register to stop TIM1 and TIM5 in DebugMode
 	 */
 	DBGMCU->APB2FZ |= DBGMCU_APB2_FZ_DBG_TIM1_STOP;
+	DBGMCU->APB1FZ |= DBGMCU_APB1_FZ_DBG_TIM5_STOP;
 	/* Start the PWM timer */
 	pwmStart(PWMP, &pwmcfg);
 	PWMP->tim->CR1 &=~ STM32_TIM_CR1_CEN; // timer stop
 	PWMP->tim->CR1 |= STM32_TIM_CR1_CMS(2); // center aligned mode
 	PWMP->tim->CR1 |= STM32_TIM_CR1_CEN; // timer start again
+
+	/* start the ADC trigger timer */
+	pwmStart(ADC_TRIGP, &adctriggercfg);
+	ADC_TRIGP->tim->CR1 &=~ STM32_TIM_CR1_CEN; // timer stop
+	ADC_TRIGP->tim->SMCR |= STM32_TIM_SMCR_SMS(4) | STM32_TIM_SMCR_MSM;
+	ADC_TRIGP->tim->CR1 |= STM32_TIM_CR1_CEN; // timer start again
+	/* set adc trigger offset */
+	pwmEnableChannel(ADC_TRIGP, 3, PERIOD - 6);
 
 	/* enable pwms */
 	pwmEnableChannel(PWMP, 0, PERIOD/2);

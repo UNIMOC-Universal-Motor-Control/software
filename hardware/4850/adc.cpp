@@ -88,10 +88,13 @@ constexpr uint32_t NUM_OF_ADC = 3;
    Only required if the ADC buffer is placed in a cache-able area.*/
 __attribute__((aligned (32))) static adcsample_t samples[NUM_OF_ADC][LENGTH_ADC_SEQ * ADC_SEQ_BUFFERED];
 
+static void setup_sequence(ADCDriver *adcp, uint8_t edge_index, const uint8_t cur_dc, const uint8_t cur_ac, const uint8_t aux1, const uint8_t aux2);
+
 /*
  * ADC streaming callback.
  */
-static void adccallback(ADCDriver *adcp) {
+static void adccallback(ADCDriver *adcp)
+{
 
 	/* DMA buffer invalidation because data cache, only invalidating the
      half buffer just filled.
@@ -102,7 +105,22 @@ static void adccallback(ADCDriver *adcp) {
 	/* Updating counters.*/
 	if (adcIsBufferComplete(adcp))
 	{
+		uint8_t edge_index[unimoc::hardware::PHASES];
 
+		for(uint8_t i = 0; i < unimoc::hardware::PHASES; i++)
+		{
+			/*
+			 * Calculate the starting index of the non current channels in the sequence.
+			 * Trys to center the 2 non current samples around the edge of the pwm
+			 */
+			edge_index[i] = (uint8_t)(((uint32_t)unimoc::hardware::pwm::duty_counts[i]*(LENGTH_ADC_SEQ)
+					+ (uint32_t)unimoc::hardware::pwm::duty_counts[i]/2)/unimoc::hardware::pwm::PERIOD);
+		}
+
+		// Setup the sequences for all the channels
+		setup_sequence(&ADCD1, edge_index[0], ADC_CH_CUR_A_DC, ADC_CH_CUR_A_AC, ADC_CH_VDC, ADC_CH_VREF);
+		setup_sequence(&ADCD2, edge_index[1], ADC_CH_CUR_B_DC, ADC_CH_CUR_B_AC, ADC_CH_BRDG_TEMP, ADC_CH_MOT_TEMP);
+		setup_sequence(&ADCD3, edge_index[2], ADC_CH_CUR_C_DC, ADC_CH_CUR_C_AC, ADC_CH_ACC, ADC_CH_DCC);
 	}
 }
 
@@ -117,14 +135,14 @@ static void adcerrorcallback(ADCDriver *adcp, adcerror_t err) {
 
 /**
  * setup new ADC sequence according to the edge index of the PWM
- * @param adc_cfg		ADC Configuration
+ * @param adcp			Pointer to ADC driver instance
  * @param edge_index	Index of ADC sequence with PWM edge
  * @param cur_dc		DC current channel
  * @param cur_ac		AC current channel
  * @param aux1			First non current ADC channel
  * @param aux2			Secound non current ADC channel
  */
-static void setup_sequence(ADCConversionGroup* adc_cfg, uint8_t edge_index, const uint8_t cur_dc, const uint8_t cur_ac, const uint8_t aux1, const uint8_t aux2)
+static void setup_sequence(ADCDriver *adcp, uint8_t edge_index, const uint8_t cur_dc, const uint8_t cur_ac, const uint8_t aux1, const uint8_t aux2)
 {
 	if(unimoc::hardware::pwm::PWMP->tim->CR1 & STM32_TIM_CR1_DIR)
 	{
@@ -135,18 +153,18 @@ static void setup_sequence(ADCConversionGroup* adc_cfg, uint8_t edge_index, cons
 	switch(edge_index)
 	{
 	case 0:
-		adc_cfg->sqr1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
+		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
 							ADC_SQR1_SQ16_N(cur_ac) |
 							ADC_SQR1_SQ15_N(cur_dc) |
 							ADC_SQR1_SQ14_N(cur_ac) |
 							ADC_SQR1_SQ13_N(cur_dc);
-		adc_cfg->sqr2 = 	ADC_SQR2_SQ12_N(cur_ac) |
+		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
 							ADC_SQR2_SQ11_N(cur_dc) |
 							ADC_SQR2_SQ10_N(cur_ac) |
 							ADC_SQR2_SQ9_N(cur_dc) |
 							ADC_SQR2_SQ8_N(cur_ac) |
 							ADC_SQR2_SQ7_N(cur_dc);          /* SQR2  */
-		adc_cfg->sqr3 =		ADC_SQR3_SQ6_N(cur_ac) |
+		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
 							ADC_SQR3_SQ5_N(cur_dc) |
 							ADC_SQR3_SQ4_N(cur_ac) |
 							ADC_SQR3_SQ3_N(cur_dc) |
@@ -154,18 +172,18 @@ static void setup_sequence(ADCConversionGroup* adc_cfg, uint8_t edge_index, cons
 							ADC_SQR3_SQ1_N(aux1);           /* SQR3  */
 		break;
 	case 1:
-		adc_cfg->sqr1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
+		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
 							ADC_SQR1_SQ16_N(cur_ac) |
 							ADC_SQR1_SQ15_N(cur_dc) |
 							ADC_SQR1_SQ14_N(cur_ac) |
 							ADC_SQR1_SQ13_N(cur_dc);
-		adc_cfg->sqr2 = 	ADC_SQR2_SQ12_N(cur_ac) |
+		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
 							ADC_SQR2_SQ11_N(cur_dc) |
 							ADC_SQR2_SQ10_N(cur_ac) |
 							ADC_SQR2_SQ9_N(cur_dc) |
 							ADC_SQR2_SQ8_N(cur_ac) |
 							ADC_SQR2_SQ7_N(cur_dc);          /* SQR2  */
-		adc_cfg->sqr3 =		ADC_SQR3_SQ6_N(cur_ac) |
+		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
 							ADC_SQR3_SQ5_N(cur_dc) |
 							ADC_SQR3_SQ4_N(cur_ac) |
 							ADC_SQR3_SQ3_N(cur_dc) |
@@ -173,18 +191,18 @@ static void setup_sequence(ADCConversionGroup* adc_cfg, uint8_t edge_index, cons
 							ADC_SQR3_SQ1_N(aux1);           /* SQR3  */
 		break;
 	case 2:
-		adc_cfg->sqr1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
+		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
 							ADC_SQR1_SQ16_N(cur_ac) |
 							ADC_SQR1_SQ15_N(cur_dc) |
 							ADC_SQR1_SQ14_N(cur_ac) |
 							ADC_SQR1_SQ13_N(cur_dc);
-		adc_cfg->sqr2 = 	ADC_SQR2_SQ12_N(cur_ac) |
+		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
 							ADC_SQR2_SQ11_N(cur_dc) |
 							ADC_SQR2_SQ10_N(cur_ac) |
 							ADC_SQR2_SQ9_N(cur_dc) |
 							ADC_SQR2_SQ8_N(cur_ac) |
 							ADC_SQR2_SQ7_N(cur_dc);          /* SQR2  */
-		adc_cfg->sqr3 =		ADC_SQR3_SQ6_N(cur_ac) |
+		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
 							ADC_SQR3_SQ5_N(cur_dc) |
 							ADC_SQR3_SQ4_N(cur_ac) |
 							ADC_SQR3_SQ3_N(aux2) |
@@ -192,18 +210,18 @@ static void setup_sequence(ADCConversionGroup* adc_cfg, uint8_t edge_index, cons
 							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
 		break;
 	case 3:
-		adc_cfg->sqr1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
+		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
 							ADC_SQR1_SQ16_N(cur_ac) |
 							ADC_SQR1_SQ15_N(cur_dc) |
 							ADC_SQR1_SQ14_N(cur_ac) |
 							ADC_SQR1_SQ13_N(cur_dc);
-		adc_cfg->sqr2 = 	ADC_SQR2_SQ12_N(cur_ac) |
+		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
 							ADC_SQR2_SQ11_N(cur_dc) |
 							ADC_SQR2_SQ10_N(cur_ac) |
 							ADC_SQR2_SQ9_N(cur_dc) |
 							ADC_SQR2_SQ8_N(cur_ac) |
 							ADC_SQR2_SQ7_N(cur_dc);          /* SQR2  */
-		adc_cfg->sqr3 =		ADC_SQR3_SQ6_N(cur_ac) |
+		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
 							ADC_SQR3_SQ5_N(cur_dc) |
 							ADC_SQR3_SQ4_N(aux2) |
 							ADC_SQR3_SQ3_N(aux1) |
@@ -211,18 +229,18 @@ static void setup_sequence(ADCConversionGroup* adc_cfg, uint8_t edge_index, cons
 							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
 		break;
 	case 4:
-		adc_cfg->sqr1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
+		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
 							ADC_SQR1_SQ16_N(cur_ac) |
 							ADC_SQR1_SQ15_N(cur_dc) |
 							ADC_SQR1_SQ14_N(cur_ac) |
 							ADC_SQR1_SQ13_N(cur_dc);
-		adc_cfg->sqr2 = 	ADC_SQR2_SQ12_N(cur_ac) |
+		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
 							ADC_SQR2_SQ11_N(cur_dc) |
 							ADC_SQR2_SQ10_N(cur_ac) |
 							ADC_SQR2_SQ9_N(cur_dc) |
 							ADC_SQR2_SQ8_N(cur_ac) |
 							ADC_SQR2_SQ7_N(cur_dc);          /* SQR2  */
-		adc_cfg->sqr3 =		ADC_SQR3_SQ6_N(cur_ac) |
+		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
 							ADC_SQR3_SQ5_N(aux2) |
 							ADC_SQR3_SQ4_N(aux1) |
 							ADC_SQR3_SQ3_N(cur_dc) |
@@ -230,18 +248,18 @@ static void setup_sequence(ADCConversionGroup* adc_cfg, uint8_t edge_index, cons
 							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
 		break;
 	case 5:
-		adc_cfg->sqr1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
+		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
 							ADC_SQR1_SQ16_N(cur_ac) |
 							ADC_SQR1_SQ15_N(cur_dc) |
 							ADC_SQR1_SQ14_N(cur_ac) |
 							ADC_SQR1_SQ13_N(cur_dc);
-		adc_cfg->sqr2 = 	ADC_SQR2_SQ12_N(cur_ac) |
+		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
 							ADC_SQR2_SQ11_N(cur_dc) |
 							ADC_SQR2_SQ10_N(cur_ac) |
 							ADC_SQR2_SQ9_N(cur_dc) |
 							ADC_SQR2_SQ8_N(cur_ac) |
 							ADC_SQR2_SQ7_N(cur_dc);          /* SQR2  */
-		adc_cfg->sqr3 =		ADC_SQR3_SQ6_N(aux2) |
+		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(aux2) |
 							ADC_SQR3_SQ5_N(aux1) |
 							ADC_SQR3_SQ4_N(cur_ac) |
 							ADC_SQR3_SQ3_N(cur_dc) |
@@ -249,18 +267,18 @@ static void setup_sequence(ADCConversionGroup* adc_cfg, uint8_t edge_index, cons
 							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
 		break;
 	case 6:
-		adc_cfg->sqr1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
+		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
 							ADC_SQR1_SQ16_N(cur_ac) |
 							ADC_SQR1_SQ15_N(cur_dc) |
 							ADC_SQR1_SQ14_N(cur_ac) |
 							ADC_SQR1_SQ13_N(cur_dc);
-		adc_cfg->sqr2 = 	ADC_SQR2_SQ12_N(cur_ac) |
+		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
 							ADC_SQR2_SQ11_N(cur_dc) |
 							ADC_SQR2_SQ10_N(cur_ac) |
 							ADC_SQR2_SQ9_N(cur_dc) |
 							ADC_SQR2_SQ8_N(cur_ac) |
 							ADC_SQR2_SQ7_N(aux2);             /* SQR2  */
-		adc_cfg->sqr3 =		ADC_SQR3_SQ6_N(aux1) |
+		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(aux1) |
 							ADC_SQR3_SQ5_N(cur_dc) |
 							ADC_SQR3_SQ4_N(cur_ac) |
 							ADC_SQR3_SQ3_N(cur_dc) |
@@ -268,18 +286,18 @@ static void setup_sequence(ADCConversionGroup* adc_cfg, uint8_t edge_index, cons
 							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
 		break;
 	case 7:
-		adc_cfg->sqr1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
+		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
 							ADC_SQR1_SQ16_N(cur_ac) |
 							ADC_SQR1_SQ15_N(cur_dc) |
 							ADC_SQR1_SQ14_N(cur_ac) |
 							ADC_SQR1_SQ13_N(cur_dc);
-		adc_cfg->sqr2 = 	ADC_SQR2_SQ12_N(cur_ac) |
+		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
 							ADC_SQR2_SQ11_N(cur_dc) |
 							ADC_SQR2_SQ10_N(cur_ac) |
 							ADC_SQR2_SQ9_N(cur_dc) |
 							ADC_SQR2_SQ8_N(aux2) |
 							ADC_SQR2_SQ7_N(aux1);             /* SQR2  */
-		adc_cfg->sqr3 =		ADC_SQR3_SQ6_N(cur_ac) |
+		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
 							ADC_SQR3_SQ5_N(cur_dc) |
 							ADC_SQR3_SQ4_N(cur_ac) |
 							ADC_SQR3_SQ3_N(cur_dc) |
@@ -287,18 +305,18 @@ static void setup_sequence(ADCConversionGroup* adc_cfg, uint8_t edge_index, cons
 							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
 		break;
 	case 8:
-		adc_cfg->sqr1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
+		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
 							ADC_SQR1_SQ16_N(cur_ac) |
 							ADC_SQR1_SQ15_N(cur_dc) |
 							ADC_SQR1_SQ14_N(cur_ac) |
 							ADC_SQR1_SQ13_N(cur_dc);
-		adc_cfg->sqr2 = 	ADC_SQR2_SQ12_N(cur_ac) |
+		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
 							ADC_SQR2_SQ11_N(cur_dc) |
 							ADC_SQR2_SQ10_N(cur_ac) |
 							ADC_SQR2_SQ9_N(aux2) |
 							ADC_SQR2_SQ8_N(aux1) |
 							ADC_SQR2_SQ7_N(cur_dc);             /* SQR2  */
-		adc_cfg->sqr3 =		ADC_SQR3_SQ6_N(cur_ac) |
+		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
 							ADC_SQR3_SQ5_N(cur_dc) |
 							ADC_SQR3_SQ4_N(cur_ac) |
 							ADC_SQR3_SQ3_N(cur_dc) |
@@ -306,18 +324,18 @@ static void setup_sequence(ADCConversionGroup* adc_cfg, uint8_t edge_index, cons
 							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
 		break;
 	case 9:
-		adc_cfg->sqr1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
+		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
 							ADC_SQR1_SQ16_N(cur_ac) |
 							ADC_SQR1_SQ15_N(cur_dc) |
 							ADC_SQR1_SQ14_N(cur_ac) |
 							ADC_SQR1_SQ13_N(cur_dc);
-		adc_cfg->sqr2 = 	ADC_SQR2_SQ12_N(cur_ac) |
+		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
 							ADC_SQR2_SQ11_N(cur_dc) |
 							ADC_SQR2_SQ10_N(aux2) |
 							ADC_SQR2_SQ9_N(aux1) |
 							ADC_SQR2_SQ8_N(cur_ac) |
 							ADC_SQR2_SQ7_N(cur_dc);             /* SQR2  */
-		adc_cfg->sqr3 =		ADC_SQR3_SQ6_N(cur_ac) |
+		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
 							ADC_SQR3_SQ5_N(cur_dc) |
 							ADC_SQR3_SQ4_N(cur_ac) |
 							ADC_SQR3_SQ3_N(cur_dc) |
@@ -325,18 +343,18 @@ static void setup_sequence(ADCConversionGroup* adc_cfg, uint8_t edge_index, cons
 							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
 		break;
 	case 10:
-		adc_cfg->sqr1 = 		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
+		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
 							ADC_SQR1_SQ16_N(cur_ac) |
 							ADC_SQR1_SQ15_N(cur_dc) |
 							ADC_SQR1_SQ14_N(cur_ac) |
 							ADC_SQR1_SQ13_N(cur_dc);
-		adc_cfg->sqr2 = 		ADC_SQR2_SQ12_N(cur_ac) |
+		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
 							ADC_SQR2_SQ11_N(aux2) |
 							ADC_SQR2_SQ10_N(aux1) |
 							ADC_SQR2_SQ9_N(cur_dc) |
 							ADC_SQR2_SQ8_N(cur_ac) |
 							ADC_SQR2_SQ7_N(cur_dc);             /* SQR2  */
-		adc_cfg->sqr3 =		ADC_SQR3_SQ6_N(cur_ac) |
+		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
 							ADC_SQR3_SQ5_N(cur_dc) |
 							ADC_SQR3_SQ4_N(cur_ac) |
 							ADC_SQR3_SQ3_N(cur_dc) |
@@ -344,18 +362,18 @@ static void setup_sequence(ADCConversionGroup* adc_cfg, uint8_t edge_index, cons
 							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
 		break;
 	case 11:
-		adc_cfg->sqr1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
+		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
 							ADC_SQR1_SQ16_N(cur_ac) |
 							ADC_SQR1_SQ15_N(cur_dc) |
 							ADC_SQR1_SQ14_N(cur_ac) |
 							ADC_SQR1_SQ13_N(cur_dc);
-		adc_cfg->sqr2 = 	ADC_SQR2_SQ12_N(aux2) |
+		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(aux2) |
 							ADC_SQR2_SQ11_N(aux1) |
 							ADC_SQR2_SQ10_N(cur_ac) |
 							ADC_SQR2_SQ9_N(cur_dc) |
 							ADC_SQR2_SQ8_N(cur_ac) |
 							ADC_SQR2_SQ7_N(cur_dc);          /* SQR2  */
-		adc_cfg->sqr3 =		ADC_SQR3_SQ6_N(cur_ac) |
+		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
 							ADC_SQR3_SQ5_N(cur_dc) |
 							ADC_SQR3_SQ4_N(cur_ac) |
 							ADC_SQR3_SQ3_N(cur_dc) |
@@ -363,18 +381,18 @@ static void setup_sequence(ADCConversionGroup* adc_cfg, uint8_t edge_index, cons
 							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
 		break;
 	case 12:
-		adc_cfg->sqr1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
+		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
 							ADC_SQR1_SQ16_N(cur_ac) |
 							ADC_SQR1_SQ15_N(cur_dc) |
 							ADC_SQR1_SQ14_N(cur_ac) |
 							ADC_SQR1_SQ13_N(aux2);
-		adc_cfg->sqr2 = 	ADC_SQR2_SQ12_N(aux1) |
+		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(aux1) |
 							ADC_SQR2_SQ11_N(cur_dc) |
 							ADC_SQR2_SQ10_N(cur_ac) |
 							ADC_SQR2_SQ9_N(cur_dc) |
 							ADC_SQR2_SQ8_N(cur_ac) |
 							ADC_SQR2_SQ7_N(cur_dc);          /* SQR2  */
-		adc_cfg->sqr3 =		ADC_SQR3_SQ6_N(cur_ac) |
+		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
 							ADC_SQR3_SQ5_N(cur_dc) |
 							ADC_SQR3_SQ4_N(cur_ac) |
 							ADC_SQR3_SQ3_N(cur_dc) |
@@ -382,18 +400,18 @@ static void setup_sequence(ADCConversionGroup* adc_cfg, uint8_t edge_index, cons
 							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
 		break;
 	case 13:
-		adc_cfg->sqr1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
+		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
 							ADC_SQR1_SQ16_N(cur_ac) |
 							ADC_SQR1_SQ15_N(cur_dc) |
 							ADC_SQR1_SQ14_N(aux2) |
 							ADC_SQR1_SQ13_N(aux1);
-		adc_cfg->sqr2 = 	ADC_SQR2_SQ12_N(cur_ac) |
+		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
 							ADC_SQR2_SQ11_N(cur_dc) |
 							ADC_SQR2_SQ10_N(cur_ac) |
 							ADC_SQR2_SQ9_N(cur_dc) |
 							ADC_SQR2_SQ8_N(cur_ac) |
 							ADC_SQR2_SQ7_N(cur_dc);          /* SQR2  */
-		adc_cfg->sqr3 =		ADC_SQR3_SQ6_N(cur_ac) |
+		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
 							ADC_SQR3_SQ5_N(cur_dc) |
 							ADC_SQR3_SQ4_N(cur_ac) |
 							ADC_SQR3_SQ3_N(cur_dc) |
@@ -401,18 +419,18 @@ static void setup_sequence(ADCConversionGroup* adc_cfg, uint8_t edge_index, cons
 							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
 		break;
 	case 14:
-		adc_cfg->sqr1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
+		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
 							ADC_SQR1_SQ16_N(cur_ac) |
 							ADC_SQR1_SQ15_N(aux2) |
 							ADC_SQR1_SQ14_N(aux1) |
 							ADC_SQR1_SQ13_N(cur_dc);
-		adc_cfg->sqr2 = 	ADC_SQR2_SQ12_N(cur_ac) |
+		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
 							ADC_SQR2_SQ11_N(cur_dc) |
 							ADC_SQR2_SQ10_N(cur_ac) |
 							ADC_SQR2_SQ9_N(cur_dc) |
 							ADC_SQR2_SQ8_N(cur_ac) |
 							ADC_SQR2_SQ7_N(cur_dc);          /* SQR2  */
-		adc_cfg->sqr3 =		ADC_SQR3_SQ6_N(cur_ac) |
+		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
 							ADC_SQR3_SQ5_N(cur_dc) |
 							ADC_SQR3_SQ4_N(cur_ac) |
 							ADC_SQR3_SQ3_N(cur_dc) |
@@ -420,18 +438,18 @@ static void setup_sequence(ADCConversionGroup* adc_cfg, uint8_t edge_index, cons
 							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
 		break;
 	case 15:
-		adc_cfg->sqr1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
+		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
 							ADC_SQR1_SQ16_N(aux2) |
 							ADC_SQR1_SQ15_N(aux1) |
 							ADC_SQR1_SQ14_N(cur_ac) |
 							ADC_SQR1_SQ13_N(cur_dc);
-		adc_cfg->sqr2 = 	ADC_SQR2_SQ12_N(cur_ac) |
+		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
 							ADC_SQR2_SQ11_N(cur_dc) |
 							ADC_SQR2_SQ10_N(cur_ac) |
 							ADC_SQR2_SQ9_N(cur_dc) |
 							ADC_SQR2_SQ8_N(cur_ac) |
 							ADC_SQR2_SQ7_N(cur_dc);          /* SQR2  */
-		adc_cfg->sqr3 =		ADC_SQR3_SQ6_N(cur_ac) |
+		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
 							ADC_SQR3_SQ5_N(cur_dc) |
 							ADC_SQR3_SQ4_N(cur_ac) |
 							ADC_SQR3_SQ3_N(cur_dc) |
@@ -449,12 +467,12 @@ static void setup_sequence(ADCConversionGroup* adc_cfg, uint8_t edge_index, cons
  * Channels:    AIN_CUR_A_DC, AIN_CUR_A_AC, AIN_VDC, VREF.
  */
 static ADCConversionGroup adcgrpcfg1 = {
-		false,
+		true,
 		LENGTH_ADC_SEQ,
 		adccallback,
 		adcerrorcallback,
 		0,                                                    /* CR1   */
-		ADC_CR2_SWSTART,                                      /* CR2   */
+		ADC_CR2_EXTEN | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,  /* CR2   */
 		ADC_SMPR1_SMP_AN12(ADC_SAMPLE_15) |
 		ADC_SMPR1_SMP_AN13(ADC_SAMPLE_15) |
 		ADC_SMPR1_SMP_VREF(ADC_SAMPLE_15),                    /* SMPR1 */
@@ -486,9 +504,9 @@ static ADCConversionGroup adcgrpcfg1 = {
  * Channels:    AIN_CUR_B_DC, AIN_CUR_B_AC, AIN_BRDG_TEMP, AIN_MOT_TEMP.
  */
 static ADCConversionGroup adcgrpcfg2 = {
-		false,
+		true,
 		LENGTH_ADC_SEQ,
-		adccallback,
+		NULL,
 		adcerrorcallback,
 		0,                                                    /* CR1   */
 		ADC_CR2_SWSTART,                                      /* CR2   */
@@ -524,9 +542,9 @@ static ADCConversionGroup adcgrpcfg2 = {
  * Channels:    AIN_CUR_C_DC, AIN_CUR_C_AC, AIN_ACC, AIN_DCC.
  */
 static ADCConversionGroup adcgrpcfg3 = {
-		false,
+		true,
 		LENGTH_ADC_SEQ,
-		adccallback,
+		NULL,
 		adcerrorcallback,
 		0,                                                    /* CR1   */
 		ADC_CR2_SWSTART,                                      /* CR2   */
@@ -578,38 +596,10 @@ void unimoc::hardware::adc::Init(void)
 	/*
 	 * Starts an ADC continuous conversion
 	 */
-	adcStartConversion(&ADCD1, &adcgrpcfg1, &samples[0][0], 1);
-	adcStartConversion(&ADCD2, &adcgrpcfg2, &samples[1][0], 1);
-	adcStartConversion(&ADCD3, &adcgrpcfg3, &samples[2][0], 1);
+	adcStartConversion(&ADCD1, &adcgrpcfg1, &samples[0][0], ADC_SEQ_BUFFERED);
+	adcStartConversion(&ADCD2, &adcgrpcfg2, &samples[1][0], ADC_SEQ_BUFFERED);
+	adcStartConversion(&ADCD3, &adcgrpcfg3, &samples[2][0], ADC_SEQ_BUFFERED);
 }
 
 
-/**
- * Start ADC Sampling for one control cycle
- */
-void unimoc::hardware::adc::Start(void)
-{
-	uint8_t edge_index[PHASES];
-
-	for(uint8_t i = 0; i < PHASES; i++)
-	{
-		/*
-		 * Calculate the starting index of the non current channels in the sequence.
-		 * Trys to center the 2 non current samples around the edge of the pwm
-		 */
-		edge_index[i] = (uint8_t)(((uint32_t)pwm::duty_counts[i]*(LENGTH_ADC_SEQ) + (uint32_t)pwm::duty_counts[i]/2)/pwm::PERIOD);
-	}
-
-	// Setup the sequences for all the channels
-	setup_sequence(&adcgrpcfg1, edge_index[0], ADC_CH_CUR_A_DC, ADC_CH_CUR_A_AC, ADC_CH_VDC, ADC_CH_VREF);
-	setup_sequence(&adcgrpcfg2, edge_index[1], ADC_CH_CUR_B_DC, ADC_CH_CUR_B_AC, ADC_CH_BRDG_TEMP, ADC_CH_MOT_TEMP);
-	setup_sequence(&adcgrpcfg3, edge_index[2], ADC_CH_CUR_C_DC, ADC_CH_CUR_C_AC, ADC_CH_ACC, ADC_CH_DCC);
-
-	/*
-	 * Starts an ADC continuous conversion
-	 */
-	adcStartConversion(&ADCD1, &adcgrpcfg1, &samples[0][0], 1);
-	adcStartConversion(&ADCD2, &adcgrpcfg2, &samples[1][0], 1);
-	adcStartConversion(&ADCD3, &adcgrpcfg3, &samples[2][0], 1);
-}
 
