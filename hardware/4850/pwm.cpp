@@ -126,6 +126,7 @@ void unimoc::hardware::pwm::Init(void)
 	pwmStart(PWMP, &pwmcfg);
 	PWMP->tim->CR1 &=~ STM32_TIM_CR1_CEN; // timer stop
 	PWMP->tim->CR1 |= STM32_TIM_CR1_CMS(2); // center aligned mode
+//PWMP smcr msm bit set
 	PWMP->tim->CR1 &= ~STM32_TIM_CR1_URS; // every thing is an pdate event
 
 	/* start the ADC trigger timer */
