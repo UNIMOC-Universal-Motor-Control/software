@@ -2,7 +2,7 @@
 <launchConfiguration type="com.st.stm32cube.ide.mcu.debug.launch.launchConfigurationType">
 <stringAttribute key="com.st.stm32cube.ide.mcu.debug.jlink.device" value="STM32F730R8"/>
 <stringAttribute key="com.st.stm32cube.ide.mcu.debug.jlink.endian" value="little"/>
-<stringAttribute key="com.st.stm32cube.ide.mcu.debug.jlink.init_speed" value="1000"/>
+<stringAttribute key="com.st.stm32cube.ide.mcu.debug.jlink.init_speed" value="4000"/>
 <booleanAttribute key="com.st.stm32cube.ide.mcu.debug.jlink.jlink_check_serial_number" value="false"/>
 <stringAttribute key="com.st.stm32cube.ide.mcu.debug.jlink.jlink_script_path" value=""/>
 <booleanAttribute key="com.st.stm32cube.ide.mcu.debug.jlink.jlink_script_used" value="false"/>
@@ -13,7 +13,7 @@
 <intAttribute key="com.st.stm32cube.ide.mcu.debug.jlink.scan_chain_pos" value="0"/>
 <stringAttribute key="com.st.stm32cube.ide.mcu.debug.jlink.selected_rtos" value="No RTOS"/>
 <stringAttribute key="com.st.stm32cube.ide.mcu.debug.launch.access_port_id" value="0"/>
-<booleanAttribute key="com.st.stm32cube.ide.mcu.debug.launch.enable_live_expr" value="false"/>
+<booleanAttribute key="com.st.stm32cube.ide.mcu.debug.launch.enable_live_expr" value="true"/>
 <booleanAttribute key="com.st.stm32cube.ide.mcu.debug.launch.enable_swv" value="false"/>
 <intAttribute key="com.st.stm32cube.ide.mcu.debug.launch.formatVersion" value="2"/>
 <stringAttribute key="com.st.stm32cube.ide.mcu.debug.launch.ip_address_local" value="localhost"/>
