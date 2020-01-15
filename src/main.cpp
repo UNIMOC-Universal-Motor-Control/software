@@ -41,13 +41,7 @@ static ThreadReference sref;
 #define BITSET          4
 #define MESSAGE         5
 
-float duty_table[4][unimoc::hardware::PHASES] =
-{
-		{ 0.0f,  0.0f,   0.0f},
-		{ 1.0f,  1.0f,   1.0f},
-		{-1.0f, -1.0f,  -1.0f},
-		{ 0.0f,  0.0f,   0.0f},
-};
+float dutys[unimoc::hardware::PHASES] = { -0.95f,  0.95f,   0.0f};
 
 
 typedef struct {
@@ -193,17 +187,23 @@ int main(void) {
 	blinker3.start(NORMALPRIO);
 	blinker4.start(NORMALPRIO);
 
+	palSetLineMode(LINE_HALL_A, PAL_MODE_OUTPUT_PUSHPULL);
+	palSetLineMode(LINE_HALL_B, PAL_MODE_OUTPUT_PUSHPULL);
+	palSetLineMode(LINE_HALL_C, PAL_MODE_OUTPUT_PUSHPULL);
+
 	unimoc::hardware::pwm::Init();
 	unimoc::hardware::adc::Init();
 
 
+	unimoc::hardware::pwm::SetDutys(dutys);
+	unimoc::hardware::pwm::EnableOutputs();
 	/*
 	 * Normal main() thread activity, in this demo it does nothing except
 	 * sleeping in a loop and check the button state.
 	 */
 	while (true)
 	{
-		unimoc::hardware::pwm::SetDutys(duty_table[0]);
+
 		BaseThread::sleep(TIME_MS2I(2000));
 	}
 }

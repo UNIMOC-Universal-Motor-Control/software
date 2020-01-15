@@ -51,7 +51,7 @@ namespace unimoc {
 			 * The Period of the PWM needs to be greater than 3456clk. With center aligned
 			 * PWM this is the period of PWM half period.
 			 */
-			constexpr uint32_t PERIOD = 3470; // 14 clock cycles margin
+			constexpr uint32_t PERIOD = 7000;
 
 			/**
 			 * Initialize PWM hardware with outputs disabled!

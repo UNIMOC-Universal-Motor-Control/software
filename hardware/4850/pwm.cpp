@@ -43,13 +43,24 @@ constexpr uint16_t DTG(const uint32_t deadtime)
 	return (uint16_t)((fdeadtime * clock) -1);
 }
 
+///**
+// * Callback for timer over/unterflow interrupt
+// * @param pwmp PWM driver instance
+// */
+//static void period_callback(PWMDriver *pwmp)
+//{
+//	(void)pwmp;
+//
+//}
+
 /**
  * Callback for timer over/unterflow interrupt
  * @param pwmp PWM driver instance
  */
-static void period_callback(PWMDriver *pwmp)
+static void adc_trigger(PWMDriver *pwmp)
 {
 	(void)pwmp;
+	palToggleLine(LINE_HALL_B);
 }
 
 /**
@@ -59,7 +70,7 @@ const PWMConfig pwmcfg =
 {
 		unimoc::hardware::pwm::TIMER_CLOCK,
 		unimoc::hardware::pwm::PERIOD,
-		period_callback,
+		NULL,
 		{ /*  */
 				{PWM_OUTPUT_ACTIVE_HIGH | PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH, NULL},
 				{PWM_OUTPUT_ACTIVE_HIGH | PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH, NULL},
@@ -87,8 +98,8 @@ const PWMConfig pwmcfg =
  */
 const PWMConfig adctriggercfg =
 {
-		unimoc::hardware::pwm::TIMER_CLOCK,
-		0xFFFF,
+		STM32_TIMCLK1,
+		0xFFFE,
 		NULL,
 		{ /*  */
 				{PWM_OUTPUT_DISABLED, NULL},
@@ -126,27 +137,24 @@ void unimoc::hardware::pwm::Init(void)
 	pwmStart(PWMP, &pwmcfg);
 	PWMP->tim->CR1 &=~ STM32_TIM_CR1_CEN; // timer stop
 	PWMP->tim->CR1 |= STM32_TIM_CR1_CMS(2); // center aligned mode
-//PWMP smcr msm bit set
-	PWMP->tim->CR1 &= ~STM32_TIM_CR1_URS; // every thing is an pdate event
+	PWMP->tim->SMCR |= STM32_TIM_SMCR_MSM;
+	PWMP->tim->CR1 &= ~STM32_TIM_CR1_URS; // every thing is an update event
 
 	/* start the ADC trigger timer */
 	pwmStart(ADC_TRIGP, &adctriggercfg);
 	ADC_TRIGP->tim->CR1 &=~ STM32_TIM_CR1_CEN; // timer stop
-	ADC_TRIGP->tim->SMCR |= STM32_TIM_SMCR_SMS(4);
+	ADC_TRIGP->tim->SMCR |= STM32_TIM_SMCR_SMS(4) | STM32_TIM_SMCR_MSM;
 	ADC_TRIGP->tim->CR1 |= STM32_TIM_CR1_CEN; // adc trigger timer start again
 
 	PWMP->tim->CR1 |= STM32_TIM_CR1_CEN; // pwm timer start again
 
 	/* set adc trigger offset */
-	pwmEnableChannel(ADC_TRIGP, 3, PERIOD - 6);
+	pwmEnableChannel(ADC_TRIGP, 3, 13);
 
 	/* enable pwms */
 	pwmEnableChannel(PWMP, 0, PERIOD/2);
 	pwmEnableChannel(PWMP, 1, PERIOD/2);
 	pwmEnableChannel(PWMP, 2, PERIOD/2);
-
-	/* enable period irq */
-	pwmEnablePeriodicNotification(PWMP);
 }
 
 /**
