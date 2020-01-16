@@ -193,7 +193,7 @@ int main(void) {
 
 	unimoc::hardware::pwm::Init();
 	unimoc::hardware::adc::Init();
-
+	unimoc::hardware::adc::Start();
 
 	unimoc::hardware::pwm::SetDutys(dutys);
 	unimoc::hardware::pwm::EnableOutputs();

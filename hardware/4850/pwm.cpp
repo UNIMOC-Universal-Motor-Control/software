@@ -43,15 +43,6 @@ constexpr uint16_t DTG(const uint32_t deadtime)
 	return (uint16_t)((fdeadtime * clock) -1);
 }
 
-///**
-// * Callback for timer over/unterflow interrupt
-// * @param pwmp PWM driver instance
-// */
-//static void period_callback(PWMDriver *pwmp)
-//{
-//	(void)pwmp;
-//
-//}
 
 /**
  * Callback for timer over/unterflow interrupt
@@ -60,7 +51,7 @@ constexpr uint16_t DTG(const uint32_t deadtime)
 static void adc_trigger(PWMDriver *pwmp)
 {
 	(void)pwmp;
-	palToggleLine(LINE_HALL_B);
+	palToggleLine(LINE_HALL_C);
 }
 
 /**
@@ -105,7 +96,7 @@ const PWMConfig adctriggercfg =
 				{PWM_OUTPUT_DISABLED, NULL},
 				{PWM_OUTPUT_DISABLED, NULL},
 				{PWM_OUTPUT_DISABLED, NULL},
-				{PWM_OUTPUT_ACTIVE_HIGH, NULL}
+				{PWM_OUTPUT_ACTIVE_HIGH, adc_trigger}
 		},
 		/*
 		 * CR2 Register
@@ -149,12 +140,15 @@ void unimoc::hardware::pwm::Init(void)
 	PWMP->tim->CR1 |= STM32_TIM_CR1_CEN; // pwm timer start again
 
 	/* set adc trigger offset */
-	pwmEnableChannel(ADC_TRIGP, 3, 13);
+	pwmEnableChannel(ADC_TRIGP, 3, 100);
+	pwmEnableChannelNotification(ADC_TRIGP, 3);
 
 	/* enable pwms */
 	pwmEnableChannel(PWMP, 0, PERIOD/2);
 	pwmEnableChannel(PWMP, 1, PERIOD/2);
 	pwmEnableChannel(PWMP, 2, PERIOD/2);
+
+
 }
 
 /**

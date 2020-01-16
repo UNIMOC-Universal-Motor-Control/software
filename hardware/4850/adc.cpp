@@ -90,13 +90,15 @@ __attribute__((aligned (32))) static adcsample_t samples[NUM_OF_ADC][LENGTH_ADC_
 
 static void setup_sequence(ADCDriver *adcp, uint8_t edge_index, const uint8_t cur_dc, const uint8_t cur_ac, const uint8_t aux1, const uint8_t aux2);
 
+
+volatile uint32_t adc_clk = 	STM32_ADCCLK;
 /*
  * ADC streaming callback.
  */
 static void adccallback(ADCDriver *adcp)
 {
 	(void)adcp;
-	palSetLine(LINE_HALL_C);
+	palSetLine(LINE_HALL_B);
 
 	/* DMA buffer invalidation because data cache, only invalidating the
      half buffer just filled.
@@ -124,7 +126,7 @@ static void adccallback(ADCDriver *adcp)
 		setup_sequence(&ADCD2, edge_index[1], ADC_CH_CUR_B_DC, ADC_CH_CUR_B_AC, ADC_CH_BRDG_TEMP, ADC_CH_MOT_TEMP);
 		setup_sequence(&ADCD3, edge_index[2], ADC_CH_CUR_C_DC, ADC_CH_CUR_C_AC, ADC_CH_ACC, ADC_CH_DCC);
 	}
-	palClearLine(LINE_HALL_C);
+	palClearLine(LINE_HALL_B);
 }
 
 /*
@@ -134,7 +136,6 @@ static void adcerrorcallback(ADCDriver *adcp, adcerror_t err) {
 
 	(void)adcp;
 	(void)err;
-	palToggleLine(LINE_HALL_B);
 }
 
 /**
@@ -476,7 +477,7 @@ static ADCConversionGroup adcgrpcfg1 = {
 		adccallback,
 		adcerrorcallback,
 		0,                                                    /* CR1   */
-		ADC_CR2_EXTEN_0 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
+		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
 		ADC_SMPR1_SMP_AN12(ADC_SAMPLE_15) |
 		ADC_SMPR1_SMP_AN13(ADC_SAMPLE_15) |
 		ADC_SMPR1_SMP_VREF(ADC_SAMPLE_15),                    /* SMPR1 */
@@ -513,7 +514,7 @@ static ADCConversionGroup adcgrpcfg2 = {
 		NULL,
 		adcerrorcallback,
 		0,                                                    /* CR1   */
-		ADC_CR2_EXTEN_0 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
+		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
 		0,                                                    /* SMPR1 */
 		ADC_SMPR2_SMP_AN0(ADC_SAMPLE_15) |
 		ADC_SMPR2_SMP_AN1(ADC_SAMPLE_15) |
@@ -551,7 +552,7 @@ static ADCConversionGroup adcgrpcfg3 = {
 		NULL,
 		adcerrorcallback,
 		0,                                                    /* CR1   */
-		ADC_CR2_EXTEN_0 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
+		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
 		ADC_SMPR1_SMP_AN10(ADC_SAMPLE_15) |
 		ADC_SMPR1_SMP_AN11(ADC_SAMPLE_15),                    /* SMPR1 */
 		ADC_SMPR2_SMP_AN2(ADC_SAMPLE_15) |
@@ -600,10 +601,16 @@ void unimoc::hardware::adc::Init(void)
 	/*
 	 * Starts an ADC continuous conversion
 	 */
+//	palSetLine(LINE_HALL_B);
 	adcStartConversion(&ADCD1, &adcgrpcfg1, &samples[0][0], 1);
 //	adcStartConversion(&ADCD2, &adcgrpcfg2, &samples[1][0], 1);
 //	adcStartConversion(&ADCD3, &adcgrpcfg3, &samples[2][0], 1);
 }
 
-
+void unimoc::hardware::adc::Start(void)
+{
+//
+//	adcStartConversion(&ADCD1, &adcgrpcfg1, &samples[0][0], 1);
+//	palSetLine(LINE_HALL_B);
+}
 
