@@ -86,7 +86,8 @@ constexpr uint32_t NUM_OF_ADC = 3;
    imposed by the data cache. Note, this is GNU specific, it must be
    handled differently for other compilers.
    Only required if the ADC buffer is placed in a cache-able area.*/
-__attribute__((aligned (32))) static adcsample_t samples[NUM_OF_ADC][LENGTH_ADC_SEQ * ADC_SEQ_BUFFERED];
+__attribute__((aligned (32))) static adcsample_t dma_samples[NUM_OF_ADC][LENGTH_ADC_SEQ];
+//__attribute__((aligned (32))) static adcsample_t dma_samples[ADC_SEQ_BUFFERED][NUM_OF_ADC][LENGTH_ADC_SEQ];
 
 static void setup_sequence(ADCDriver *adcp, uint8_t edge_index, const uint8_t cur_dc, const uint8_t cur_ac, const uint8_t aux1, const uint8_t aux2);
 
@@ -95,16 +96,10 @@ volatile uint32_t adc_clk = 	STM32_ADCCLK;
 /*
  * ADC streaming callback.
  */
-static void adccallback(ADCDriver *adcp)
+static inline void adccallback(ADCDriver *adcp)
 {
 	(void)adcp;
 	palSetLine(LINE_HALL_B);
-
-	/* DMA buffer invalidation because data cache, only invalidating the
-     half buffer just filled.
-     Only required if the ADC buffer is placed in a cache-able area.*/
-	cacheBufferInvalidate(samples,
-			sizeof(samples));
 
 	/* Updating counters.*/
 	if (adcIsBufferComplete(adcp))
@@ -127,6 +122,13 @@ static void adccallback(ADCDriver *adcp)
 		setup_sequence(&ADCD3, edge_index[2], ADC_CH_CUR_C_DC, ADC_CH_CUR_C_AC, ADC_CH_ACC, ADC_CH_DCC);
 	}
 	palClearLine(LINE_HALL_B);
+
+	/* DMA buffer invalidation because data cache, only invalidating the
+     half buffer just filled.
+     Only required if the ADC buffer is placed in a cache-able area.*/
+	cacheBufferInvalidate(dma_samples,
+			sizeof(dma_samples));
+
 }
 
 /*
@@ -147,7 +149,7 @@ static void adcerrorcallback(ADCDriver *adcp, adcerror_t err) {
  * @param aux1			First non current ADC channel
  * @param aux2			Secound non current ADC channel
  */
-static void setup_sequence(ADCDriver *adcp, uint8_t edge_index, const uint8_t cur_dc, const uint8_t cur_ac, const uint8_t aux1, const uint8_t aux2)
+static inline void setup_sequence(ADCDriver *adcp, uint8_t edge_index, const uint8_t cur_dc, const uint8_t cur_ac, const uint8_t aux1, const uint8_t aux2)
 {
 	if(unimoc::hardware::pwm::PWMP->tim->CR1 & STM32_TIM_CR1_DIR)
 	{
@@ -601,16 +603,9 @@ void unimoc::hardware::adc::Init(void)
 	/*
 	 * Starts an ADC continuous conversion
 	 */
-//	palSetLine(LINE_HALL_B);
-	adcStartConversion(&ADCD1, &adcgrpcfg1, &samples[0][0], 1);
-//	adcStartConversion(&ADCD2, &adcgrpcfg2, &samples[1][0], 1);
-//	adcStartConversion(&ADCD3, &adcgrpcfg3, &samples[2][0], 1);
+	adcStartConversion(&ADCD1, &adcgrpcfg1, &dma_samples[0][0], 1);
+	adcStartConversion(&ADCD2, &adcgrpcfg2, &dma_samples[1][0], 1);
+	adcStartConversion(&ADCD3, &adcgrpcfg3, &dma_samples[2][0], 1);
 }
 
-void unimoc::hardware::adc::Start(void)
-{
-//
-//	adcStartConversion(&ADCD1, &adcgrpcfg1, &samples[0][0], 1);
-//	palSetLine(LINE_HALL_B);
-}
 

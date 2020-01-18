@@ -101,11 +101,6 @@ namespace unimoc {
 			 */
 			extern void Init();
 
-			/**
-			 * Start ADC Sampling for one control cycle
-			 */
-			extern void Start(void);
-
 		} /* namespace adc */
 	} /* namespace hardware */
 } /* namespace unimoc */
