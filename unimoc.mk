@@ -1,15 +1,20 @@
 # Base directory of Project
 BASEDIR := ../../
 
+# included modules
+include ${BASEDIR}/modules/freemaster/freemaster.mk 
+
 # List of all the Project related hardware independent files.
 # C code
-UNIMOCSRC := 
+UNIMOCSRC := ${FREEMASTERSRC}
 
 # Cpp code
-UNIMOCCPPSRC := ${BASEDIR}/src/main.cpp \
+UNIMOCCPPSRC := ${FREEMASTERCPPSRC} \
+                ${BASEDIR}/src/main.cpp \
 
 # Required include directories
-UNIMOCINC := ${BASEDIR}/inc \
+UNIMOCINC := ${FREEMASTERINC} \
+             ${BASEDIR}/inc \
              ${BASEDIR}/hardware/interface \
 
 # Shared variables

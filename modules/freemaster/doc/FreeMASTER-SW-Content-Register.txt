@@ -1,0 +1,22 @@
+Release Name: FreeMASTER Serial Communication Driver v1.8.1
+
+Example Code    
+Description: Freescale example and support code  
+Author: FSL
+License: Proprietary. See LICENSE.txt
+Format: source code
+Location: examples
+
+Serial communication driver
+Description: FreeMASTER serial communication driver  
+Author: FSL
+License: Proprietary. See LICENSE.txt
+Format: source code
+Location: src_common, src_platforms
+
+USB                       
+Description: Freescale USB stack.  
+Author: FSL
+License: Proprietary. See LICENSE.txt, Appendix A, MQX RTOS Code.
+Format: source code
+Location: support/usb
