@@ -75,6 +75,7 @@ int main(void)
 	palSetLineMode(LINE_HALL_B, PAL_MODE_OUTPUT_PUSHPULL);
 	palSetLineMode(LINE_HALL_C, PAL_MODE_OUTPUT_PUSHPULL);
 
+	unimoc::hardware::memory::Init();
 	unimoc::hardware::pwm::Init();
 	unimoc::hardware::adc::Init();
 

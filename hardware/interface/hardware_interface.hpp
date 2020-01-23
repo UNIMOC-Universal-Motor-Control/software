@@ -102,6 +102,46 @@ namespace unimoc {
 			extern void Init();
 
 		} /* namespace adc */
+
+		namespace memory
+		{
+			/**
+			 * initialize non volatile memory
+			 */
+			extern void Init(void);
+
+			/**
+			 * Read buffer from non-volatile memory
+			 * @param address Start address of the read in non-volatile memory, addressing starts with 0
+			 * @param buffer Pointer to the buffer to read data to
+			 * @param length Length of the buffer to read to
+			 * @return 0 = success
+			 */
+			extern uint8_t Read(const uint32_t address, const void* const buffer, const uint32_t length);
+
+			/**
+			 * Write buffer to non-volatile memory
+			 * @param address Start address of the read in non-volatile memory, addressing starts with 0
+			 * @param buffer Pointer to the buffer to write to
+			 * @param length Length of the buffer to write to
+			 * @return 0 = success
+			 */
+			extern uint8_t Write(void const * buffer, const uint32_t length);
+
+			/**
+			 * Get the size of the non-volatile memory
+			 * @return size of non-volatile memory in bytes
+			 */
+			extern uint32_t GetSize(void);
+
+			/**
+			 * Calculate CRC32 checksum of a buffer.
+			 * @param buffer Pointer to the buffer to calculate the CRC of, bytes 0 to 3 are for CRC32
+			 * @param length Length of the buffer to calculate the CRC of
+			 * @return return CRC32 value
+			 */
+			extern uint32_t Crc32(const void* const buffer, const uint32_t length);
+		} /* namespace memory*/
 	} /* namespace hardware */
 } /* namespace unimoc */
 
