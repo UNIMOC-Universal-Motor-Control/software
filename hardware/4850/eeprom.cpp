@@ -20,8 +20,6 @@
 #include "hardware_interface.hpp"
 #include "hal.h"
 
-using namespace unimoc::hardware::memory;
-
 static msg_t select_half(const uint16_t half);
 
 /**
@@ -87,7 +85,7 @@ i2cflags_t error = 0;
  * @param length Length of the buffer to calculate the CRC of
  * @return
  */
-uint32_t Crc32(const void* const buffer, const uint32_t length)
+uint32_t unimoc::hardware::memory::Crc32(const void* const buffer, const uint32_t length)
 {
 	uint32_t byte = 0, bit = 0, crc32 = 0;
 
@@ -123,17 +121,9 @@ static msg_t select_half(const uint16_t half)
 
 
 /**
- * Write buffer to non-volatile memory
- * @param buffer Pointer to the buffer to write to
- * @param length Length of the buffer to write to
- * @return 0 = success
- */
-extern uint8_t Write(void* buffer, uint32_t length);
-
-/**
  * initialize non volatile memory
  */
-void Init(void)
+void unimoc::hardware::memory::Init(void)
 {
 	/* Initialize I2C */
 	i2cStart(i2cp, &i2ccfg);
@@ -146,7 +136,7 @@ void Init(void)
  * @param length Length of the buffer to read to
  * @return 0 = success
  */
-uint8_t Read(const uint32_t address, const void* const buffer, const uint32_t length)
+uint8_t unimoc::hardware::memory::Read(const uint32_t address, const void* const buffer, const uint32_t length)
 {
 	uint8_t result = 0;
 	uint8_t wordaddr = 0;
@@ -209,7 +199,7 @@ uint8_t Read(const uint32_t address, const void* const buffer, const uint32_t le
  * @param length Length of the buffer to write to
  * @return 0 = success
  */
-uint8_t Write(const uint32_t address, void const * buffer, const uint32_t length)
+uint8_t unimoc::hardware::memory::Write(const uint32_t address, void const * buffer, const uint32_t length)
 {
 	uint8_t result = 0;
 	uint8_t half = 0;
@@ -275,7 +265,7 @@ uint8_t Write(const uint32_t address, void const * buffer, const uint32_t length
  * Get the size of the non-volatile memory
  * @return size of non-volatile memory in bytes
  */
-uint32_t GetSize(void)
+uint32_t unimoc::hardware::memory::GetSize(void)
 {
 	// AT32C04 4KBit EEPROM
 	return SIZE;

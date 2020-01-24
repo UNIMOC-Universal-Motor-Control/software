@@ -74,13 +74,6 @@
 #define SHELL_USE_ESC_SEQ           TRUE
 #endif
 
-/**
- * @brief   Prompt string
- */
-#if !defined(SHELL_PROMPT_STR) || defined(__DOXYGEN__)
-#define SHELL_PROMPT_STR            "unimoc> "
-#endif
-
 /*===========================================================================*/
 /* Shell command settings                                                    */
 /*===========================================================================*/
@@ -89,7 +82,7 @@
  * @brief   Enable shell exit command
  */
 #if !defined(SHELL_CMD_EXIT_ENABLED) || defined(__DOXYGEN__)
-#define SHELL_CMD_EXIT_ENABLED              TRUE
+#define SHELL_CMD_EXIT_ENABLED              FALSE
 #endif
 
 /**
@@ -131,7 +124,7 @@
  * @brief   Enable shell test command
  */
 #if !defined(SHELL_CMD_TEST_ENABLED) || defined(__DOXYGEN__)
-#define SHELL_CMD_TEST_ENABLED              TRUE
+#define SHELL_CMD_TEST_ENABLED              FALSE
 #endif
 
 /**

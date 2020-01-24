@@ -16,10 +16,11 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
+#include <cstring>
 #include "ch.hpp"
 #include "hal.h"
 #include "usbcfg.h"
+#include "terminal.hpp"
 #include "hardware_interface.hpp"
 #include "freemaster_wrapper.hpp"
 
@@ -78,9 +79,32 @@ int main(void)
 	unimoc::hardware::memory::Init();
 	unimoc::hardware::pwm::Init();
 	unimoc::hardware::adc::Init();
+	unimoc::terminal::Init();
 
 	unimoc::hardware::pwm::SetDutys(dutys);
 	unimoc::hardware::pwm::EnableOutputs();
+
+	/// Memory Tests
+	{
+		using namespace unimoc::hardware::memory;
+		uint32_t write_data[6] = {0xDEADBEEF, 0xAFFEAFFE, 0x13377331, 0xBAAD5555, 0xA5A5A5A5, 0x5A5A5A5A};
+		uint32_t read_data[6] = {0};
+		uint8_t result;
+		uint32_t address = 0, size = sizeof(write_data);
+
+		chprintf((BaseSequentialStream*)&SDU2, TCOL_RED "NON-VOLATILE MEMORY TEST\n" TCOL_RESET);
+		chprintf((BaseSequentialStream*)&SDU2, "Memory Size: %d\n", unimoc::hardware::memory::GetSize());
+
+		for(uint32_t i = address; i < unimoc::hardware::memory::GetSize() - size; i++)
+		{
+			result = Write(address, (const void*)write_data, size);
+			chprintf((BaseSequentialStream*)&SDU2, "Write %d Bytes to Address %d with Result %d\n", size, address, result);
+			result = Read(address, (const void*)read_data, size);
+			chprintf((BaseSequentialStream*)&SDU2, "Read %d Bytes from Address %d with Result %d, Data is %s\n",
+					size, address, result, std::memcmp(read_data, write_data, size) ? TCOL_RED "DIFFERENT" TCOL_RESET : TCOL_GREEN "SAME" TCOL_RESET);
+			BaseThread::sleep(TIME_MS2I(50));
+		}
+	}
 	/*
 	 * Normal main() thread activity, in this demo it does nothing except
 	 * sleeping in a loop and check the button state.

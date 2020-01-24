@@ -121,12 +121,15 @@ namespace unimoc {
 
 			/**
 			 * Write buffer to non-volatile memory
+			 *
+			 * @note EEPROM may need 5ms to write a page
+			 *
 			 * @param address Start address of the read in non-volatile memory, addressing starts with 0
 			 * @param buffer Pointer to the buffer to write to
 			 * @param length Length of the buffer to write to
 			 * @return 0 = success
 			 */
-			extern uint8_t Write(void const * buffer, const uint32_t length);
+			extern uint8_t Write(const uint32_t address, void const * buffer, const uint32_t length);
 
 			/**
 			 * Get the size of the non-volatile memory
