@@ -16,6 +16,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <cstring>
 #include <cstdint>
 #include "pwm.hpp"
 #include "hardware_interface.hpp"
@@ -86,42 +87,29 @@ constexpr uint32_t NUM_OF_ADC = 3;
    imposed by the data cache. Note, this is GNU specific, it must be
    handled differently for other compilers.
    Only required if the ADC buffer is placed in a cache-able area.*/
+///< dma accessed buffer for the adcs, probably cached
 __attribute__((aligned (32))) static adcsample_t dma_samples[NUM_OF_ADC][LENGTH_ADC_SEQ];
-//__attribute__((aligned (32))) static adcsample_t dma_samples[ADC_SEQ_BUFFERED][NUM_OF_ADC][LENGTH_ADC_SEQ];
+///< cached working buffer for calculations
+__attribute__((aligned (32))) static adcsample_t samples[ADC_SEQ_BUFFERED][NUM_OF_ADC][LENGTH_ADC_SEQ];
+///< cycle index for cached working buffer
+static uint32_t samples_index = 0;
 
-static void setup_sequence(ADCDriver *adcp, uint8_t edge_index, const uint8_t cur_dc, const uint8_t cur_ac, const uint8_t aux1, const uint8_t aux2);
+///< index of the non current measurements in adc samples
+static uint8_t non_cur_index[2] = {7, 8};
 
+///< reference to thread to be woken up in the hardware control cycle.
+thread_reference_t* unimoc::hardware::control_thread;
 
-volatile uint32_t adc_clk = 	STM32_ADCCLK;
-/*
- * ADC streaming callback.
+/**
+ * adc processing callback
+ *
+ * this call back will trigger the control task
+ * @param adcp pointer to the adc driver instance
  */
 static inline void adccallback(ADCDriver *adcp)
 {
 	(void)adcp;
 	palSetLine(LINE_HALL_B);
-
-	/* Updating counters.*/
-	if (adcIsBufferComplete(adcp))
-	{
-		uint8_t edge_index[unimoc::hardware::PHASES];
-
-		for(uint8_t i = 0; i < unimoc::hardware::PHASES; i++)
-		{
-			/*
-			 * Calculate the starting index of the non current channels in the sequence.
-			 * Trys to center the 2 non current samples around the edge of the pwm
-			 */
-			edge_index[i] = (uint8_t)(((uint32_t)unimoc::hardware::pwm::duty_counts[i]*(LENGTH_ADC_SEQ)
-					+ (uint32_t)unimoc::hardware::pwm::duty_counts[i]/2)/unimoc::hardware::pwm::PERIOD);
-		}
-
-		// Setup the sequences for all the channels
-		setup_sequence(&ADCD1, edge_index[0], ADC_CH_CUR_A_DC, ADC_CH_CUR_A_AC, ADC_CH_VDC, ADC_CH_VREF);
-		setup_sequence(&ADCD2, edge_index[1], ADC_CH_CUR_B_DC, ADC_CH_CUR_B_AC, ADC_CH_BRDG_TEMP, ADC_CH_MOT_TEMP);
-		setup_sequence(&ADCD3, edge_index[2], ADC_CH_CUR_C_DC, ADC_CH_CUR_C_AC, ADC_CH_ACC, ADC_CH_DCC);
-	}
-	palClearLine(LINE_HALL_B);
 
 	/* DMA buffer invalidation because data cache, only invalidating the
      half buffer just filled.
@@ -129,343 +117,32 @@ static inline void adccallback(ADCDriver *adcp)
 	cacheBufferInvalidate(dma_samples,
 			sizeof(dma_samples));
 
+	samples_index++;
+	if(samples_index > ADC_SEQ_BUFFERED) samples_index = 0;
+
+	std::memcpy(&samples[samples_index][0][0], &dma_samples[0][0], sizeof(dma_samples));
+
+
+	/* Wakes up the thread.*/
+	chSysLockFromISR();
+	chThdResumeI(unimoc::hardware::control_thread, (msg_t)samples_index);  /* Resuming the thread with message.*/
+	chSysUnlockFromISR();
+
+	palClearLine(LINE_HALL_B);
 }
 
-/*
- * ADC errors callback, should never happen.
+/**
+ *  ADC errors callback, should never happen.
+ * @param adcp
+ * @param err
  */
 static void adcerrorcallback(ADCDriver *adcp, adcerror_t err) {
 
 	(void)adcp;
 	(void)err;
+
+	osalSysHalt("ADC Error");
 }
-
-/**
- * setup new ADC sequence according to the edge index of the PWM
- * @param adcp			Pointer to ADC driver instance
- * @param edge_index	Index of ADC sequence with PWM edge
- * @param cur_dc		DC current channel
- * @param cur_ac		AC current channel
- * @param aux1			First non current ADC channel
- * @param aux2			Secound non current ADC channel
- */
-static inline void setup_sequence(ADCDriver *adcp, uint8_t edge_index, const uint8_t cur_dc, const uint8_t cur_ac, const uint8_t aux1, const uint8_t aux2)
-{
-	if(unimoc::hardware::pwm::PWMP->tim->CR1 & STM32_TIM_CR1_DIR)
-	{
-		// PWM is down counting
-		edge_index = LENGTH_ADC_SEQ - edge_index - 1;
-	}
-
-	switch(edge_index)
-	{
-	case 0:
-		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
-							ADC_SQR1_SQ16_N(cur_ac) |
-							ADC_SQR1_SQ15_N(cur_dc) |
-							ADC_SQR1_SQ14_N(cur_ac) |
-							ADC_SQR1_SQ13_N(cur_dc);
-		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
-							ADC_SQR2_SQ11_N(cur_dc) |
-							ADC_SQR2_SQ10_N(cur_ac) |
-							ADC_SQR2_SQ9_N(cur_dc) |
-							ADC_SQR2_SQ8_N(cur_ac) |
-							ADC_SQR2_SQ7_N(cur_dc);          /* SQR2  */
-		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
-							ADC_SQR3_SQ5_N(cur_dc) |
-							ADC_SQR3_SQ4_N(cur_ac) |
-							ADC_SQR3_SQ3_N(cur_dc) |
-							ADC_SQR3_SQ2_N(aux2) |
-							ADC_SQR3_SQ1_N(aux1);           /* SQR3  */
-		break;
-	case 1:
-		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
-							ADC_SQR1_SQ16_N(cur_ac) |
-							ADC_SQR1_SQ15_N(cur_dc) |
-							ADC_SQR1_SQ14_N(cur_ac) |
-							ADC_SQR1_SQ13_N(cur_dc);
-		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
-							ADC_SQR2_SQ11_N(cur_dc) |
-							ADC_SQR2_SQ10_N(cur_ac) |
-							ADC_SQR2_SQ9_N(cur_dc) |
-							ADC_SQR2_SQ8_N(cur_ac) |
-							ADC_SQR2_SQ7_N(cur_dc);          /* SQR2  */
-		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
-							ADC_SQR3_SQ5_N(cur_dc) |
-							ADC_SQR3_SQ4_N(cur_ac) |
-							ADC_SQR3_SQ3_N(cur_dc) |
-							ADC_SQR3_SQ2_N(aux2) |
-							ADC_SQR3_SQ1_N(aux1);           /* SQR3  */
-		break;
-	case 2:
-		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
-							ADC_SQR1_SQ16_N(cur_ac) |
-							ADC_SQR1_SQ15_N(cur_dc) |
-							ADC_SQR1_SQ14_N(cur_ac) |
-							ADC_SQR1_SQ13_N(cur_dc);
-		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
-							ADC_SQR2_SQ11_N(cur_dc) |
-							ADC_SQR2_SQ10_N(cur_ac) |
-							ADC_SQR2_SQ9_N(cur_dc) |
-							ADC_SQR2_SQ8_N(cur_ac) |
-							ADC_SQR2_SQ7_N(cur_dc);          /* SQR2  */
-		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
-							ADC_SQR3_SQ5_N(cur_dc) |
-							ADC_SQR3_SQ4_N(cur_ac) |
-							ADC_SQR3_SQ3_N(aux2) |
-							ADC_SQR3_SQ2_N(aux1) |
-							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
-		break;
-	case 3:
-		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
-							ADC_SQR1_SQ16_N(cur_ac) |
-							ADC_SQR1_SQ15_N(cur_dc) |
-							ADC_SQR1_SQ14_N(cur_ac) |
-							ADC_SQR1_SQ13_N(cur_dc);
-		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
-							ADC_SQR2_SQ11_N(cur_dc) |
-							ADC_SQR2_SQ10_N(cur_ac) |
-							ADC_SQR2_SQ9_N(cur_dc) |
-							ADC_SQR2_SQ8_N(cur_ac) |
-							ADC_SQR2_SQ7_N(cur_dc);          /* SQR2  */
-		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
-							ADC_SQR3_SQ5_N(cur_dc) |
-							ADC_SQR3_SQ4_N(aux2) |
-							ADC_SQR3_SQ3_N(aux1) |
-							ADC_SQR3_SQ2_N(cur_ac) |
-							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
-		break;
-	case 4:
-		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
-							ADC_SQR1_SQ16_N(cur_ac) |
-							ADC_SQR1_SQ15_N(cur_dc) |
-							ADC_SQR1_SQ14_N(cur_ac) |
-							ADC_SQR1_SQ13_N(cur_dc);
-		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
-							ADC_SQR2_SQ11_N(cur_dc) |
-							ADC_SQR2_SQ10_N(cur_ac) |
-							ADC_SQR2_SQ9_N(cur_dc) |
-							ADC_SQR2_SQ8_N(cur_ac) |
-							ADC_SQR2_SQ7_N(cur_dc);          /* SQR2  */
-		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
-							ADC_SQR3_SQ5_N(aux2) |
-							ADC_SQR3_SQ4_N(aux1) |
-							ADC_SQR3_SQ3_N(cur_dc) |
-							ADC_SQR3_SQ2_N(cur_ac) |
-							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
-		break;
-	case 5:
-		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
-							ADC_SQR1_SQ16_N(cur_ac) |
-							ADC_SQR1_SQ15_N(cur_dc) |
-							ADC_SQR1_SQ14_N(cur_ac) |
-							ADC_SQR1_SQ13_N(cur_dc);
-		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
-							ADC_SQR2_SQ11_N(cur_dc) |
-							ADC_SQR2_SQ10_N(cur_ac) |
-							ADC_SQR2_SQ9_N(cur_dc) |
-							ADC_SQR2_SQ8_N(cur_ac) |
-							ADC_SQR2_SQ7_N(cur_dc);          /* SQR2  */
-		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(aux2) |
-							ADC_SQR3_SQ5_N(aux1) |
-							ADC_SQR3_SQ4_N(cur_ac) |
-							ADC_SQR3_SQ3_N(cur_dc) |
-							ADC_SQR3_SQ2_N(cur_ac) |
-							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
-		break;
-	case 6:
-		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
-							ADC_SQR1_SQ16_N(cur_ac) |
-							ADC_SQR1_SQ15_N(cur_dc) |
-							ADC_SQR1_SQ14_N(cur_ac) |
-							ADC_SQR1_SQ13_N(cur_dc);
-		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
-							ADC_SQR2_SQ11_N(cur_dc) |
-							ADC_SQR2_SQ10_N(cur_ac) |
-							ADC_SQR2_SQ9_N(cur_dc) |
-							ADC_SQR2_SQ8_N(cur_ac) |
-							ADC_SQR2_SQ7_N(aux2);             /* SQR2  */
-		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(aux1) |
-							ADC_SQR3_SQ5_N(cur_dc) |
-							ADC_SQR3_SQ4_N(cur_ac) |
-							ADC_SQR3_SQ3_N(cur_dc) |
-							ADC_SQR3_SQ2_N(cur_ac) |
-							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
-		break;
-	case 7:
-		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
-							ADC_SQR1_SQ16_N(cur_ac) |
-							ADC_SQR1_SQ15_N(cur_dc) |
-							ADC_SQR1_SQ14_N(cur_ac) |
-							ADC_SQR1_SQ13_N(cur_dc);
-		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
-							ADC_SQR2_SQ11_N(cur_dc) |
-							ADC_SQR2_SQ10_N(cur_ac) |
-							ADC_SQR2_SQ9_N(cur_dc) |
-							ADC_SQR2_SQ8_N(aux2) |
-							ADC_SQR2_SQ7_N(aux1);             /* SQR2  */
-		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
-							ADC_SQR3_SQ5_N(cur_dc) |
-							ADC_SQR3_SQ4_N(cur_ac) |
-							ADC_SQR3_SQ3_N(cur_dc) |
-							ADC_SQR3_SQ2_N(cur_ac) |
-							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
-		break;
-	case 8:
-		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
-							ADC_SQR1_SQ16_N(cur_ac) |
-							ADC_SQR1_SQ15_N(cur_dc) |
-							ADC_SQR1_SQ14_N(cur_ac) |
-							ADC_SQR1_SQ13_N(cur_dc);
-		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
-							ADC_SQR2_SQ11_N(cur_dc) |
-							ADC_SQR2_SQ10_N(cur_ac) |
-							ADC_SQR2_SQ9_N(aux2) |
-							ADC_SQR2_SQ8_N(aux1) |
-							ADC_SQR2_SQ7_N(cur_dc);             /* SQR2  */
-		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
-							ADC_SQR3_SQ5_N(cur_dc) |
-							ADC_SQR3_SQ4_N(cur_ac) |
-							ADC_SQR3_SQ3_N(cur_dc) |
-							ADC_SQR3_SQ2_N(cur_ac) |
-							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
-		break;
-	case 9:
-		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
-							ADC_SQR1_SQ16_N(cur_ac) |
-							ADC_SQR1_SQ15_N(cur_dc) |
-							ADC_SQR1_SQ14_N(cur_ac) |
-							ADC_SQR1_SQ13_N(cur_dc);
-		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
-							ADC_SQR2_SQ11_N(cur_dc) |
-							ADC_SQR2_SQ10_N(aux2) |
-							ADC_SQR2_SQ9_N(aux1) |
-							ADC_SQR2_SQ8_N(cur_ac) |
-							ADC_SQR2_SQ7_N(cur_dc);             /* SQR2  */
-		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
-							ADC_SQR3_SQ5_N(cur_dc) |
-							ADC_SQR3_SQ4_N(cur_ac) |
-							ADC_SQR3_SQ3_N(cur_dc) |
-							ADC_SQR3_SQ2_N(cur_ac) |
-							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
-		break;
-	case 10:
-		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
-							ADC_SQR1_SQ16_N(cur_ac) |
-							ADC_SQR1_SQ15_N(cur_dc) |
-							ADC_SQR1_SQ14_N(cur_ac) |
-							ADC_SQR1_SQ13_N(cur_dc);
-		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
-							ADC_SQR2_SQ11_N(aux2) |
-							ADC_SQR2_SQ10_N(aux1) |
-							ADC_SQR2_SQ9_N(cur_dc) |
-							ADC_SQR2_SQ8_N(cur_ac) |
-							ADC_SQR2_SQ7_N(cur_dc);             /* SQR2  */
-		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
-							ADC_SQR3_SQ5_N(cur_dc) |
-							ADC_SQR3_SQ4_N(cur_ac) |
-							ADC_SQR3_SQ3_N(cur_dc) |
-							ADC_SQR3_SQ2_N(cur_ac) |
-							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
-		break;
-	case 11:
-		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
-							ADC_SQR1_SQ16_N(cur_ac) |
-							ADC_SQR1_SQ15_N(cur_dc) |
-							ADC_SQR1_SQ14_N(cur_ac) |
-							ADC_SQR1_SQ13_N(cur_dc);
-		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(aux2) |
-							ADC_SQR2_SQ11_N(aux1) |
-							ADC_SQR2_SQ10_N(cur_ac) |
-							ADC_SQR2_SQ9_N(cur_dc) |
-							ADC_SQR2_SQ8_N(cur_ac) |
-							ADC_SQR2_SQ7_N(cur_dc);          /* SQR2  */
-		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
-							ADC_SQR3_SQ5_N(cur_dc) |
-							ADC_SQR3_SQ4_N(cur_ac) |
-							ADC_SQR3_SQ3_N(cur_dc) |
-							ADC_SQR3_SQ2_N(cur_ac) |
-							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
-		break;
-	case 12:
-		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
-							ADC_SQR1_SQ16_N(cur_ac) |
-							ADC_SQR1_SQ15_N(cur_dc) |
-							ADC_SQR1_SQ14_N(cur_ac) |
-							ADC_SQR1_SQ13_N(aux2);
-		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(aux1) |
-							ADC_SQR2_SQ11_N(cur_dc) |
-							ADC_SQR2_SQ10_N(cur_ac) |
-							ADC_SQR2_SQ9_N(cur_dc) |
-							ADC_SQR2_SQ8_N(cur_ac) |
-							ADC_SQR2_SQ7_N(cur_dc);          /* SQR2  */
-		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
-							ADC_SQR3_SQ5_N(cur_dc) |
-							ADC_SQR3_SQ4_N(cur_ac) |
-							ADC_SQR3_SQ3_N(cur_dc) |
-							ADC_SQR3_SQ2_N(cur_ac) |
-							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
-		break;
-	case 13:
-		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
-							ADC_SQR1_SQ16_N(cur_ac) |
-							ADC_SQR1_SQ15_N(cur_dc) |
-							ADC_SQR1_SQ14_N(aux2) |
-							ADC_SQR1_SQ13_N(aux1);
-		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
-							ADC_SQR2_SQ11_N(cur_dc) |
-							ADC_SQR2_SQ10_N(cur_ac) |
-							ADC_SQR2_SQ9_N(cur_dc) |
-							ADC_SQR2_SQ8_N(cur_ac) |
-							ADC_SQR2_SQ7_N(cur_dc);          /* SQR2  */
-		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
-							ADC_SQR3_SQ5_N(cur_dc) |
-							ADC_SQR3_SQ4_N(cur_ac) |
-							ADC_SQR3_SQ3_N(cur_dc) |
-							ADC_SQR3_SQ2_N(cur_ac) |
-							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
-		break;
-	case 14:
-		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
-							ADC_SQR1_SQ16_N(cur_ac) |
-							ADC_SQR1_SQ15_N(aux2) |
-							ADC_SQR1_SQ14_N(aux1) |
-							ADC_SQR1_SQ13_N(cur_dc);
-		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
-							ADC_SQR2_SQ11_N(cur_dc) |
-							ADC_SQR2_SQ10_N(cur_ac) |
-							ADC_SQR2_SQ9_N(cur_dc) |
-							ADC_SQR2_SQ8_N(cur_ac) |
-							ADC_SQR2_SQ7_N(cur_dc);          /* SQR2  */
-		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
-							ADC_SQR3_SQ5_N(cur_dc) |
-							ADC_SQR3_SQ4_N(cur_ac) |
-							ADC_SQR3_SQ3_N(cur_dc) |
-							ADC_SQR3_SQ2_N(cur_ac) |
-							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
-		break;
-	case 15:
-		adcp->adc->SQR1 = 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) | /* SQR1  */
-							ADC_SQR1_SQ16_N(aux2) |
-							ADC_SQR1_SQ15_N(aux1) |
-							ADC_SQR1_SQ14_N(cur_ac) |
-							ADC_SQR1_SQ13_N(cur_dc);
-		adcp->adc->SQR2 = 	ADC_SQR2_SQ12_N(cur_ac) |
-							ADC_SQR2_SQ11_N(cur_dc) |
-							ADC_SQR2_SQ10_N(cur_ac) |
-							ADC_SQR2_SQ9_N(cur_dc) |
-							ADC_SQR2_SQ8_N(cur_ac) |
-							ADC_SQR2_SQ7_N(cur_dc);          /* SQR2  */
-		adcp->adc->SQR3 =	ADC_SQR3_SQ6_N(cur_ac) |
-							ADC_SQR3_SQ5_N(cur_dc) |
-							ADC_SQR3_SQ4_N(cur_ac) |
-							ADC_SQR3_SQ3_N(cur_dc) |
-							ADC_SQR3_SQ2_N(cur_ac) |
-							ADC_SQR3_SQ1_N(cur_dc);          /* SQR3  */
-		break;
-	}
-}
-
 
 
 /**
@@ -494,7 +171,7 @@ static ADCConversionGroup adcgrpcfg1 = {
 		ADC_SQR2_SQ12_N(ADC_CH_CUR_A_AC) |
 		ADC_SQR2_SQ11_N(ADC_CH_CUR_A_DC) |
 		ADC_SQR2_SQ10_N(ADC_CH_CUR_A_AC) |
-		ADC_SQR2_SQ9_N(ADC_CH_VREF) |
+		ADC_SQR2_SQ9_N(ADC_CH_VDC) |
 		ADC_SQR2_SQ8_N(ADC_CH_VDC) |
 		ADC_SQR2_SQ7_N(ADC_CH_CUR_A_DC) ,                     /* SQR2  */
 		ADC_SQR3_SQ6_N(ADC_CH_CUR_A_AC) |
@@ -609,3 +286,156 @@ void unimoc::hardware::adc::Init(void)
 }
 
 
+/**
+ * Get current means, acents and decents of the current in the last control
+ * cycles
+ * @param currents pointer to a currents structure, will be written
+ */
+void unimoc::hardware::adc::GetCurrents(current_values_ts* const currents)
+{
+
+}
+
+/**
+ * Read the DC Bus voltage
+ * @return DC Bus voltage in Volts
+ */
+float unimoc::hardware::adc::GetDCBusVoltage(void)
+{
+	constexpr float ADC_2_VDC = 560.0f/(10e3f+560.0f) * 3.3f/(4096.0f * 2.0f * ADC_SEQ_BUFFERED);
+	uint32_t sum = 0;
+	float vdc;
+
+
+	for(uint32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
+	{
+		/*
+		 * VDC is sampled by ADC1 2 times as a non current sample
+		 */
+		sum += samples[i][0][non_cur_index[0]];
+		sum += samples[i][0][non_cur_index[1]];
+	}
+
+	vdc = (float)sum * ADC_2_VDC;
+
+	return vdc;
+}
+
+///< Number of NTC resistor LUT values
+static constexpr uint16_t NTC_TABLE_LEN = 128;
+///< NTC adc value to temperature in 0.01°C LUT
+static const int16_t ntc_table[NTC_TABLE_LEN] =
+{
+	28399, 23653, 18907, 16501, 14928, 13775,
+	12871, 12131, 11507, 10968, 10495, 10073,
+	9693, 9347, 9030, 8737, 8465, 8211, 7972,
+	7748, 7535, 7334, 7142, 6959, 6784, 6616,
+	6455, 6299, 6150, 6005, 5865, 5729, 5598,
+	5470, 5346, 5224, 5106, 4991, 4878, 4768,
+	4660, 4554, 4450, 4349, 4249, 4150, 4054,
+	3958, 3865, 3772, 3681, 3591, 3502, 3414,
+	3327, 3241, 3156, 3072, 2988, 2905, 2823,
+	2742, 2661, 2580, 2500, 2420, 2341, 2262,
+	2184, 2105, 2027, 1949, 1872, 1794, 1716,
+	1639, 1561, 1484, 1406, 1328, 1250, 1172,
+	1093, 1014, 935, 855, 775, 695, 613, 532,
+	449, 366, 282, 197, 111, 23, -65, -154, -245,
+	-338, -432, -528, -626, -725, -828, -932,
+	-1040, -1150, -1264, -1381, -1503, -1629,
+	-1760, -1897, -2041, -2192, -2352, -2522,
+	-2704, -2901, -3115, -3351, -3616, -3920,
+	-4278, -4720, -5311, -6245
+};
+
+
+
+/**
+ * \brief    Konvertiert das ADC Ergebnis in einen Temperaturwert.
+ *
+ *           Mit p1 und p2 wird der Stützpunkt direkt vor und nach dem
+ *           ADC Wert ermittelt. Zwischen beiden Stützpunkten wird linear
+ *           interpoliert. Der Code ist sehr klein und schnell.
+ *           Es wird lediglich eine Ganzzahl-Multiplikation verwendet.
+ *           Die Division kann vom Compiler durch eine Schiebeoperation.
+ *           ersetzt werden.
+ *
+ *           Im Temperaturbereich von -10°C bis 150°C beträgt der Fehler
+ *           durch die Verwendung einer Tabelle 0.393°C
+ *
+ * \param    adc_value  Das gewandelte ADC Ergebnis
+ * \return              Die Temperatur in 0.01 °C
+ *
+ */
+static float adc2ntc_temperature(const uint16_t adc_value)
+{
+	const float oneby256 = 1.0f/256.0f;
+	int16_t p1,p2;
+	/* get the points from table left an right of the actual adc value */
+	p1 = ntc_table[ (adc_value >> 8)  ];
+	p2 = ntc_table[ (adc_value >> 8)+1];
+
+	/* linear interpolation between both points */
+	return ((float)p1 - ( (float)(p1-p2) * (float)(adc_value & 0x00FF) ) * oneby256)*0.01f;
+};
+
+/**
+ * Get the temperature of the power electronics
+ * @return Temperature of the power electronics in °C
+ */
+float unimoc::hardware::adc::GetBridgeTemp(void)
+{
+	uint16_t sum = 0;
+
+	for(uint32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
+	{
+		/*
+		 * Bridge temperature is sampled by ADC2 first non current sample
+		 */
+		sum += samples[i][0][non_cur_index[0]];
+	}
+
+	return adc2ntc_temperature(sum);
+}
+
+/**
+ * Get the temperature of the motor
+ * @return Temperature of the Motor in °C
+ */
+float unimoc::hardware::adc::GetMotorTemp(void)
+{
+	uint16_t sum = 0;
+
+	for(uint32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
+	{
+		/*
+		 * Motor temperature is sampled by ADC2 second non current sample
+		 */
+		sum += samples[i][0][non_cur_index[1]];
+	}
+
+	return adc2ntc_temperature(sum);
+}
+
+/**
+ * Get the external throttle command value
+ * @return Throttle in a range of -1 to 1
+ */
+float unimoc::hardware::adc::GetThrottle(void)
+{
+	constexpr float ADC_2_THROTTLE = 1.0f/(4096.0f * ADC_SEQ_BUFFERED);
+	int32_t sum = 0;
+	float throttle;
+
+	for(uint32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
+	{
+		/*
+		 * ACC is sampled by ADC3 DCC is the first and ACC the second sample
+		 */
+		sum -= samples[i][0][non_cur_index[0]];
+		sum += samples[i][0][non_cur_index[1]];
+	}
+
+	throttle = (float)sum *ADC_2_THROTTLE;
+
+	return throttle;
+}

@@ -24,10 +24,11 @@
 
 namespace unimoc {
 	namespace hardware {
-		/**
-		 * Motor Phases. Normally fixed to 3
-		 */
+		///< Motor Phases. Normally fixed to 3
 		constexpr uint8_t PHASES = 3;
+
+		///< reference to thread to be woken up in the hardware control cycle.
+		extern thread_reference_t* control_thread;
 
 		namespace pwm {
 			/*
@@ -96,10 +97,50 @@ namespace unimoc {
 			 * This interface defines the functions for adc handling
 			 * which all hardware variants need to implement.
 			 */
+
+			///< structure to cluster all current relevant values
+			typedef struct
+			{
+				float current[PHASES];
+				float current_acent[PHASES];
+				float current_decent[PHASES];
+			} current_values_ts;
+
 			/**
 			 * Initialize ADC hardware with outputs disabled!
 			 */
 			extern void Init();
+
+			/**
+			 * Get current means, acents and decents of the current in the last control
+			 * cycles
+			 * @param currents pointer to a currents structure, will be written
+			 */
+			extern void GetCurrents(current_values_ts* const currents);
+
+			/**
+			 * Read the DC Bus voltage
+			 * @return DC Bus voltage in Volts
+			 */
+			extern float GetDCBusVoltage(void);
+
+			/**
+			 * Get the temperature of the power electronics
+			 * @return Temperature of the power electronics in °C
+			 */
+			extern float GetBridgeTemp(void);
+
+			/**
+			 * Get the temperature of the motor
+			 * @return Temperature of the Motor in °C
+			 */
+			extern float GetMotorTemp(void);
+
+			/**
+			 * Get the external throttle command value
+			 * @return Throttle in a range of -1 to 1
+			 */
+			extern float GetThrottle(void);
 
 		} /* namespace adc */
 
