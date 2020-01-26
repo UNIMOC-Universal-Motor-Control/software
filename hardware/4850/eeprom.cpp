@@ -60,7 +60,7 @@ constexpr uint8_t PAGE(uint8_t x) 	{ return (x & 0x07) << 1; };
 constexpr uint32_t MAX_WRITE_BYTES	= 16;
 constexpr uint32_t PAGE_SIZE		= 16;
 constexpr uint32_t PAGE_NBR			= 8;
-constexpr uint32_t SIZE				= 512; 	// AT32C04 4KBit EEPROM
+constexpr uint32_t SIZE				= 256; 	// AT32C04 4KBit EEPROM
 
 constexpr uint32_t CRC32MASK   		= 0x04C11DB7;
 
@@ -115,12 +115,12 @@ uint32_t unimoc::hardware::memory::Crc32(const void* const buffer, const uint32_
  */
 static void select_half(const uint16_t half)
 {
-	osalDbgAssert(half < 2, "EEPROM: Half out of bounds");
+//	osalDbgAssert(half < 2, "EEPROM: Half out of bounds");
+//
+//	uint8_t spa_cmd = SPA(half)>>1;
+//	uint8_t dummy[2];
 
-	uint8_t spa_cmd = SPA(half)>>1;
-	uint8_t dummy[2];
-
-	i2cMasterTransmitTimeout(I2CP, spa_cmd , dummy, 2, nullptr, 0, READ_TIMEOUT);
+//	i2cMasterTransmitTimeout(I2CP, spa_cmd , dummy, 2, nullptr, 0, READ_TIMEOUT);
 }
 
 
@@ -170,7 +170,11 @@ uint8_t unimoc::hardware::memory::Read(const uint32_t address, const void* const
 	}
 
 	status |= i2cMasterTransmitTimeout(I2CP, RW_ADDRESS,
-			&wordaddr, 1, (uint8_t*)buffer, read_length, READ_TIMEOUT);
+			&wordaddr, 1, nullptr, 0, READ_TIMEOUT);
+
+	osalThreadSleepMilliseconds(5);
+
+	status |= i2cMasterReceiveTimeout(I2CP, RW_ADDRESS, (uint8_t*)buffer, read_length, READ_TIMEOUT);
 
 	// Read the rest of the Data if we started in half 0
 	if(read_length < length)
@@ -178,7 +182,11 @@ uint8_t unimoc::hardware::memory::Read(const uint32_t address, const void* const
 		select_half(1);
 		wordaddr = 0;
 		status |= i2cMasterTransmitTimeout(I2CP, RW_ADDRESS,
-				&wordaddr, 1, (uint8_t*)(buffer) + read_length, length - read_length, READ_TIMEOUT);
+				&wordaddr, 1, nullptr, 0, READ_TIMEOUT);
+
+		osalThreadSleepMilliseconds(5);
+
+		status |= i2cMasterReceiveTimeout(I2CP, RW_ADDRESS, (uint8_t*)buffer, read_length, READ_TIMEOUT);
 	}
 
 	if(status == MSG_OK)
@@ -234,7 +242,7 @@ uint8_t unimoc::hardware::memory::Write(const uint32_t address, void const * buf
 
 		written_bytes += write_length;
 
-		osalThreadSleepMilliseconds(7);
+		osalThreadSleepMilliseconds(10);
 	}
 
 	while (written_bytes < length && status == MSG_OK)
@@ -257,7 +265,7 @@ uint8_t unimoc::hardware::memory::Write(const uint32_t address, void const * buf
 		written_bytes += write_length;
 
 		// EEPROM may need 5ms to write a page
-		osalThreadSleepMilliseconds(7);
+		osalThreadSleepMilliseconds(10);
 	}
 
 	if(status == MSG_OK)

@@ -94,27 +94,23 @@ int main(void)
 	/// Memory Tests
 	{
 		using namespace unimoc::hardware::memory;
-		uint8_t write_data[3] = {0};
-		uint8_t read_data[3] = {0};
+		uint8_t write_data = 0;
+		uint8_t read_data = 0;
 		uint8_t result;
 		uint32_t address = 0, size = sizeof(write_data);
-
-		for(uint32_t i = 0; i < 3; i++)
-		{
-			write_data[i] = i;
-		}
 
 
 		chprintf((BaseSequentialStream*)&SDU2, TCOL_RED "NON-VOLATILE MEMORY TEST\r\n" TCOL_RESET);
 		chprintf((BaseSequentialStream*)&SDU2, "Memory Size: %d\r\n", unimoc::hardware::memory::GetSize());
 
-		for(address = 0; address < unimoc::hardware::memory::GetSize() - size; address +=3)
+		for(address = 0; address < unimoc::hardware::memory::GetSize() - size; address +=size)
 		{
-			result = Write(address, (const void*)write_data, size);
+			write_data = address;
+			result = Write(address, (const void*)&write_data, size);
 		}
-		for(address = 0; address < unimoc::hardware::memory::GetSize() - size; address +=3)
+		for(address = 0; address < unimoc::hardware::memory::GetSize() - size; address +=size)
 		{
-			result = Read(address, (const void*)read_data, size);
+			result = Read(address, (const void*)&read_data, size);
 
 			BaseThread::sleep(TIME_MS2I(50));
 		}
