@@ -34,47 +34,47 @@ static char history_buffer[SHELL_MAX_HIST_BUFF];
 static char *completion_buffer[SHELL_MAX_COMPLETIONS];
 
 
-/**
- * shell command to display mcu usage in the terminal.
- * @param chp	Serial channel for display
- * @param argc	argument count
- * @param argv	argument strings
- */
-static void cpu_load(BaseSequentialStream *chp, int argc, char *argv[])
-{
-	thread_t *tp;
-	uint64_t sum=0;
-	uint16_t tmp1, tmp2;
-
-	(void)argc;
-	(void)argv;
-
-	tp = chRegFirstThread();
-	do {
-		sum += tp->stats.cumulative;
-		tp = chRegNextThread(tp);
-	} while (tp != NULL);
-	sum += ch.kernel_stats.m_crit_thd.cumulative;
-	sum += ch.kernel_stats.m_crit_isr.cumulative;
-
-	tp = chRegFirstThread();
-	do {
-		tmp1 = (uint16_t)(tp->stats.cumulative*10000/sum);
-		chprintf(chp, "%12s %u.%u%%\r\n", tp->name, tmp1/100, tmp1%100);
-		tp = chRegNextThread(tp);
-	} while (tp != NULL);
-
-	tmp1 = (uint16_t)(ch.kernel_stats.m_crit_thd.cumulative*10000/sum);
-	tmp2 = (uint16_t)(ch.kernel_stats.m_crit_isr.cumulative*10000/sum);
-
-	chprintf(chp, "thd:%u.%u%%   isr:%u.%u%%\r\n",
-			tmp1/100, tmp1%100,tmp2/100, tmp2%100);
-	chprintf(chp, "\r\n");
-}
+///**
+// * shell command to display mcu usage in the terminal.
+// * @param chp	Serial channel for display
+// * @param argc	argument count
+// * @param argv	argument strings
+// */
+//static void cpu_load(BaseSequentialStream *chp, int argc, char *argv[])
+//{
+//	thread_t *tp;
+//	uint64_t sum=0;
+//	uint16_t tmp1, tmp2;
+//
+//	(void)argc;
+//	(void)argv;
+//
+//	tp = chRegFirstThread();
+//	do {
+//		sum += tp->stats.cumulative;
+//		tp = chRegNextThread(tp);
+//	} while (tp != NULL);
+//	sum += ch.kernel_stats.m_crit_thd.cumulative;
+//	sum += ch.kernel_stats.m_crit_isr.cumulative;
+//
+//	tp = chRegFirstThread();
+//	do {
+//		tmp1 = (uint16_t)(tp->stats.cumulative*10000/sum);
+//		chprintf(chp, "%12s %u.%u%%\r\n", tp->name, tmp1/100, tmp1%100);
+//		tp = chRegNextThread(tp);
+//	} while (tp != NULL);
+//
+//	tmp1 = (uint16_t)(ch.kernel_stats.m_crit_thd.cumulative*10000/sum);
+//	tmp2 = (uint16_t)(ch.kernel_stats.m_crit_isr.cumulative*10000/sum);
+//
+//	chprintf(chp, "thd:%u.%u%%   isr:%u.%u%%\r\n",
+//			tmp1/100, tmp1%100,tmp2/100, tmp2%100);
+//	chprintf(chp, "\r\n");
+//}
 
 ///< shell command list
 static const ShellCommand commands[] = {
-		{"procs", cpu_load},
+//		{"procs", cpu_load},
 		{NULL, NULL}
 };
 

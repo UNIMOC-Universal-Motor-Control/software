@@ -98,7 +98,7 @@ static uint32_t samples_index = 0;
 static uint8_t non_cur_index[2] = {7, 8};
 
 ///< reference to thread to be woken up in the hardware control cycle.
-thread_reference_t* unimoc::hardware::control_thread;
+thread_reference_t* unimoc::hardware::control_thread = nullptr;
 
 /**
  * adc processing callback
@@ -123,10 +123,13 @@ static inline void adccallback(ADCDriver *adcp)
 	std::memcpy(&samples[samples_index][0][0], &dma_samples[0][0], sizeof(dma_samples));
 
 
-	/* Wakes up the thread.*/
-	chSysLockFromISR();
-	chThdResumeI(unimoc::hardware::control_thread, (msg_t)samples_index);  /* Resuming the thread with message.*/
-	chSysUnlockFromISR();
+//	if(unimoc::hardware::control_thread != nullptr)
+//	{
+//		/* Wakes up the thread.*/
+//		chSysLockFromISR();
+//		chThdResumeI(unimoc::hardware::control_thread, (msg_t)samples_index);  /* Resuming the thread with message.*/
+//		chSysUnlockFromISR();
+//	}
 
 	palClearLine(LINE_HALL_B);
 }
@@ -228,7 +231,7 @@ static ADCConversionGroup adcgrpcfg2 = {
 static ADCConversionGroup adcgrpcfg3 = {
 		true,
 		LENGTH_ADC_SEQ,
-		NULL,
+		nullptr,
 		adcerrorcallback,
 		0,                                                    /* CR1   */
 		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
@@ -272,9 +275,9 @@ void unimoc::hardware::adc::Init(void)
 	/*
 	 * Activates the ADC drivers and the VREF input.
 	 */
-	adcStart(&ADCD1, NULL);
-	adcStart(&ADCD2, NULL);
-	adcStart(&ADCD3, NULL);
+	adcStart(&ADCD1, nullptr);
+	adcStart(&ADCD2, nullptr);
+	adcStart(&ADCD3, nullptr);
 	adcSTM32EnableTSVREFE();
 
 	/*
@@ -293,7 +296,7 @@ void unimoc::hardware::adc::Init(void)
  */
 void unimoc::hardware::adc::GetCurrents(current_values_ts* const currents)
 {
-
+	(void)currents;
 }
 
 /**

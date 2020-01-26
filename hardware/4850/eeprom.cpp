@@ -17,10 +17,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <cstdint>
+#include <cstring>
 #include "hardware_interface.hpp"
 #include "hal.h"
 
-static msg_t select_half(const uint16_t half);
+static void select_half(const uint16_t half);
 
 /**
  * EEPROM constants
@@ -37,7 +38,8 @@ static msg_t select_half(const uint16_t half);
  * Write Protection and
  * Page Address Functions 			0 1 1 0 A2 A1 A0 R/W
  */
-constexpr uint8_t RW_ADDRESS		= 0b10100000;
+constexpr uint8_t RW_ADDRESS		= 0x50;	// the driver adds the R/W bit
+
 /**
  * To provide the greatest flexibility and backwards compatibility with the previous generations of SPD devices, the
  * AT34C04 memory organization is organized into two independent 2-Kbit memory arrays. Each 2-Kbit (256-byte)
@@ -53,7 +55,7 @@ constexpr uint8_t RW_ADDRESS		= 0b10100000;
  * address to the second half of the memory. After receiving the control byte, the AT34C04 should return an ACK
  * and the Master should follow by sending two data bytes of don’t care values.
  */
-constexpr uint16_t SPA(uint16_t half) { return (0b0110110000000000 | ((half & 0x01) << 9)); };
+constexpr uint8_t SPA(uint8_t half) { return (0x6C | ((half & 0x01)>>1)); };
 constexpr uint8_t PAGE(uint8_t x) 	{ return (x & 0x07) << 1; };
 constexpr uint32_t MAX_WRITE_BYTES	= 16;
 constexpr uint32_t PAGE_SIZE		= 16;
@@ -69,14 +71,14 @@ constexpr uint32_t WRITE_TIMEOUT	= TIME_MS2I(20);
  * I2C configuration for EEPROM bus.
  */
 static const I2CConfig i2ccfg = {
-  STM32_TIMINGR_PRESC(5U) |
-  STM32_TIMINGR_SCLDEL(14U) | STM32_TIMINGR_SDADEL(3U) |
-  STM32_TIMINGR_SCLH(46U)  | STM32_TIMINGR_SCLL(55U),
+  STM32_TIMINGR_PRESC(10U) |
+  STM32_TIMINGR_SCLDEL(3U) | STM32_TIMINGR_SDADEL(9U) |
+  STM32_TIMINGR_SCLH(25U)  | STM32_TIMINGR_SCLL(29U),
   0,
   0
 };
 
-I2CDriver* const i2cp = &I2CD1;
+I2CDriver* const I2CP = &I2CD1;
 i2cflags_t error = 0;
 
 /**
@@ -111,12 +113,14 @@ uint32_t unimoc::hardware::memory::Crc32(const void* const buffer, const uint32_
  * @param half 0= first half, 1= second half of the EEPROM
  * @return 0 = success
  */
-static msg_t select_half(const uint16_t half)
+static void select_half(const uint16_t half)
 {
-	osalDbgAssert(half >= 2, "EEPROM: Half out of bounds");
+	osalDbgAssert(half < 2, "EEPROM: Half out of bounds");
 
-	return i2cMasterTransmitTimeout(i2cp, SPA(half), 0, 1, NULL, 0, READ_TIMEOUT);
+	uint8_t spa_cmd = SPA(half)>>1;
+	uint8_t dummy[2];
 
+	i2cMasterTransmitTimeout(I2CP, spa_cmd , dummy, 2, nullptr, 0, READ_TIMEOUT);
 }
 
 
@@ -126,7 +130,7 @@ static msg_t select_half(const uint16_t half)
 void unimoc::hardware::memory::Init(void)
 {
 	/* Initialize I2C */
-	i2cStart(i2cp, &i2ccfg);
+	i2cStart(I2CP, &i2ccfg);
 }
 
 /**
@@ -143,20 +147,21 @@ uint8_t unimoc::hardware::memory::Read(const uint32_t address, const void* const
 	uint32_t read_length = 0;
 	msg_t status = MSG_OK;
 
-	osalDbgAssert((address + length) >= SIZE, "EEPROM: Read out of bounds");
-	osalDbgAssert(buffer, "EEPROM: Read buffer not existing");
+	osalDbgAssert((address + length) < SIZE, "EEPROM: Read out of bounds");
+	osalDbgAssert(buffer != NULL, "EEPROM: Read buffer not existing");
 
+
+	wordaddr = address;
+	read_length = length;
 
 	if(address > SIZE/2)
 	{
-		status |= select_half(1);
+		select_half(1);
 		wordaddr = address - (SIZE/2);
-		read_length = length;
 	}
 	else
 	{
-		status |= select_half(0);
-		wordaddr = address;
+		select_half(0);
 
 		if((address + length) > SIZE/2)
 		{
@@ -164,15 +169,15 @@ uint8_t unimoc::hardware::memory::Read(const uint32_t address, const void* const
 		}
 	}
 
-	status |= i2cMasterTransmitTimeout(i2cp, RW_ADDRESS>>1,
+	status |= i2cMasterTransmitTimeout(I2CP, RW_ADDRESS,
 			&wordaddr, 1, (uint8_t*)buffer, read_length, READ_TIMEOUT);
 
 	// Read the rest of the Data if we started in half 0
 	if(read_length < length)
 	{
-		status |= select_half(1);
+		select_half(1);
 		wordaddr = 0;
-		status |= i2cMasterTransmitTimeout(i2cp, RW_ADDRESS>>1,
+		status |= i2cMasterTransmitTimeout(I2CP, RW_ADDRESS,
 				&wordaddr, 1, (uint8_t*)(buffer) + read_length, length - read_length, READ_TIMEOUT);
 	}
 
@@ -182,7 +187,7 @@ uint8_t unimoc::hardware::memory::Read(const uint32_t address, const void* const
 	}
 	else
 	{
-		error = i2cGetErrors(i2cp);
+		error = i2cGetErrors(I2CP);
 		result = 0xFF;
 	}
 
@@ -207,40 +212,47 @@ uint8_t unimoc::hardware::memory::Write(const uint32_t address, void const * buf
 	uint32_t written_bytes = 0;
 	uint32_t write_length = 0;
 	msg_t status = MSG_OK;
+	uint8_t write_buffer[PAGE_SIZE + 1] = {0};
 
-	osalDbgAssert((address + length) >= SIZE, "EEPROM: Write out of bounds");
-	osalDbgAssert(buffer, "EEPROM: Write buffer not existing");
+	osalDbgAssert((address + length) < SIZE, "EEPROM: Write out of bounds");
+	osalDbgAssert(buffer != NULL, "EEPROM: Write buffer not existing");
 
 	if(address > SIZE/2) half = 1;
 
-	status |= select_half(half);
+	select_half(half);
 
-	// In case address in within the first page to write.
+	// In case address is within the first page to write.
 	// do a write to the next page boundary
 	if(address % PAGE_SIZE)
 	{
 		write_length = PAGE_SIZE - write_addr%PAGE_SIZE;
 
-		status |= i2cMasterTransmitTimeout(i2cp, RW_ADDRESS>>1,
-				&write_addr, 1, (uint8_t*)(buffer), write_length, WRITE_TIMEOUT);
+		write_buffer[0] = write_addr;
+		memcpy(&write_buffer[1], buffer, write_length);
+		status |= i2cMasterTransmitTimeout(I2CP, RW_ADDRESS,
+				write_buffer, write_length + 1, nullptr, 0, WRITE_TIMEOUT);
 
 		written_bytes += write_length;
+
+		osalThreadSleepMilliseconds(7);
 	}
 
-	while (written_bytes < length && status != MSG_OK)
+	while (written_bytes < length && status == MSG_OK)
 	{
 		if(half == 0 && (address + written_bytes) > SIZE/2)
 		{
 			half = 1;
-			status |= select_half(half);
+			select_half(half);
 		}
 
 		write_length = length - written_bytes;
 		if(write_length > PAGE_SIZE) write_length = PAGE_SIZE;
 		write_addr = address + written_bytes;
 
-		status |= i2cMasterTransmitTimeout(i2cp, RW_ADDRESS>>1,
-				&write_addr, 1, (uint8_t*)(buffer) + written_bytes, write_length, WRITE_TIMEOUT);
+		write_buffer[0] = write_addr;
+		std::memcpy(&write_buffer[1], (uint8_t*)buffer + written_bytes, write_length);
+		status |= i2cMasterTransmitTimeout(I2CP, RW_ADDRESS,
+				write_buffer, write_length + 1, nullptr, 0, WRITE_TIMEOUT);
 
 		written_bytes += write_length;
 
@@ -254,7 +266,7 @@ uint8_t unimoc::hardware::memory::Write(const uint32_t address, void const * buf
 	}
 	else
 	{
-		error = i2cGetErrors(i2cp);
+		error = i2cGetErrors(I2CP);
 		result = 0xFF;
 	}
 

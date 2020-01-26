@@ -60,9 +60,12 @@ int main(void)
 	 * after a reset.
 	 */
 	usbDisconnectBus(serusbcfg1.usbp);
+	usbDisconnectBus(serusbcfg2.usbp);
 	chThdSleepMilliseconds(1500);
 	usbStart(serusbcfg1.usbp, &usbcfg);
+	usbStart(serusbcfg2.usbp, &usbcfg);
 	usbConnectBus(serusbcfg1.usbp);
+	usbConnectBus(serusbcfg2.usbp);
 
 	/*
 	 * start freemaster thread
@@ -84,26 +87,39 @@ int main(void)
 	unimoc::hardware::pwm::SetDutys(dutys);
 	unimoc::hardware::pwm::EnableOutputs();
 
+	palClearLine(LINE_LED_ERROR);
+	palClearLine(LINE_LED_MODE);
+	palClearLine(LINE_LED_PWM);
+
 	/// Memory Tests
 	{
 		using namespace unimoc::hardware::memory;
-		uint32_t write_data[6] = {0xDEADBEEF, 0xAFFEAFFE, 0x13377331, 0xBAAD5555, 0xA5A5A5A5, 0x5A5A5A5A};
-		uint32_t read_data[6] = {0};
+		uint8_t write_data[3] = {0};
+		uint8_t read_data[3] = {0};
 		uint8_t result;
 		uint32_t address = 0, size = sizeof(write_data);
 
-		chprintf((BaseSequentialStream*)&SDU2, TCOL_RED "NON-VOLATILE MEMORY TEST\n" TCOL_RESET);
-		chprintf((BaseSequentialStream*)&SDU2, "Memory Size: %d\n", unimoc::hardware::memory::GetSize());
+		for(uint32_t i = 0; i < 3; i++)
+		{
+			write_data[i] = i;
+		}
 
-		for(uint32_t i = address; i < unimoc::hardware::memory::GetSize() - size; i++)
+
+		chprintf((BaseSequentialStream*)&SDU2, TCOL_RED "NON-VOLATILE MEMORY TEST\r\n" TCOL_RESET);
+		chprintf((BaseSequentialStream*)&SDU2, "Memory Size: %d\r\n", unimoc::hardware::memory::GetSize());
+
+		for(address = 0; address < unimoc::hardware::memory::GetSize() - size; address +=3)
 		{
 			result = Write(address, (const void*)write_data, size);
-			chprintf((BaseSequentialStream*)&SDU2, "Write %d Bytes to Address %d with Result %d\n", size, address, result);
+		}
+		for(address = 0; address < unimoc::hardware::memory::GetSize() - size; address +=3)
+		{
 			result = Read(address, (const void*)read_data, size);
-			chprintf((BaseSequentialStream*)&SDU2, "Read %d Bytes from Address %d with Result %d, Data is %s\n",
-					size, address, result, std::memcmp(read_data, write_data, size) ? TCOL_RED "DIFFERENT" TCOL_RESET : TCOL_GREEN "SAME" TCOL_RESET);
+
 			BaseThread::sleep(TIME_MS2I(50));
 		}
+
+
 	}
 	/*
 	 * Normal main() thread activity, in this demo it does nothing except
@@ -112,6 +128,14 @@ int main(void)
 	while (true)
 	{
 		unimoc::hardware::pwm::SetDutys(dutys);
+		if(unimoc::hardware::pwm::OutputActive())
+		{
+			palSetLine(LINE_LED_PWM);
+		}
+		else
+		{
+			palClearLine(LINE_LED_PWM);
+		}
 		BaseThread::sleep(TIME_MS2I(500));
 	}
 }

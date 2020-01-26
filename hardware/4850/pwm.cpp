@@ -38,20 +38,9 @@ constexpr uint16_t DTG(const uint32_t deadtime)
 {
 	float fdeadtime = (float)deadtime * 1e-9f;
 	float clock = (float)STM32_TIMCLK2;
-	osalDbgAssert((fdeadtime * clock) >= 256.0f,
+	osalDbgAssert((fdeadtime * clock) < 256.0f,
 	                "PWM: Dead too long");
 	return (uint16_t)((fdeadtime * clock) -1);
-}
-
-
-/**
- * Callback for timer over/unterflow interrupt
- * @param pwmp PWM driver instance
- */
-static void adc_trigger(PWMDriver *pwmp)
-{
-	(void)pwmp;
-	palToggleLine(LINE_HALL_C);
 }
 
 /**
@@ -61,12 +50,12 @@ const PWMConfig pwmcfg =
 {
 		unimoc::hardware::pwm::TIMER_CLOCK,
 		unimoc::hardware::pwm::PERIOD,
-		NULL,
+		nullptr,
 		{ /*  */
-				{PWM_OUTPUT_ACTIVE_HIGH | PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH, NULL},
-				{PWM_OUTPUT_ACTIVE_HIGH | PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH, NULL},
-				{PWM_OUTPUT_ACTIVE_HIGH | PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH, NULL},
-				{PWM_OUTPUT_DISABLED, NULL}
+				{PWM_OUTPUT_ACTIVE_HIGH | PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH, nullptr},
+				{PWM_OUTPUT_ACTIVE_HIGH | PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH, nullptr},
+				{PWM_OUTPUT_ACTIVE_HIGH | PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH, nullptr},
+				{PWM_OUTPUT_DISABLED, nullptr}
 		},
 		/*
 		 * CR2 Register
@@ -91,12 +80,12 @@ const PWMConfig adctriggercfg =
 {
 		STM32_TIMCLK1,
 		0xFFFE,
-		NULL,
+		nullptr,
 		{ /*  */
-				{PWM_OUTPUT_DISABLED, NULL},
-				{PWM_OUTPUT_DISABLED, NULL},
-				{PWM_OUTPUT_DISABLED, NULL},
-				{PWM_OUTPUT_ACTIVE_HIGH, adc_trigger}
+				{PWM_OUTPUT_DISABLED, nullptr},
+				{PWM_OUTPUT_DISABLED, nullptr},
+				{PWM_OUTPUT_DISABLED, nullptr},
+				{PWM_OUTPUT_ACTIVE_HIGH, nullptr}
 		},
 		/*
 		 * CR2 Register

@@ -495,8 +495,8 @@
                                      PIN_OTYPE_PUSHPULL(GPIOB_SWO) | \
                                      PIN_OTYPE_PUSHPULL(GPIOB_TRST) | \
                                      PIN_OTYPE_PUSHPULL(GPIOB_5) | \
-                                     PIN_OTYPE_PUSHPULL(GPIOB_SCL) | \
-                                     PIN_OTYPE_PUSHPULL(GPIOB_SDA) | \
+                                     PIN_OTYPE_OPENDRAIN(GPIOB_SCL) | \
+                                     PIN_OTYPE_OPENDRAIN(GPIOB_SDA) | \
                                      PIN_OTYPE_PUSHPULL(GPIOB_CAN_RX) | \
                                      PIN_OTYPE_PUSHPULL(GPIOB_CAN_TX) | \
                                      PIN_OTYPE_PUSHPULL(GPIOB_LED_RUN) | \
