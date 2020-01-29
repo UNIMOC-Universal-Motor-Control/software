@@ -89,7 +89,7 @@ constexpr uint32_t NUM_OF_ADC = 3;
    handled differently for other compilers.
    Only required if the ADC buffer is placed in a cache-able area.*/
 ///< dma accessed buffer for the adcs, probably cached
-__attribute__((aligned (32))) static int16_t dma_samples[NUM_OF_ADC][LENGTH_ADC_SEQ];
+__attribute__((aligned (32))) static adcsample_t dma_samples[NUM_OF_ADC][LENGTH_ADC_SEQ];
 ///< cached working buffer for calculations
 __attribute__((aligned (32))) static int16_t samples[ADC_SEQ_BUFFERED][NUM_OF_ADC][LENGTH_ADC_SEQ];
 ///< cycle index for cached working buffer
@@ -102,10 +102,10 @@ static uint8_t non_cur_index[2] = {7, 8};
 thread_reference_t* unimoc::hardware::control_thread = nullptr;
 
 ///< current samples gains
-static float current_gain[PHASES];
+static float current_gain[unimoc::hardware::PHASES];
 
 ///< current samples offsets
-static int16_t current_offset[PHASES];
+static int16_t current_offset[unimoc::hardware::PHASES];
 
 
 /**
@@ -466,14 +466,13 @@ extern bool unimoc::hardware::adc::Calibrate(void)
 	bool result = false;
 	const float DUTY_STEP = 0.01f;
 	const uint16_t ADC_TARGET = 1000;
-	uint8_t phase = 0;
-	uint32_t offset_sum[PHASES];
+	int32_t offset_sum[PHASES];
 	float gain[PHASES][PHASES];
-	uint32_t gain_sum[PHASES][PHASES];
+	int32_t gain_sum[PHASES][PHASES];
 	float test_duty;
-	float dutys[unimoc::hardware::PHASES] = {0.0f, 0.0f, 0.0f};
+	float dutys[PHASES] = {0.0f, 0.0f, 0.0f};
 
-	unimoc::hardware::pwm::DisableOutputs();
+	pwm::DisableOutputs();
 
 	// let the current amps calm down
 	osalThreadSleepMilliseconds(100);
@@ -504,54 +503,78 @@ extern bool unimoc::hardware::adc::Calibrate(void)
 	}
 
 	// caution PWMs are active beyond this line
-	unimoc::hardware::pwm::SetDutys(dutys);
-	unimoc::hardware::pwm::EnableOutputs();
+	pwm::SetDutys(dutys);
+	pwm::EnableOutputs();
 
 	osalThreadSleepMilliseconds(1);
 
 	// test what duty gives a current of 50% Fullscale
-	while(unimoc::hardware::pwm::OutputActive() && std::abs(samples[0][0][0] - current_offset[0]) < ADC_TARGET)
+	while(pwm::OutputActive() && std::abs(samples[0][0][0] - current_offset[0]) < ADC_TARGET)
 	{
 		dutys[0] += DUTY_STEP;
 		dutys[1] -= 0.5f * DUTY_STEP;
 		dutys[2] -= 0.5f * DUTY_STEP;
-		unimoc::hardware::pwm::SetDutys(dutys);
+		pwm::SetDutys(dutys);
 
 		osalThreadSleepMilliseconds(1);
 	}
 	test_duty = dutys[0];
 
-	for(uint8_t i = 0; i < PHASES && unimoc::hardware::pwm::OutputActive(); i++)
+	uint8_t i;
+	for(i = 0; i < PHASES && pwm::OutputActive(); i++)
 	{
 		dutys[i] = test_duty;
 		dutys[(i+1)%PHASES] = -0.5f * test_duty;
 		dutys[(i+2)%PHASES] = -0.5f * test_duty;
-		unimoc::hardware::pwm::SetDutys(dutys);
+		pwm::SetDutys(dutys);
 		osalThreadSleepMilliseconds(10);
 
 		for(uint8_t s = 0; s < ADC_SEQ_BUFFERED; s++)
 		{
 			// take only the mid samples in to account
-			gain_sum[i] += samples[s][i][0] + samples[s][i][LENGTH_ADC_SEQ - 2];
+			gain_sum[i][0] += samples[s][0][0] + samples[s][0][LENGTH_ADC_SEQ - 2];
+			gain_sum[i][1] += samples[s][1][0] + samples[s][1][LENGTH_ADC_SEQ - 2];
+			gain_sum[i][2] += samples[s][2][0] + samples[s][2][LENGTH_ADC_SEQ - 2];
 		}
 	}
 
-	unimoc::hardware::pwm::DisableOutputs();
+	pwm::DisableOutputs();
 	dutys[0] = dutys[1] = dutys[2]= 0.0f;
-	unimoc::hardware::pwm::SetDutys(dutys);
+	pwm::SetDutys(dutys);
 
 	if(i >= PHASES)
 	{
 		for(uint8_t i = 0; i < PHASES; i++)
 		{
-			gain[i] = (float)gain_sum[i] / (float)(ADC_SEQ_BUFFERED * 2) - (float)current_offset[i];
+			for(uint8_t k = 0; k < PHASES; k++)
+			{
+				// transform the other currents back
+				if(i == k) gain[i][k] = gain_sum[i][k] / (float)(ADC_SEQ_BUFFERED * 2) - (float)current_offset[k];
+				else gain[i][k] = -((float)gain_sum[i][k] / (float)(ADC_SEQ_BUFFERED)) + (float)current_offset[k];
+			}
 		}
 
-		float mean_gain = (gain[0] + gain[1] + gain[2])/3;
+		float mean_gain = 0.0f;
+		for(uint8_t i = 0; i < PHASES; i++)
+		{
+			for(uint8_t k = 0; k < PHASES; k++)
+			{
+				mean_gain += gain[i][k];
+			}
+		}
+		mean_gain /= PHASES * PHASES;
+
 
 		for(uint8_t i = 0; i < PHASES; i++)
 		{
-			current_gain[i] = gain[i] / mean_gain;
+			float phase_gain = 0.0f;
+			for(uint8_t k = 0; k < PHASES; k++)
+			{
+				phase_gain += gain[i][k];
+			}
+			phase_gain /= PHASES;
+
+			current_gain[i] = phase_gain / mean_gain;
 		}
 
 		result = true;

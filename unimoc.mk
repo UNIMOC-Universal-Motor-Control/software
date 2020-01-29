@@ -11,7 +11,6 @@ UNIMOCSRC := ${FREEMASTERSRC}
 # Cpp code
 UNIMOCCPPSRC := ${FREEMASTERCPPSRC} \
                 ${BASEDIR}/src/main.cpp \
-                ${BASEDIR}/src/terminal.cpp \
 
 # Required include directories
 UNIMOCINC := ${FREEMASTERINC} \

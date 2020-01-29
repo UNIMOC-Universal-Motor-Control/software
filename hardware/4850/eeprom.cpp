@@ -115,6 +115,7 @@ uint32_t unimoc::hardware::memory::Crc32(const void* const buffer, const uint32_
  */
 static void select_half(const uint16_t half)
 {
+	(void)half;
 //	osalDbgAssert(half < 2, "EEPROM: Half out of bounds");
 //
 //	uint8_t spa_cmd = SPA(half)>>1;

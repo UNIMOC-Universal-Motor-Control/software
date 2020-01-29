@@ -98,17 +98,16 @@ int main(void)
 		using namespace unimoc::hardware::memory;
 		uint8_t write_data = 0;
 		uint8_t read_data = 0;
-		uint8_t result;
 		uint32_t address = 0, size = sizeof(write_data);
 
 //		for(address = 0; address < unimoc::hardware::memory::GetSize() - size; address +=size)
 //		{
 //			write_data = address;
-//			result = Write(address, (const void*)&write_data, size);
+//			Write(address, (const void*)&write_data, size);
 //		}
 		for(address = 0; address < unimoc::hardware::memory::GetSize() - size; address +=size)
 		{
-			result = Read(0, (const void*)&read_data, size);
+			Read(0, (const void*)&read_data, size);
 
 			BaseThread::sleep(TIME_MS2I(50));
 		}
