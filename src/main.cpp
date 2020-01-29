@@ -20,7 +20,6 @@
 #include "ch.hpp"
 #include "hal.h"
 #include "usbcfg.h"
-#include "terminal.hpp"
 #include "hardware_interface.hpp"
 #include "freemaster_wrapper.hpp"
 
@@ -79,10 +78,13 @@ int main(void)
 	palSetLineMode(LINE_HALL_B, PAL_MODE_OUTPUT_PUSHPULL);
 	palSetLineMode(LINE_HALL_C, PAL_MODE_OUTPUT_PUSHPULL);
 
+	/*
+	 * initialize hardware with no control thread
+	 */
+	unimoc::hardware::control_thread = nullptr;
 	unimoc::hardware::memory::Init();
 	unimoc::hardware::pwm::Init();
 	unimoc::hardware::adc::Init();
-	unimoc::terminal::Init();
 
 	unimoc::hardware::pwm::SetDutys(dutys);
 	unimoc::hardware::pwm::EnableOutputs();
@@ -99,18 +101,14 @@ int main(void)
 		uint8_t result;
 		uint32_t address = 0, size = sizeof(write_data);
 
-
-		chprintf((BaseSequentialStream*)&SDU2, TCOL_RED "NON-VOLATILE MEMORY TEST\r\n" TCOL_RESET);
-		chprintf((BaseSequentialStream*)&SDU2, "Memory Size: %d\r\n", unimoc::hardware::memory::GetSize());
-
+//		for(address = 0; address < unimoc::hardware::memory::GetSize() - size; address +=size)
+//		{
+//			write_data = address;
+//			result = Write(address, (const void*)&write_data, size);
+//		}
 		for(address = 0; address < unimoc::hardware::memory::GetSize() - size; address +=size)
 		{
-			write_data = address;
-			result = Write(address, (const void*)&write_data, size);
-		}
-		for(address = 0; address < unimoc::hardware::memory::GetSize() - size; address +=size)
-		{
-			result = Read(address, (const void*)&read_data, size);
+			result = Read(0, (const void*)&read_data, size);
 
 			BaseThread::sleep(TIME_MS2I(50));
 		}

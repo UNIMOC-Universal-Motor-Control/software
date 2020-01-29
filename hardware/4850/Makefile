@@ -104,7 +104,6 @@ include $(CHIBIOS)/os/hal/hal.mk
 include $(CHIBIOS)/os/hal/lib/streams/streams.mk
 include $(CHIBIOS)/os/hal/ports/STM32/STM32F7xx/platform.mk
 include $(CHIBIOS)/os/hal/osal/rt/osal.mk
-include $(CHIBIOS)/os/various/shell/shell.mk
 include $(CHIBIOS)/os/various/cpp_wrappers/chcpp.mk
 # RTOS files (optional).
 include $(CHIBIOS)/os/rt/rt.mk

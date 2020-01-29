@@ -112,7 +112,7 @@ namespace unimoc {
 			extern void Init();
 
 			/**
-			 * Get current means, acents and decents of the current in the last control
+			 * Get current means, ascends and descents of the current in the last control
 			 * cycles
 			 * @param currents pointer to a currents structure, will be written
 			 */
@@ -141,6 +141,16 @@ namespace unimoc {
 			 * @return Throttle in a range of -1 to 1
 			 */
 			extern float GetThrottle(void);
+
+			/**
+			 * Calibrate the current measurements for offset an gain
+			 *
+			 * @note a motor must be connected and pwm must be active.
+			 * @note the gain will only be equalized between the phases
+			 *
+			 * @return false if pwm not active
+			 */
+			extern bool Calibrate(void);
 
 		} /* namespace adc */
 

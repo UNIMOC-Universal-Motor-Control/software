@@ -18,6 +18,7 @@
  */
 #include <cstring>
 #include <cstdint>
+#include <cmath>
 #include "pwm.hpp"
 #include "hardware_interface.hpp"
 #include "hal.h"
@@ -77,7 +78,7 @@ constexpr uint32_t LENGTH_ADC_SEQ = 16;
 ///< ADC sequences in buffer.
 /// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
 ///          so even length of sequence is best choice.
-constexpr uint32_t ADC_SEQ_BUFFERED = 8;
+constexpr uint32_t ADC_SEQ_BUFFERED = 16;
 
 ///< # of ADCs
 constexpr uint32_t NUM_OF_ADC = 3;
@@ -88,9 +89,9 @@ constexpr uint32_t NUM_OF_ADC = 3;
    handled differently for other compilers.
    Only required if the ADC buffer is placed in a cache-able area.*/
 ///< dma accessed buffer for the adcs, probably cached
-__attribute__((aligned (32))) static adcsample_t dma_samples[NUM_OF_ADC][LENGTH_ADC_SEQ];
+__attribute__((aligned (32))) static int16_t dma_samples[NUM_OF_ADC][LENGTH_ADC_SEQ];
 ///< cached working buffer for calculations
-__attribute__((aligned (32))) static adcsample_t samples[ADC_SEQ_BUFFERED][NUM_OF_ADC][LENGTH_ADC_SEQ];
+__attribute__((aligned (32))) static int16_t samples[ADC_SEQ_BUFFERED][NUM_OF_ADC][LENGTH_ADC_SEQ];
 ///< cycle index for cached working buffer
 static uint32_t samples_index = 0;
 
@@ -99,6 +100,13 @@ static uint8_t non_cur_index[2] = {7, 8};
 
 ///< reference to thread to be woken up in the hardware control cycle.
 thread_reference_t* unimoc::hardware::control_thread = nullptr;
+
+///< current samples gains
+static float current_gain[PHASES];
+
+///< current samples offsets
+static int16_t current_offset[PHASES];
+
 
 /**
  * adc processing callback
@@ -123,13 +131,13 @@ static inline void adccallback(ADCDriver *adcp)
 	std::memcpy(&samples[samples_index][0][0], &dma_samples[0][0], sizeof(dma_samples));
 
 
-//	if(unimoc::hardware::control_thread != nullptr)
-//	{
-//		/* Wakes up the thread.*/
-//		chSysLockFromISR();
-//		chThdResumeI(unimoc::hardware::control_thread, (msg_t)samples_index);  /* Resuming the thread with message.*/
-//		chSysUnlockFromISR();
-//	}
+	if(unimoc::hardware::control_thread != nullptr)
+	{
+		/* Wakes up the thread.*/
+		chSysLockFromISR();
+		chThdResumeI(unimoc::hardware::control_thread, (msg_t)samples_index);  /* Resuming the thread with message.*/
+		chSysUnlockFromISR();
+	}
 
 	palClearLine(LINE_HALL_B);
 }
@@ -441,4 +449,113 @@ float unimoc::hardware::adc::GetThrottle(void)
 	throttle = (float)sum *ADC_2_THROTTLE;
 
 	return throttle;
+}
+
+
+/**
+ * Calibrate the current measurements for offset an gain.
+ *
+ * @note A motor must be connected and pwm must be active.
+ * @note The gain will only be equalized between the phases.
+ * @note The function blocks the thread for about 2secounds.
+ *
+ * @return false if pwm not active
+ */
+extern bool unimoc::hardware::adc::Calibrate(void)
+{
+	bool result = false;
+	const float DUTY_STEP = 0.01f;
+	const uint16_t ADC_TARGET = 1000;
+	uint8_t phase = 0;
+	uint32_t offset_sum[PHASES];
+	float gain[PHASES][PHASES];
+	uint32_t gain_sum[PHASES][PHASES];
+	float test_duty;
+	float dutys[unimoc::hardware::PHASES] = {0.0f, 0.0f, 0.0f};
+
+	unimoc::hardware::pwm::DisableOutputs();
+
+	// let the current amps calm down
+	osalThreadSleepMilliseconds(100);
+
+	// Calculate Current Offsets
+	for(uint8_t i = 0; i < PHASES; i++)
+	{
+		offset_sum[i] = 0;
+	}
+
+	for(uint8_t p = 0; p < PHASES; p++)
+	{
+		for(uint8_t i = 0; i < ADC_SEQ_BUFFERED; i++)
+		{
+			for(uint8_t k = 0; k < LENGTH_ADC_SEQ; k+=2)
+			{
+				// skip non current samples
+				if(k == non_cur_index[0] || k == non_cur_index[1]) continue;
+
+				offset_sum[p] += samples[i][p][k];
+			}
+		}
+	}
+
+	for(uint8_t i = 0; i < PHASES; i++)
+	{
+		current_offset[i] = offset_sum[i] / (ADC_SEQ_BUFFERED * (LENGTH_ADC_SEQ / 2 - 1));
+	}
+
+	// caution PWMs are active beyond this line
+	unimoc::hardware::pwm::SetDutys(dutys);
+	unimoc::hardware::pwm::EnableOutputs();
+
+	osalThreadSleepMilliseconds(1);
+
+	// test what duty gives a current of 50% Fullscale
+	while(unimoc::hardware::pwm::OutputActive() && std::abs(samples[0][0][0] - current_offset[0]) < ADC_TARGET)
+	{
+		dutys[0] += DUTY_STEP;
+		dutys[1] -= 0.5f * DUTY_STEP;
+		dutys[2] -= 0.5f * DUTY_STEP;
+		unimoc::hardware::pwm::SetDutys(dutys);
+
+		osalThreadSleepMilliseconds(1);
+	}
+	test_duty = dutys[0];
+
+	for(uint8_t i = 0; i < PHASES && unimoc::hardware::pwm::OutputActive(); i++)
+	{
+		dutys[i] = test_duty;
+		dutys[(i+1)%PHASES] = -0.5f * test_duty;
+		dutys[(i+2)%PHASES] = -0.5f * test_duty;
+		unimoc::hardware::pwm::SetDutys(dutys);
+		osalThreadSleepMilliseconds(10);
+
+		for(uint8_t s = 0; s < ADC_SEQ_BUFFERED; s++)
+		{
+			// take only the mid samples in to account
+			gain_sum[i] += samples[s][i][0] + samples[s][i][LENGTH_ADC_SEQ - 2];
+		}
+	}
+
+	unimoc::hardware::pwm::DisableOutputs();
+	dutys[0] = dutys[1] = dutys[2]= 0.0f;
+	unimoc::hardware::pwm::SetDutys(dutys);
+
+	if(i >= PHASES)
+	{
+		for(uint8_t i = 0; i < PHASES; i++)
+		{
+			gain[i] = (float)gain_sum[i] / (float)(ADC_SEQ_BUFFERED * 2) - (float)current_offset[i];
+		}
+
+		float mean_gain = (gain[0] + gain[1] + gain[2])/3;
+
+		for(uint8_t i = 0; i < PHASES; i++)
+		{
+			current_gain[i] = gain[i] / mean_gain;
+		}
+
+		result = true;
+	}
+
+	return result;
 }
