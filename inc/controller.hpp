@@ -125,6 +125,27 @@ public:
 	inline void Reset(void) { d.Reset(); q.Reset(); };
 };
 
+/**
+ * generic FOC controller thread
+ */
+class thread : public chibios_rt::BaseStaticThread<256>
+{
+private:
+
+
+protected:
+	/**
+	 * Thread function
+	 */
+	virtual void main(void);
+
+public:
+	/**
+	 * generic constructor
+	 */
+	thread();
+};
+
 } /* namespace controller */
 
 #endif /* INC_CONTROLLER_HPP_ */

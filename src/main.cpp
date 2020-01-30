@@ -25,7 +25,7 @@
 
 using namespace chibios_rt;
 
-static modules::freemaster::Thread freemaster;
+static modules::freemaster::thread freemaster;
 
 float dutys[hardware::PHASES] = {0.0f, 0.0f, 0.0f};
 

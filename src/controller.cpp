@@ -124,6 +124,26 @@ namespace controller
 			values::motor::rotor::u.q = q.Calculate(values::motor::rotor::setpoint::i.q - values::motor::rotor::i.q, feedforward.q);
 		}
 	}
+
+	/**
+	 * @brief Thread main function
+	 */
+	void thread::main(void)
+	{
+		setName("Control");
+
+
+		/*
+		 * Normal main() thread activity
+		 */
+		while (TRUE)
+		{
+			/* Checks if an IRQ happened else wait.*/
+			chEvtWaitAny((eventmask_t)1);
+			/* Perform processing here.*/
+		}
+
+	}
 }/* namespace controller */
 
 

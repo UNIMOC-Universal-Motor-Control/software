@@ -578,9 +578,9 @@ static inline void adccallback(ADCDriver *adcp)
 	if(hardware::control_thread != nullptr)
 	{
 		/* Wakes up the thread.*/
-		chSysLockFromISR();
-		chThdResumeI(hardware::control_thread, (msg_t)samples_index);  /* Resuming the thread with message.*/
-		chSysUnlockFromISR();
+		osalSysLockFromISR();
+		chEvtSignalI(hardware::control_thread, (eventmask_t)1);
+		osalSysUnlockFromISR();
 	}
 
 	palClearLine(LINE_HALL_B);

@@ -26,7 +26,7 @@ using namespace modules::freemaster;
 /**
  * @brief Thread main function
  */
-void Thread::main(void)
+void thread::main(void)
 {
 	setName("FreeMaster");
 
@@ -74,7 +74,7 @@ void Recorder(void)
 /**
  * @brief constructor of freemaster thread
  */
-Thread::Thread(void){}
+thread::thread(void){}
 
 
 /** \} **/ /* end of doxygen group */
