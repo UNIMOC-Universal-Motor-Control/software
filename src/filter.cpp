@@ -16,24 +16,41 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef HARDWARE_INTERFACE_4850_PWM_HPP_
-#define HARDWARE_INTERFACE_4850_PWM_HPP_
+#include <filter.hpp>
 #include <cstdint>
-#include "hardware_interface.hpp"
-#include "ch.hpp"
-#include "hal.h"
+
+/**
+ * @namespace filter classes
+ */
+namespace filter
+{
+	/**
+	 * @brief low pass filter constructor with all essential parameters.
+	 *
+	 * @param new_ts			set sample time.
+	 * @param new_k				proportional gain.
+	 * @param new_t				time constant.
+	 */
+	low_pass::low_pass(const float new_ts, const float new_k, const float new_t):
+										ts(new_ts), k(new_k), t_tmp(T(new_t, ts))
+	{
+	}
 
 
-namespace hardware {
-	namespace pwm {
+	/**
+	 * @brief calculate filter equation with out memory of old samples.
+	 *
+	 * @param uk			filter input.
+	 * @param yk_1			filter output from last cycle.
+	 * @retval yk			filter output.
+	 */
+	float low_pass::Calculate(const float uk, const float yk_1)
+	{
+		float yk = t_tmp*(k*uk - yk_1) + yk_1;
+		return yk;
+	}
 
-		///< PWM driver instance
-		extern PWMDriver* PWMP;
-
-		///< PWM duty counts
-		extern uint16_t duty_counts[PHASES];
-	} /* namespace adc */
-} /* namespace hardware */
+}/* namespace filter */
 
 
-#endif /* HARDWARE_INTERFACE_4850_PWM_HPP_ */
+

@@ -1,5 +1,5 @@
 /*
-    UNIMOC - Universal Motor Control  2019 Alexander <tecnologic86@gmail.com> Brand
+    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
 
 	This file is part of UNIMOC.
 
@@ -25,9 +25,9 @@
 
 using namespace chibios_rt;
 
-static unimoc::modules::freemaster::Thread freemaster;
+static modules::freemaster::Thread freemaster;
 
-float dutys[unimoc::hardware::PHASES] = {0.0f, 0.0f, 0.0f};
+float dutys[hardware::PHASES] = {0.0f, 0.0f, 0.0f};
 
 /**
  * Code entry point
@@ -81,13 +81,13 @@ int main(void)
 	/*
 	 * initialize hardware with no control thread
 	 */
-	unimoc::hardware::control_thread = nullptr;
-	unimoc::hardware::memory::Init();
-	unimoc::hardware::pwm::Init();
-	unimoc::hardware::adc::Init();
+	hardware::control_thread = nullptr;
+	hardware::memory::Init();
+	hardware::pwm::Init();
+	hardware::adc::Init();
 
-	unimoc::hardware::pwm::SetDutys(dutys);
-	unimoc::hardware::pwm::EnableOutputs();
+	hardware::pwm::SetDutys(dutys);
+	hardware::pwm::EnableOutputs();
 
 	palClearLine(LINE_LED_ERROR);
 	palClearLine(LINE_LED_MODE);
@@ -95,17 +95,17 @@ int main(void)
 
 	/// Memory Tests
 	{
-		using namespace unimoc::hardware::memory;
+		using namespace hardware::memory;
 		uint8_t write_data = 0;
 		uint8_t read_data = 0;
 		uint32_t address = 0, size = sizeof(write_data);
 
-//		for(address = 0; address < unimoc::hardware::memory::GetSize() - size; address +=size)
+//		for(address = 0; address < GetSize() - size; address +=size)
 //		{
 //			write_data = address;
 //			Write(address, (const void*)&write_data, size);
 //		}
-		for(address = 0; address < unimoc::hardware::memory::GetSize() - size; address +=size)
+		for(address = 0; address < GetSize() - size; address +=size)
 		{
 			Read(0, (const void*)&read_data, size);
 
@@ -120,8 +120,8 @@ int main(void)
 	 */
 	while (true)
 	{
-		unimoc::hardware::pwm::SetDutys(dutys);
-		if(unimoc::hardware::pwm::OutputActive())
+		hardware::pwm::SetDutys(dutys);
+		if(hardware::pwm::OutputActive())
 		{
 			palSetLine(LINE_LED_PWM);
 		}

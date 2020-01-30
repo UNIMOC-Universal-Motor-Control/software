@@ -1,5 +1,5 @@
 /*
-    UNIMOC - Universal Motor Control  2019 Alexander <tecnologic86@gmail.com>
+    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
 
 	This file is part of UNIMOC.
 
@@ -20,7 +20,7 @@
 #include <string.h>
 #include "freemaster.h"
 
-using namespace unimoc::modules::freemaster;
+using namespace modules::freemaster;
 
 
 /**

@@ -1,5 +1,5 @@
 /*
-    UNIMOC - Universal Motor Control  2019 Alexander <tecnologic86@gmail.com>
+    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
 
 	This file is part of UNIMOC.
 
@@ -25,36 +25,33 @@
 #include "ch.hpp"
 #include "hal.h"
 
-namespace unimoc
-{
 namespace modules
 {
-namespace freemaster
-{
+	namespace freemaster
+	{
 
-class Thread : public chibios_rt::BaseStaticThread<256>
-{
-private:
+		class Thread : public chibios_rt::BaseStaticThread<256>
+		{
+		private:
 
 
-protected:
-	/**
-	 * Thread function
-	 */
-	virtual void main(void);
+		protected:
+			/**
+			 * Thread function
+			 */
+			virtual void main(void);
 
-public:
-	Thread();
-};
+		public:
+			Thread();
+		};
 
-/**
- * @brief recorder function
- * needs to be called in control thread
- */
-void Recorder(void);
-} // namespace freemaster
+		/**
+		 * @brief recorder function
+		 * needs to be called in control thread
+		 */
+		void Recorder(void);
+	} // namespace freemaster
 } // namespace modules
-} // namespace unimoc
 
 #endif /* FREEMASTER_WRAPPER_H_ */
 

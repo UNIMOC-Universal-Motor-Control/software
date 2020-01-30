@@ -1,5 +1,5 @@
 /*
-    UNIMOC - Universal Motor Control  2019 Alexander <tecnologic86@gmail.com> Brand
+    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
 
 	This file is part of UNIMOC.
 
@@ -87,7 +87,7 @@ i2cflags_t error = 0;
  * @param length Length of the buffer to calculate the CRC of
  * @return
  */
-uint32_t unimoc::hardware::memory::Crc32(const void* const buffer, const uint32_t length)
+uint32_t hardware::memory::Crc32(const void* const buffer, const uint32_t length)
 {
 	uint32_t byte = 0, bit = 0, crc32 = 0;
 
@@ -128,7 +128,7 @@ static void select_half(const uint16_t half)
 /**
  * initialize non volatile memory
  */
-void unimoc::hardware::memory::Init(void)
+void hardware::memory::Init(void)
 {
 	/* Initialize I2C */
 	i2cStart(I2CP, &i2ccfg);
@@ -141,7 +141,7 @@ void unimoc::hardware::memory::Init(void)
  * @param length Length of the buffer to read to
  * @return 0 = success
  */
-uint8_t unimoc::hardware::memory::Read(const uint32_t address, const void* const buffer, const uint32_t length)
+uint8_t hardware::memory::Read(const uint32_t address, const void* const buffer, const uint32_t length)
 {
 	uint8_t result = 0;
 	uint8_t wordaddr = 0;
@@ -213,7 +213,7 @@ uint8_t unimoc::hardware::memory::Read(const uint32_t address, const void* const
  * @param length Length of the buffer to write to
  * @return 0 = success
  */
-uint8_t unimoc::hardware::memory::Write(const uint32_t address, void const * buffer, const uint32_t length)
+uint8_t hardware::memory::Write(const uint32_t address, void const * buffer, const uint32_t length)
 {
 	uint8_t result = 0;
 	uint8_t half = 0;
@@ -286,7 +286,7 @@ uint8_t unimoc::hardware::memory::Write(const uint32_t address, void const * buf
  * Get the size of the non-volatile memory
  * @return size of non-volatile memory in bytes
  */
-uint32_t unimoc::hardware::memory::GetSize(void)
+uint32_t hardware::memory::GetSize(void)
 {
 	// AT32C04 4KBit EEPROM
 	return SIZE;

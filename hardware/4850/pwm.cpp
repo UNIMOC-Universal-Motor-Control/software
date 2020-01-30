@@ -1,5 +1,5 @@
 /*
-    UNIMOC - Universal Motor Control  2019 Alexander <tecnologic86@gmail.com> Brand
+    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
 
 	This file is part of UNIMOC.
 
@@ -21,13 +21,13 @@
 #include "hardware_interface.hpp"
 
 ///< PWM driver instance
-PWMDriver* unimoc::hardware::pwm::PWMP = &PWMD1;
+PWMDriver* hardware::pwm::PWMP = &PWMD1;
 
 ///< ADC trigger timer driver instance
 PWMDriver* ADC_TRIGP = &PWMD4;
 
 ///< PWM duty counts
-uint16_t unimoc::hardware::pwm::duty_counts[PHASES] = {0};
+uint16_t hardware::pwm::duty_counts[PHASES] = {0};
 
 /**
  * macro to calculate DTG value for BDTR
@@ -48,8 +48,8 @@ constexpr uint16_t DTG(const uint32_t deadtime)
  */
 const PWMConfig pwmcfg =
 {
-		unimoc::hardware::pwm::TIMER_CLOCK,
-		unimoc::hardware::pwm::PERIOD,
+		hardware::pwm::TIMER_CLOCK,
+		hardware::pwm::PERIOD,
 		nullptr,
 		{ /*  */
 				{PWM_OUTPUT_ACTIVE_HIGH | PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH, nullptr},
@@ -66,7 +66,7 @@ const PWMConfig pwmcfg =
 		 * Break and Deadtime Register
 		 * Break input enabled with filter of 8 clock cycles
 		 */
-		STM32_TIM_BDTR_DTG(DTG(unimoc::hardware::pwm::DEADTIME)) | STM32_TIM_BDTR_BKE | STM32_TIM_BDTR_BKF(3),
+		STM32_TIM_BDTR_DTG(DTG(hardware::pwm::DEADTIME)) | STM32_TIM_BDTR_BKE | STM32_TIM_BDTR_BKF(3),
 		/*
 		 * DIER Register
 		 */
@@ -106,7 +106,7 @@ const PWMConfig adctriggercfg =
 /**
  * Initialize PWM hardware with outputs disabled!
  */
-void unimoc::hardware::pwm::Init(void)
+void hardware::pwm::Init(void)
 {
 	/*
 	 * Set Debug register to stop TIM1 and TIM5 in DebugMode
@@ -142,7 +142,7 @@ void unimoc::hardware::pwm::Init(void)
  * Enable PWM Outputs.
  * @note Power output is active after this call
  */
-void unimoc::hardware::pwm::EnableOutputs(void)
+void hardware::pwm::EnableOutputs(void)
 {
 	palSetLine(LINE_EN_PWM_OUT);
 
@@ -153,7 +153,7 @@ void unimoc::hardware::pwm::EnableOutputs(void)
 /**
  * Disable PWM Outputs.
  */
-void unimoc::hardware::pwm::DisableOutputs(void)
+void hardware::pwm::DisableOutputs(void)
 {
 	palClearLine(LINE_EN_PWM_OUT);
 }
@@ -162,7 +162,7 @@ void unimoc::hardware::pwm::DisableOutputs(void)
  * Get pwm output state
  * @return pwm output state, true = pwm active
  */
-bool unimoc::hardware::pwm::OutputActive(void)
+bool hardware::pwm::OutputActive(void)
 {
 	return (PWMP->tim->BDTR & STM32_TIM_BDTR_MOE);
 }
@@ -171,7 +171,7 @@ bool unimoc::hardware::pwm::OutputActive(void)
  * Set the normalized duty cycles for each phase
  * @param dutys -1 = LOW, 0 = 50%, 1=HIGH
  */
-void unimoc::hardware::pwm::SetDutys(float dutys[PHASES])
+void hardware::pwm::SetDutys(float dutys[PHASES])
 {
 	const int16_t mid = PERIOD/2;
 

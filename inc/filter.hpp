@@ -16,24 +16,42 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef HARDWARE_INTERFACE_4850_PWM_HPP_
-#define HARDWARE_INTERFACE_4850_PWM_HPP_
+#ifndef INC_FILTER_HPP_
+#define INC_FILTER_HPP_
+
 #include <cstdint>
-#include "hardware_interface.hpp"
-#include "ch.hpp"
-#include "hal.h"
+#include <cmath>
+#include <climits>
 
 
-namespace hardware {
-	namespace pwm {
+namespace filter
+{
+/**
+ * first order iir low pass
+ */
+class low_pass
+{
 
-		///< PWM driver instance
-		extern PWMDriver* PWMP;
+private:
+	///< filter sample time
+	const float ts;
 
-		///< PWM duty counts
-		extern uint16_t duty_counts[PHASES];
-	} /* namespace adc */
-} /* namespace hardware */
+	///< proportional gain
+	const float k;
 
+	///< filter time constant dependent coefficient
+	const float t_tmp;
 
-#endif /* HARDWARE_INTERFACE_4850_PWM_HPP_ */
+	///< internal equation to pre calculate filter time constant dependent coefficient
+	static inline float T( float t, float ts) { return 1.0/(1.0 + t/ts); }
+
+public:
+	low_pass(const float new_ts, const float new_k, const float new_t);
+
+	float Calculate(const float uk, const float yk_1);
+};
+
+} /* namespace filter */
+
+#endif /* INC_FILTER_HPP_ */
+

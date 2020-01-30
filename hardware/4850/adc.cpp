@@ -1,5 +1,5 @@
 /*
-    UNIMOC - Universal Motor Control  2019 Alexander <tecnologic86@gmail.com> Brand
+    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
 
 	This file is part of UNIMOC.
 
@@ -22,6 +22,12 @@
 #include "pwm.hpp"
 #include "hardware_interface.hpp"
 #include "hal.h"
+
+
+static inline void adccallback(ADCDriver *adcp);
+static void adcerrorcallback(ADCDriver *adcp, adcerror_t err);
+static float adc2ntc_temperature(const uint16_t adc_value);
+
 
 /**
  * Structure from ADC Channel mapping
@@ -83,6 +89,32 @@ constexpr uint32_t ADC_SEQ_BUFFERED = 16;
 ///< # of ADCs
 constexpr uint32_t NUM_OF_ADC = 3;
 
+///< Number of NTC resistor LUT values
+static constexpr uint16_t NTC_TABLE_LEN = 128;
+///< NTC adc value to temperature in 0.01°C LUT
+static const int16_t ntc_table[NTC_TABLE_LEN] =
+{
+	28399, 23653, 18907, 16501, 14928, 13775,
+	12871, 12131, 11507, 10968, 10495, 10073,
+	9693, 9347, 9030, 8737, 8465, 8211, 7972,
+	7748, 7535, 7334, 7142, 6959, 6784, 6616,
+	6455, 6299, 6150, 6005, 5865, 5729, 5598,
+	5470, 5346, 5224, 5106, 4991, 4878, 4768,
+	4660, 4554, 4450, 4349, 4249, 4150, 4054,
+	3958, 3865, 3772, 3681, 3591, 3502, 3414,
+	3327, 3241, 3156, 3072, 2988, 2905, 2823,
+	2742, 2661, 2580, 2500, 2420, 2341, 2262,
+	2184, 2105, 2027, 1949, 1872, 1794, 1716,
+	1639, 1561, 1484, 1406, 1328, 1250, 1172,
+	1093, 1014, 935, 855, 775, 695, 613, 532,
+	449, 366, 282, 197, 111, 23, -65, -154, -245,
+	-338, -432, -528, -626, -725, -828, -932,
+	-1040, -1150, -1264, -1381, -1503, -1629,
+	-1760, -1897, -2041, -2192, -2352, -2522,
+	-2704, -2901, -3115, -3351, -3616, -3920,
+	-4278, -4720, -5311, -6245
+};
+
 
 /* Note, the buffer is aligned to a 32 bytes boundary because limitations
    imposed by the data cache. Note, this is GNU specific, it must be
@@ -99,62 +131,13 @@ static uint32_t samples_index = 0;
 static uint8_t non_cur_index[2] = {7, 8};
 
 ///< reference to thread to be woken up in the hardware control cycle.
-thread_reference_t* unimoc::hardware::control_thread = nullptr;
+thread_reference_t* hardware::control_thread = nullptr;
 
 ///< current samples gains
-static float current_gain[unimoc::hardware::PHASES];
+static float current_gain[hardware::PHASES];
 
 ///< current samples offsets
-static int16_t current_offset[unimoc::hardware::PHASES];
-
-
-/**
- * adc processing callback
- *
- * this call back will trigger the control task
- * @param adcp pointer to the adc driver instance
- */
-static inline void adccallback(ADCDriver *adcp)
-{
-	(void)adcp;
-	palSetLine(LINE_HALL_B);
-
-	/* DMA buffer invalidation because data cache, only invalidating the
-     half buffer just filled.
-     Only required if the ADC buffer is placed in a cache-able area.*/
-	cacheBufferInvalidate(dma_samples,
-			sizeof(dma_samples));
-
-	samples_index++;
-	if(samples_index > ADC_SEQ_BUFFERED) samples_index = 0;
-
-	std::memcpy(&samples[samples_index][0][0], &dma_samples[0][0], sizeof(dma_samples));
-
-
-	if(unimoc::hardware::control_thread != nullptr)
-	{
-		/* Wakes up the thread.*/
-		chSysLockFromISR();
-		chThdResumeI(unimoc::hardware::control_thread, (msg_t)samples_index);  /* Resuming the thread with message.*/
-		chSysUnlockFromISR();
-	}
-
-	palClearLine(LINE_HALL_B);
-}
-
-/**
- *  ADC errors callback, should never happen.
- * @param adcp
- * @param err
- */
-static void adcerrorcallback(ADCDriver *adcp, adcerror_t err) {
-
-	(void)adcp;
-	(void)err;
-
-	osalSysHalt("ADC Error");
-}
-
+static int16_t current_offset[hardware::PHASES];
 
 /**
  * ADC conversion group.
@@ -272,7 +255,7 @@ static ADCConversionGroup adcgrpcfg3 = {
 /**
  * Initialize ADC hardware
  */
-void unimoc::hardware::adc::Init(void)
+void hardware::adc::Init(void)
 {
 	/*
 	 * Fixed an errata on the STM32F7xx, the DAC clock is required for ADC
@@ -302,16 +285,29 @@ void unimoc::hardware::adc::Init(void)
  * cycles
  * @param currents pointer to a currents structure, will be written
  */
-void unimoc::hardware::adc::GetCurrents(current_values_ts* const currents)
+void hardware::adc::GetCurrents(current_values_ts* const currents)
 {
+	/*
+	 * Three 2mR shunts in parallel with a 20V/V gain map to 2048 per 1.65V
+	 */
+	const float ADC2CURRENT = 1.65f/(20.0f*(0.002f/3.0f))/2048.0f;
+	float adc[PHASES];
 	(void)currents;
+
+	for(uint8_t i = 0; i < PHASES; i++)
+	{
+		uint8_t s1 = samples_index;
+		uint8_t s2 = (samples_index + ADC_SEQ_BUFFERED - 1)%ADC_SEQ_BUFFERED;
+		float tmp = (float)(samples[s1][i][0] + samples[s2][i][LENGTH_ADC_SEQ - 2] - (2*current_offset[i]));
+		currents->current[i] = tmp * ADC2CURRENT * current_gain[i];
+	}
 }
 
 /**
  * Read the DC Bus voltage
  * @return DC Bus voltage in Volts
  */
-float unimoc::hardware::adc::GetDCBusVoltage(void)
+float hardware::adc::GetDCBusVoltage(void)
 {
 	constexpr float ADC_2_VDC = 560.0f/(10e3f+560.0f) * 3.3f/(4096.0f * 2.0f * ADC_SEQ_BUFFERED);
 	uint32_t sum = 0;
@@ -332,68 +328,11 @@ float unimoc::hardware::adc::GetDCBusVoltage(void)
 	return vdc;
 }
 
-///< Number of NTC resistor LUT values
-static constexpr uint16_t NTC_TABLE_LEN = 128;
-///< NTC adc value to temperature in 0.01°C LUT
-static const int16_t ntc_table[NTC_TABLE_LEN] =
-{
-	28399, 23653, 18907, 16501, 14928, 13775,
-	12871, 12131, 11507, 10968, 10495, 10073,
-	9693, 9347, 9030, 8737, 8465, 8211, 7972,
-	7748, 7535, 7334, 7142, 6959, 6784, 6616,
-	6455, 6299, 6150, 6005, 5865, 5729, 5598,
-	5470, 5346, 5224, 5106, 4991, 4878, 4768,
-	4660, 4554, 4450, 4349, 4249, 4150, 4054,
-	3958, 3865, 3772, 3681, 3591, 3502, 3414,
-	3327, 3241, 3156, 3072, 2988, 2905, 2823,
-	2742, 2661, 2580, 2500, 2420, 2341, 2262,
-	2184, 2105, 2027, 1949, 1872, 1794, 1716,
-	1639, 1561, 1484, 1406, 1328, 1250, 1172,
-	1093, 1014, 935, 855, 775, 695, 613, 532,
-	449, 366, 282, 197, 111, 23, -65, -154, -245,
-	-338, -432, -528, -626, -725, -828, -932,
-	-1040, -1150, -1264, -1381, -1503, -1629,
-	-1760, -1897, -2041, -2192, -2352, -2522,
-	-2704, -2901, -3115, -3351, -3616, -3920,
-	-4278, -4720, -5311, -6245
-};
-
-
-
-/**
- * \brief    Konvertiert das ADC Ergebnis in einen Temperaturwert.
- *
- *           Mit p1 und p2 wird der Stützpunkt direkt vor und nach dem
- *           ADC Wert ermittelt. Zwischen beiden Stützpunkten wird linear
- *           interpoliert. Der Code ist sehr klein und schnell.
- *           Es wird lediglich eine Ganzzahl-Multiplikation verwendet.
- *           Die Division kann vom Compiler durch eine Schiebeoperation.
- *           ersetzt werden.
- *
- *           Im Temperaturbereich von -10°C bis 150°C beträgt der Fehler
- *           durch die Verwendung einer Tabelle 0.393°C
- *
- * \param    adc_value  Das gewandelte ADC Ergebnis
- * \return              Die Temperatur in 0.01 °C
- *
- */
-static float adc2ntc_temperature(const uint16_t adc_value)
-{
-	const float oneby256 = 1.0f/256.0f;
-	int16_t p1,p2;
-	/* get the points from table left an right of the actual adc value */
-	p1 = ntc_table[ (adc_value >> 8)  ];
-	p2 = ntc_table[ (adc_value >> 8)+1];
-
-	/* linear interpolation between both points */
-	return ((float)p1 - ( (float)(p1-p2) * (float)(adc_value & 0x00FF) ) * oneby256)*0.01f;
-};
-
 /**
  * Get the temperature of the power electronics
  * @return Temperature of the power electronics in °C
  */
-float unimoc::hardware::adc::GetBridgeTemp(void)
+float hardware::adc::GetBridgeTemp(void)
 {
 	uint16_t sum = 0;
 
@@ -412,7 +351,7 @@ float unimoc::hardware::adc::GetBridgeTemp(void)
  * Get the temperature of the motor
  * @return Temperature of the Motor in °C
  */
-float unimoc::hardware::adc::GetMotorTemp(void)
+float hardware::adc::GetMotorTemp(void)
 {
 	uint16_t sum = 0;
 
@@ -431,7 +370,7 @@ float unimoc::hardware::adc::GetMotorTemp(void)
  * Get the external throttle command value
  * @return Throttle in a range of -1 to 1
  */
-float unimoc::hardware::adc::GetThrottle(void)
+float hardware::adc::GetThrottle(void)
 {
 	constexpr float ADC_2_THROTTLE = 1.0f/(4096.0f * ADC_SEQ_BUFFERED);
 	int32_t sum = 0;
@@ -461,7 +400,7 @@ float unimoc::hardware::adc::GetThrottle(void)
  *
  * @return false if pwm not active
  */
-extern bool unimoc::hardware::adc::Calibrate(void)
+extern bool hardware::adc::Calibrate(void)
 {
 	bool result = false;
 	const float DUTY_STEP = 0.01f;
@@ -574,7 +513,7 @@ extern bool unimoc::hardware::adc::Calibrate(void)
 			}
 			phase_gain /= PHASES;
 
-			current_gain[i] = phase_gain / mean_gain;
+			current_gain[i] = mean_gain / phase_gain;
 		}
 
 		result = true;
@@ -582,3 +521,82 @@ extern bool unimoc::hardware::adc::Calibrate(void)
 
 	return result;
 }
+
+/**
+ * \brief    Konvertiert das ADC Ergebnis in einen Temperaturwert.
+ *
+ *           Mit p1 und p2 wird der Stützpunkt direkt vor und nach dem
+ *           ADC Wert ermittelt. Zwischen beiden Stützpunkten wird linear
+ *           interpoliert. Der Code ist sehr klein und schnell.
+ *           Es wird lediglich eine Ganzzahl-Multiplikation verwendet.
+ *           Die Division kann vom Compiler durch eine Schiebeoperation.
+ *           ersetzt werden.
+ *
+ *           Im Temperaturbereich von -10°C bis 150°C beträgt der Fehler
+ *           durch die Verwendung einer Tabelle 0.393°C
+ *
+ * \param    adc_value  Das gewandelte ADC Ergebnis
+ * \return              Die Temperatur in 0.01 °C
+ *
+ */
+static float adc2ntc_temperature(const uint16_t adc_value)
+{
+	const float oneby256 = 1.0f/256.0f;
+	int16_t p1,p2;
+	/* get the points from table left an right of the actual adc value */
+	p1 = ntc_table[ (adc_value >> 8)  ];
+	p2 = ntc_table[ (adc_value >> 8)+1];
+
+	/* linear interpolation between both points */
+	return ((float)p1 - ( (float)(p1-p2) * (float)(adc_value & 0x00FF) ) * oneby256)*0.01f;
+};
+
+
+/**
+ * adc processing callback
+ *
+ * this call back will trigger the control task
+ * @param adcp pointer to the adc driver instance
+ */
+static inline void adccallback(ADCDriver *adcp)
+{
+	(void)adcp;
+	palSetLine(LINE_HALL_B);
+
+	/* DMA buffer invalidation because data cache, only invalidating the
+     half buffer just filled.
+     Only required if the ADC buffer is placed in a cache-able area.*/
+	cacheBufferInvalidate(dma_samples,
+			sizeof(dma_samples));
+
+	samples_index++;
+	if(samples_index > ADC_SEQ_BUFFERED) samples_index = 0;
+
+	std::memcpy(&samples[samples_index][0][0], &dma_samples[0][0], sizeof(dma_samples));
+
+
+	if(hardware::control_thread != nullptr)
+	{
+		/* Wakes up the thread.*/
+		chSysLockFromISR();
+		chThdResumeI(hardware::control_thread, (msg_t)samples_index);  /* Resuming the thread with message.*/
+		chSysUnlockFromISR();
+	}
+
+	palClearLine(LINE_HALL_B);
+}
+
+/**
+ *  ADC errors callback, should never happen.
+ * @param adcp
+ * @param err
+ */
+static void adcerrorcallback(ADCDriver *adcp, adcerror_t err)
+{
+
+	(void)adcp;
+	(void)err;
+
+	osalSysHalt("ADC Error");
+}
+
