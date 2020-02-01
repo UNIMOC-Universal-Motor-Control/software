@@ -22,10 +22,12 @@
 #include "usbcfg.h"
 #include "hardware_interface.hpp"
 #include "freemaster_wrapper.hpp"
+#include "controller.hpp"
 
 using namespace chibios_rt;
 
 static modules::freemaster::thread freemaster;
+static control::thread controller;
 
 float dutys[hardware::PHASES] = {0.0f, 0.0f, 0.0f};
 
@@ -70,6 +72,7 @@ int main(void)
 	 * start freemaster thread
 	 */
 	freemaster.start(NORMALPRIO);
+	hardware::control_thread = controller.start(HIGHPRIO);
 
 	/*
 	 * Set hall inputs to outputs for debugging
@@ -81,10 +84,11 @@ int main(void)
 	/*
 	 * initialize hardware with no control thread
 	 */
-	hardware::control_thread = nullptr;
 	hardware::memory::Init();
 	hardware::pwm::Init();
 	hardware::adc::Init();
+
+
 
 	hardware::pwm::SetDutys(dutys);
 	hardware::pwm::EnableOutputs();
@@ -93,27 +97,6 @@ int main(void)
 	palClearLine(LINE_LED_MODE);
 	palClearLine(LINE_LED_PWM);
 
-	/// Memory Tests
-	{
-		using namespace hardware::memory;
-		uint8_t write_data = 0;
-		uint8_t read_data = 0;
-		uint32_t address = 0, size = sizeof(write_data);
-
-//		for(address = 0; address < GetSize() - size; address +=size)
-//		{
-//			write_data = address;
-//			Write(address, (const void*)&write_data, size);
-//		}
-		for(address = 0; address < GetSize() - size; address +=size)
-		{
-			Read(0, (const void*)&read_data, size);
-
-			BaseThread::sleep(TIME_MS2I(50));
-		}
-
-
-	}
 	/*
 	 * Normal main() thread activity, in this demo it does nothing except
 	 * sleeping in a loop and check the button state.

@@ -24,7 +24,7 @@
 /**
  * @namespace controller classes
  */
-namespace controller
+namespace control
 {
 	/**
 	 * @brief Pi controller constructor with all essential parameters.
@@ -144,7 +144,7 @@ namespace controller
 		}
 
 	}
-}/* namespace controller */
+}/* namespace control */
 
 
 

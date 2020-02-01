@@ -131,7 +131,7 @@ static uint32_t samples_index = 0;
 static uint8_t non_cur_index[2] = {7, 8};
 
 ///< reference to thread to be woken up in the hardware control cycle.
-thread_reference_t* hardware::control_thread = nullptr;
+chibios_rt::ThreadReference hardware::control_thread = nullptr;
 
 ///< current samples gains
 static float current_gain[hardware::PHASES];
@@ -570,16 +570,16 @@ static inline void adccallback(ADCDriver *adcp)
 			sizeof(dma_samples));
 
 	samples_index++;
-	if(samples_index > ADC_SEQ_BUFFERED) samples_index = 0;
+	if(samples_index >= ADC_SEQ_BUFFERED) samples_index = 0;
 
 	std::memcpy(&samples[samples_index][0][0], &dma_samples[0][0], sizeof(dma_samples));
 
 
-	if(hardware::control_thread != nullptr)
+	if(!hardware::control_thread.isNull())
 	{
 		/* Wakes up the thread.*/
 		osalSysLockFromISR();
-		chEvtSignalI(hardware::control_thread, (eventmask_t)1);
+		chEvtSignalI(hardware::control_thread.getInner(), (eventmask_t)1);
 		osalSysUnlockFromISR();
 	}
 

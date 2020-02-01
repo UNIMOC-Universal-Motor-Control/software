@@ -22,11 +22,12 @@
 #include <cstdint>
 #include <cmath>
 #include <climits>
+#include "ch.hpp"
 
 /**
  * @namespace controller classes
  */
-namespace controller
+namespace control
 {
 
 /**
@@ -143,10 +144,10 @@ public:
 	/**
 	 * generic constructor
 	 */
-	thread();
+	thread() {};
 };
 
-} /* namespace controller */
+} /* namespace control */
 
 #endif /* INC_CONTROLLER_HPP_ */
 

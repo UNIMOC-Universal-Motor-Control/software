@@ -28,7 +28,7 @@ namespace hardware {
 constexpr uint8_t PHASES = 3;
 
 ///< reference to thread to be woken up in the hardware control cycle.
-extern thread_reference_t* control_thread;
+extern chibios_rt::ThreadReference  control_thread;
 
 namespace pwm {
 /*
