@@ -17,9 +17,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <cstdint>
+#include <cstring>
 #include "controller.hpp"
 #include "values.hpp"
 #include "settings.hpp"
+#include "hardware_interface.hpp"
 
 /**
  * @namespace controller classes
@@ -86,8 +88,10 @@ namespace control
 	foc::foc(const float new_ts, const float new_kp, const float new_tn):
 			d(new_ts, new_kp, new_tn, 0.0f, 0.0f), q(new_ts, new_kp, new_tn, 0.0f, 0.0f)
 	{}
+
+
 	/**
-	 * @brief calculate foc current controller
+	 * @brief calculate FOC current controller
 	 */
 	void foc::Calculate(void)
 	{
@@ -125,6 +129,8 @@ namespace control
 		}
 	}
 
+
+	volatile systems::abc i_abc;
 	/**
 	 * @brief Thread main function
 	 */
@@ -138,9 +144,14 @@ namespace control
 		 */
 		while (TRUE)
 		{
+			hardware::adc::current_values_ts i_tmp;
+
 			/* Checks if an IRQ happened else wait.*/
 			chEvtWaitAny((eventmask_t)1);
-			/* Perform processing here.*/
+
+			hardware::adc::GetCurrents(&i_tmp);
+
+			std::memcpy((void*)i_abc.array, i_tmp.current, sizeof(float)*3);
 		}
 
 	}

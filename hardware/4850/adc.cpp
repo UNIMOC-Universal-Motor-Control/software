@@ -257,6 +257,12 @@ static ADCConversionGroup adcgrpcfg3 = {
  */
 void hardware::adc::Init(void)
 {
+	for(uint8_t i = 0; i < PHASES; i++)
+	{
+		current_gain[i] = 1.0f;
+		current_offset[i] = 2048;
+	}
+
 	/*
 	 * Fixed an errata on the STM32F7xx, the DAC clock is required for ADC
 	 * triggering.
