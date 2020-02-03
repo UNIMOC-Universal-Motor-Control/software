@@ -19,14 +19,28 @@
 #include <cstring>
 #include <cstdint>
 #include <cmath>
+#include <algorithm>
 #include "pwm.hpp"
 #include "hardware_interface.hpp"
 #include "hal.h"
 
 
+///< intermediate values for linear regression of current samples
+/// Sxy = Σxiyi – (Σxi)(Σyi)/n and Sxx = Σxi2 – (Σxi)2/n
+typedef struct current_regression_s
+{
+	uint32_t xy_sum;			/// x*y sum
+	uint32_t x_sum;				/// x sum
+	uint32_t y_sum;				/// y sum
+	uint32_t x2_sum;			/// x^2 sum
+	uint32_t n;					/// number of samples
+} current_regression_ts;
+
 static inline void adccallback(ADCDriver *adcp);
 static void adcerrorcallback(ADCDriver *adcp, adcerror_t err);
 static float adc2ntc_temperature(const uint16_t adc_value);
+static void regression_addsample(const int16_t xi, const uint16_t yi, current_regression_ts* const reg);
+static void regression_calculate(float* mean, float* accent, current_regression_ts* const reg);
 
 
 /**
@@ -138,6 +152,7 @@ static float current_gain[hardware::PHASES];
 
 ///< current samples offsets
 static int16_t current_offset[hardware::PHASES];
+
 
 /**
  * ADC conversion group.
@@ -297,15 +312,56 @@ void hardware::adc::GetCurrents(current_values_ts* const currents)
 	 * Three 2mR shunts in parallel with a 20V/V gain map to 2048 per 1.65V
 	 */
 	const float ADC2CURRENT = 1.65f/(20.0f*(0.002f/3.0f))/2048.0f;
-	float adc[PHASES];
-	(void)currents;
+	current_regression_ts regres_dc;
+	current_regression_ts regres_ac;
+	uint32_t duty_min = *std::min_element(&pwm::duty_counts[0], &pwm::duty_counts[2]);
+	uint32_t duty_max = *std::max_element(&pwm::duty_counts[0], &pwm::duty_counts[2]);
+	uint32_t start_sample = (duty_min *LENGTH_ADC_SEQ) / pwm::PERIOD;
+	uint32_t end_sample = ((duty_max * LENGTH_ADC_SEQ) + pwm::PERIOD/2) / pwm::PERIOD;
+
+	memset(&regres_dc, 0, sizeof(current_regression_ts));
+	memset(&regres_ac, 0, sizeof(current_regression_ts));
 
 	for(uint8_t i = 0; i < PHASES; i++)
 	{
 		uint8_t s1 = samples_index;
 		uint8_t s2 = (samples_index + ADC_SEQ_BUFFERED - 1)%ADC_SEQ_BUFFERED;
-		float tmp = (float)(samples[s1][i][0] + samples[s2][i][LENGTH_ADC_SEQ - 2] - (2*current_offset[i]));
-		currents->current[i] = tmp * ADC2CURRENT * current_gain[i];
+
+		// start with the rest of the last full decent
+		// @note we evaluate the last FULL decent so current sample
+		// is one cycle delayed
+		for(uint8_t k = 0; k < start_sample; k++)
+		{
+			if(k%2)	// odd samples are ac
+			{
+				regression_addsample(k, samples[s1][i][k], &regres_ac);
+			}
+			else // even samples are dc
+			{
+				regression_addsample(k, samples[s1][i][k], &regres_dc);
+			}
+		}
+
+		// now the rest of this cycle
+		for(uint8_t k = end_sample; k < LENGTH_ADC_SEQ; k++)
+		{
+			if(k%2)	// odd samples are ac
+			{
+				regression_addsample(-k + LENGTH_ADC_SEQ, samples[s2][i][k], &regres_ac);
+			}
+			else // even samples are dc
+			{
+				regression_addsample(-k + LENGTH_ADC_SEQ, samples[s2][i][k], &regres_dc);
+			}
+		}
+
+		float mean, accent;
+		regression_calculate(&mean, &accent, &regres_dc);
+		currents->current[i] = (mean - current_offset[i]) * ADC2CURRENT * current_gain[i];
+		currents->current_decent[i] = accent*ADC2CURRENT*2e-6f; // per 2 us
+
+		regression_calculate(&mean, &accent, &regres_ac);
+		currents->current_acent[i] = accent*ADC2CURRENT*2e-6f; // per 2 us
 	}
 }
 
@@ -529,20 +585,10 @@ extern bool hardware::adc::Calibrate(void)
 }
 
 /**
- * \brief    Konvertiert das ADC Ergebnis in einen Temperaturwert.
+ * \brief    interpolate temperature via a LUT in the range of -10°C to 150°C with an error of 0.393°C
  *
- *           Mit p1 und p2 wird der Stützpunkt direkt vor und nach dem
- *           ADC Wert ermittelt. Zwischen beiden Stützpunkten wird linear
- *           interpoliert. Der Code ist sehr klein und schnell.
- *           Es wird lediglich eine Ganzzahl-Multiplikation verwendet.
- *           Die Division kann vom Compiler durch eine Schiebeoperation.
- *           ersetzt werden.
- *
- *           Im Temperaturbereich von -10°C bis 150°C beträgt der Fehler
- *           durch die Verwendung einer Tabelle 0.393°C
- *
- * \param    adc_value  Das gewandelte ADC Ergebnis
- * \return              Die Temperatur in 0.01 °C
+ * \param    adc_value  adc counts
+ * \return              temperature in °C
  *
  */
 static float adc2ntc_temperature(const uint16_t adc_value)
@@ -606,3 +652,31 @@ static void adcerrorcallback(ADCDriver *adcp, adcerror_t err)
 	osalSysHalt("ADC Error");
 }
 
+/**
+ * add sample to the regression window
+ * @param xi	x in us
+ * @param yi	y in adc counts
+ * @param reg	pointer to regression structure
+ */
+static void regression_addsample(const int16_t xi, const uint16_t yi, current_regression_ts* const reg)
+{
+	reg->x_sum += xi;
+	reg->x2_sum += xi*xi;
+	reg->xy_sum += xi*yi;
+	reg->y_sum += yi;
+	reg->n++;
+}
+
+/**
+ * calculate the linear regression for the samples added to the window
+ * @param mean		pointer to the mean value output
+ * @param accent	pointer to the accent value output
+ * @param reg		pointer to the regression structure
+ */
+static void regression_calculate(float* mean, float* accent, current_regression_ts* const reg)
+{
+	*mean = reg->y_sum / reg->n;
+	float sxy = reg->xy_sum - ((reg->x_sum * reg->y_sum)/reg->n);
+	float sxx = reg->x2_sum - ((reg->x_sum*reg->x_sum)/reg->n);
+	*accent = sxy / sxx;
+}
