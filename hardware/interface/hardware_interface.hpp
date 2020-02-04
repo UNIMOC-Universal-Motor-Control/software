@@ -48,12 +48,12 @@ constexpr uint32_t DEADTIME = 300;
  *
  * The ADC sampling relies on the PWM frequency!
  * Each ADC samples 16 samples with a sample time of 15clk + 12clk for conversion
- * + 1clk for triggering and 1 hole cyle more for the new setup of the adc.
- * This gives 17*28=476clk. ADC clock is divided by 8 from PWM clock this means
- * The Period of the PWM needs to be greater than 3808clk. With center aligned
- * PWM this is the period of PWM half period.
+ * + 1clk for triggering. ADC clock is divided by 8 from PWM clock.
+ *
+ * So Period of the PWM needs to be greater than 16*28*8=3584clk.
+ * With center aligned PWM this is the period of PWM half period.
  */
-constexpr uint32_t PERIOD = 3900;
+constexpr uint32_t PERIOD = 3600;
 
 /**
  * Initialize PWM hardware with outputs disabled!

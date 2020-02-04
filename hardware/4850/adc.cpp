@@ -135,14 +135,12 @@ static const int16_t ntc_table[NTC_TABLE_LEN] =
    handled differently for other compilers.
    Only required if the ADC buffer is placed in a cache-able area.*/
 ///< dma accessed buffer for the adcs, probably cached
-__attribute__((aligned (32))) static adcsample_t dma_samples[NUM_OF_ADC][LENGTH_ADC_SEQ];
-///< cached working buffer for calculations
-__attribute__((aligned (32))) static int16_t samples[ADC_SEQ_BUFFERED][NUM_OF_ADC][LENGTH_ADC_SEQ];
+__attribute__((aligned (32))) static adcsample_t samples[NUM_OF_ADC][ADC_SEQ_BUFFERED][LENGTH_ADC_SEQ];
 ///< cycle index for cached working buffer
 static uint32_t samples_index = 0;
 
 ///< index of the non current measurements in adc samples
-static uint8_t non_cur_index[2] = {7, 8};
+static uint8_t non_cur_index[2] = {0, LENGTH_ADC_SEQ - 1};
 
 ///< reference to thread to be woken up in the hardware control cycle.
 chibios_rt::ThreadReference hardware::control_thread = nullptr;
@@ -173,22 +171,22 @@ static ADCConversionGroup adcgrpcfg1 = {
 		0,                                                    /* HTR */
 		0,                                                    /* LTR */
 		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) |                     /* SQR1  */
-		ADC_SQR1_SQ16_N(ADC_CH_CUR_A_AC) |
+		ADC_SQR1_SQ16_N(ADC_CH_VDC) |
 		ADC_SQR1_SQ15_N(ADC_CH_CUR_A_DC) |
 		ADC_SQR1_SQ14_N(ADC_CH_CUR_A_AC) |
 		ADC_SQR1_SQ13_N(ADC_CH_CUR_A_DC),
 		ADC_SQR2_SQ12_N(ADC_CH_CUR_A_AC) |
 		ADC_SQR2_SQ11_N(ADC_CH_CUR_A_DC) |
 		ADC_SQR2_SQ10_N(ADC_CH_CUR_A_AC) |
-		ADC_SQR2_SQ9_N(ADC_CH_VDC) |
-		ADC_SQR2_SQ8_N(ADC_CH_VDC) |
+		ADC_SQR2_SQ9_N(ADC_CH_CUR_A_DC) |
+		ADC_SQR2_SQ8_N(ADC_CH_CUR_A_AC) |
 		ADC_SQR2_SQ7_N(ADC_CH_CUR_A_DC) ,                     /* SQR2  */
 		ADC_SQR3_SQ6_N(ADC_CH_CUR_A_AC) |
 		ADC_SQR3_SQ5_N(ADC_CH_CUR_A_DC) |
 		ADC_SQR3_SQ4_N(ADC_CH_CUR_A_AC) |
 		ADC_SQR3_SQ3_N(ADC_CH_CUR_A_DC) |
 		ADC_SQR3_SQ2_N(ADC_CH_CUR_A_AC) |
-		ADC_SQR3_SQ1_N(ADC_CH_CUR_A_DC)                       /* SQR3  */
+		ADC_SQR3_SQ1_N(ADC_CH_VDC)       	                /* SQR3  */
 };
 
 /**
@@ -211,22 +209,22 @@ static ADCConversionGroup adcgrpcfg2 = {
 		0,                                                    /* HTR */
 		0,                                                    /* LTR */
 		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) |                     /* SQR1  */
-		ADC_SQR1_SQ16_N(ADC_CH_CUR_B_AC) |
+		ADC_SQR1_SQ16_N(ADC_CH_MOT_TEMP) |
 		ADC_SQR1_SQ15_N(ADC_CH_CUR_B_DC) |
 		ADC_SQR1_SQ14_N(ADC_CH_CUR_B_AC) |
 		ADC_SQR1_SQ13_N(ADC_CH_CUR_B_DC),
 		ADC_SQR2_SQ12_N(ADC_CH_CUR_B_AC) |
 		ADC_SQR2_SQ11_N(ADC_CH_CUR_B_DC) |
 		ADC_SQR2_SQ10_N(ADC_CH_CUR_B_AC) |
-		ADC_SQR2_SQ9_N(ADC_CH_MOT_TEMP) |
-		ADC_SQR2_SQ8_N(ADC_CH_BRDG_TEMP) |
+		ADC_SQR2_SQ9_N(ADC_CH_CUR_B_DC) |
+		ADC_SQR2_SQ8_N(ADC_CH_CUR_B_AC) |
 		ADC_SQR2_SQ7_N(ADC_CH_CUR_B_DC) ,                     /* SQR2  */
 		ADC_SQR3_SQ6_N(ADC_CH_CUR_B_AC) |
 		ADC_SQR3_SQ5_N(ADC_CH_CUR_B_DC) |
 		ADC_SQR3_SQ4_N(ADC_CH_CUR_B_AC) |
 		ADC_SQR3_SQ3_N(ADC_CH_CUR_B_DC) |
 		ADC_SQR3_SQ2_N(ADC_CH_CUR_B_AC) |
-		ADC_SQR3_SQ1_N(ADC_CH_CUR_B_DC)                       /* SQR3  */
+		ADC_SQR3_SQ1_N(ADC_CH_BRDG_TEMP)                       /* SQR3  */
 };
 
 /**
@@ -248,22 +246,22 @@ static ADCConversionGroup adcgrpcfg3 = {
 		0,                                                    /* HTR */
 		0,                                                    /* LTR */
 		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) |                     /* SQR1  */
-		ADC_SQR1_SQ16_N(ADC_CH_CUR_C_AC) |
+		ADC_SQR1_SQ16_N(ADC_CH_ACC) |
 		ADC_SQR1_SQ15_N(ADC_CH_CUR_C_DC) |
 		ADC_SQR1_SQ14_N(ADC_CH_CUR_C_AC) |
 		ADC_SQR1_SQ13_N(ADC_CH_CUR_C_DC),
 		ADC_SQR2_SQ12_N(ADC_CH_CUR_C_AC) |
 		ADC_SQR2_SQ11_N(ADC_CH_CUR_C_DC) |
 		ADC_SQR2_SQ10_N(ADC_CH_CUR_C_AC) |
-		ADC_SQR2_SQ9_N(ADC_CH_ACC) |
-		ADC_SQR2_SQ8_N(ADC_CH_DCC) |
+		ADC_SQR2_SQ9_N(ADC_CH_CUR_C_DC) |
+		ADC_SQR2_SQ8_N(ADC_CH_CUR_C_AC) |
 		ADC_SQR2_SQ7_N(ADC_CH_CUR_C_DC) ,                     /* SQR2  */
 		ADC_SQR3_SQ6_N(ADC_CH_CUR_C_AC) |
 		ADC_SQR3_SQ5_N(ADC_CH_CUR_C_DC) |
 		ADC_SQR3_SQ4_N(ADC_CH_CUR_C_AC) |
 		ADC_SQR3_SQ3_N(ADC_CH_CUR_C_DC) |
 		ADC_SQR3_SQ2_N(ADC_CH_CUR_C_AC) |
-		ADC_SQR3_SQ1_N(ADC_CH_CUR_C_DC)                       /* SQR3  */
+		ADC_SQR3_SQ1_N(ADC_CH_DCC)                       /* SQR3  */
 };
 
 
@@ -290,14 +288,13 @@ void hardware::adc::Init(void)
 	adcStart(&ADCD1, nullptr);
 	adcStart(&ADCD2, nullptr);
 	adcStart(&ADCD3, nullptr);
-	adcSTM32EnableTSVREFE();
 
 	/*
 	 * Starts an ADC continuous conversion
 	 */
-	adcStartConversion(&ADCD1, &adcgrpcfg1, &dma_samples[0][0], 1);
-	adcStartConversion(&ADCD2, &adcgrpcfg2, &dma_samples[1][0], 1);
-	adcStartConversion(&ADCD3, &adcgrpcfg3, &dma_samples[2][0], 1);
+	adcStartConversion(&ADCD1, &adcgrpcfg1, &samples[0][0][0], ADC_SEQ_BUFFERED);
+	adcStartConversion(&ADCD2, &adcgrpcfg2, &samples[1][0][0], ADC_SEQ_BUFFERED);
+	adcStartConversion(&ADCD3, &adcgrpcfg3, &samples[2][0][0], ADC_SEQ_BUFFERED);
 }
 
 
@@ -316,8 +313,14 @@ void hardware::adc::GetCurrents(current_values_ts* const currents)
 	current_regression_ts regres_ac;
 	uint32_t duty_min = *std::min_element(&pwm::duty_counts[0], &pwm::duty_counts[2]);
 	uint32_t duty_max = *std::max_element(&pwm::duty_counts[0], &pwm::duty_counts[2]);
-	uint32_t start_sample = (duty_min *LENGTH_ADC_SEQ) / pwm::PERIOD;
-	uint32_t end_sample = ((duty_max * LENGTH_ADC_SEQ) + pwm::PERIOD/2) / pwm::PERIOD;
+	/*
+	 * When 16 samples are evenly distributed over the hole period the min and max duty
+	 * gives the times of the edges in between which the active state is located
+	 * Because the ADC trigger is at 50% the samples are located from 50% to 50%
+	 * of the next cycle. So start and end samples need to be shifted.
+	 */
+	uint32_t end_sample = LENGTH_ADC_SEQ - (LENGTH_ADC_SEQ/2 - ((duty_min * LENGTH_ADC_SEQ)) / pwm::PERIOD) - 1;
+	uint32_t start_sample = ((duty_max *LENGTH_ADC_SEQ) / pwm::PERIOD) - LENGTH_ADC_SEQ/2 + 1;
 
 	memset(&regres_dc, 0, sizeof(current_regression_ts));
 	memset(&regres_ac, 0, sizeof(current_regression_ts));
@@ -325,12 +328,11 @@ void hardware::adc::GetCurrents(current_values_ts* const currents)
 	for(uint8_t i = 0; i < PHASES; i++)
 	{
 		uint8_t s1 = samples_index;
-		uint8_t s2 = (samples_index + ADC_SEQ_BUFFERED - 1)%ADC_SEQ_BUFFERED;
 
 		// start with the rest of the last full decent
 		// @note we evaluate the last FULL decent so current sample
 		// is one cycle delayed
-		for(uint8_t k = 0; k < start_sample; k++)
+		for(uint8_t k = start_sample; k < end_sample; k++)
 		{
 			if(k%2)	// odd samples are ac
 			{
@@ -342,18 +344,6 @@ void hardware::adc::GetCurrents(current_values_ts* const currents)
 			}
 		}
 
-		// now the rest of this cycle
-		for(uint8_t k = end_sample; k < LENGTH_ADC_SEQ; k++)
-		{
-			if(k%2)	// odd samples are ac
-			{
-				regression_addsample(-k + LENGTH_ADC_SEQ, samples[s2][i][k], &regres_ac);
-			}
-			else // even samples are dc
-			{
-				regression_addsample(-k + LENGTH_ADC_SEQ, samples[s2][i][k], &regres_dc);
-			}
-		}
 
 		float mean, accent;
 		regression_calculate(&mean, &accent, &regres_dc);
@@ -361,7 +351,7 @@ void hardware::adc::GetCurrents(current_values_ts* const currents)
 		currents->current_decent[i] = accent*ADC2CURRENT*2e-6f; // per 2 us
 
 		regression_calculate(&mean, &accent, &regres_ac);
-		currents->current_acent[i] = accent*ADC2CURRENT*2e-6f; // per 2 us
+		currents->current_acent[i] = accent*ADC2CURRENT*2e-7f; // per 2 us
 	}
 }
 
@@ -493,7 +483,7 @@ extern bool hardware::adc::Calibrate(void)
 				// skip non current samples
 				if(k == non_cur_index[0] || k == non_cur_index[1]) continue;
 
-				offset_sum[p] += samples[i][p][k];
+				offset_sum[p] += samples[p][i][k];
 			}
 		}
 	}
@@ -510,7 +500,7 @@ extern bool hardware::adc::Calibrate(void)
 	osalThreadSleepMilliseconds(1);
 
 	// test what duty gives a current of 50% Fullscale
-	while(pwm::OutputActive() && std::abs(samples[0][0][0] - current_offset[0]) < ADC_TARGET)
+	while(pwm::OutputActive() && std::abs(samples[0][samples_index][0] - current_offset[0]) < ADC_TARGET)
 	{
 		dutys[0] += DUTY_STEP;
 		dutys[1] -= 0.5f * DUTY_STEP;
@@ -532,10 +522,15 @@ extern bool hardware::adc::Calibrate(void)
 
 		for(uint8_t s = 0; s < ADC_SEQ_BUFFERED; s++)
 		{
-			// take only the mid samples in to account
-			gain_sum[i][0] += samples[s][0][0] + samples[s][0][LENGTH_ADC_SEQ - 2];
-			gain_sum[i][1] += samples[s][1][0] + samples[s][1][LENGTH_ADC_SEQ - 2];
-			gain_sum[i][2] += samples[s][2][0] + samples[s][2][LENGTH_ADC_SEQ - 2];
+			for (uint8_t p = 0; p < PHASES; ++p)
+			{
+				// take only the mid samples in to account
+				// The edges are supposed to be below half duty
+				for (uint8_t k = 5; k < 11; ++k)
+				{
+					gain_sum[i][p] += samples[p][s][k];
+				}
+			}
 		}
 	}
 
@@ -550,8 +545,9 @@ extern bool hardware::adc::Calibrate(void)
 			for(uint8_t k = 0; k < PHASES; k++)
 			{
 				// transform the other currents back
-				if(i == k) gain[i][k] = gain_sum[i][k] / (float)(ADC_SEQ_BUFFERED * 2) - (float)current_offset[k];
-				else gain[i][k] = -((float)gain_sum[i][k] / (float)(ADC_SEQ_BUFFERED)) + (float)current_offset[k];
+				if(i == k) gain[i][k] = gain_sum[i][k] / (float)(ADC_SEQ_BUFFERED * 6) - (float)current_offset[k];
+				// normally half the current on the back flowing phases
+				else gain[i][k] = -((float)gain_sum[i][k] / (float)(ADC_SEQ_BUFFERED * 3)) + (float)current_offset[k];
 			}
 		}
 
@@ -616,15 +612,17 @@ static inline void adccallback(ADCDriver *adcp)
 	palSetLine(LINE_HALL_B);
 
 	/* DMA buffer invalidation because data cache, only invalidating the
-     half buffer just filled.
-     Only required if the ADC buffer is placed in a cache-able area.*/
-	cacheBufferInvalidate(dma_samples,
-			sizeof(dma_samples));
+     * buffer just filled.
+     */
+	for (uint8_t i = 0; i < hardware::PHASES; ++i)
+	{
+		cacheBufferInvalidate(&samples[i][samples_index][0],
+				sizeof(adcsample_t)*LENGTH_ADC_SEQ);
+	}
 
-	samples_index++;
-	if(samples_index >= ADC_SEQ_BUFFERED) samples_index = 0;
 
-	std::memcpy(&samples[samples_index][0][0], &dma_samples[0][0], sizeof(dma_samples));
+	if(samples_index < ADC_SEQ_BUFFERED) samples_index++;
+	else samples_index = 0;
 
 
 	if(!hardware::control_thread.isNull())
