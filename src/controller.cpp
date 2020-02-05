@@ -128,33 +128,6 @@ namespace control
 			values::motor::rotor::u.q = q.Calculate(values::motor::rotor::setpoint::i.q - values::motor::rotor::i.q, feedforward.q);
 		}
 	}
-
-
-	volatile systems::abc i_abc;
-	/**
-	 * @brief Thread main function
-	 */
-	void thread::main(void)
-	{
-		setName("Control");
-
-
-		/*
-		 * Normal main() thread activity
-		 */
-		while (TRUE)
-		{
-			hardware::adc::current_values_ts i_tmp;
-
-			/* Checks if an IRQ happened else wait.*/
-			chEvtWaitAny((eventmask_t)1);
-
-			hardware::adc::GetCurrents(&i_tmp);
-
-			std::memcpy((void*)i_abc.array, i_tmp.current, sizeof(float)*3);
-		}
-
-	}
 }/* namespace control */
 
 

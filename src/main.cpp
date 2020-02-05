@@ -22,14 +22,12 @@
 #include "usbcfg.h"
 #include "hardware_interface.hpp"
 #include "freemaster_wrapper.hpp"
-#include "controller.hpp"
+#include "main.hpp"
 
 using namespace chibios_rt;
 
 static modules::freemaster::thread freemaster;
 static control::thread controller;
-
-float dutys[hardware::PHASES] = {0.0f, 0.0f, 0.0f};
 
 /**
  * Code entry point
@@ -88,8 +86,6 @@ int main(void)
 	hardware::pwm::Init();
 	hardware::adc::Init();
 
-
-
 	hardware::pwm::SetDutys(dutys);
 	hardware::pwm::EnableOutputs();
 
@@ -103,7 +99,6 @@ int main(void)
 	 */
 	while (true)
 	{
-		hardware::pwm::SetDutys(dutys);
 		if(hardware::pwm::OutputActive())
 		{
 			palSetLine(LINE_LED_PWM);
@@ -115,3 +110,80 @@ int main(void)
 		BaseThread::sleep(TIME_MS2I(500));
 	}
 }
+
+namespace control
+{
+
+	/**
+	 * generic constructor
+	 */
+	thread::thread():flux(), mech_flux(settings::observer::Q, settings::observer::R),
+			foc(settings::converter::ts, settings::motor::Rs, 1.0f)
+	{}
+
+	/**
+	 * @brief Thread main function
+	 */
+	void thread::main(void)
+	{
+		setName("Control");
+
+
+		/*
+		 * Normal main() thread activity
+		 */
+		while (TRUE)
+		{
+			hardware::adc::current_values_ts i_tmp;
+
+			/* Checks if an IRQ happened else wait.*/
+			chEvtWaitAny((eventmask_t)1);
+
+			hardware::adc::GetCurrents(&i_tmp);
+
+			values::battery::u = hardware::adc::GetDCBusVoltage();
+
+			std::memcpy((void*)i_abc.array, i_tmp.current, sizeof(float)*3);
+
+			// calculate the sine and cosine of the new angle
+			float angle = values::motor::rotor::phi
+					+ values::motor::rotor::omega * settings::converter::ts;
+
+			// calculate new
+			values::motor::rotor::sin_cos.sin = std::sinf(angle);
+			values::motor::rotor::sin_cos.cos = std::cosf(angle);
+
+			// convert 3 phase system to ortogonal
+			i_ab = systems::transform::Clark(i_abc);
+			// convert current samples from clark to rotor frame;
+			values::motor::rotor::i = systems::transform::Park(i_ab, values::motor::rotor::sin_cos);
+
+			// calculate the flux observer
+			float flux_error = flux.Calculate();
+			mech_flux.Update(flux_error, flux_correction);
+
+			// predict motor behavior
+			observer::mechanic::Predict();
+			// correct the prediction
+			observer::mechanic::Correct(flux_correction);
+
+			// calculate the field orientated controllers
+			foc.Calculate();
+
+			// transform the voltages to stator frame
+			u_ab = systems::transform::InversePark(values::motor::rotor::u, values::motor::rotor::sin_cos);
+			// next transform to abc system
+			u_abc = systems::transform::InverseClark(u_ab);
+			// this also sets the internal scaling for the pwm dutys
+
+			//scale the voltages
+			u_abc.a /= values::battery::u;
+			u_abc.b /= values::battery::u;
+			u_abc.c /= values::battery::u;
+
+			// set the dutys
+			hardware::pwm::SetDutys(u_abc.array);
+		}
+
+	}
+}/* namespace control */

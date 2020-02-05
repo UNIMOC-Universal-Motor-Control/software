@@ -30,122 +30,102 @@
 namespace control
 {
 
-/**
- * pi controller with anti windup
- */
-class pi
-{
-private:
-	///< sample time (call timing of controller )
-	const float 	ts;
-	///< integral error sum
-	float 			error_sum;
-	///< unlimited controller output
-	float 			output_unlimited;
-	///< limited controller output
-	float 			output;
-	///< proportional controller gain
-	float			kp;
-	///< integral action time  (compensated time constant)
-	float			ki;			// integral gain
+	/**
+	 * pi controller with anti windup
+	 */
+	class pi
+	{
+	private:
+		///< sample time (call timing of controller )
+		const float 	ts;
+		///< integral error sum
+		float 			error_sum;
+		///< unlimited controller output
+		float 			output_unlimited;
+		///< limited controller output
+		float 			output;
+		///< proportional controller gain
+		float			kp;
+		///< integral action time  (compensated time constant)
+		float			ki;			// integral gain
 
-	///< internal equation for ki based on kp and tn (already takes sample time into account)
-	static inline
-	float SetKi(float kp, float ts, float new_tn) { return kp*ts/new_tn; };
-public:
-	///< positive output limit (not necessarily positive)
-	float			positive_limit;
-	///< negative output limit (not necessarily negative)
-	float			negative_limit;
+		///< internal equation for ki based on kp and tn (already takes sample time into account)
+		static inline
+		float SetKi(float kp, float ts, float new_tn) { return kp*ts/new_tn; };
+	public:
+		///< positive output limit (not necessarily positive)
+		float			positive_limit;
+		///< negative output limit (not necessarily negative)
+		float			negative_limit;
+
+		/**
+		 * @brief Pi controller constructor with all essential parameters.
+		 *
+		 * @param new_ts                set sample time.
+		 * @param new_kp                proportional gain.
+		 * @param new_tn                integral action time.
+		 * @param new_positive_limit    positive output limit.
+		 * @param new_negative_limit    negative output limit.
+		 */
+		pi(const float ts, const float kp, const float tn,
+				const float positive_limit, const float negative_limit);
+		/**
+		 * @brief calculate regulator equation with feed forward and anti windup.
+		 *
+		 * @param error         control loop error.
+		 * @param feed_forward  feed forward control input.
+		 * @retval controller output
+		 */
+		float Calculate(float  error, float feedforward);
+
+		/**
+		 * @brief set controller dynamic parameters.
+		 *
+		 * @param new_kp				proportional gain.
+		 * @param new_tn				integral action time.
+		 */
+		inline void SetParameters(const float new_kp, const float new_tn) { kp = new_kp; ki = SetKi(kp, ts, new_tn); };
+
+		///< @brief Reset controller and integral part to 0
+		inline void Reset(void) {error_sum = 0.0f;  output_unlimited = 0.0f; output = 0.0f;};
+	};
 
 	/**
-	 * @brief Pi controller constructor with all essential parameters.
-	 *
-	 * @param new_ts                set sample time.
-	 * @param new_kp                proportional gain.
-	 * @param new_tn                integral action time.
-	 * @param new_positive_limit    positive output limit.
-	 * @param new_negative_limit    negative output limit.
+	 * field orientated current controller
 	 */
-	pi(const float ts, const float kp, const float tn,
-			const float positive_limit, const float negative_limit);
-	/**
-	 * @brief calculate regulator equation with feed forward and anti windup.
-	 *
-	 * @param error         control loop error.
-	 * @param feed_forward  feed forward control input.
-	 * @retval controller output
-	 */
-	float Calculate(float  error, float feedforward);
+	class foc
+	{
+	private:
+		///< d-current controller
+		pi d;
+		///< q-current controller
+		pi q;
+	public:
+		/**
+		 * @brief FOC controller constructor with all essential parameters.
+		 *
+		 * @param new_ts                set sample time.
+		 * @param new_kp                proportional gain.
+		 * @param new_tn                integral action time.
+		 */
+		foc(const float new_ts, const float new_kp, const float new_tn);
+		/**
+		 * @brief calculate foc current controller
+		 */
+		void Calculate(void);
 
-	/**
-	 * @brief set controller dynamic parameters.
-	 *
-	 * @param new_kp				proportional gain.
-	 * @param new_tn				integral action time.
-	 */
-	inline void SetParameters(const float new_kp, const float new_tn) { kp = new_kp; ki = SetKi(kp, ts, new_tn); };
+		/**
+		 * @brief set controller dynamic parameters.
+		 *
+		 * @param new_kp                proportional gain.
+		 * @param new_tn                integral action time.
+		 */
+		inline void SetParameters(const float new_kp, const float new_tn) { d.SetParameters(new_kp, new_tn); q.SetParameters(new_kp, new_tn); };
 
-	///< @brief Reset controller and integral part to 0
-	inline void Reset(void) {error_sum = 0.0f;  output_unlimited = 0.0f; output = 0.0f;};
-};
+		///< @brief Reset controller and integral part to 0
+		inline void Reset(void) { d.Reset(); q.Reset(); };
+	};
 
-/**
- * field orientated current controller
- */
-class foc
-{
-private:
-	///< d-current controller
-	pi d;
-	///< q-current controller
-	pi q;
-public:
-	/**
-	 * @brief FOC controller constructor with all essential parameters.
-	 *
-	 * @param new_ts                set sample time.
-	 * @param new_kp                proportional gain.
-	 * @param new_tn                integral action time.
-	 */
-	foc(const float new_ts, const float new_kp, const float new_tn);
-	/**
-	 * @brief calculate foc current controller
-	 */
-	void Calculate(void);
-
-	/**
-	 * @brief set controller dynamic parameters.
-	 *
-	 * @param new_kp                proportional gain.
-	 * @param new_tn                integral action time.
-	 */
-	inline void SetParameters(const float new_kp, const float new_tn) { d.SetParameters(new_kp, new_tn); q.SetParameters(new_kp, new_tn); };
-
-	///< @brief Reset controller and integral part to 0
-	inline void Reset(void) { d.Reset(); q.Reset(); };
-};
-
-/**
- * generic FOC controller thread
- */
-class thread : public chibios_rt::BaseStaticThread<256>
-{
-private:
-
-
-protected:
-	/**
-	 * Thread function
-	 */
-	virtual void main(void);
-
-public:
-	/**
-	 * generic constructor
-	 */
-	thread() {};
-};
 
 } /* namespace control */
 
