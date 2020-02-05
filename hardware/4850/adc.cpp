@@ -319,8 +319,8 @@ void hardware::adc::GetCurrents(current_values_ts* const currents)
 	 * Because the ADC trigger is at 50% the samples are located from 50% to 50%
 	 * of the next cycle. So start and end samples need to be shifted.
 	 */
-	uint32_t end_sample = LENGTH_ADC_SEQ - (LENGTH_ADC_SEQ/2 - ((duty_min * LENGTH_ADC_SEQ)) / pwm::PERIOD) - 1;
-	uint32_t start_sample = ((duty_max *LENGTH_ADC_SEQ) / pwm::PERIOD) - LENGTH_ADC_SEQ/2 + 1;
+	int32_t end_sample = LENGTH_ADC_SEQ - (LENGTH_ADC_SEQ/2 - ((duty_min * LENGTH_ADC_SEQ)) / pwm::PERIOD) - 1;
+	int32_t start_sample = ((duty_max *LENGTH_ADC_SEQ) / pwm::PERIOD) - LENGTH_ADC_SEQ/2 + 1;
 
 	memset(&regres_dc, 0, sizeof(current_regression_ts));
 	memset(&regres_ac, 0, sizeof(current_regression_ts));

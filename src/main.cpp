@@ -86,7 +86,6 @@ int main(void)
 	hardware::pwm::Init();
 	hardware::adc::Init();
 
-	hardware::pwm::SetDutys(dutys);
 	hardware::pwm::EnableOutputs();
 
 	palClearLine(LINE_LED_ERROR);
@@ -114,10 +113,12 @@ int main(void)
 namespace control
 {
 
+	volatile hardware::adc::current_values_ts i_tmp;
+
 	/**
 	 * generic constructor
 	 */
-	thread::thread():flux(), mech_flux(settings::observer::Q, settings::observer::R),
+	thread::thread():flux(), mech(settings::observer::Q, settings::observer::R),
 			foc(settings::converter::ts, settings::motor::Rs, 1.0f)
 	{}
 
@@ -134,24 +135,23 @@ namespace control
 		 */
 		while (TRUE)
 		{
-			hardware::adc::current_values_ts i_tmp;
 
 			/* Checks if an IRQ happened else wait.*/
 			chEvtWaitAny((eventmask_t)1);
 
-			hardware::adc::GetCurrents(&i_tmp);
+			hardware::adc::GetCurrents((hardware::adc::current_values_ts*)&i_tmp);
 
 			values::battery::u = hardware::adc::GetDCBusVoltage();
 
-			std::memcpy((void*)i_abc.array, i_tmp.current, sizeof(float)*3);
+			std::memcpy(i_abc.array, (void*)i_tmp.current, sizeof(float)*3);
 
 			// calculate the sine and cosine of the new angle
 			float angle = values::motor::rotor::phi
 					+ values::motor::rotor::omega * settings::converter::ts;
 
 			// calculate new
-			values::motor::rotor::sin_cos.sin = std::sinf(angle);
-			values::motor::rotor::sin_cos.cos = std::cosf(angle);
+			values::motor::rotor::sin_cos.sin = sinf(angle);
+			values::motor::rotor::sin_cos.cos = cosf(angle);
 
 			// convert 3 phase system to ortogonal
 			i_ab = systems::transform::Clark(i_abc);
@@ -160,12 +160,12 @@ namespace control
 
 			// calculate the flux observer
 			float flux_error = flux.Calculate();
-			mech_flux.Update(flux_error, flux_correction);
+			mech.Update(flux_error, correction);
 
 			// predict motor behavior
 			observer::mechanic::Predict();
 			// correct the prediction
-			observer::mechanic::Correct(flux_correction);
+			observer::mechanic::Correct(correction);
 
 			// calculate the field orientated controllers
 			foc.Calculate();

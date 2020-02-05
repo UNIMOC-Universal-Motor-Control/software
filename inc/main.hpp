@@ -43,13 +43,13 @@ namespace control
 	{
 	private:
 		observer::flux       	flux;
-		observer::mechanic   	mech_flux;
+		observer::mechanic   	mech;
 		control::foc      		foc;
 		systems::abc         	u_abc;
 		systems::alpha_beta  	u_ab;
 		systems::abc 			i_abc;
 		systems::alpha_beta 	i_ab;
-		float               	flux_correction[3];
+		float               	correction[3];
 
 
 	protected:

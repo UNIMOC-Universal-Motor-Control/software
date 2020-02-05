@@ -135,6 +135,9 @@ void hardware::pwm::Init(void)
 	pwmEnableChannel(PWMP, 0, PERIOD/2);
 	pwmEnableChannel(PWMP, 1, PERIOD/2);
 	pwmEnableChannel(PWMP, 2, PERIOD/2);
+	duty_counts[0] = PERIOD/2;
+	duty_counts[1] = PERIOD/2;
+	duty_counts[2] = PERIOD/2;
 }
 
 /**
