@@ -368,8 +368,8 @@ float hardware::adc::GetDCBusVoltage(void)
 		/*
 		 * VDC is sampled by ADC1 2 times as a non current sample
 		 */
-		sum += samples[i][0][non_cur_index[0]];
-		sum += samples[i][0][non_cur_index[1]];
+		sum += samples[0][i][non_cur_index[0]];
+		sum += samples[0][i][non_cur_index[1]];
 	}
 
 	vdc = (float)sum * ADC_2_VDC;
@@ -383,17 +383,17 @@ float hardware::adc::GetDCBusVoltage(void)
  */
 float hardware::adc::GetBridgeTemp(void)
 {
-	uint16_t sum = 0;
+	uint32_t sum = 0;
 
 	for(uint32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
 	{
 		/*
 		 * Bridge temperature is sampled by ADC2 first non current sample
 		 */
-		sum += samples[i][0][non_cur_index[0]];
+		sum += samples[1][i][non_cur_index[0]];
 	}
 
-	return adc2ntc_temperature(sum);
+	return adc2ntc_temperature(sum/ADC_SEQ_BUFFERED);
 }
 
 /**
@@ -402,17 +402,17 @@ float hardware::adc::GetBridgeTemp(void)
  */
 float hardware::adc::GetMotorTemp(void)
 {
-	uint16_t sum = 0;
+	uint32_t sum = 0;
 
 	for(uint32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
 	{
 		/*
 		 * Motor temperature is sampled by ADC2 second non current sample
 		 */
-		sum += samples[i][0][non_cur_index[1]];
+		sum += samples[1][i][non_cur_index[1]];
 	}
 
-	return adc2ntc_temperature(sum);
+	return adc2ntc_temperature(sum/ADC_SEQ_BUFFERED);
 }
 
 /**
@@ -430,8 +430,8 @@ float hardware::adc::GetThrottle(void)
 		/*
 		 * ACC is sampled by ADC3 DCC is the first and ACC the second sample
 		 */
-		sum -= samples[i][0][non_cur_index[0]];
-		sum += samples[i][0][non_cur_index[1]];
+		sum -= samples[2][i][non_cur_index[0]];
+		sum += samples[2][i][non_cur_index[1]];
 	}
 
 	throttle = (float)sum *ADC_2_THROTTLE;

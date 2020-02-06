@@ -126,6 +126,13 @@ namespace systems
      */
     float Length(const alpha_beta& vector);
 
+    /**
+      @brief         Floating-point sine and cosine function.
+      @param[in]     theta    input value in rad
+      @param[out]    out      points to processed sine cosine output
+     */
+    void SinCos(const float theta, sin_cos& out);
+
 
     /**
      * @namespace coordinate system transformations.

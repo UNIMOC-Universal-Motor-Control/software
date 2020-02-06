@@ -150,8 +150,7 @@ namespace control
 					+ values::motor::rotor::omega * settings::converter::ts;
 
 			// calculate new
-			values::motor::rotor::sin_cos.sin = sinf(angle);
-			values::motor::rotor::sin_cos.cos = cosf(angle);
+			systems::SinCos(angle, values::motor::rotor::sin_cos);
 
 			// convert 3 phase system to ortogonal
 			i_ab = systems::transform::Clark(i_abc);
