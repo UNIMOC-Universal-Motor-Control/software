@@ -309,8 +309,8 @@ void hardware::adc::GetCurrents(current_values_ts* const currents)
 	 * Three 2mR shunts in parallel with a 20V/V gain map to 2048 per 1.65V
 	 */
 	const float ADC2CURRENT = 1.65f/(20.0f*(0.002f/3.0f))/2048.0f;
-	current_regression_ts regres_dc;
-	current_regression_ts regres_ac;
+	static current_regression_ts regres_dc;
+	static current_regression_ts regres_ac;
 	uint32_t duty_min = *std::min_element(&pwm::duty_counts[0], &pwm::duty_counts[2]);
 	uint32_t duty_max = *std::max_element(&pwm::duty_counts[0], &pwm::duty_counts[2]);
 	/*
@@ -321,9 +321,6 @@ void hardware::adc::GetCurrents(current_values_ts* const currents)
 	 */
 	int32_t end_sample = LENGTH_ADC_SEQ - (LENGTH_ADC_SEQ/2 - ((duty_min * LENGTH_ADC_SEQ)) / pwm::PERIOD) - 1;
 	int32_t start_sample = ((duty_max *LENGTH_ADC_SEQ) / pwm::PERIOD) - LENGTH_ADC_SEQ/2 + 1;
-
-	memset(&regres_dc, 0, sizeof(current_regression_ts));
-	memset(&regres_ac, 0, sizeof(current_regression_ts));
 
 	for(uint8_t i = 0; i < PHASES; i++)
 	{
@@ -667,14 +664,19 @@ static void regression_addsample(const int16_t xi, const uint16_t yi, current_re
 
 /**
  * calculate the linear regression for the samples added to the window
+ *
+ * @note clears the samples
+ *
  * @param mean		pointer to the mean value output
  * @param accent	pointer to the accent value output
  * @param reg		pointer to the regression structure
  */
 static void regression_calculate(float* mean, float* accent, current_regression_ts* const reg)
 {
-	*mean = reg->y_sum / reg->n;
 	float sxy = reg->xy_sum - ((reg->x_sum * reg->y_sum)/reg->n);
 	float sxx = reg->x2_sum - ((reg->x_sum*reg->x_sum)/reg->n);
 	*accent = sxy / sxx;
+	*mean = reg->y_sum / reg->n;
+
+	memset(reg, 0, sizeof(current_regression_ts));
 }
