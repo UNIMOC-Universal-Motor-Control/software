@@ -309,8 +309,6 @@ void hardware::adc::GetCurrents(current_values_ts* const currents)
 	 * Three 2mR shunts in parallel with a 20V/V gain map to 2048 per 1.65V
 	 */
 	const float ADC2CURRENT = 1.65f/(20.0f*(0.002f/3.0f))/2048.0f;
-	static current_regression_ts regres_dc;
-	static current_regression_ts regres_ac;
 	uint32_t duty_min = *std::min_element(&pwm::duty_counts[0], &pwm::duty_counts[2]);
 	uint32_t duty_max = *std::max_element(&pwm::duty_counts[0], &pwm::duty_counts[2]);
 	/*
@@ -324,7 +322,12 @@ void hardware::adc::GetCurrents(current_values_ts* const currents)
 
 	for(uint8_t i = 0; i < PHASES; i++)
 	{
+		current_regression_ts regres_dc;
+		current_regression_ts regres_ac;
 		uint8_t s1 = samples_index;
+
+		memset(&regres_dc, 0, sizeof(current_regression_ts));
+		memset(&regres_ac, 0, sizeof(current_regression_ts));
 
 		// start with the rest of the last full decent
 		// @note we evaluate the last FULL decent so current sample
@@ -347,8 +350,8 @@ void hardware::adc::GetCurrents(current_values_ts* const currents)
 		currents->current[i] = (mean - current_offset[i]) * ADC2CURRENT * current_gain[i];
 		currents->current_decent[i] = accent*ADC2CURRENT*2e-6f; // per 2 us
 
-		regression_calculate(&mean, &accent, &regres_ac);
-		currents->current_acent[i] = accent*ADC2CURRENT*2e-7f; // per 2 us
+//		regression_calculate(&mean, &accent, &regres_ac);
+//		currents->current_acent[i] = accent*ADC2CURRENT*2e-7f; // per 2 us
 	}
 }
 
@@ -358,7 +361,7 @@ void hardware::adc::GetCurrents(current_values_ts* const currents)
  */
 float hardware::adc::GetDCBusVoltage(void)
 {
-	constexpr float ADC_2_VDC = 560.0f/(10e3f+560.0f) * 3.3f/(4096.0f * 2.0f * ADC_SEQ_BUFFERED);
+	constexpr float ADC_2_VDC = (20e3f+1e3f)/1e3f * 3.3f/(4096.0f * 2.0f * ADC_SEQ_BUFFERED);
 	uint32_t sum = 0;
 	float vdc;
 
@@ -629,8 +632,6 @@ static inline void adccallback(ADCDriver *adcp)
 		chEvtSignalI(hardware::control_thread.getInner(), (eventmask_t)1);
 		osalSysUnlockFromISR();
 	}
-
-	palClearLine(LINE_HALL_B);
 }
 
 /**
@@ -673,10 +674,8 @@ static void regression_addsample(const int16_t xi, const uint16_t yi, current_re
  */
 static void regression_calculate(float* mean, float* accent, current_regression_ts* const reg)
 {
-	float sxy = reg->xy_sum - ((reg->x_sum * reg->y_sum)/reg->n);
-	float sxx = reg->x2_sum - ((reg->x_sum*reg->x_sum)/reg->n);
+	float sxy = (float)reg->xy_sum - ((float)(reg->x_sum * reg->y_sum)/reg->n);
+	float sxx = (float)reg->x2_sum - ((float)(reg->x_sum*reg->x_sum)/reg->n);
 	*accent = sxy / sxx;
 	*mean = reg->y_sum / reg->n;
-
-	memset(reg, 0, sizeof(current_regression_ts));
 }

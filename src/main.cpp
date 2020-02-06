@@ -156,32 +156,45 @@ namespace control
 			i_ab = systems::transform::Clark(i_abc);
 			// convert current samples from clark to rotor frame;
 			values::motor::rotor::i = systems::transform::Park(i_ab, values::motor::rotor::sin_cos);
-
-			// calculate the flux observer
-			float flux_error = flux.Calculate();
-			mech.Update(flux_error, correction);
-
-			// predict motor behavior
-			observer::mechanic::Predict();
-			// correct the prediction
-			observer::mechanic::Correct(correction);
-
-			// calculate the field orientated controllers
-			foc.Calculate();
-
-			// transform the voltages to stator frame
-			u_ab = systems::transform::InversePark(values::motor::rotor::u, values::motor::rotor::sin_cos);
-			// next transform to abc system
-			u_abc = systems::transform::InverseClark(u_ab);
-			// this also sets the internal scaling for the pwm dutys
-
+//
+//			// calculate the flux observer
+//			float flux_error = flux.Calculate();
+//			mech.Update(flux_error, correction);
+//
+//			// predict motor behavior
+//			observer::mechanic::Predict();
+//			// correct the prediction
+//			observer::mechanic::Correct(correction);
+//
+//			// calculate the field orientated controllers
+//			foc.Calculate();
+//
+//			// transform the voltages to stator frame
+//			u_ab = systems::transform::InversePark(values::motor::rotor::u, values::motor::rotor::sin_cos);
+//			// next transform to abc system
+//			u_abc = systems::transform::InverseClark(u_ab);
+//			// this also sets the internal scaling for the pwm dutys
+//
 			//scale the voltages
-			u_abc.a /= values::battery::u;
-			u_abc.b /= values::battery::u;
-			u_abc.c /= values::battery::u;
+			if(std::fabs(values::battery::u)> 10.0f)
+			{
+				u_abc.a /= values::battery::u;
+				u_abc.b /= values::battery::u;
+				u_abc.c /= values::battery::u;
 
-			// set the dutys
-			hardware::pwm::SetDutys(u_abc.array);
+				// set the dutys
+				hardware::pwm::SetDutys(u_abc.array);
+			}
+			else
+			{
+				// faulty dc bus voltage
+				u_abc.a = 0.0f;
+				u_abc.b = 0.0f;
+				u_abc.c = 0.0f;
+				hardware::pwm::SetDutys(u_abc.array);
+			}
+			palClearLine(LINE_HALL_B);
+
 		}
 
 	}
