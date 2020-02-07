@@ -129,7 +129,7 @@ void hardware::pwm::Init(void)
 	PWMP->tim->CR1 |= STM32_TIM_CR1_CEN; // pwm timer start again
 
 	/* set adc trigger offset */
-	pwmEnableChannel(ADC_TRIGP, 3, PERIOD/2 + (PERIOD - 28*8*16)/2);
+	pwmEnableChannel(ADC_TRIGP, 3, 100);
 
 	/* enable pwms */
 	pwmEnableChannel(PWMP, 0, PERIOD/2);

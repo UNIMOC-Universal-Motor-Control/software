@@ -139,6 +139,8 @@ namespace control
 			/* Checks if an IRQ happened else wait.*/
 			chEvtWaitAny((eventmask_t)1);
 
+			palSetLine(LINE_HALL_B);
+
 			hardware::adc::GetCurrents((hardware::adc::current_values_ts*)&i_tmp);
 
 			values::battery::u = hardware::adc::GetDCBusVoltage();
@@ -169,12 +171,12 @@ namespace control
 //			// calculate the field orientated controllers
 //			foc.Calculate();
 //
-//			// transform the voltages to stator frame
-//			u_ab = systems::transform::InversePark(values::motor::rotor::u, values::motor::rotor::sin_cos);
-//			// next transform to abc system
-//			u_abc = systems::transform::InverseClark(u_ab);
-//			// this also sets the internal scaling for the pwm dutys
-//
+			// transform the voltages to stator frame
+			u_ab = systems::transform::InversePark(values::motor::rotor::u, values::motor::rotor::sin_cos);
+			// next transform to abc system
+			u_abc = systems::transform::InverseClark(u_ab);
+			// this also sets the internal scaling for the pwm dutys
+
 			//scale the voltages
 			if(std::fabs(values::battery::u)> 10.0f)
 			{

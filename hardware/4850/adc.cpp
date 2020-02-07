@@ -329,7 +329,7 @@ void hardware::adc::GetCurrents(current_values_ts* const currents)
 	{
 		current_regression_ts regres_dc = {n : 0, x_sum : 0, x2_sum : 0, xy_sum : 0, y_sum : 0};
 		current_regression_ts regres_ac = {n : 0, x_sum : 0, x2_sum : 0, xy_sum : 0, y_sum : 0};
-		uint8_t s1 = samples_index;
+		uint32_t s1 = samples_index;
 
 		// start with the rest of the last full decent
 		// @note we evaluate the last FULL decent so current sample
@@ -338,11 +338,11 @@ void hardware::adc::GetCurrents(current_values_ts* const currents)
 		{
 			if(k%2)	// odd samples are ac
 			{
-				regression_addsample(k, samples[s1][i][k], &regres_ac);
+				regression_addsample(k, samples[i][s1][k], &regres_ac);
 			}
 			else // even samples are dc
 			{
-				regression_addsample(k, samples[s1][i][k], &regres_dc);
+				regression_addsample(k, samples[i][s1][k], &regres_dc);
 			}
 		}
 
@@ -350,10 +350,10 @@ void hardware::adc::GetCurrents(current_values_ts* const currents)
 		float mean, accent;
 		regression_calculate(&mean, &accent, &regres_dc);
 		currents->current[i] = (mean - current_offset[i]) * ADC2CURRENT * current_gain[i];
-		currents->current_decent[i] = accent*ADC2CURRENT*2e-6f; // per 2 us
+		currents->current_decent[i] = accent*ADC2CURRENT*5e5f; // per 2 us
 
 		regression_calculate(&mean, &accent, &regres_ac);
-		currents->current_acent[i] = accent*ADC2CURRENT*2e-7f; // per 2 us
+		currents->current_acent[i] = accent*ADC2CURRENT*5e6f; // per 2 us
 	}
 }
 
@@ -611,8 +611,8 @@ static float adc2ntc_temperature(const uint16_t adc_value)
 static inline void adccallback(ADCDriver *adcp)
 {
 	(void)adcp;
-	palSetLine(LINE_HALL_B);
 
+	palToggleLine(LINE_HALL_C);
 	/* DMA buffer invalidation because data cache, only invalidating the
      * buffer just filled.
      */

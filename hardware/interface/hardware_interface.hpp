@@ -53,7 +53,7 @@ constexpr uint32_t DEADTIME = 300;
  * So Period of the PWM needs to be greater than 16*28*8=3584clk.
  * With center aligned PWM this is the period of PWM half period.
  */
-constexpr uint32_t PERIOD = 3900;
+constexpr uint32_t PERIOD = 3600;
 
 /**
  * Initialize PWM hardware with outputs disabled!
