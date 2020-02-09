@@ -18,6 +18,7 @@
  */
 #include <cstdint>
 #include "pwm.hpp"
+#include "adc.hpp"
 #include "hardware_interface.hpp"
 
 ///< PWM driver instance
@@ -42,6 +43,7 @@ constexpr uint16_t DTG(const uint32_t deadtime)
 	                "PWM: Dead too long");
 	return (uint16_t)((fdeadtime * clock) -1);
 }
+
 
 /**
  * basic PWM configuration
@@ -74,6 +76,41 @@ const PWMConfig pwmcfg =
 };
 
 /**
+ * callback triggers the control task
+ *
+ * @note callback also invalidates cache for samples section recently sampled
+ *
+ * @param pwmp
+ */
+static inline void control_trigger(PWMDriver *pwmp)
+{
+	(void)pwmp;
+	palToggleLine(LINE_HALL_B);
+
+	/* DMA buffer invalidation because data cache, only invalidating the
+     * buffer just filled.
+     */
+	for (uint8_t i = 0; i < hardware::PHASES; ++i)
+	{
+		cacheBufferInvalidate(&hardware::adc::samples[i][hardware::adc::samples_index][0],
+				sizeof(adcsample_t)*hardware::adc::LENGTH_ADC_SEQ);
+	}
+
+
+	if(hardware::adc::samples_index < (hardware::adc::ADC_SEQ_BUFFERED - 1)) hardware::adc::samples_index++;
+	else hardware::adc::samples_index = 0;
+
+
+	if(!hardware::control_thread.isNull())
+	{
+		/* Wakes up the thread.*/
+		osalSysLockFromISR();
+		chEvtSignalI(hardware::control_thread.getInner(), (eventmask_t)1);
+		osalSysUnlockFromISR();
+	}
+}
+
+/**
  * Configuration for ADC Trigger Timer
  */
 const PWMConfig adctriggercfg =
@@ -85,7 +122,7 @@ const PWMConfig adctriggercfg =
 				{PWM_OUTPUT_DISABLED, nullptr},
 				{PWM_OUTPUT_DISABLED, nullptr},
 				{PWM_OUTPUT_DISABLED, nullptr},
-				{PWM_OUTPUT_ACTIVE_HIGH, nullptr}
+				{PWM_OUTPUT_ACTIVE_HIGH, control_trigger}
 		},
 		/*
 		 * CR2 Register
@@ -129,7 +166,8 @@ void hardware::pwm::Init(void)
 	PWMP->tim->CR1 |= STM32_TIM_CR1_CEN; // pwm timer start again
 
 	/* set adc trigger offset */
-	pwmEnableChannel(ADC_TRIGP, 3, 100);
+	pwmEnableChannel(ADC_TRIGP, 3, PERIOD/4 - 50);
+	pwmEnableChannelNotification(ADC_TRIGP, 3);
 
 	/* enable pwms */
 	pwmEnableChannel(PWMP, 0, PERIOD/2);
@@ -138,6 +176,7 @@ void hardware::pwm::Init(void)
 	duty_counts[0] = PERIOD/2;
 	duty_counts[1] = PERIOD/2;
 	duty_counts[2] = PERIOD/2;
+
 }
 
 /**

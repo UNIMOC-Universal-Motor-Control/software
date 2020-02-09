@@ -139,7 +139,7 @@ namespace control
 			/* Checks if an IRQ happened else wait.*/
 			chEvtWaitAny((eventmask_t)1);
 
-			palSetLine(LINE_HALL_B);
+			palSetLine(LINE_HALL_C);
 
 			hardware::adc::GetCurrents((hardware::adc::current_values_ts*)&i_tmp);
 
@@ -195,8 +195,7 @@ namespace control
 				u_abc.c = 0.0f;
 				hardware::pwm::SetDutys(u_abc.array);
 			}
-			palClearLine(LINE_HALL_B);
-
+			palClearLine(LINE_HALL_C);
 		}
 
 	}

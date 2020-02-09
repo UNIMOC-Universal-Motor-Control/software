@@ -21,9 +21,11 @@
 #include <cmath>
 #include <algorithm>
 #include "pwm.hpp"
+#include "adc.hpp"
 #include "hardware_interface.hpp"
 #include "hal.h"
 
+using namespace hardware::adc;
 
 ///< intermediate values for linear regression of current samples
 /// Sxy = Σxiyi – (Σxi)(Σyi)/n and Sxx = Σxi2 – (Σxi)2/n
@@ -36,7 +38,6 @@ typedef struct current_regression_s
 	int32_t y_sum;				/// y sum
 } current_regression_ts;
 
-static inline void adccallback(ADCDriver *adcp);
 static void adcerrorcallback(ADCDriver *adcp, adcerror_t err);
 static float adc2ntc_temperature(const uint16_t adc_value);
 static void regression_addsample(const int32_t xi, const int32_t yi, current_regression_ts* const reg);
@@ -90,19 +91,6 @@ static void regression_calculate(float* mean, float* accent, current_regression_
  * the value still is with that.
  */
 
-///< Samples in ADC sequence.
-/// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
-///          so even length of sequence is best choice.
-constexpr uint32_t LENGTH_ADC_SEQ = 16;
-
-///< ADC sequences in buffer.
-/// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
-///          so even length of sequence is best choice.
-constexpr uint32_t ADC_SEQ_BUFFERED = 16;
-
-///< # of ADCs
-constexpr uint32_t NUM_OF_ADC = 3;
-
 ///< Number of NTC resistor LUT values
 static constexpr uint16_t NTC_TABLE_LEN = 128;
 ///< NTC adc value to temperature in 0.01°C LUT
@@ -135,9 +123,9 @@ static const int16_t ntc_table[NTC_TABLE_LEN] =
    handled differently for other compilers.
    Only required if the ADC buffer is placed in a cache-able area.*/
 ///< dma accessed buffer for the adcs, probably cached
-__attribute__((aligned (32))) static adcsample_t samples[NUM_OF_ADC][ADC_SEQ_BUFFERED][LENGTH_ADC_SEQ];
+__attribute__((aligned (32))) adcsample_t hardware::adc::samples[NUM_OF_ADC][ADC_SEQ_BUFFERED][LENGTH_ADC_SEQ];
 ///< cycle index for cached working buffer
-static uint32_t samples_index = 0;
+uint32_t hardware::adc::samples_index = ADC_SEQ_BUFFERED - 1;
 
 ///< index of the non current measurements in adc samples
 static uint8_t non_cur_index[2] = {0, LENGTH_ADC_SEQ - 1};
@@ -160,7 +148,7 @@ static int16_t current_offset[hardware::PHASES];
 static ADCConversionGroup adcgrpcfg1 = {
 		true,
 		LENGTH_ADC_SEQ,
-		adccallback,
+		nullptr,
 		adcerrorcallback,
 		0,                                                    /* CR1   */
 		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
@@ -197,7 +185,7 @@ static ADCConversionGroup adcgrpcfg1 = {
 static ADCConversionGroup adcgrpcfg2 = {
 		true,
 		LENGTH_ADC_SEQ,
-		NULL,
+		nullptr,
 		adcerrorcallback,
 		0,                                                    /* CR1   */
 		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
@@ -320,16 +308,16 @@ void hardware::adc::GetCurrents(current_values_ts* const currents)
 	int32_t end_sample = LENGTH_ADC_SEQ - (LENGTH_ADC_SEQ/2 - ((duty_min * LENGTH_ADC_SEQ)) / pwm::PERIOD) - 1;
 	int32_t start_sample = ((duty_max *LENGTH_ADC_SEQ) / pwm::PERIOD) - LENGTH_ADC_SEQ/2 + 1;
 
-	if(std::abs(end_sample - start_sample) < 4)
-	{
-		osalSysHalt("adc::GetCurrents Error!");
-	}
+//	if(std::abs(end_sample - start_sample) < 4)
+//	{
+//		osalSysHalt("adc::GetCurrents Error!");
+//	}
 
 	for(uint8_t i = 0; i < PHASES; i++)
 	{
 		current_regression_ts regres_dc = {n : 0, x_sum : 0, x2_sum : 0, xy_sum : 0, y_sum : 0};
 		current_regression_ts regres_ac = {n : 0, x_sum : 0, x2_sum : 0, xy_sum : 0, y_sum : 0};
-		uint32_t s1 = samples_index;
+		uint32_t s = samples_index;
 
 		// start with the rest of the last full decent
 		// @note we evaluate the last FULL decent so current sample
@@ -338,11 +326,11 @@ void hardware::adc::GetCurrents(current_values_ts* const currents)
 		{
 			if(k%2)	// odd samples are ac
 			{
-				regression_addsample(k, samples[i][s1][k], &regres_ac);
+				regression_addsample(k, samples[i][s][k], &regres_ac);
 			}
 			else // even samples are dc
 			{
-				regression_addsample(k, samples[i][s1][k], &regres_dc);
+				regression_addsample(k, samples[i][s][k], &regres_dc);
 			}
 		}
 
@@ -350,10 +338,10 @@ void hardware::adc::GetCurrents(current_values_ts* const currents)
 		float mean, accent;
 		regression_calculate(&mean, &accent, &regres_dc);
 		currents->current[i] = (mean - current_offset[i]) * ADC2CURRENT * current_gain[i];
-		currents->current_decent[i] = accent*ADC2CURRENT*5e5f; // per 2 us
+		currents->current_decent[i] = accent*ADC2CURRENT;
 
 		regression_calculate(&mean, &accent, &regres_ac);
-		currents->current_acent[i] = accent*ADC2CURRENT*5e6f; // per 2 us
+		currents->current_acent[i] = accent*ADC2CURRENT;
 	}
 }
 
@@ -600,41 +588,6 @@ static float adc2ntc_temperature(const uint16_t adc_value)
 	/* linear interpolation between both points */
 	return ((float)p1 - ( (float)(p1-p2) * (float)(adc_value & 0x00FF) ) * oneby256)*0.01f;
 };
-
-
-/**
- * adc processing callback
- *
- * this call back will trigger the control task
- * @param adcp pointer to the adc driver instance
- */
-static inline void adccallback(ADCDriver *adcp)
-{
-	(void)adcp;
-
-	palToggleLine(LINE_HALL_C);
-	/* DMA buffer invalidation because data cache, only invalidating the
-     * buffer just filled.
-     */
-	for (uint8_t i = 0; i < hardware::PHASES; ++i)
-	{
-		cacheBufferInvalidate(&samples[i][samples_index][0],
-				sizeof(adcsample_t)*LENGTH_ADC_SEQ);
-	}
-
-
-	if(samples_index < ADC_SEQ_BUFFERED) samples_index++;
-	else samples_index = 0;
-
-
-	if(!hardware::control_thread.isNull())
-	{
-		/* Wakes up the thread.*/
-		osalSysLockFromISR();
-		chEvtSignalI(hardware::control_thread.getInner(), (eventmask_t)1);
-		osalSysUnlockFromISR();
-	}
-}
 
 /**
  *  ADC errors callback, should never happen.
