@@ -31,7 +31,10 @@ namespace hardware {
 		extern PWMDriver* PWMP;
 
 		///< PWM duty counts
-		extern uint16_t duty_counts[PHASES];
+		extern uint16_t duty_counts[DUTY_BUFFER_CYCLES][INJECTION_CYCLES][PHASES];
+
+		///< PWM duty buffer cycle
+		uint8_t duty_buffer_cycle;
 	} /* namespace pwm */
 } /* namespace hardware */
 

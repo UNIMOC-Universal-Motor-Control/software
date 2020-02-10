@@ -27,21 +27,8 @@
 
 using namespace hardware::adc;
 
-///< intermediate values for linear regression of current samples
-/// Sxy = Σxiyi – (Σxi)(Σyi)/n and Sxx = Σxi2 – (Σxi)2/n
-typedef struct current_regression_s
-{
-	uint32_t n;					/// number of samples
-	int32_t x_sum;				/// x sum
-	int32_t x2_sum;				/// x^2 sum
-	int32_t xy_sum;				/// x*y sum
-	int32_t y_sum;				/// y sum
-} current_regression_ts;
-
 static void adcerrorcallback(ADCDriver *adcp, adcerror_t err);
 static float adc2ntc_temperature(const uint16_t adc_value);
-static void regression_addsample(const int32_t xi, const int32_t yi, current_regression_ts* const reg);
-static void regression_calculate(float* mean, float* accent, current_regression_ts* const reg);
 
 
 /**
@@ -286,32 +273,39 @@ void hardware::adc::Init(void)
 }
 
 
+
 /**
- * Get current means, acents and decents of the current in the last control
+ * Get current means of the current in the last control
  * cycles
- * @param currents pointer to a currents structure, will be written
+ * @param currents points to the current mean samples
  */
-void hardware::adc::GetCurrents(current_values_ts* const currents)
+void hardware::adc::GetCurrentsMean(float* const currents[pwm::INJECTION_CYCLES][PHASES])
 {
 	/*
 	 * Three 2mR shunts in parallel with a 20V/V gain map to 2048 per 1.65V
 	 */
 	const float ADC2CURRENT = 1.65f/(20.0f*(0.002f/3.0f))/2048.0f;
-	uint32_t duty_min = *std::min_element(&pwm::duty_counts[0], &pwm::duty_counts[2]);
-	uint32_t duty_max = *std::max_element(&pwm::duty_counts[0], &pwm::duty_counts[2]);
-	/*
-	 * When 16 samples are evenly distributed over the hole period the min and max duty
-	 * gives the times of the edges in between which the active state is located
-	 * Because the ADC trigger is at 50% the samples are located from 50% to 50%
-	 * of the next cycle. So start and end samples need to be shifted.
-	 */
-	int32_t end_sample = LENGTH_ADC_SEQ - (LENGTH_ADC_SEQ/2 - ((duty_min * LENGTH_ADC_SEQ)) / pwm::PERIOD) - 1;
-	int32_t start_sample = ((duty_max *LENGTH_ADC_SEQ) / pwm::PERIOD) - LENGTH_ADC_SEQ/2 + 1;
 
-//	if(std::abs(end_sample - start_sample) < 4)
-//	{
-//		osalSysHalt("adc::GetCurrents Error!");
-//	}
+	for(uint8_t i = 0; i < PHASES; i++)
+	{
+		float sum = 0.0f;
+
+		for (uint8_t j = 0; j < pwm::INJECTION_CYCLES; ++s)
+		{
+			uint8_t s = (j + samples_index - pwm::INJECTION_CYCLES)%ADC_SEQ_BUFFERED;
+			// start with the rest of the last full decent
+			// @note we evaluate the last FULL decent so current sample
+			// is one cycle delayed
+			for(int32_t k = 1; k < 15; k++)
+			{
+				if(k%2 == 0) // even samples are dc
+				{
+					sum += samples[i][j][k];
+				}
+			}
+		}
+	}
+
 
 	for(uint8_t i = 0; i < PHASES; i++)
 	{
@@ -319,20 +313,7 @@ void hardware::adc::GetCurrents(current_values_ts* const currents)
 		current_regression_ts regres_ac = {n : 0, x_sum : 0, x2_sum : 0, xy_sum : 0, y_sum : 0};
 		uint32_t s = samples_index;
 
-		// start with the rest of the last full decent
-		// @note we evaluate the last FULL decent so current sample
-		// is one cycle delayed
-		for(int32_t k = start_sample; k < end_sample; k++)
-		{
-			if(k%2)	// odd samples are ac
-			{
-				regression_addsample(k, samples[i][s][k], &regres_ac);
-			}
-			else // even samples are dc
-			{
-				regression_addsample(k, samples[i][s][k], &regres_dc);
-			}
-		}
+
 
 
 		float mean, accent;
@@ -344,6 +325,12 @@ void hardware::adc::GetCurrents(current_values_ts* const currents)
 		currents->current_acent[i] = accent*ADC2CURRENT;
 	}
 }
+
+/**
+ * Get current injection samples in the last control cycle
+ * @param currents points to the current injection samples
+ */
+extern void GetCurrentsInjection(float* const currents[pwm::INJECTION_CYCLES][PHASES]);
 
 /**
  * Read the DC Bus voltage
@@ -601,36 +588,4 @@ static void adcerrorcallback(ADCDriver *adcp, adcerror_t err)
 	(void)err;
 
 	osalSysHalt("ADC Error");
-}
-
-/**
- * add sample to the regression window
- * @param xi	adc sample index
- * @param yi	adc counts
- * @param reg	pointer to regression structure
- */
-static void regression_addsample(const int32_t xi, const int32_t yi, current_regression_ts* const reg)
-{
-	reg->x_sum += xi;
-	reg->x2_sum += xi*xi;
-	reg->xy_sum += xi*yi;
-	reg->y_sum += yi;
-	reg->n++;
-}
-
-/**
- * calculate the linear regression for the samples added to the window
- *
- * @note clears the samples
- *
- * @param mean		pointer to the mean value output
- * @param accent	pointer to the accent value output
- * @param reg		pointer to the regression structure
- */
-static void regression_calculate(float* mean, float* accent, current_regression_ts* const reg)
-{
-	float sxy = (float)reg->xy_sum - ((float)(reg->x_sum * reg->y_sum)/reg->n);
-	float sxx = (float)reg->x2_sum - ((float)(reg->x_sum*reg->x_sum)/reg->n);
-	*accent = sxy / sxx;
-	*mean = reg->y_sum / reg->n;
 }

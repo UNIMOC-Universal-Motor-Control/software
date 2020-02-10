@@ -55,6 +55,9 @@ constexpr uint32_t DEADTIME = 300;
  */
 constexpr uint32_t PERIOD = 3600;
 
+///< current injection cycles used for low speed position estimation
+constexpr uint32_t INJECTION_CYCLES = 4;
+
 /**
  * Initialize PWM hardware with outputs disabled!
  */
@@ -81,7 +84,7 @@ extern bool OutputActive(void);
  * Set the normalized duty cycles for each phase
  * @param dutys -1 = LOW, 0 = 50%, 1=HIGH
  */
-extern void SetDutys(float dutys[PHASES]);
+extern void SetDutys(const float dutys[INJECTION_CYCLES][PHASES]);
 
 } /* namespace pwm */
 
@@ -98,25 +101,23 @@ namespace adc
  * which all hardware variants need to implement.
  */
 
-///< structure to cluster all current relevant values
-typedef struct
-{
-	float current[PHASES];
-	float current_acent[PHASES];
-	float current_decent[PHASES];
-} current_values_ts;
-
 /**
  * Initialize ADC hardware with outputs disabled!
  */
 extern void Init();
 
 /**
- * Get current means, ascends and descents of the current in the last control
+ * Get current means of the current in the last control
  * cycles
- * @param currents pointer to a currents structure, will be written
+ * @param currents points to the current mean samples
  */
-extern void GetCurrents(current_values_ts* const currents);
+extern void GetCurrentsMean(float* const currents[pwm::INJECTION_CYCLES][PHASES]);
+
+/**
+ * Get current injection samples in the last control cycle
+ * @param currents points to the current injection samples
+ */
+extern void GetCurrentsInjection(float* const currents[pwm::INJECTION_CYCLES][PHASES]);
 
 /**
  * Read the DC Bus voltage

@@ -21,6 +21,9 @@
 #include "adc.hpp"
 #include "hardware_interface.hpp"
 
+///> cycles of dutys buffered in the hardware layer.
+constexpr uint8_t DUTY_BUFFER_CYCLES = 4;
+
 ///< PWM driver instance
 PWMDriver* hardware::pwm::PWMP = &PWMD1;
 
@@ -28,7 +31,13 @@ PWMDriver* hardware::pwm::PWMP = &PWMD1;
 PWMDriver* ADC_TRIGP = &PWMD4;
 
 ///< PWM duty counts
-uint16_t hardware::pwm::duty_counts[PHASES] = {0};
+uint16_t hardware::pwm::duty_counts[DUTY_BUFFER_CYCLES][INJECTION_CYCLES][PHASES] = {0};
+
+///< PWM duty buffer cycle
+uint8_t hardware::pwm::duty_buffer_cycle = 0;
+
+///< PWM duty injection cycle
+uint8_t hardware::pwm::duty_injection_cycle = 0;
 
 /**
  * macro to calculate DTG value for BDTR
@@ -44,6 +53,35 @@ constexpr uint16_t DTG(const uint32_t deadtime)
 	return (uint16_t)((fdeadtime * clock) -1);
 }
 
+/**
+ * callback sets the pwm duty and triggers the control task
+ * @param pwmp
+ */
+static inline void set_dutys(PWMDriver *pwmp)
+{
+	if(hardware::pwm::duty_injection_cycle < hardware::pwm::INJECTION_CYCLES - 1) hardware::pwm::duty_injection_cycle++;
+	else
+	{
+		hardware::pwm::duty_injection_cycle = 0;
+
+		if(hardware::pwm::duty_buffer_cycle < DUTY_BUFFER_CYCLES - 1) hardware::pwm::duty_buffer_cycle++;
+		else hardware::pwm::duty_buffer_cycle = 0;
+
+		if(!hardware::control_thread.isNull() )
+		{
+			/* Wakes up the thread.*/
+			osalSysLockFromISR();
+			chEvtSignalI(hardware::control_thread.getInner(), (eventmask_t)1);
+			osalSysUnlockFromISR();
+		}
+	}
+
+	for (uint16_t i = 0; i < PHASES; ++i)
+	{
+		pwmEnableChannel(pwmp, i, duty_counts[c][k][i]);
+	}
+}
+
 
 /**
  * basic PWM configuration
@@ -52,7 +90,7 @@ const PWMConfig pwmcfg =
 {
 		hardware::pwm::TIMER_CLOCK,
 		hardware::pwm::PERIOD,
-		nullptr,
+		set_dutys,
 		{ /*  */
 				{PWM_OUTPUT_ACTIVE_HIGH | PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH, nullptr},
 				{PWM_OUTPUT_ACTIVE_HIGH | PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH, nullptr},
@@ -76,13 +114,13 @@ const PWMConfig pwmcfg =
 };
 
 /**
- * callback triggers the control task
+ * callback handles samples data memory
  *
  * @note callback also invalidates cache for samples section recently sampled
  *
  * @param pwmp
  */
-static inline void control_trigger(PWMDriver *pwmp)
+static inline void cache_handler(PWMDriver *pwmp)
 {
 	(void)pwmp;
 	palToggleLine(LINE_HALL_B);
@@ -99,15 +137,6 @@ static inline void control_trigger(PWMDriver *pwmp)
 
 	if(hardware::adc::samples_index < (hardware::adc::ADC_SEQ_BUFFERED - 1)) hardware::adc::samples_index++;
 	else hardware::adc::samples_index = 0;
-
-
-	if(!hardware::control_thread.isNull())
-	{
-		/* Wakes up the thread.*/
-		osalSysLockFromISR();
-		chEvtSignalI(hardware::control_thread.getInner(), (eventmask_t)1);
-		osalSysUnlockFromISR();
-	}
 }
 
 /**
@@ -122,7 +151,7 @@ const PWMConfig adctriggercfg =
 				{PWM_OUTPUT_DISABLED, nullptr},
 				{PWM_OUTPUT_DISABLED, nullptr},
 				{PWM_OUTPUT_DISABLED, nullptr},
-				{PWM_OUTPUT_ACTIVE_HIGH, control_trigger}
+				{PWM_OUTPUT_ACTIVE_HIGH, cache_handler}
 		},
 		/*
 		 * CR2 Register
@@ -212,20 +241,22 @@ bool hardware::pwm::OutputActive(void)
  * Set the normalized duty cycles for each phase
  * @param dutys -1 = LOW, 0 = 50%, 1=HIGH
  */
-void hardware::pwm::SetDutys(float dutys[PHASES])
+void hardware::pwm::SetDutys(const float dutys[INJECTION_CYCLES][PHASES])
 {
 	const int16_t mid = PERIOD/2;
+	uint8_t c = (duty_buffer_cycle + 1)%DUTY_BUFFER_CYCLES;
 
-	for (uint16_t i = 0; i < PHASES; ++i)
+	for (uint16_t k = 0; k < INJECTION_CYCLES; ++k)
 	{
-		int16_t new_duty = mid + (int16_t)((float)mid * dutys[i]);
+		for (uint16_t i = 0; i < PHASES; ++i)
+		{
+			int16_t new_duty = mid + (int16_t)((float)mid * dutys[k][i]);
 
-		if(new_duty < 0) new_duty = 0;
-		if(new_duty > (int16_t)PERIOD) new_duty = PERIOD;
+			if(new_duty < 0) new_duty = 0;
+			if(new_duty > (int16_t)PERIOD) new_duty = PERIOD;
 
-		duty_counts[i] = (uint16_t)new_duty;
-
-		pwmEnableChannel(PWMP, i, duty_counts[i]);
+			duty_counts[c][k][i] = (uint16_t)new_duty;
+		}
 	}
 }
 
