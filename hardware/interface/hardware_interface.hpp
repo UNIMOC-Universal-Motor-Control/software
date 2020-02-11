@@ -143,16 +143,6 @@ extern float GetMotorTemp(void);
  */
 extern float GetThrottle(void);
 
-/**
- * Calibrate the current measurements for offset an gain
- *
- * @note a motor must be connected and pwm must be active.
- * @note the gain will only be equalized between the phases
- *
- * @return false if pwm not active
- */
-extern bool Calibrate(void);
-
 } /* namespace adc */
 
 namespace memory

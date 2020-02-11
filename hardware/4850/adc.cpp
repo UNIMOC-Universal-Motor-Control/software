@@ -296,33 +296,13 @@ void hardware::adc::GetCurrentsMean(float* const currents[pwm::INJECTION_CYCLES]
 			// start with the rest of the last full decent
 			// @note we evaluate the last FULL decent so current sample
 			// is one cycle delayed
-			for(int32_t k = 1; k < 15; k++)
+			for(int32_t k = 2; k < LENGTH_ADC_SEQ - 1; k+=2)
 			{
-				if(k%2 == 0) // even samples are dc
-				{
-					sum += samples[i][j][k];
-				}
+				// even samples are dc
+				sum += samples[i][j][k];
 			}
+			currents[j][i] = sum / (float)(ADC_SEQ_BUFFERED * (LENGTH_ADC_SEQ / 2 - 1));
 		}
-	}
-
-
-	for(uint8_t i = 0; i < PHASES; i++)
-	{
-		current_regression_ts regres_dc = {n : 0, x_sum : 0, x2_sum : 0, xy_sum : 0, y_sum : 0};
-		current_regression_ts regres_ac = {n : 0, x_sum : 0, x2_sum : 0, xy_sum : 0, y_sum : 0};
-		uint32_t s = samples_index;
-
-
-
-
-		float mean, accent;
-		regression_calculate(&mean, &accent, &regres_dc);
-		currents->current[i] = (mean - current_offset[i]) * ADC2CURRENT * current_gain[i];
-		currents->current_decent[i] = accent*ADC2CURRENT;
-
-		regression_calculate(&mean, &accent, &regres_ac);
-		currents->current_acent[i] = accent*ADC2CURRENT;
 	}
 }
 
@@ -330,7 +310,33 @@ void hardware::adc::GetCurrentsMean(float* const currents[pwm::INJECTION_CYCLES]
  * Get current injection samples in the last control cycle
  * @param currents points to the current injection samples
  */
-extern void GetCurrentsInjection(float* const currents[pwm::INJECTION_CYCLES][PHASES]);
+void hardware::adc::GetCurrentsInjection(float* const currents[pwm::INJECTION_CYCLES][PHASES])
+{
+	/*
+	 * Three 2mR shunts in parallel with a 20V/V gain map to 2048 per 1.65V and 10V/V gain
+	 * in the high pass
+	 */
+	const float ADC2CURRENT = 1.65f/(20.0f*10.0f*(0.002f/3.0f))/2048.0f;
+
+	for(uint8_t i = 0; i < PHASES; i++)
+	{
+		float sum = 0.0f;
+
+		for (uint8_t j = 0; j < pwm::INJECTION_CYCLES; ++s)
+		{
+			uint8_t s = (j + samples_index - pwm::INJECTION_CYCLES)%ADC_SEQ_BUFFERED;
+			// start with the rest of the last full decent
+			// @note we evaluate the last FULL decent so current sample
+			// is one cycle delayed
+			for(int32_t k = 1; k < LENGTH_ADC_SEQ - 1; k+=2)
+			{
+				// even samples are dc
+				sum += samples[i][j][k];
+			}
+			currents[j][i] = sum / (float)(ADC_SEQ_BUFFERED * (LENGTH_ADC_SEQ / 2 - 1));
+		}
+	}
+}
 
 /**
  * Read the DC Bus voltage
@@ -420,142 +426,139 @@ float hardware::adc::GetThrottle(void)
 }
 
 
-/**
- * Calibrate the current measurements for offset an gain.
- *
- * @note A motor must be connected and pwm must be active.
- * @note The gain will only be equalized between the phases.
- * @note The function blocks the thread for about 2secounds.
- *
- * @return false if pwm not active
- */
-extern bool hardware::adc::Calibrate(void)
-{
-	bool result = false;
-	const float DUTY_STEP = 0.01f;
-	const uint16_t ADC_TARGET = 1000;
-	int32_t offset_sum[PHASES];
-	float gain[PHASES][PHASES];
-	int32_t gain_sum[PHASES][PHASES];
-	float test_duty;
-	float dutys[PHASES] = {0.0f, 0.0f, 0.0f};
-
-	pwm::DisableOutputs();
-
-	// let the current amps calm down
-	osalThreadSleepMilliseconds(100);
-
-	// Calculate Current Offsets
-	for(uint8_t i = 0; i < PHASES; i++)
-	{
-		offset_sum[i] = 0;
-	}
-
-	for(uint8_t p = 0; p < PHASES; p++)
-	{
-		for(uint8_t i = 0; i < ADC_SEQ_BUFFERED; i++)
-		{
-			for(uint8_t k = 0; k < LENGTH_ADC_SEQ; k+=2)
-			{
-				// skip non current samples
-				if(k == non_cur_index[0] || k == non_cur_index[1]) continue;
-
-				offset_sum[p] += samples[p][i][k];
-			}
-		}
-	}
-
-	for(uint8_t i = 0; i < PHASES; i++)
-	{
-		current_offset[i] = offset_sum[i] / (ADC_SEQ_BUFFERED * (LENGTH_ADC_SEQ / 2 - 1));
-	}
-
-	// caution PWMs are active beyond this line
-	pwm::SetDutys(dutys);
-	pwm::EnableOutputs();
-
-	osalThreadSleepMilliseconds(1);
-
-	// test what duty gives a current of 50% Fullscale
-	while(pwm::OutputActive() && std::abs(samples[0][samples_index][0] - current_offset[0]) < ADC_TARGET)
-	{
-		dutys[0] += DUTY_STEP;
-		dutys[1] -= 0.5f * DUTY_STEP;
-		dutys[2] -= 0.5f * DUTY_STEP;
-		pwm::SetDutys(dutys);
-
-		osalThreadSleepMilliseconds(1);
-	}
-	test_duty = dutys[0];
-
-	uint8_t i;
-	for(i = 0; i < PHASES && pwm::OutputActive(); i++)
-	{
-		dutys[i] = test_duty;
-		dutys[(i+1)%PHASES] = -0.5f * test_duty;
-		dutys[(i+2)%PHASES] = -0.5f * test_duty;
-		pwm::SetDutys(dutys);
-		osalThreadSleepMilliseconds(10);
-
-		for(uint8_t s = 0; s < ADC_SEQ_BUFFERED; s++)
-		{
-			for (uint8_t p = 0; p < PHASES; ++p)
-			{
-				// take only the mid samples in to account
-				// The edges are supposed to be below half duty
-				for (uint8_t k = 5; k < 11; ++k)
-				{
-					gain_sum[i][p] += samples[p][s][k];
-				}
-			}
-		}
-	}
-
-	pwm::DisableOutputs();
-	dutys[0] = dutys[1] = dutys[2]= 0.0f;
-	pwm::SetDutys(dutys);
-
-	if(i >= PHASES)
-	{
-		for(uint8_t i = 0; i < PHASES; i++)
-		{
-			for(uint8_t k = 0; k < PHASES; k++)
-			{
-				// transform the other currents back
-				if(i == k) gain[i][k] = gain_sum[i][k] / (float)(ADC_SEQ_BUFFERED * 6) - (float)current_offset[k];
-				// normally half the current on the back flowing phases
-				else gain[i][k] = -((float)gain_sum[i][k] / (float)(ADC_SEQ_BUFFERED * 3)) + (float)current_offset[k];
-			}
-		}
-
-		float mean_gain = 0.0f;
-		for(uint8_t i = 0; i < PHASES; i++)
-		{
-			for(uint8_t k = 0; k < PHASES; k++)
-			{
-				mean_gain += gain[i][k];
-			}
-		}
-		mean_gain /= PHASES * PHASES;
-
-
-		for(uint8_t i = 0; i < PHASES; i++)
-		{
-			float phase_gain = 0.0f;
-			for(uint8_t k = 0; k < PHASES; k++)
-			{
-				phase_gain += gain[i][k];
-			}
-			phase_gain /= PHASES;
-
-			current_gain[i] = mean_gain / phase_gain;
-		}
-
-		result = true;
-	}
-
-	return result;
-}
+///**
+// * Calibrate the current measurements for offset an gain.
+// *
+// * @note A motor must be connected and pwm must be active.
+// * @note The gain will only be equalized between the phases.
+// * @note The function blocks the thread for about 2secounds.
+// *
+// * @return false if pwm not active
+// */
+//extern bool hardware::adc::Calibrate(void)
+//{
+//	bool result = false;
+//	const float DUTY_STEP = 0.01f;
+//	const uint16_t ADC_TARGET = 1000;
+//	int32_t offset_sum[PHASES] = {0};
+//	float gain[PHASES][PHASES] = {0};
+//	int32_t gain_sum[PHASES][PHASES] = {0};
+//	float test_duty = 0.0;
+//	float dutys[pwm::INJECTION_CYCLES][PHASES] = {0};
+//
+//	pwm::DisableOutputs();
+//
+//	// let the current amps calm down
+//	osalThreadSleepMilliseconds(100);
+//
+//	for(uint8_t p = 0; p < PHASES; p++)
+//	{
+//		for(uint8_t i = 0; i < ADC_SEQ_BUFFERED; i++)
+//		{
+//			for(uint8_t k = 2; k < 15; k+=2)
+//			{
+//				offset_sum[p] += samples[p][i][k];
+//			}
+//		}
+//	}
+//
+//	for(uint8_t i = 0; i < PHASES; i++)
+//	{
+//		current_offset[i] = offset_sum[i] / (ADC_SEQ_BUFFERED * (LENGTH_ADC_SEQ / 2 - 1));
+//	}
+//
+//	// caution PWMs are active beyond this line
+//	pwm::SetDutys(dutys);
+//	pwm::EnableOutputs();
+//
+//	osalThreadSleepMilliseconds(1);
+//
+//	// test what duty gives a current of 50% Fullscale
+//	while(pwm::OutputActive() && std::abs(samples[0][samples_index][8] - current_offset[0]) < ADC_TARGET)
+//	{
+//		for (uint8_t i = 0; i < pwm::INJECTION_CYCLES; ++i)
+//		{
+//			dutys[i][0] += DUTY_STEP;
+//			dutys[i][1] -= 0.5f * DUTY_STEP;
+//			dutys[i][2] -= 0.5f * DUTY_STEP;
+//		}
+//		pwm::SetDutys(dutys);
+//
+//		osalThreadSleepMilliseconds(1);
+//	}
+//	test_duty = dutys[0][0];
+//
+//	uint8_t i;
+//	for(i = 0; i < PHASES && pwm::OutputActive(); i++)
+//	{
+//		for (uint8_t k = 0; k < pwm::INJECTION_CYCLES; ++k)
+//		{
+//			dutys[k][i] = test_duty;
+//			dutys[k][(i+1)%PHASES] = -0.5f * test_duty;
+//			dutys[k][(i+2)%PHASES] = -0.5f * test_duty;
+//		}
+//		pwm::SetDutys(dutys);
+//		osalThreadSleepMilliseconds(10);
+//
+//		for (uint8_t p = 0; p < PHASES; ++p)
+//		{
+//			for(uint8_t s = 0; s < ADC_SEQ_BUFFERED; s++)
+//			{
+//				// take only the mid samples in to account
+//				// The edges are supposed to be below half duty
+//				for (uint8_t k = 2; k < LENGTH_ADC_SEQ - 1; k += 2)
+//				{
+//					gain_sum[i][p] += samples[p][s][k];
+//				}
+//			}
+//		}
+//	}
+//
+//	pwm::DisableOutputs();
+//	memset(dutys, 0, sizeof(dutys));
+//	pwm::SetDutys(dutys);
+//
+//	if(i >= PHASES)
+//	{
+//		for(uint8_t i = 0; i < PHASES; i++)
+//		{
+//			for(uint8_t k = 0; k < PHASES; k++)
+//			{
+//				// transform the other currents back
+//				if(i == k) gain[i][k] = gain_sum[i][k] / (float)(ADC_SEQ_BUFFERED * 6) - (float)current_offset[k];
+//				// normally half the current on the back flowing phases
+//				else gain[i][k] = -((float)gain_sum[i][k] / (float)(ADC_SEQ_BUFFERED * 3)) + (float)current_offset[k];
+//			}
+//		}
+//
+//		float mean_gain = 0.0f;
+//		for(uint8_t i = 0; i < PHASES; i++)
+//		{
+//			for(uint8_t k = 0; k < PHASES; k++)
+//			{
+//				mean_gain += gain[i][k];
+//			}
+//		}
+//		mean_gain /= PHASES * PHASES;
+//
+//
+//		for(uint8_t i = 0; i < PHASES; i++)
+//		{
+//			float phase_gain = 0.0f;
+//			for(uint8_t k = 0; k < PHASES; k++)
+//			{
+//				phase_gain += gain[i][k];
+//			}
+//			phase_gain /= PHASES;
+//
+//			current_gain[i] = mean_gain / phase_gain;
+//		}
+//
+//		result = true;
+//	}
+//
+//	return result;
+//}
 
 /**
  * \brief    interpolate temperature via a LUT in the range of -10°C to 150°C with an error of 0.393°C
