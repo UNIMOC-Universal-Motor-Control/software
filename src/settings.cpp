@@ -52,7 +52,7 @@ namespace settings
 		float Psi = unit::RpmV2VsRad(192.0f) / (float)P;
 
 		///< square injection voltage amplitude
-		float Uinj = 0.04f;
+		float u_inj = 0.04f;
 
 		/**
 		 * @namespace motor limit settings
@@ -111,9 +111,6 @@ namespace settings
 
 		///< admittance observer switch
 		bool admittance = false;
-
-		///< mechanic observer switch
-		bool mechanic = false;
 
 		///< modell variance
 		float Q = 1e-5f;

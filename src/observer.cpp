@@ -16,11 +16,13 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "hardware_interface.hpp"
 #include "observer.hpp"
 #include "settings.hpp"
 #include "values.hpp"
 #include <cstdint>
 #include <cmath>
+#include <array>
 
 /**
  * @namespace observer classes
@@ -42,8 +44,8 @@ namespace observer
     void mechanic::Predict(void)
     {
         // update constants
-        float ts = settings::converter::ts;
-        float tsj = ts/settings::mechanics::J;
+        const float ts = settings::converter::ts;
+        const float tsj = ts/settings::mechanics::J;
 
         // electric torque
         values::motor::m_el = _3by2 * settings::motor::Psi * values::motor::rotor::i.q +
@@ -68,7 +70,7 @@ namespace observer
      *
      * @param error  state error feedback
      */
-    void mechanic::Correct(const float error[3])
+    void mechanic::Correct(const std::array<float, 3> error)
     {
         values::motor::rotor::omega += error[0];
         values::motor::rotor::phi += error[1];
@@ -81,7 +83,7 @@ namespace observer
      * @param   angle error signal
      * @retval  model error correction
      */
-    void mechanic::Update(const float angle_error, float out_error[3])
+    void mechanic::Update(const float angle_error, std::array<float, 3>& out_error)
     {
         float ts = settings::converter::ts;
         float tsj = ts/settings::mechanics::J;
@@ -171,14 +173,12 @@ namespace observer
      *
      * @retval mean stator admittance.
      */
-    systems::alpha_beta admittance::GetMean(float *alpha, float *beta)
+    systems::alpha_beta admittance::GetMean(std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& ad)
     {
         systems::alpha_beta y;
         // statonary part of the admittance vector, float sampling
-        y.alpha = (alpha[0] + beta[1]  - alpha[2] - beta[3] +
-                   alpha[4] + beta[5]  - alpha[6] - beta[7]);
-        y.beta  = (beta[0]  - alpha[1] - beta[2]  + alpha[3] +
-                   beta[4]  - alpha[5] - beta[6]  + alpha[7]);
+        y.alpha = (ad[0].alpha + ad[1].beta  - ad[2].alpha - ad[3].beta);
+        y.beta  = (ad[0].beta  - ad[1].alpha - ad[2].beta  + ad[3].alpha);
 
         return y;
     }
@@ -188,17 +188,16 @@ namespace observer
      *
      * @retval stator admittance vector.
      */
-    systems::alpha_beta admittance::GetVector(float *alpha, float *beta)
+    systems::alpha_beta admittance::GetVector(std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& ad)
     {
         systems::alpha_beta yd;
         // rotating part of the admittance vector, float sampling
-        yd.alpha = (beta[0]  + alpha[1] - beta[2]  - alpha[3] +
-                    beta[4]  + alpha[5] - beta[6]  - alpha[7]);
-        yd.beta  = (alpha[0] - beta[1]  - alpha[2] + beta[3] +
-                    alpha[4] - beta[5]  - alpha[6] + beta[7]);
+        yd.alpha = (ad[0].beta  + ad[1].alpha - ad[2].beta  - ad[3].alpha);
+        yd.beta  = (ad[0].alpha - ad[1].beta  - ad[2].alpha + ad[3].beta);
 
         return yd;
     }
+
 }/* namespace observer */
 
 

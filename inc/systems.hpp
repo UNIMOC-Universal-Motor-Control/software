@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <cmath>
 #include <climits>
+#include <array>
 
 /**
  * @namespace math constants
@@ -71,18 +72,28 @@ namespace unit
  */
 namespace systems
 {
+
+	union alpha_beta_u;
+
     ///< rotating dq system.
-    typedef union {
-        float array[2];
+    typedef union dq_u {
+        std::array<float,2> array;
         struct {
             float d;
             float q;
         };
+
+        /**
+         * Systems casting assignment operator
+         * @param dq dq system
+         * @return alpha beta system
+         */
+        dq_u& operator= (alpha_beta_u& ab);
     } dq;
 
     ///< rotation angle sine and cosine value.
-    typedef union {
-        float array[2];
+    typedef union sin_cos_u{
+        std::array<float, 2> array;
         struct {
             float sin;
             float cos;
@@ -90,18 +101,25 @@ namespace systems
     } sin_cos;
 
     ///< stationary alpha beta system.
-    typedef union {
-        float array[2];
+    typedef union alpha_beta_u {
+        std::array<float, 2> array;
         struct {
             float alpha;
             float beta;
         };
+
+        /**
+         * Systems casting assignment operator
+         * @param dq dq system
+         * @return alpha beta system
+         */
+        alpha_beta_u& operator= (dq_u& dq);
     } alpha_beta;
 
 
     ///< stationary 3 phase a b c system.
-    typedef union {
-        float array[3];
+    typedef union abc_u {
+        std::array<float, 3> array;
         struct {
             float a;
             float b;
@@ -169,7 +187,7 @@ namespace systems
          * @param angle		sine and cosine of the rotor angle.
          * @retval vector in alpha-beta-system
          */
-        alpha_beta InversePark(const dq &vector, const sin_cos& angle);
+        alpha_beta InversePark(const dq& vector, const sin_cos& angle);
 
         /**
          * @brief transform alpha beta vector to abc 3 phase vector.

@@ -73,7 +73,7 @@ namespace observer
 		 *
 		 * @param error  state error feedback
 		 */
-		static void Correct(const float error[3]);
+		static void Correct(const std::array<float, 3> error);
 
 		/**
 		 * @brief calculate the kalman correction.
@@ -81,7 +81,7 @@ namespace observer
 		 * @param   angle error signal
 		 * @retval  model error correction
 		 */
-		void Update(const float angle_error, float out_error[3]);
+		void Update(const float angle_error, std::array<float, 3>& out_error);
 	};
 
 	/**
@@ -145,14 +145,14 @@ namespace observer
 		 *
 		 * @retval mean stator admittance.
 		 */
-		systems::alpha_beta GetMean(float *alpha, float *beta);
+		systems::alpha_beta GetMean(std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& ad);
 
 		/**
 		 * @brief calculate the stator admittance vector.
 		 *
 		 * @retval stator admittance vector.
 		 */
-		systems::alpha_beta GetVector(float *alpha, float *beta);
+		systems::alpha_beta GetVector(std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& ad);
 
 	};
 

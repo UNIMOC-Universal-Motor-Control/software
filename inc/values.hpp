@@ -54,7 +54,7 @@ namespace values
 			extern systems::dq u;
 
 			///< Admittance deviation in rotor frame
-			extern systems::dq dy;
+			extern systems::dq y;
 
 			///< angular velocity in rotor frame
 			extern float omega;

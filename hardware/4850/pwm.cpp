@@ -17,27 +17,29 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <cstdint>
-#include "pwm.hpp"
-#include "adc.hpp"
 #include "hardware_interface.hpp"
+#include "systems.hpp"
+
+using namespace hardware;
+using namespace hardware::pwm;
 
 ///> cycles of dutys buffered in the hardware layer.
 constexpr uint8_t DUTY_BUFFER_CYCLES = 4;
 
 ///< PWM driver instance
-PWMDriver* hardware::pwm::PWMP = &PWMD1;
+PWMDriver* PWMP = &PWMD1;
 
 ///< ADC trigger timer driver instance
 PWMDriver* ADC_TRIGP = &PWMD4;
 
 ///< PWM duty counts
-uint16_t hardware::pwm::duty_counts[DUTY_BUFFER_CYCLES][INJECTION_CYCLES][PHASES] = {0};
+std::array<std::array<systems::abc, INJECTION_CYCLES>, DUTY_BUFFER_CYCLES> duty_counts = {0};
 
 ///< PWM duty buffer cycle
-uint8_t hardware::pwm::duty_buffer_cycle = 0;
+uint8_t duty_buffer_cycle = 0;
 
 ///< PWM duty injection cycle
-uint8_t hardware::pwm::duty_injection_cycle = 0;
+uint8_t duty_injection_cycle = 0;
 
 /**
  * macro to calculate DTG value for BDTR
@@ -59,13 +61,13 @@ constexpr uint16_t DTG(const uint32_t deadtime)
  */
 static inline void set_dutys(PWMDriver *pwmp)
 {
-	if(hardware::pwm::duty_injection_cycle < hardware::pwm::INJECTION_CYCLES - 1) hardware::pwm::duty_injection_cycle++;
+	if(duty_injection_cycle < INJECTION_CYCLES - 1) duty_injection_cycle++;
 	else
 	{
-		hardware::pwm::duty_injection_cycle = 0;
+		duty_injection_cycle = 0;
 
-		if(hardware::pwm::duty_buffer_cycle < DUTY_BUFFER_CYCLES - 1) hardware::pwm::duty_buffer_cycle++;
-		else hardware::pwm::duty_buffer_cycle = 0;
+		if(duty_buffer_cycle < DUTY_BUFFER_CYCLES - 1) duty_buffer_cycle++;
+		else duty_buffer_cycle = 0;
 
 		if(!hardware::control_thread.isNull() )
 		{
@@ -78,7 +80,7 @@ static inline void set_dutys(PWMDriver *pwmp)
 
 	for (uint16_t i = 0; i < PHASES; ++i)
 	{
-		pwmEnableChannel(pwmp, i, duty_counts[c][k][i]);
+		pwmEnableChannel(pwmp, i, duty_counts[duty_buffer_cycle][duty_injection_cycle].array[i]);
 	}
 }
 
@@ -88,8 +90,8 @@ static inline void set_dutys(PWMDriver *pwmp)
  */
 const PWMConfig pwmcfg =
 {
-		hardware::pwm::TIMER_CLOCK,
-		hardware::pwm::PERIOD,
+		TIMER_CLOCK,
+		PERIOD,
 		set_dutys,
 		{ /*  */
 				{PWM_OUTPUT_ACTIVE_HIGH | PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH, nullptr},
@@ -106,38 +108,13 @@ const PWMConfig pwmcfg =
 		 * Break and Deadtime Register
 		 * Break input enabled with filter of 8 clock cycles
 		 */
-		STM32_TIM_BDTR_DTG(DTG(hardware::pwm::DEADTIME)) | STM32_TIM_BDTR_BKE | STM32_TIM_BDTR_BKF(3),
+		STM32_TIM_BDTR_DTG(DTG(DEADTIME)) | STM32_TIM_BDTR_BKE | STM32_TIM_BDTR_BKF(3),
 		/*
 		 * DIER Register
 		 */
 		0
 };
 
-/**
- * callback handles samples data memory
- *
- * @note callback also invalidates cache for samples section recently sampled
- *
- * @param pwmp
- */
-static inline void cache_handler(PWMDriver *pwmp)
-{
-	(void)pwmp;
-	palToggleLine(LINE_HALL_B);
-
-	/* DMA buffer invalidation because data cache, only invalidating the
-     * buffer just filled.
-     */
-	for (uint8_t i = 0; i < hardware::PHASES; ++i)
-	{
-		cacheBufferInvalidate(&hardware::adc::samples[i][hardware::adc::samples_index][0],
-				sizeof(adcsample_t)*hardware::adc::LENGTH_ADC_SEQ);
-	}
-
-
-	if(hardware::adc::samples_index < (hardware::adc::ADC_SEQ_BUFFERED - 1)) hardware::adc::samples_index++;
-	else hardware::adc::samples_index = 0;
-}
 
 /**
  * Configuration for ADC Trigger Timer
@@ -151,7 +128,7 @@ const PWMConfig adctriggercfg =
 				{PWM_OUTPUT_DISABLED, nullptr},
 				{PWM_OUTPUT_DISABLED, nullptr},
 				{PWM_OUTPUT_DISABLED, nullptr},
-				{PWM_OUTPUT_ACTIVE_HIGH, cache_handler}
+				{PWM_OUTPUT_ACTIVE_HIGH, nullptr}
 		},
 		/*
 		 * CR2 Register
@@ -196,16 +173,11 @@ void hardware::pwm::Init(void)
 
 	/* set adc trigger offset */
 	pwmEnableChannel(ADC_TRIGP, 3, PERIOD/4 - 50);
-	pwmEnableChannelNotification(ADC_TRIGP, 3);
 
 	/* enable pwms */
 	pwmEnableChannel(PWMP, 0, PERIOD/2);
 	pwmEnableChannel(PWMP, 1, PERIOD/2);
 	pwmEnableChannel(PWMP, 2, PERIOD/2);
-	duty_counts[0] = PERIOD/2;
-	duty_counts[1] = PERIOD/2;
-	duty_counts[2] = PERIOD/2;
-
 }
 
 /**
@@ -241,7 +213,7 @@ bool hardware::pwm::OutputActive(void)
  * Set the normalized duty cycles for each phase
  * @param dutys -1 = LOW, 0 = 50%, 1=HIGH
  */
-void hardware::pwm::SetDutys(const float dutys[INJECTION_CYCLES][PHASES])
+void hardware::pwm::SetDutys(const std::array<systems::abc, INJECTION_CYCLES> dutys)
 {
 	const int16_t mid = PERIOD/2;
 	uint8_t c = (duty_buffer_cycle + 1)%DUTY_BUFFER_CYCLES;
@@ -250,12 +222,12 @@ void hardware::pwm::SetDutys(const float dutys[INJECTION_CYCLES][PHASES])
 	{
 		for (uint16_t i = 0; i < PHASES; ++i)
 		{
-			int16_t new_duty = mid + (int16_t)((float)mid * dutys[k][i]);
+			int16_t new_duty = mid + (int16_t)((float)mid * dutys[k].array[i]);
 
 			if(new_duty < 0) new_duty = 0;
 			if(new_duty > (int16_t)PERIOD) new_duty = PERIOD;
 
-			duty_counts[c][k][i] = (uint16_t)new_duty;
+			duty_counts[c][k].array[i] = (uint16_t)new_duty;
 		}
 	}
 }

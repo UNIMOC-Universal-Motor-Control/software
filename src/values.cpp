@@ -50,16 +50,13 @@ namespace values
 			systems::dq u = {0.0f, 0.0f};
 
 			///< Admittance vector in rotor frame
-			systems::dq dy = {0.0f, 0.0f};
+			systems::dq y = {0.0f, 0.0f};
 
 			///< angular velocity in rotor frame
 			float omega = 0.0f;
 
 			///< rotor angle
 			float phi = 0.0f;
-
-			///< sine and cosine of phi
-			systems::sin_cos sin_cos = {0.0f, 1.0f};
 
 			/**
 			 * @namespace motor rotor system setpoints

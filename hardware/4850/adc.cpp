@@ -20,8 +20,6 @@
 #include <cstdint>
 #include <cmath>
 #include <algorithm>
-#include "pwm.hpp"
-#include "adc.hpp"
 #include "hardware_interface.hpp"
 #include "hal.h"
 
@@ -81,7 +79,7 @@ static float adc2ntc_temperature(const uint16_t adc_value);
 ///< Number of NTC resistor LUT values
 static constexpr uint16_t NTC_TABLE_LEN = 128;
 ///< NTC adc value to temperature in 0.01°C LUT
-static const int16_t ntc_table[NTC_TABLE_LEN] =
+static const std::array<int16_t, NTC_TABLE_LEN> ntc_table =
 {
 	28399, 23653, 18907, 16501, 14928, 13775,
 	12871, 12131, 11507, 10968, 10495, 10073,
@@ -104,27 +102,34 @@ static const int16_t ntc_table[NTC_TABLE_LEN] =
 	-4278, -4720, -5311, -6245
 };
 
+///< Samples in ADC sequence.
+/// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
+///          so even length of sequence is best choice.
+constexpr uint32_t LENGTH_ADC_SEQ = 16;
+
+///< ADC sequences in buffer.
+/// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
+///          so even length of sequence is best choice.
+constexpr uint32_t ADC_SEQ_BUFFERED = 16;
+
+///< # of ADCs
+constexpr uint32_t NUM_OF_ADC = 3;
 
 /* Note, the buffer is aligned to a 32 bytes boundary because limitations
    imposed by the data cache. Note, this is GNU specific, it must be
    handled differently for other compilers.
    Only required if the ADC buffer is placed in a cache-able area.*/
 ///< dma accessed buffer for the adcs, probably cached
-__attribute__((aligned (32))) adcsample_t hardware::adc::samples[NUM_OF_ADC][ADC_SEQ_BUFFERED][LENGTH_ADC_SEQ];
+__attribute__((aligned (32)))
+std::array<std::array<std::array<adcsample_t, LENGTH_ADC_SEQ>, ADC_SEQ_BUFFERED>, NUM_OF_ADC> samples;
 ///< cycle index for cached working buffer
-uint32_t hardware::adc::samples_index = ADC_SEQ_BUFFERED - 1;
+uint32_t samples_index = ADC_SEQ_BUFFERED - 1;
 
 ///< index of the non current measurements in adc samples
-static uint8_t non_cur_index[2] = {0, LENGTH_ADC_SEQ - 1};
+static std::array<uint8_t, 2> non_cur_index = {0, LENGTH_ADC_SEQ - 1};
 
 ///< reference to thread to be woken up in the hardware control cycle.
 chibios_rt::ThreadReference hardware::control_thread = nullptr;
-
-///< current samples gains
-static float current_gain[hardware::PHASES];
-
-///< current samples offsets
-static int16_t current_offset[hardware::PHASES];
 
 
 /**
@@ -245,12 +250,6 @@ static ADCConversionGroup adcgrpcfg3 = {
  */
 void hardware::adc::Init(void)
 {
-	for(uint8_t i = 0; i < PHASES; i++)
-	{
-		current_gain[i] = 1.0f;
-		current_offset[i] = 2048;
-	}
-
 	/*
 	 * Fixed an errata on the STM32F7xx, the DAC clock is required for ADC
 	 * triggering.
@@ -272,68 +271,89 @@ void hardware::adc::Init(void)
 	adcStartConversion(&ADCD3, &adcgrpcfg3, &samples[2][0][0], ADC_SEQ_BUFFERED);
 }
 
+/**
+ * prepare samples for evaluation
+ *
+ * @note on a cache MCU this invalidates cache for samples
+ */
+void hardware::adc::PrepareSamples(void)
+{
+	/* DMA buffer invalidation because data cache, only invalidating the
+     * buffer just filled.
+     */
+	for (uint8_t i = 0; i < PHASES; ++i)
+	{
+		cacheBufferInvalidate(&samples[i][0][0],
+				sizeof(adcsample_t)*LENGTH_ADC_SEQ*ADC_SEQ_BUFFERED);
+	}
 
+	if(samples_index < (ADC_SEQ_BUFFERED - 1)) samples_index++;
+	else samples_index = 0;
+}
 
 /**
  * Get current means of the current in the last control
  * cycles
- * @param currents points to the current mean samples
+ * @param currents references to the current mean samples
  */
-void hardware::adc::GetCurrentsMean(float* const currents[pwm::INJECTION_CYCLES][PHASES])
+void hardware::adc::GetCurrentsMean(std::array<systems::abc, pwm::INJECTION_CYCLES>& currents)
 {
 	/*
 	 * Three 2mR shunts in parallel with a 20V/V gain map to 2048 per 1.65V
 	 */
-	const float ADC2CURRENT = 1.65f/(20.0f*(0.002f/3.0f))/2048.0f;
+	const float _1byCOUNT = 1.0f/(ADC_SEQ_BUFFERED * (LENGTH_ADC_SEQ / 2 - 1));
+	const float ADC2CURRENT = 1.65f/(20.0f*(0.002f/3.0f))/2048.0f * _1byCOUNT;
 
 	for(uint8_t i = 0; i < PHASES; i++)
 	{
 		float sum = 0.0f;
 
-		for (uint8_t j = 0; j < pwm::INJECTION_CYCLES; ++s)
+		for (uint8_t j = 0; j < currents.size(); ++j)
 		{
-			uint8_t s = (j + samples_index - pwm::INJECTION_CYCLES)%ADC_SEQ_BUFFERED;
+			uint8_t s = (j + samples_index - currents.size())%ADC_SEQ_BUFFERED;
 			// start with the rest of the last full decent
 			// @note we evaluate the last FULL decent so current sample
 			// is one cycle delayed
-			for(int32_t k = 2; k < LENGTH_ADC_SEQ - 1; k+=2)
+			for(uint32_t k = 2; k < LENGTH_ADC_SEQ - 1; k+=2)
 			{
 				// even samples are dc
-				sum += samples[i][j][k];
+				sum += samples[i][s][k];
 			}
-			currents[j][i] = sum / (float)(ADC_SEQ_BUFFERED * (LENGTH_ADC_SEQ / 2 - 1));
+			currents[j].array[i] = ADC2CURRENT * sum;
 		}
 	}
 }
 
 /**
  * Get current injection samples in the last control cycle
- * @param currents points to the current injection samples
+ * @param currents references to the current injection samples
  */
-void hardware::adc::GetCurrentsInjection(float* const currents[pwm::INJECTION_CYCLES][PHASES])
+void hardware::adc::GetCurrentsInjection(std::array<systems::abc, pwm::INJECTION_CYCLES>& currents)
 {
 	/*
 	 * Three 2mR shunts in parallel with a 20V/V gain map to 2048 per 1.65V and 10V/V gain
 	 * in the high pass
 	 */
-	const float ADC2CURRENT = 1.65f/(20.0f*10.0f*(0.002f/3.0f))/2048.0f;
+	const float _1byCOUNT = 1.0f/(ADC_SEQ_BUFFERED * (LENGTH_ADC_SEQ / 2 - 1));
+	const float ADC2CURRENT = 1.65f/(20.0f*10.0f*(0.002f/3.0f))/2048.0f * _1byCOUNT;
+
 
 	for(uint8_t i = 0; i < PHASES; i++)
 	{
 		float sum = 0.0f;
 
-		for (uint8_t j = 0; j < pwm::INJECTION_CYCLES; ++s)
+		for (uint8_t j = 0; j <  currents.size(); ++j)
 		{
-			uint8_t s = (j + samples_index - pwm::INJECTION_CYCLES)%ADC_SEQ_BUFFERED;
+			uint8_t s = (j + samples_index - currents.size())%ADC_SEQ_BUFFERED;
 			// start with the rest of the last full decent
 			// @note we evaluate the last FULL decent so current sample
 			// is one cycle delayed
-			for(int32_t k = 1; k < LENGTH_ADC_SEQ - 1; k+=2)
+			for(uint8_t k = 1; k < LENGTH_ADC_SEQ - 1; k+=2)
 			{
 				// even samples are dc
-				sum += samples[i][j][k];
+				sum += samples[i][s][k];
 			}
-			currents[j][i] = sum / (float)(ADC_SEQ_BUFFERED * (LENGTH_ADC_SEQ / 2 - 1));
+			currents[j].array[i] = ADC2CURRENT * sum;
 		}
 	}
 }
@@ -425,140 +445,6 @@ float hardware::adc::GetThrottle(void)
 	return throttle;
 }
 
-
-///**
-// * Calibrate the current measurements for offset an gain.
-// *
-// * @note A motor must be connected and pwm must be active.
-// * @note The gain will only be equalized between the phases.
-// * @note The function blocks the thread for about 2secounds.
-// *
-// * @return false if pwm not active
-// */
-//extern bool hardware::adc::Calibrate(void)
-//{
-//	bool result = false;
-//	const float DUTY_STEP = 0.01f;
-//	const uint16_t ADC_TARGET = 1000;
-//	int32_t offset_sum[PHASES] = {0};
-//	float gain[PHASES][PHASES] = {0};
-//	int32_t gain_sum[PHASES][PHASES] = {0};
-//	float test_duty = 0.0;
-//	float dutys[pwm::INJECTION_CYCLES][PHASES] = {0};
-//
-//	pwm::DisableOutputs();
-//
-//	// let the current amps calm down
-//	osalThreadSleepMilliseconds(100);
-//
-//	for(uint8_t p = 0; p < PHASES; p++)
-//	{
-//		for(uint8_t i = 0; i < ADC_SEQ_BUFFERED; i++)
-//		{
-//			for(uint8_t k = 2; k < 15; k+=2)
-//			{
-//				offset_sum[p] += samples[p][i][k];
-//			}
-//		}
-//	}
-//
-//	for(uint8_t i = 0; i < PHASES; i++)
-//	{
-//		current_offset[i] = offset_sum[i] / (ADC_SEQ_BUFFERED * (LENGTH_ADC_SEQ / 2 - 1));
-//	}
-//
-//	// caution PWMs are active beyond this line
-//	pwm::SetDutys(dutys);
-//	pwm::EnableOutputs();
-//
-//	osalThreadSleepMilliseconds(1);
-//
-//	// test what duty gives a current of 50% Fullscale
-//	while(pwm::OutputActive() && std::abs(samples[0][samples_index][8] - current_offset[0]) < ADC_TARGET)
-//	{
-//		for (uint8_t i = 0; i < pwm::INJECTION_CYCLES; ++i)
-//		{
-//			dutys[i][0] += DUTY_STEP;
-//			dutys[i][1] -= 0.5f * DUTY_STEP;
-//			dutys[i][2] -= 0.5f * DUTY_STEP;
-//		}
-//		pwm::SetDutys(dutys);
-//
-//		osalThreadSleepMilliseconds(1);
-//	}
-//	test_duty = dutys[0][0];
-//
-//	uint8_t i;
-//	for(i = 0; i < PHASES && pwm::OutputActive(); i++)
-//	{
-//		for (uint8_t k = 0; k < pwm::INJECTION_CYCLES; ++k)
-//		{
-//			dutys[k][i] = test_duty;
-//			dutys[k][(i+1)%PHASES] = -0.5f * test_duty;
-//			dutys[k][(i+2)%PHASES] = -0.5f * test_duty;
-//		}
-//		pwm::SetDutys(dutys);
-//		osalThreadSleepMilliseconds(10);
-//
-//		for (uint8_t p = 0; p < PHASES; ++p)
-//		{
-//			for(uint8_t s = 0; s < ADC_SEQ_BUFFERED; s++)
-//			{
-//				// take only the mid samples in to account
-//				// The edges are supposed to be below half duty
-//				for (uint8_t k = 2; k < LENGTH_ADC_SEQ - 1; k += 2)
-//				{
-//					gain_sum[i][p] += samples[p][s][k];
-//				}
-//			}
-//		}
-//	}
-//
-//	pwm::DisableOutputs();
-//	memset(dutys, 0, sizeof(dutys));
-//	pwm::SetDutys(dutys);
-//
-//	if(i >= PHASES)
-//	{
-//		for(uint8_t i = 0; i < PHASES; i++)
-//		{
-//			for(uint8_t k = 0; k < PHASES; k++)
-//			{
-//				// transform the other currents back
-//				if(i == k) gain[i][k] = gain_sum[i][k] / (float)(ADC_SEQ_BUFFERED * 6) - (float)current_offset[k];
-//				// normally half the current on the back flowing phases
-//				else gain[i][k] = -((float)gain_sum[i][k] / (float)(ADC_SEQ_BUFFERED * 3)) + (float)current_offset[k];
-//			}
-//		}
-//
-//		float mean_gain = 0.0f;
-//		for(uint8_t i = 0; i < PHASES; i++)
-//		{
-//			for(uint8_t k = 0; k < PHASES; k++)
-//			{
-//				mean_gain += gain[i][k];
-//			}
-//		}
-//		mean_gain /= PHASES * PHASES;
-//
-//
-//		for(uint8_t i = 0; i < PHASES; i++)
-//		{
-//			float phase_gain = 0.0f;
-//			for(uint8_t k = 0; k < PHASES; k++)
-//			{
-//				phase_gain += gain[i][k];
-//			}
-//			phase_gain /= PHASES;
-//
-//			current_gain[i] = mean_gain / phase_gain;
-//		}
-//
-//		result = true;
-//	}
-//
-//	return result;
-//}
 
 /**
  * \brief    interpolate temperature via a LUT in the range of -10°C to 150°C with an error of 0.393°C

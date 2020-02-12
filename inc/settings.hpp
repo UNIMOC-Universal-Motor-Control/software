@@ -55,7 +55,7 @@ namespace settings
 		extern uint32_t P;
 
 		///< square injection voltage amplitude
-		extern float Uinj;
+		extern float u_inj;
 
 		/**
 		 * @namespace motor limits

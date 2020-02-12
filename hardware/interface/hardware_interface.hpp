@@ -19,8 +19,10 @@
 #ifndef HARDWARE_INTERFACE_HARDWARE_INTERFACE_HPP_
 #define HARDWARE_INTERFACE_HARDWARE_INTERFACE_HPP_
 #include <cstdint>
+#include <array>
 #include "ch.hpp"
 #include "hal.h"
+#include "systems.hpp"
 
 
 namespace hardware {
@@ -84,7 +86,7 @@ extern bool OutputActive(void);
  * Set the normalized duty cycles for each phase
  * @param dutys -1 = LOW, 0 = 50%, 1=HIGH
  */
-extern void SetDutys(const float dutys[INJECTION_CYCLES][PHASES]);
+extern void SetDutys(const std::array<systems::abc, INJECTION_CYCLES> dutys);
 
 } /* namespace pwm */
 
@@ -107,17 +109,25 @@ namespace adc
 extern void Init();
 
 /**
+ * prepare samples for evaluation
+ *
+ * @note on a cache MCU this invalidates cache for samples
+ */
+extern void PrepareSamples(void);
+
+/**
  * Get current means of the current in the last control
  * cycles
- * @param currents points to the current mean samples
+ * @param currents references to the current mean samples
  */
-extern void GetCurrentsMean(float* const currents[pwm::INJECTION_CYCLES][PHASES]);
+extern void GetCurrentsMean(std::array<systems::abc, pwm::INJECTION_CYCLES>& currents);
 
 /**
  * Get current injection samples in the last control cycle
  * @param currents points to the current injection samples
  */
-extern void GetCurrentsInjection(float* const currents[pwm::INJECTION_CYCLES][PHASES]);
+extern void GetCurrentsInjection(std::array<systems::abc, pwm::INJECTION_CYCLES>& currents);
+
 
 /**
  * Read the DC Bus voltage
