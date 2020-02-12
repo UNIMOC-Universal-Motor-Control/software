@@ -110,7 +110,7 @@ constexpr uint32_t LENGTH_ADC_SEQ = 16;
 ///< ADC sequences in buffer.
 /// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
 ///          so even length of sequence is best choice.
-constexpr uint32_t ADC_SEQ_BUFFERED = 16;
+constexpr uint32_t ADC_SEQ_BUFFERED = hardware::pwm::INJECTION_CYCLES * 4;
 
 ///< # of ADCs
 constexpr uint32_t NUM_OF_ADC = 3;
@@ -287,7 +287,7 @@ void hardware::adc::PrepareSamples(void)
 				sizeof(adcsample_t)*LENGTH_ADC_SEQ*ADC_SEQ_BUFFERED);
 	}
 
-	if(samples_index < (ADC_SEQ_BUFFERED - 1)) samples_index++;
+	if(samples_index < (ADC_SEQ_BUFFERED - 1)) samples_index+=pwm::INJECTION_CYCLES;
 	else samples_index = 0;
 }
 

@@ -40,19 +40,19 @@ namespace settings
 	namespace motor
 	{
 		///< Stator resistance
-		float Rs = 80e-3f;
+		float Rs = 200e-3f;
 
 		///< anisotropic inductance vector
-		systems::dq L = {50e-6f, 60e-6f};
+		systems::dq L = {500e-6f, 600e-6f};
 
 		///< number of pole pairs
-		uint32_t P = 14 / 2;
+		uint32_t P = 8 / 2;
 
 		///< magnetic flux inducted voltage in rotor
-		float Psi = unit::RpmV2VsRad(192.0f) / (float)P;
+		float Psi = unit::RpmV2VsRad(75.0f) / (float)P;
 
 		///< square injection voltage amplitude
-		float u_inj = 0.04f;
+		float u_inj = 0.0f;
 
 		/**
 		 * @namespace motor limit settings
@@ -60,7 +60,7 @@ namespace settings
 		namespace limits
 		{
 			///< maximum coil current
-			float current = 120.0f;
+			float current = 100.0f;
 
 			///< maximum angular velocity
 			float w = unit::RadS(15000.0f);
@@ -97,7 +97,7 @@ namespace settings
 	namespace control
 	{
 		///< current control switch
-		bool current = true;
+		bool current = false;
 
 	} /* namespace control */
 
@@ -136,7 +136,7 @@ namespace settings
 		namespace limits
 		{
 			///< maximum phase current
-			float current = 100.0f;
+			float current = 110.0f;
 
 			///< maximum motor temperature
 			float temperature = 90.0f;
