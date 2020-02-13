@@ -139,7 +139,38 @@ settings_ts settings =
 			.temperature = 90.0f,
 		},
 	},
+
+	///< crc32 value for the hole settings
+	.crc = 0,
 };
 
 
+/**
+ * Save setting to non volatile memory
+ */
+void settings_s::Save(void)
+{
+	settings.crc = hardware::memory::Crc32(&settings, sizeof(settings_ts) - sizeof(uint32_t));
+
+	hardware::memory::Write(0, &settings, sizeof(settings_ts));
+}
+
+/**
+ * Load settings from non volatile memory
+ * @return false for crc error
+ */
+bool settings_s::Load(void)
+{
+	bool result = false;
+	settings_ts tmp;
+
+	hardware::memory::Read(0, &tmp, sizeof(settings_ts));
+
+	if(settings.crc == hardware::memory::Crc32(&tmp, sizeof(settings_ts) - sizeof(uint32_t)))
+	{
+		memcpy(&settings, &tmp, sizeof(settings_ts));
+		result = true;
+	}
+	return result;
+}
 

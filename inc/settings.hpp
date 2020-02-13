@@ -23,6 +23,7 @@
 #include "systems.hpp"
 
 
+
 /**
  * settings to be saved in non volatile memory
  */
@@ -146,6 +147,21 @@ typedef struct settings_s
 			float temperature;
 		} limits;
 	}  converter;
+
+	///< crc32 value for the hole settings
+	uint32_t crc;
+
+
+	/**
+	 * Save setting to non volatile memory
+	 */
+	void Save(void);
+
+	/**
+	 * Load settings from non volatile memory
+	 * @return false for crc error
+	 */
+	bool Load(void);
 } settings_ts;
 
 extern settings_ts settings;

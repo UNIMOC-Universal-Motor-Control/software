@@ -29,6 +29,8 @@ using namespace chibios_rt;
 static modules::freemaster::thread freemaster;
 static control::thread controller;
 
+volatile bool save = false;
+
 /**
  * Code entry point
  * @return never
@@ -86,6 +88,8 @@ int main(void)
 	hardware::pwm::Init();
 	hardware::adc::Init();
 
+	settings.Load();
+
 	hardware::pwm::EnableOutputs();
 
 	palClearLine(LINE_LED_ERROR);
@@ -107,6 +111,9 @@ int main(void)
 			palClearLine(LINE_LED_PWM);
 		}
 		BaseThread::sleep(TIME_MS2I(500));
+
+		if(save) settings.Save();
+		save = false;
 	}
 }
 
