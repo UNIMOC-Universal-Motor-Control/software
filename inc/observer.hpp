@@ -119,10 +119,10 @@ namespace observer
 
 		/**
 		 * @brief Get angular error from flux estimation.
-		 *
+		 * @param sin_cos sine and cosine of the actual rotor angle
 		 * @retval angle error
 		 */
-		float Calculate( void );
+		float Calculate( const systems::sin_cos& sin_cos  );
 
 	};
 

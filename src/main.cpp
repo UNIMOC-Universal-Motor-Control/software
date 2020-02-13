@@ -162,7 +162,7 @@ namespace control
 
 			hardware::adc::PrepareSamples();
 
-			values::battery::u = hardware::adc::GetDCBusVoltage();
+			values.battery.u = hardware::adc::GetDCBusVoltage();
 
 			hardware::adc::GetCurrentsMean(i_dc);
 
@@ -181,11 +181,11 @@ namespace control
 				{
 					i_ab_ac[i] = systems::transform::Clark(i_ac[i]);
 				}
-				values::motor::y = admittance.GetVector(i_ab_ac);
+				values.motor.y = admittance.GetVector(i_ab_ac);
 
 				// calculate the sine and cosine of the new angle
-				float angle = values::motor::rotor::phi
-						+ values::motor::rotor::omega * settings::converter::ts;
+				float angle = values.motor.rotor.phi
+						+ values.motor.rotor.omega * settings::converter::ts;
 
 				// calculate new
 				systems::SinCos(angle, sin_cos);
@@ -193,19 +193,19 @@ namespace control
 				// convert 3 phase system to ortogonal
 				i_ab = systems::transform::Clark(i_abc);
 				// convert current samples from clark to rotor frame;
-				values::motor::rotor::i = systems::transform::Park(i_ab, sin_cos);
+				values.motor.rotor.i = systems::transform::Park(i_ab, sin_cos);
 
 				// transform the admittance vector to rotor frame
 				// the admittance vector is rotating with double the rotor frequency
-				y_dq = systems::transform::Park(values::motor::y, sin_cos);
+				y_dq = systems::transform::Park(values.motor.y, sin_cos);
 				y_ab.alpha = y_dq.d;
 				y_ab.beta = y_dq.q;
-				values::motor::rotor::y = systems::transform::Park(y_ab, sin_cos);
+				values.motor.rotor.y = systems::transform::Park(y_ab, sin_cos);
 
 				if(settings::observer::admittance)
 				{
 					// calculate the mech observer from admittance vector
-					mech.Update(values::motor::rotor::y.q, correction);
+					mech.Update(values.motor.rotor.y.q, correction);
 
 					// predict motor behavior
 					observer::mechanic::Predict();
@@ -220,7 +220,7 @@ namespace control
 				}
 
 				// transform the voltages to stator frame
-				u_ab = systems::transform::InversePark(values::motor::rotor::u, sin_cos);
+				u_ab = systems::transform::InversePark(values.motor.rotor.u, sin_cos);
 
 				// add the injection pattern to the voltage output
 				for (uint8_t i = 0; i < hardware::pwm::INJECTION_CYCLES; ++i)
@@ -255,8 +255,8 @@ namespace control
 					i_abc = i_dc[i];
 
 					// calculate the sine and cosine of the new angle
-					float angle = values::motor::rotor::phi
-							+ values::motor::rotor::omega * settings::converter::ts;
+					float angle = values.motor.rotor.phi
+							+ values.motor.rotor.omega * settings::converter::ts;
 
 					// calculate new sine and cosine
 					systems::SinCos(angle, sin_cos[i]);
@@ -264,12 +264,12 @@ namespace control
 					// convert 3 phase system to ortogonal
 					i_ab = systems::transform::Clark(i_abc);
 					// convert current samples from clark to rotor frame;
-					values::motor::rotor::i = systems::transform::Park(i_ab, sin_cos[i]);
+					values.motor.rotor.i = systems::transform::Park(i_ab, sin_cos[i]);
 
 					if(settings::observer::flux)
 					{
 						// calculate the flux observer
-						float flux_error = flux.Calculate();
+						float flux_error = flux.Calculate(sin_cos[i]);
 						mech.Update(flux_error, correction);
 
 						// predict motor behavior
@@ -288,20 +288,20 @@ namespace control
 				for (uint8_t i = 0; i < hardware::pwm::INJECTION_CYCLES; ++i)
 				{
 					// transform the voltages to stator frame
-					u_ab = systems::transform::InversePark(values::motor::rotor::u, sin_cos[i]);
+					u_ab = systems::transform::InversePark(values.motor.rotor.u, sin_cos[i]);
 					// next transform to abc system
 					u_abc[i] = systems::transform::InverseClark(u_ab);
 				}
 			}
 
 			//scale the voltages
-			if(std::fabs(values::battery::u)> 10.0f)
+			if(std::fabs(values.battery.u)> 10.0f)
 			{
 				for (uint8_t i = 0; i < hardware::pwm::INJECTION_CYCLES; ++i)
 				{
-					u_abc[i].a /= values::battery::u;
-					u_abc[i].b /= values::battery::u;
-					u_abc[i].c /= values::battery::u;
+					u_abc[i].a /= values.battery.u;
+					u_abc[i].b /= values.battery.u;
+					u_abc[i].c /= values.battery.u;
 				}
 
 			}

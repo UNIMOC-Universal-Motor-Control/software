@@ -101,7 +101,7 @@ namespace control
 		// leave limits at zero if current control is inactive.
 		if(settings::control::current)
 		{
-			limit = _1bysqrt3 * values::battery::u;
+			limit = _1bysqrt3 * values.battery.u;
 		}
 
 		// Current controller is limited to 1/sqrt(3)*DC Bus Voltage due to SVM
@@ -111,21 +111,21 @@ namespace control
 
 		// calculate feedforward
 		systems::dq feedforward = {0.0f, 0.0f};
-		feedforward.d = settings::motor::Rs * values::motor::rotor::setpoint::i.d
-				- values::motor::rotor::setpoint::omega * settings::motor::L.q * values::motor::rotor::setpoint::i.q;
+		feedforward.d = settings::motor::Rs * values.motor.rotor.setpoint.i.d
+				- values.motor.rotor.setpoint.omega * settings::motor::L.q * values.motor.rotor.setpoint.i.q;
 
-		feedforward.q = settings::motor::Rs * values::motor::rotor::setpoint::i.q
-				+ values::motor::rotor::setpoint::omega * settings::motor::L.d * values::motor::rotor::setpoint::i.d
-				+ values::motor::rotor::setpoint::omega * settings::motor::Psi;
+		feedforward.q = settings::motor::Rs * values.motor.rotor.setpoint.i.q
+				+ values.motor.rotor.setpoint.omega * settings::motor::L.d * values.motor.rotor.setpoint.i.d
+				+ values.motor.rotor.setpoint.omega * settings::motor::Psi;
 
 		// only set voltages with active current control
 		if(settings::control::current)
 		{
 			// direct current control
-			values::motor::rotor::u.d = d.Calculate(values::motor::rotor::setpoint::i.d - values::motor::rotor::i.d, feedforward.d);
+			values.motor.rotor.u.d = d.Calculate(values.motor.rotor.setpoint.i.d - values.motor.rotor.i.d, feedforward.d);
 
 			// quadrature current control
-			values::motor::rotor::u.q = q.Calculate(values::motor::rotor::setpoint::i.q - values::motor::rotor::i.q, feedforward.q);
+			values.motor.rotor.u.q = q.Calculate(values.motor.rotor.setpoint.i.q - values.motor.rotor.i.q, feedforward.q);
 		}
 	}
 }/* namespace control */

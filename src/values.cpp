@@ -18,83 +18,74 @@
  */
 #include "values.hpp"
 
-/**
- * @namespace system values
- */
-namespace values
-{
 
-	/**
-	 * @namespace motor values
-	 */
-	namespace motor
+
+values_ts values =
+{
+	.motor =
 	{
 		///< Admittance mean
-		systems::alpha_beta y = {0.0f, 0.0f};
+		.y = {0.0f, 0.0f},
 
 		///< electric torque
-		float m_el = 0.0f;
+		.m_el = 0.0f,
 
 		///< external load torque
-		float m_l = 0.0f;
+		.m_l = 0.0f,
 
-		/**
-		 * @namespace motor rotor system values
-		 */
-		namespace rotor
+		///< motor temperature
+		.temp = 0.0f,
+
+		///< motor rotor system values
+		.rotor =
 		{
 			///< Current in rotor frame
-			systems::dq i = {0.0f, 0.0f};
+			.i = {0.0f, 0.0f},
 
 			///< Voltage in rotor frame
-			systems::dq u = {0.0f, 0.0f};
+			.u = {0.0f, 0.0f},
 
 			///< Admittance vector in rotor frame
-			systems::dq y = {0.0f, 0.0f};
+			.y = {0.0f, 0.0f},
 
 			///< angular velocity in rotor frame
-			float omega = 0.0f;
+			.omega = 0.0f,
 
 			///< rotor angle
-			float phi = 0.0f;
+			.phi = 0.0f,
 
-			/**
-			 * @namespace motor rotor system setpoints
-			 */
-			namespace setpoint
+			///< motor rotor system setpoints
+			.setpoint =
 			{
 				///< Current setpoint in rotor frame
-				systems::dq i = {0.0f, 0.0f};
+				.i = {0.0f, 0.0f},
 
 				///< angular velocity setpoint in rotor frame
-				float omega = 0.0f;
+				.omega = 0.0f,
 
 				///< rotor angle setpoint
-				float phi = 0.0f;
-			} /* namespace setpoint */
-		} /* namespace rotor */
-	} /* namespace motor */
+				.phi = 0.0f,
+			},
+		},
+	},
 
-	/**
-	 * @namespace battery values
-	 */
-	namespace battery
+	///< battery values
+	.battery =
 	{
 		///< Battery voltage
-		float u = 10.0f;
+		.u = 10.0f,
 
 		///< Battery current
-		float i = 0.0f;
+		.i = 0.0f,
+	},
 
-	} /* namespace battery */
-
-	/**
-	 * @namespace converter values.
-	 */
-	namespace converter
+	///< converter values
+	.converter =
 	{
-		///< temperature
-		float temp = 0.0f;
-	} /* namespace converter */
-} /* namespace setting */
+		///< power stage temperature
+		.temp = 0.0f,
+	},
+};
+
+
 

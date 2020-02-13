@@ -48,21 +48,21 @@ namespace observer
         const float tsj = ts/settings::mechanics::J;
 
         // electric torque
-        values::motor::m_el = _3by2 * settings::motor::Psi * values::motor::rotor::i.q +
-                (settings::motor::L.d - settings::motor::L.q) * values::motor::rotor::i.d *
-                values::motor::rotor::i.q;
+        values.motor.m_el = _3by2 * settings::motor::Psi * values.motor.rotor.i.q +
+                (settings::motor::L.d - settings::motor::L.q) * values.motor.rotor.i.d *
+                values.motor.rotor.i.q;
 
         // omega
-        values::motor::rotor::omega += tsj * (values::motor::m_el - values::motor::m_l);
+        values.motor.rotor.omega += tsj * (values.motor.m_el - values.motor.m_l);
 
         // integrate omega for phi
-        values::motor::rotor::phi += values::motor::rotor::omega * ts;
+        values.motor.rotor.phi += values.motor.rotor.omega * ts;
 
         // integrate load
-        //values::motor::m_l += 0;
+        //values.motor.m_l += 0;
 
         // limit phi to +- 2 * pi
-        values::motor::rotor::phi = fmodf(values::motor::rotor::phi, math::_2PI);
+        values.motor.rotor.phi = fmodf(values.motor.rotor.phi, math::_2PI);
     }
 
     /**
@@ -72,9 +72,9 @@ namespace observer
      */
     void mechanic::Correct(const std::array<float, 3> error)
     {
-        values::motor::rotor::omega += error[0];
-        values::motor::rotor::phi += error[1];
-        values::motor::m_l += error[2];
+        values.motor.rotor.omega += error[0];
+        values.motor.rotor.phi += error[1];
+        values.motor.m_l += error[2];
     }
 
     /**
@@ -136,25 +136,25 @@ namespace observer
      *
      * @retval angle error
      */
-    float flux::Calculate( void )
+    float flux::Calculate(const systems::sin_cos& sin_cos )
     {
         // BEMF voltage and feedback
-        rotor.bemf.d = values::motor::rotor::u.d - settings::motor::Rs * values::motor::rotor::i.d + rotor.feedback.d;
-        rotor.bemf.q = values::motor::rotor::u.q - settings::motor::Rs * values::motor::rotor::i.q + rotor.feedback.q;
+        rotor.bemf.d = values.motor.rotor.u.d - settings::motor::Rs * values.motor.rotor.i.d + rotor.feedback.d;
+        rotor.bemf.q = values.motor.rotor.u.q - settings::motor::Rs * values.motor.rotor.i.q + rotor.feedback.q;
 
         // rotate the bemf to stator system
-        stator.bemf = systems::transform::InversePark(rotor.bemf, values::motor::rotor::sin_cos);
+        stator.bemf = systems::transform::InversePark(rotor.bemf, sin_cos);
 
         // integrate bemf to flux
         stator.flux.alpha +=  stator.bemf.alpha * settings::converter::ts;
         stator.flux.beta  +=  stator.bemf.beta  * settings::converter::ts;
 
         // transform flux to rotor system
-        rotor.flux = systems::transform::Park(stator.flux, values::motor::rotor::sin_cos);
+        rotor.flux = systems::transform::Park(stator.flux, sin_cos);
 
         // sub the voltage inducted in the inductors of the stator
-        rotor.flux.d -= values::motor::rotor::i.d * settings::motor::L.d;
-        rotor.flux.q -= values::motor::rotor::i.q * settings::motor::L.q;
+        rotor.flux.d -= values.motor.rotor.i.d * settings::motor::L.d;
+        rotor.flux.q -= values.motor.rotor.i.q * settings::motor::L.q;
 
         // compare actual flux with flux parameter
         rotor.feedback.d = settings::observer::C.d * (settings::motor::Psi - rotor.flux.d);

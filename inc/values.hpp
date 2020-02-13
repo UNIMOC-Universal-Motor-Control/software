@@ -24,88 +24,88 @@
 
 
 /**
- * @namespace system values
+ * system global values
  */
-namespace values
+typedef struct values_s
 {
 	/**
-	 * @namespace motor values
+	 * motor values
 	 */
-	namespace motor
+	struct motor_s
 	{
 		///< Admittance mean
-		extern systems::alpha_beta y;
+		systems::alpha_beta y;
 
 		///< electric torque
-		extern float m_el;
+		float m_el;
 
 		///< external load torque
-		extern float m_l;
+		float m_l;
+
+		///< motor temperature
+		float temp;
 
 		/**
-		 * @namespace motor rotor system values
+		 * motor rotor system values
 		 */
-		namespace rotor
+		struct rotor_s
 		{
 			///< Current in rotor frame
-			extern systems::dq i;
+			systems::dq i;
 
 			///< Voltage in rotor frame
-			extern systems::dq u;
+			systems::dq u;
 
 			///< Admittance deviation in rotor frame
-			extern systems::dq y;
+			systems::dq y;
 
 			///< angular velocity in rotor frame
-			extern float omega;
+			float omega;
 
 			///< rotor angle
-			extern float phi;
-
-			///< sine and cosine of phi
-			extern systems::sin_cos sin_cos;
+			float phi;
 
 			/**
-			 * @namespace motor rotor system setpoints
+			 * motor rotor system setpoints
 			 */
-			namespace setpoint
+			struct setpoint_s
 			{
 				///< Current setpoint in rotor frame
-				extern systems::dq i;
+				systems::dq i;
 
 				///< angular velocity setpoint in rotor frame
-				extern float omega;
+				float omega;
 
 				///< rotor angle setpoint
-				extern float phi;
+				float phi;
 
-			} /* namespace setpoint */
-		} /* namespace rotor */
-	} /* namespace motor */
+			} setpoint;
+		} rotor;
+	} motor;
 
 	/**
-	 * @namespace battery values
+	 * battery values
 	 */
-	namespace battery
+	struct battery_s
 	{
 		///< Battery voltage
-		extern float u;
+		float u;
 
 		///< Battery current
-		extern float i;
-
-	} /* namespace battery */
+		float i;
+	} battery;
 
 	/**
-	 * @namespace converter values
+	 * converter values
 	 */
-	namespace converter
+	struct converter_s
 	{
-		///< phase temperatures
-		extern float temp;
+		///< powerstage temperature
+		float temp;
+	} converter;
+} values_ts;
 
-	} /* namespace converter */
-} /* namespace values */
+extern values_ts values;
 
 #endif /* INC_VALUES_HPP_ */
 
