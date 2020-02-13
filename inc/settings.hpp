@@ -22,131 +22,133 @@
 #include <cstdint>
 #include "systems.hpp"
 
+
 /**
- * @namespace settings to be saved in non volatile memory
+ * settings to be saved in non volatile memory
  */
-namespace settings
+typedef struct settings_s
 {
 
 	/**
-	 * @namespace mechanical properties of the system
+	 * mechanical properties of the system
 	 */
-	namespace mechanics
+	struct mechanics_s
 	{
 		///< inertia of of rotor and connected known mechanics
-		extern float J;
-	} /* namespace mechanics */
+		float J;
+	}  mechanics;
 
 	/**
-	 * @namespace motor properties
+	 * motor properties
 	 */
-	namespace motor
+	struct motor_s
 	{
 		///< Stator resistance
-		extern float Rs;
+		float Rs;
 
 		///< anisotropic inductance vector
-		extern systems::dq L;
+		systems::dq L;
 
 		///< velocity constant Kv
-		extern float Psi;
+		float Psi;
 
 		///< number of pole pairs
-		extern uint32_t P;
+		uint32_t P;
 
 		///< square injection voltage amplitude
-		extern float u_inj;
+		float u_inj;
 
 		/**
-		 * @namespace motor limits
+		 * motor limits
 		 */
-		namespace limits
+		struct limits_s
 		{
 			///< maximum coil current
-			extern float current;
+			float current;
 
 			///< maximum angular velocity
-			extern float w;
+			float w;
 
 			///< maximum motor temperature
-			extern float temperature;
-		} /* namespace limits */
-	} /* namespace motor */
+			float temperature;
+		} limits;
+	} motor;
 
 	/**
-	 * @namespace battery properties
+	 * battery properties
 	 */
-	namespace battery
+	struct battery_s
 	{
 		///< internal resistance
-		extern float Ri;
+		float Ri;
+
 		/**
-		 * @namespace battery limits
+		 * battery limits
 		 */
-		namespace limits
+		struct limits_s
 		{
 			///< maximum drive current
-			extern float drive_current;
+			float drive_current;
 
 			///< maximum charge current
-			extern float charge_current;
-		} /* namespace limits */
-	} /* namespace battery */
+			float charge_current;
+		} limits;
+	} battery;
 
 	/**
-	 * @namespace control settings
+	 * control settings
 	 */
-	namespace control
+	struct control_s
 	{
 		///< current control switch
-		extern bool current;
+		bool current;
 
-	} /* namespace control */
+	} control;
 
 	/**
-	 * @namespace observer settings
+	 * observer settings
 	 */
-	namespace observer
+	struct observer_s
 	{
 		///< flux observer switch
-		extern bool flux;
+		bool flux;
 
 		///< admittance observer switch
-		extern bool admittance;
-
-		///< mechanic observer switch
-		extern bool mechanic;
+		bool admittance;
 
 		///< modell variance
-		extern float Q;
+		float Q;
 
 		///< measurement variance
-		extern float R;
+		float R;
 
 		///< flux observer feedback gains
-		extern systems::dq C;
-	} /* namespace observer */
+		systems::dq C;
+	} observer;
 
 	/**
-	 * @namespace converter settings
+	 * converter settings
 	 */
-	namespace converter
+	struct converter_s
 	{
 		///< control period
-		extern float ts;
+		float ts;
+
 		/**
-		 * @namespace converter limits
+		 * converter limits
 		 */
-		namespace limits
+		struct limits_s
 		{
 			///< maximum phase current
-			extern float current;
+			float current;
 
-			///< maximum motor temperature
-			extern float temperature;
-		} /* namespace limits */
-	} /* namespace converter */
-} /* namespace setting */
+			///< maximum power stage temperature
+			float temperature;
+		} limits;
+	}  converter;
+} settings_ts;
+
+extern settings_ts settings;
 
 #endif /* INC_SETTINGS_HPP_ */
 

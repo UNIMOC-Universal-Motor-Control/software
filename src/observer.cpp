@@ -44,12 +44,12 @@ namespace observer
     void mechanic::Predict(void)
     {
         // update constants
-        const float ts = settings::converter::ts;
-        const float tsj = ts/settings::mechanics::J;
+        const float ts = settings.converter.ts;
+        const float tsj = ts/settings.mechanics.J;
 
         // electric torque
-        values.motor.m_el = _3by2 * settings::motor::Psi * values.motor.rotor.i.q +
-                (settings::motor::L.d - settings::motor::L.q) * values.motor.rotor.i.d *
+        values.motor.m_el = _3by2 * settings.motor.Psi * values.motor.rotor.i.q +
+                (settings.motor.L.d - settings.motor.L.q) * values.motor.rotor.i.d *
                 values.motor.rotor.i.q;
 
         // omega
@@ -85,8 +85,8 @@ namespace observer
      */
     void mechanic::Update(const float angle_error, std::array<float, 3>& out_error)
     {
-        float ts = settings::converter::ts;
-        float tsj = ts/settings::mechanics::J;
+        float ts = settings.converter.ts;
+        float tsj = ts/settings.mechanics.J;
 
         /// kalman filter for flux error
         pk[0][2] = p[0][2] - p[2][2] * tsj;
@@ -139,28 +139,28 @@ namespace observer
     float flux::Calculate(const systems::sin_cos& sin_cos )
     {
         // BEMF voltage and feedback
-        rotor.bemf.d = values.motor.rotor.u.d - settings::motor::Rs * values.motor.rotor.i.d + rotor.feedback.d;
-        rotor.bemf.q = values.motor.rotor.u.q - settings::motor::Rs * values.motor.rotor.i.q + rotor.feedback.q;
+        rotor.bemf.d = values.motor.rotor.u.d - settings.motor.Rs * values.motor.rotor.i.d + rotor.feedback.d;
+        rotor.bemf.q = values.motor.rotor.u.q - settings.motor.Rs * values.motor.rotor.i.q + rotor.feedback.q;
 
         // rotate the bemf to stator system
         stator.bemf = systems::transform::InversePark(rotor.bemf, sin_cos);
 
         // integrate bemf to flux
-        stator.flux.alpha +=  stator.bemf.alpha * settings::converter::ts;
-        stator.flux.beta  +=  stator.bemf.beta  * settings::converter::ts;
+        stator.flux.alpha +=  stator.bemf.alpha * settings.converter.ts;
+        stator.flux.beta  +=  stator.bemf.beta  * settings.converter.ts;
 
         // transform flux to rotor system
         rotor.flux = systems::transform::Park(stator.flux, sin_cos);
 
         // sub the voltage inducted in the inductors of the stator
-        rotor.flux.d -= values.motor.rotor.i.d * settings::motor::L.d;
-        rotor.flux.q -= values.motor.rotor.i.q * settings::motor::L.q;
+        rotor.flux.d -= values.motor.rotor.i.d * settings.motor.L.d;
+        rotor.flux.q -= values.motor.rotor.i.q * settings.motor.L.q;
 
         // compare actual flux with flux parameter
-        rotor.feedback.d = settings::observer::C.d * (settings::motor::Psi - rotor.flux.d);
-        rotor.feedback.q = settings::observer::C.q * (0.0f - rotor.flux.q);
+        rotor.feedback.d = settings.observer.C.d * (settings.motor.Psi - rotor.flux.d);
+        rotor.feedback.q = settings.observer.C.q * (0.0f - rotor.flux.q);
 
-        return rotor.flux.q / settings::motor::Psi;
+        return rotor.flux.q / settings.motor.Psi;
     }
 
     /**

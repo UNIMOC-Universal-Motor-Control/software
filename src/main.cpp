@@ -115,8 +115,8 @@ namespace control
 	/**
 	 * generic constructor
 	 */
-	thread::thread():flux(), mech(settings::observer::Q, settings::observer::R),
-			foc(settings::converter::ts, settings::motor::Rs, 1.0f)
+	thread::thread():flux(), mech(settings.observer.Q, settings.observer.R),
+			foc(settings.converter.ts, settings.motor.Rs, 1.0f)
 	{}
 
 	/**
@@ -166,12 +166,12 @@ namespace control
 
 			hardware::adc::GetCurrentsMean(i_dc);
 
-			if(settings::motor::u_inj != 0.0f)
+			if(settings.motor.u_inj != 0.0f)
 			{
 				systems::sin_cos sin_cos;
 
 				// slow control with injection
-				settings::converter::ts = hardware::Tc * hardware::pwm::INJECTION_CYCLES;
+				settings.converter.ts = hardware::Tc * hardware::pwm::INJECTION_CYCLES;
 
 				i_abc = InjectionMean(i_dc);
 
@@ -185,7 +185,7 @@ namespace control
 
 				// calculate the sine and cosine of the new angle
 				float angle = values.motor.rotor.phi
-						+ values.motor.rotor.omega * settings::converter::ts;
+						+ values.motor.rotor.omega * settings.converter.ts;
 
 				// calculate new
 				systems::SinCos(angle, sin_cos);
@@ -202,7 +202,7 @@ namespace control
 				y_ab.beta = y_dq.q;
 				values.motor.rotor.y = systems::transform::Park(y_ab, sin_cos);
 
-				if(settings::observer::admittance)
+				if(settings.observer.admittance)
 				{
 					// calculate the mech observer from admittance vector
 					mech.Update(values.motor.rotor.y.q, correction);
@@ -213,7 +213,7 @@ namespace control
 					observer::mechanic::Correct(correction);
 				}
 
-				if(settings::control::current)
+				if(settings.control.current)
 				{
 					// calculate the field orientated controllers
 					foc.Calculate();
@@ -235,8 +235,8 @@ namespace control
 
 					systems::alpha_beta u_tmp =
 					{
-						u_ab.alpha + settings::motor::u_inj * inj_pat[i].alpha,
-						u_ab.beta + settings::motor::u_inj * inj_pat[i].beta
+						u_ab.alpha + settings.motor.u_inj * inj_pat[i].alpha,
+						u_ab.beta + settings.motor.u_inj * inj_pat[i].beta
 					};
 
 					// next transform to abc system
@@ -248,7 +248,7 @@ namespace control
 				std::array<systems::sin_cos, hardware::pwm::INJECTION_CYCLES> sin_cos;
 
 				// highspeed control without injection
-				settings::converter::ts = hardware::Tc;
+				settings.converter.ts = hardware::Tc;
 
 				for (uint8_t i = 0; i < hardware::pwm::INJECTION_CYCLES; ++i)
 				{
@@ -256,7 +256,7 @@ namespace control
 
 					// calculate the sine and cosine of the new angle
 					float angle = values.motor.rotor.phi
-							+ values.motor.rotor.omega * settings::converter::ts;
+							+ values.motor.rotor.omega * settings.converter.ts;
 
 					// calculate new sine and cosine
 					systems::SinCos(angle, sin_cos[i]);
@@ -266,7 +266,7 @@ namespace control
 					// convert current samples from clark to rotor frame;
 					values.motor.rotor.i = systems::transform::Park(i_ab, sin_cos[i]);
 
-					if(settings::observer::flux)
+					if(settings.observer.flux)
 					{
 						// calculate the flux observer
 						float flux_error = flux.Calculate(sin_cos[i]);
@@ -279,7 +279,7 @@ namespace control
 					}
 				}
 
-				if(settings::control::current)
+				if(settings.control.current)
 				{
 					// calculate the field orientated controllers
 					foc.Calculate();

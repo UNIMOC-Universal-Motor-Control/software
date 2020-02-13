@@ -22,127 +22,124 @@
 /**
  * @namespace system settings
  */
-namespace settings
+settings_ts settings =
 {
-
 	/**
-	 * @namespace mechanic system settings
+	 * mechanic system settings
 	 */
-	namespace mechanics
+	.mechanics =
 	{
 		///< inertia of of rotor and connected known mechanics
-		float J = 1e-4f;
-	} /* namespace mechanics */
+		.J = 1e-4f,
+	},
 
 	/**
-	 * @namespace motor settings
+	 * motor settings
 	 */
-	namespace motor
+	.motor =
 	{
 		///< Stator resistance
-		float Rs = 200e-3f;
+		.Rs = 200e-3f,
 
 		///< anisotropic inductance vector
-		systems::dq L = {500e-6f, 600e-6f};
-
-		///< number of pole pairs
-		uint32_t P = 8 / 2;
+		.L = {500e-6f, 600e-6f},
 
 		///< magnetic flux inducted voltage in rotor
-		float Psi = unit::RpmV2VsRad(75.0f) / (float)P;
+		.Psi = unit::RpmV2VsRad(75.0f) / (8.0f / 2.0f),
+
+		///< number of pole pairs
+		.P = 8 / 2,
 
 		///< square injection voltage amplitude
-		float u_inj = 0.0f;
+		.u_inj = 0.0f,
 
 		/**
-		 * @namespace motor limit settings
+		 * motor limit settings
 		 */
-		namespace limits
+		.limits =
 		{
 			///< maximum coil current
-			float current = 100.0f;
+			.current = 100.0f,
 
 			///< maximum angular velocity
-			float w = unit::RadS(15000.0f);
+			.w = unit::RadS(15000.0f),
 
 			///< maximum motor temperature
-			float temperature = 80.0f;
-		} /* namespace limits */
-	} /* namespace motor */
+			.temperature = 80.0f,
+		},
+	},
 
 	/**
-	 * @namespace battery settings
+	 * battery settings
 	 */
-	namespace battery
+	.battery =
 	{
+		///< internal resistance
+		.Ri = 75e-3,
+
 		/**
-		 * @namespace battery limits
+		 * battery limits
 		 */
-		namespace limits
+		.limits =
 		{
 			///< maximum drive current
-			float drive_current = 30.0f;
+			.drive_current = 30.0f,
 
 			///< maximum charge current
-			float charge_current = 10.0f;
-
-			///< maximum battery temperature
-			float temperature = 80.0f;
-		} /* namespace limits */
-	} /* namespace battery */
+			.charge_current = 10.0f,
+		},
+	},
 
 	/**
-	 * @namespace control settings
+	 * control settings
 	 */
-	namespace control
+	.control =
 	{
 		///< current control switch
-		bool current = false;
-
-	} /* namespace control */
+		.current = false,
+	},
 
 	/**
-	 * @namespace observer settings
+	 * observer settings
 	 */
-	namespace observer
+	.observer =
 	{
 		///< flux observer switch
-		bool flux = false;
+		.flux = false,
 
 		///< admittance observer switch
-		bool admittance = false;
+		.admittance = false,
 
 		///< modell variance
-		float Q = 1e-5f;
+		.Q = 1e-5f,
 
 		///< measurement variance
-		float R = 1e-4f;
+		.R = 1e-4f,
 
 		///< flux observer feedback gains
-		systems::dq C = {50.0f, 1.0f};
-
-	} /* namespace observer */
+		.C = {50.0f, 1.0f},
+	},
 
 	/**
-	 * @namespace converter settings
+	 * converter settings
 	 */
-	namespace converter
+	.converter =
 	{
 		///< control period
-		float ts = hardware::Tc;
+		.ts = hardware::Tc,
 		/**
-		 * @namespace converter limits
+		 * converter limits
 		 */
-		namespace limits
+		.limits =
 		{
 			///< maximum phase current
-			float current = 110.0f;
+			.current = 110.0f,
 
-			///< maximum motor temperature
-			float temperature = 90.0f;
-		} /* namespace limits */
-	} /* namespace converter */
-} /* namespace setting */
+			///< maximum power stage temperature
+			.temperature = 90.0f,
+		},
+	},
+};
 
 
 
