@@ -135,6 +135,9 @@ typedef struct settings_s
 		///< control period
 		float ts;
 
+		///< current offsets
+		systems::abc current_offsets;
+
 		/**
 		 * converter limits
 		 */

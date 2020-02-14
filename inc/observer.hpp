@@ -133,7 +133,6 @@ namespace observer
 	{
 	private:
 
-
 	public:
 		/**
 		 * @brief trivial admittance observer constructor
@@ -143,12 +142,16 @@ namespace observer
 		/**
 		 * @brief calculate the mean stator admittance.
 		 *
+		 * @note call only once per control cycle
+		 *
 		 * @retval mean stator admittance.
 		 */
 		systems::alpha_beta GetMean(std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& ad);
 
 		/**
 		 * @brief calculate the stator admittance vector.
+		 *
+		 * @note call only once per control cycle
 		 *
 		 * @retval stator admittance vector.
 		 */

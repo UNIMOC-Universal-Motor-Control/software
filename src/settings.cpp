@@ -18,6 +18,7 @@
  */
 #include "settings.hpp"
 #include "hardware_interface.hpp"
+#include <cstring>
 
 /**
  * @namespace system settings
@@ -127,6 +128,10 @@ settings_ts settings =
 	{
 		///< control period
 		.ts = hardware::Tc,
+
+		///< current offsets
+		.current_offsets = {0.0f, 0.0f, 0.0f},
+
 		/**
 		 * converter limits
 		 */
@@ -168,7 +173,7 @@ bool settings_s::Load(void)
 
 	if(settings.crc == hardware::memory::Crc32(&tmp, sizeof(settings_ts) - sizeof(uint32_t)))
 	{
-		memcpy(&settings, &tmp, sizeof(settings_ts));
+		std::memcpy(&settings, &tmp, sizeof(settings_ts));
 		result = true;
 	}
 	return result;
