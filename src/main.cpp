@@ -248,6 +248,8 @@ namespace control
 
 					// next transform to abc system
 					u_abc[i] = systems::transform::InverseClark(u_tmp);
+
+					modules::freemaster::Recorder();
 				}
 			}
 			else
@@ -259,7 +261,7 @@ namespace control
 
 				for (uint8_t i = 0; i < hardware::pwm::INJECTION_CYCLES; ++i)
 				{
-					i_abc = i_dc[i];
+					values.motor.i = i_dc[i];
 
 					// calculate the sine and cosine of the new angle
 					float angle = values.motor.rotor.phi
@@ -269,7 +271,7 @@ namespace control
 					systems::SinCos(angle, sin_cos[i]);
 
 					// convert 3 phase system to ortogonal
-					i_ab = systems::transform::Clark(i_abc);
+					i_ab = systems::transform::Clark(values.motor.i);
 					// convert current samples from clark to rotor frame;
 					values.motor.rotor.i = systems::transform::Park(i_ab, sin_cos[i]);
 
@@ -284,6 +286,12 @@ namespace control
 						// correct the prediction
 						observer::mechanic::Correct(correction);
 					}
+					else
+					{
+						values.motor.rotor.phi += values.motor.rotor.omega * settings.converter.ts;
+					}
+
+					modules::freemaster::Recorder();
 				}
 
 				if(settings.control.current)

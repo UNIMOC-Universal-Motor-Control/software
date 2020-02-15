@@ -129,9 +129,6 @@ settings_ts settings =
 		///< control period
 		.ts = hardware::Tc,
 
-		///< current offsets
-		.current_offsets = {0.0f, 0.0f, 0.0f},
-
 		/**
 		 * converter limits
 		 */

@@ -36,6 +36,9 @@ values_ts values =
 		///< motor temperature
 		.temp = 0.0f,
 
+		///< motor phase current
+		.i = {0.0f, 0.0f, 0.0f},
+
 		///< motor rotor system values
 		.rotor =
 		{

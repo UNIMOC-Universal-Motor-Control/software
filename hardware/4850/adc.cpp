@@ -123,13 +123,19 @@ constexpr uint32_t NUM_OF_ADC = 3;
 __attribute__((aligned (32)))
 std::array<std::array<std::array<adcsample_t, LENGTH_ADC_SEQ>, ADC_SEQ_BUFFERED>, NUM_OF_ADC> samples;
 ///< cycle index for cached working buffer
-uint32_t samples_index = ADC_SEQ_BUFFERED - 1;
+uint32_t samples_index = 0;
 
 ///< index of the non current measurements in adc samples
 static std::array<uint8_t, 2> non_cur_index = {0, LENGTH_ADC_SEQ - 1};
 
 ///< reference to thread to be woken up in the hardware control cycle.
 chibios_rt::ThreadReference hardware::control_thread = nullptr;
+
+///< dc current offsets
+systems::abc dc_offsets = {0.0f, 0.0f, 0.0f};
+
+///< ac current offsets
+systems::abc ac_offsets = {0.0f, 0.0f, 0.0f};
 
 
 /**
@@ -278,17 +284,43 @@ void hardware::adc::Init(void)
  */
 void hardware::adc::PrepareSamples(void)
 {
+	static bool first_time = true;
 	/* DMA buffer invalidation because data cache, only invalidating the
      * buffer just filled.
      */
-	for (uint8_t i = 0; i < PHASES; ++i)
-	{
-		cacheBufferInvalidate(&samples[i][0][0],
-				sizeof(adcsample_t)*LENGTH_ADC_SEQ*ADC_SEQ_BUFFERED);
-	}
+	cacheBufferInvalidate(&samples,
+		sizeof(adcsample_t)*NUM_OF_ADC*LENGTH_ADC_SEQ*ADC_SEQ_BUFFERED);
 
 	if(samples_index < (ADC_SEQ_BUFFERED - 1)) samples_index+=pwm::INJECTION_CYCLES;
 	else samples_index = 0;
+
+	// first two full cycles
+	if(first_time && pwm::OutputActive())
+	{
+		first_time = false;
+
+		// save current measured current values as offsets
+		std::array<systems::abc, pwm::INJECTION_CYCLES> offsets;
+		GetCurrentsMean(offsets);
+		for(uint8_t p = 0; p < PHASES; p++)
+		{
+			for (uint8_t i = 0; i < pwm::INJECTION_CYCLES; ++i)
+			{
+				dc_offsets.array[p] += offsets[i].array[p];
+			}
+			dc_offsets.array[p] /= pwm::INJECTION_CYCLES;
+		}
+
+		GetCurrentsInjection(offsets);
+		for(uint8_t p = 0; p < PHASES; p++)
+		{
+			for (uint8_t i = 0; i < pwm::INJECTION_CYCLES; ++i)
+			{
+				ac_offsets.array[p] += offsets[i].array[p];
+			}
+			ac_offsets.array[p] /= pwm::INJECTION_CYCLES;
+		}
+	}
 }
 
 /**
@@ -301,16 +333,16 @@ void hardware::adc::GetCurrentsMean(std::array<systems::abc, pwm::INJECTION_CYCL
 	/*
 	 * Three 2mR shunts in parallel with a 20V/V gain map to 2048 per 1.65V
 	 */
-	const float _1byCOUNT = 1.0f/(ADC_SEQ_BUFFERED * (LENGTH_ADC_SEQ / 2 - 1));
+	const float _1byCOUNT = 1.0f/(LENGTH_ADC_SEQ / 2 - 1);
 	const float ADC2CURRENT = 1.65f/(20.0f*(0.002f/3.0f))/2048.0f * _1byCOUNT;
 
 	for(uint8_t i = 0; i < PHASES; i++)
 	{
-		float sum = 0.0f;
-
 		for (uint8_t j = 0; j < currents.size(); ++j)
 		{
+			float sum = 0.0f;
 			uint8_t s = (j + samples_index - currents.size())%ADC_SEQ_BUFFERED;
+
 			// start with the rest of the last full decent
 			// @note we evaluate the last FULL decent so current sample
 			// is one cycle delayed
@@ -319,7 +351,7 @@ void hardware::adc::GetCurrentsMean(std::array<systems::abc, pwm::INJECTION_CYCL
 				// even samples are dc
 				sum += samples[i][s][k];
 			}
-			currents[j].array[i] = ADC2CURRENT * sum;
+			currents[j].array[i] = ADC2CURRENT * sum - dc_offsets.array[i];
 		}
 	}
 }
@@ -334,17 +366,17 @@ void hardware::adc::GetCurrentsInjection(std::array<systems::abc, pwm::INJECTION
 	 * Three 2mR shunts in parallel with a 20V/V gain map to 2048 per 1.65V and 10V/V gain
 	 * in the high pass
 	 */
-	const float _1byCOUNT = 1.0f/(ADC_SEQ_BUFFERED * (LENGTH_ADC_SEQ / 2 - 1));
+	const float _1byCOUNT = 1.0f/(LENGTH_ADC_SEQ / 2 - 1);
 	const float ADC2CURRENT = 1.65f/(20.0f*10.0f*(0.002f/3.0f))/2048.0f * _1byCOUNT;
 
 
 	for(uint8_t i = 0; i < PHASES; i++)
 	{
-		float sum = 0.0f;
-
 		for (uint8_t j = 0; j <  currents.size(); ++j)
 		{
+			float sum = 0.0f;
 			uint8_t s = (j + samples_index - currents.size())%ADC_SEQ_BUFFERED;
+
 			// start with the rest of the last full decent
 			// @note we evaluate the last FULL decent so current sample
 			// is one cycle delayed
@@ -353,7 +385,7 @@ void hardware::adc::GetCurrentsInjection(std::array<systems::abc, pwm::INJECTION
 				// even samples are dc
 				sum += samples[i][s][k];
 			}
-			currents[j].array[i] = ADC2CURRENT * sum;
+			currents[j].array[i] = ADC2CURRENT * sum - ac_offsets.array[i];
 		}
 	}
 }

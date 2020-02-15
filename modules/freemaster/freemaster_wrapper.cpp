@@ -61,7 +61,7 @@ void thread::main(void)
  * @brief recorder function
  * needs to be called in control thread
  */
-void Recorder(void)
+void modules::freemaster::Recorder(void)
 {
 	if (SDU1.config->usbp->state == USB_ACTIVE)
 	{

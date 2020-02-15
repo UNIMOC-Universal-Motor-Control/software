@@ -45,6 +45,9 @@ typedef struct values_s
 		///< motor temperature
 		float temp;
 
+		///< motor phase current
+		systems::abc i;
+
 		/**
 		 * motor rotor system values
 		 */
