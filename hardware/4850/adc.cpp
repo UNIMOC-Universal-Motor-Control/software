@@ -58,7 +58,7 @@ static float adc2ntc_temperature(const uint16_t adc_value);
 #define ADC_CH_VDC				ADC_CHANNEL_IN4
 #define ADC_CH_BRDG_TEMP		ADC_CHANNEL_IN5
 #define ADC_CH_MOT_TEMP			ADC_CHANNEL_IN6
-#define ADC_CH_VREF				ADC_CHANNEL_VREFINT
+
 /**
  * ADC sampling strategy.
  *
@@ -105,7 +105,7 @@ static const std::array<int16_t, NTC_TABLE_LEN> ntc_table =
 ///< Samples in ADC sequence.
 /// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
 ///          so even length of sequence is best choice.
-constexpr uint32_t LENGTH_ADC_SEQ = 16;
+constexpr uint32_t LENGTH_ADC_SEQ = 4;
 
 ///< ADC sequences in buffer.
 /// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
@@ -114,6 +114,7 @@ constexpr uint32_t ADC_SEQ_BUFFERED = hardware::pwm::INJECTION_CYCLES * 4;
 
 ///< # of ADCs
 constexpr uint32_t NUM_OF_ADC = 3;
+
 
 /* Note, the buffer is aligned to a 32 bytes boundary because limitations
    imposed by the data cache. Note, this is GNU specific, it must be
@@ -124,9 +125,6 @@ __attribute__((aligned (32)))
 std::array<std::array<std::array<adcsample_t, LENGTH_ADC_SEQ>, ADC_SEQ_BUFFERED>, NUM_OF_ADC> samples;
 ///< cycle index for cached working buffer
 uint32_t samples_index = 0;
-
-///< index of the non current measurements in adc samples
-static std::array<uint8_t, 2> non_cur_index = {0, LENGTH_ADC_SEQ - 1};
 
 ///< reference to thread to be woken up in the hardware control cycle.
 chibios_rt::ThreadReference hardware::control_thread = nullptr;
@@ -140,7 +138,7 @@ systems::abc ac_offsets = {0.0f, 0.0f, 0.0f};
 
 /**
  * ADC conversion group.
- * Mode:        Continuous, 16 samples of 4 channels
+ * Mode:        Continuous, 4 samples of 4 channels
  * Channels:    AIN_CUR_A_DC, AIN_CUR_A_AC, AIN_VDC, VREF.
  */
 static ADCConversionGroup adcgrpcfg1 = {
@@ -150,29 +148,17 @@ static ADCConversionGroup adcgrpcfg1 = {
 		adcerrorcallback,
 		0,                                                    /* CR1   */
 		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
-		ADC_SMPR1_SMP_AN12(ADC_SAMPLE_15) |
-		ADC_SMPR1_SMP_AN13(ADC_SAMPLE_15) |
-		ADC_SMPR1_SMP_VREF(ADC_SAMPLE_15),                    /* SMPR1 */
-		ADC_SMPR2_SMP_AN4(ADC_SAMPLE_15),                     /* SMPR2 */
+		ADC_SMPR1_SMP_AN12(ADC_SAMPLE_28) |
+		ADC_SMPR1_SMP_AN13(ADC_SAMPLE_28),                    /* SMPR1 */
+		ADC_SMPR2_SMP_AN4(ADC_SAMPLE_28),                     /* SMPR2 */
 		0,                                                    /* HTR */
 		0,                                                    /* LTR */
-		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) |                     /* SQR1  */
-		ADC_SQR1_SQ16_N(ADC_CH_VDC) |
-		ADC_SQR1_SQ15_N(ADC_CH_CUR_A_DC) |
-		ADC_SQR1_SQ14_N(ADC_CH_CUR_A_AC) |
-		ADC_SQR1_SQ13_N(ADC_CH_CUR_A_DC),
-		ADC_SQR2_SQ12_N(ADC_CH_CUR_A_AC) |
-		ADC_SQR2_SQ11_N(ADC_CH_CUR_A_DC) |
-		ADC_SQR2_SQ10_N(ADC_CH_CUR_A_AC) |
-		ADC_SQR2_SQ9_N(ADC_CH_CUR_A_DC) |
-		ADC_SQR2_SQ8_N(ADC_CH_CUR_A_AC) |
-		ADC_SQR2_SQ7_N(ADC_CH_CUR_A_DC) ,                     /* SQR2  */
-		ADC_SQR3_SQ6_N(ADC_CH_CUR_A_AC) |
-		ADC_SQR3_SQ5_N(ADC_CH_CUR_A_DC) |
+		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ),                      /* SQR1  */
+		0,                                                    /* SQR2  */
 		ADC_SQR3_SQ4_N(ADC_CH_CUR_A_AC) |
-		ADC_SQR3_SQ3_N(ADC_CH_CUR_A_DC) |
-		ADC_SQR3_SQ2_N(ADC_CH_CUR_A_AC) |
-		ADC_SQR3_SQ1_N(ADC_CH_VDC)       	                /* SQR3  */
+		ADC_SQR3_SQ3_N(ADC_CH_VDC) |
+		ADC_SQR3_SQ2_N(ADC_CH_VDC) |
+		ADC_SQR3_SQ1_N(ADC_CH_CUR_A_DC)                       /* SQR3  */
 };
 
 /**
@@ -188,34 +174,23 @@ static ADCConversionGroup adcgrpcfg2 = {
 		0,                                                    /* CR1   */
 		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
 		0,                                                    /* SMPR1 */
-		ADC_SMPR2_SMP_AN0(ADC_SAMPLE_15) |
-		ADC_SMPR2_SMP_AN1(ADC_SAMPLE_15) |
-		ADC_SMPR2_SMP_AN5(ADC_SAMPLE_15) |
-		ADC_SMPR2_SMP_AN6(ADC_SAMPLE_15),                     /* SMPR2 */
+		ADC_SMPR2_SMP_AN0(ADC_SAMPLE_28) |
+		ADC_SMPR2_SMP_AN1(ADC_SAMPLE_28) |
+		ADC_SMPR2_SMP_AN5(ADC_SAMPLE_28) |
+		ADC_SMPR2_SMP_AN6(ADC_SAMPLE_28),                     /* SMPR2 */
 		0,                                                    /* HTR */
 		0,                                                    /* LTR */
-		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) |                     /* SQR1  */
-		ADC_SQR1_SQ16_N(ADC_CH_MOT_TEMP) |
-		ADC_SQR1_SQ15_N(ADC_CH_CUR_B_DC) |
-		ADC_SQR1_SQ14_N(ADC_CH_CUR_B_AC) |
-		ADC_SQR1_SQ13_N(ADC_CH_CUR_B_DC),
-		ADC_SQR2_SQ12_N(ADC_CH_CUR_B_AC) |
-		ADC_SQR2_SQ11_N(ADC_CH_CUR_B_DC) |
-		ADC_SQR2_SQ10_N(ADC_CH_CUR_B_AC) |
-		ADC_SQR2_SQ9_N(ADC_CH_CUR_B_DC) |
-		ADC_SQR2_SQ8_N(ADC_CH_CUR_B_AC) |
-		ADC_SQR2_SQ7_N(ADC_CH_CUR_B_DC) ,                     /* SQR2  */
-		ADC_SQR3_SQ6_N(ADC_CH_CUR_B_AC) |
-		ADC_SQR3_SQ5_N(ADC_CH_CUR_B_DC) |
+		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ),                      /* SQR1  */
+		0,                                                    /* SQR2  */
 		ADC_SQR3_SQ4_N(ADC_CH_CUR_B_AC) |
-		ADC_SQR3_SQ3_N(ADC_CH_CUR_B_DC) |
-		ADC_SQR3_SQ2_N(ADC_CH_CUR_B_AC) |
-		ADC_SQR3_SQ1_N(ADC_CH_BRDG_TEMP)                       /* SQR3  */
+		ADC_SQR3_SQ3_N(ADC_CH_MOT_TEMP) |
+		ADC_SQR3_SQ2_N(ADC_CH_BRDG_TEMP) |
+		ADC_SQR3_SQ1_N(ADC_CH_CUR_B_DC)                       /* SQR3  */
 };
 
 /**
  * ADC conversion group.
- * Mode:        Continuous, 16 samples of 4 channels
+ * Mode:        Continuous, 4 samples of 4 channels
  * Channels:    AIN_CUR_C_DC, AIN_CUR_C_AC, AIN_ACC, AIN_DCC.
  */
 static ADCConversionGroup adcgrpcfg3 = {
@@ -225,29 +200,18 @@ static ADCConversionGroup adcgrpcfg3 = {
 		adcerrorcallback,
 		0,                                                    /* CR1   */
 		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
-		ADC_SMPR1_SMP_AN10(ADC_SAMPLE_15) |
-		ADC_SMPR1_SMP_AN11(ADC_SAMPLE_15),                    /* SMPR1 */
-		ADC_SMPR2_SMP_AN2(ADC_SAMPLE_15) |
-		ADC_SMPR2_SMP_AN3(ADC_SAMPLE_15),                     /* SMPR2 */
+		ADC_SMPR1_SMP_AN10(ADC_SAMPLE_28) |
+		ADC_SMPR1_SMP_AN11(ADC_SAMPLE_28),                    /* SMPR1 */
+		ADC_SMPR2_SMP_AN2(ADC_SAMPLE_28) |
+		ADC_SMPR2_SMP_AN3(ADC_SAMPLE_28),                     /* SMPR2 */
 		0,                                                    /* HTR */
 		0,                                                    /* LTR */
-		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) |                     /* SQR1  */
-		ADC_SQR1_SQ16_N(ADC_CH_ACC) |
-		ADC_SQR1_SQ15_N(ADC_CH_CUR_C_DC) |
-		ADC_SQR1_SQ14_N(ADC_CH_CUR_C_AC) |
-		ADC_SQR1_SQ13_N(ADC_CH_CUR_C_DC),
-		ADC_SQR2_SQ12_N(ADC_CH_CUR_C_AC) |
-		ADC_SQR2_SQ11_N(ADC_CH_CUR_C_DC) |
-		ADC_SQR2_SQ10_N(ADC_CH_CUR_C_AC) |
-		ADC_SQR2_SQ9_N(ADC_CH_CUR_C_DC) |
-		ADC_SQR2_SQ8_N(ADC_CH_CUR_C_AC) |
-		ADC_SQR2_SQ7_N(ADC_CH_CUR_C_DC) ,                     /* SQR2  */
-		ADC_SQR3_SQ6_N(ADC_CH_CUR_C_AC) |
-		ADC_SQR3_SQ5_N(ADC_CH_CUR_C_DC) |
+		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ),                      /* SQR1  */
+		0,                                                    /* SQR2  */
 		ADC_SQR3_SQ4_N(ADC_CH_CUR_C_AC) |
-		ADC_SQR3_SQ3_N(ADC_CH_CUR_C_DC) |
-		ADC_SQR3_SQ2_N(ADC_CH_CUR_C_AC) |
-		ADC_SQR3_SQ1_N(ADC_CH_DCC)                       /* SQR3  */
+		ADC_SQR3_SQ3_N(ADC_CH_ACC) |
+		ADC_SQR3_SQ2_N(ADC_CH_DCC) |
+		ADC_SQR3_SQ1_N(ADC_CH_CUR_C_DC)                       /* SQR3  */
 };
 
 
@@ -333,25 +297,15 @@ void hardware::adc::GetCurrentsMean(std::array<systems::abc, pwm::INJECTION_CYCL
 	/*
 	 * Three 2mR shunts in parallel with a 20V/V gain map to 2048 per 1.65V
 	 */
-	const float _1byCOUNT = 1.0f/(LENGTH_ADC_SEQ / 2 - 1);
-	const float ADC2CURRENT = 1.65f/(20.0f*(0.002f/3.0f))/2048.0f * _1byCOUNT;
+	const float ADC2CURRENT = 1.65f/(20.0f*(0.002f/3.0f))/2048.0f;
 
 	for(uint8_t i = 0; i < PHASES; i++)
 	{
 		for (uint8_t j = 0; j < currents.size(); ++j)
 		{
-			float sum = 0.0f;
 			uint8_t s = (j + samples_index - currents.size())%ADC_SEQ_BUFFERED;
 
-			// start with the rest of the last full decent
-			// @note we evaluate the last FULL decent so current sample
-			// is one cycle delayed
-			for(uint32_t k = 2; k < LENGTH_ADC_SEQ - 1; k+=2)
-			{
-				// even samples are dc
-				sum += samples[i][s][k];
-			}
-			currents[j].array[i] = ADC2CURRENT * sum - dc_offsets.array[i];
+			currents[j].array[i] = ADC2CURRENT * samples[i][s][0] - dc_offsets.array[i];
 		}
 	}
 }
@@ -366,26 +320,16 @@ void hardware::adc::GetCurrentsInjection(std::array<systems::abc, pwm::INJECTION
 	 * Three 2mR shunts in parallel with a 20V/V gain map to 2048 per 1.65V and 10V/V gain
 	 * in the high pass
 	 */
-	const float _1byCOUNT = 1.0f/(LENGTH_ADC_SEQ / 2 - 1);
-	const float ADC2CURRENT = 1.65f/(20.0f*10.0f*(0.002f/3.0f))/2048.0f * _1byCOUNT;
+	const float ADC2CURRENT = 1.65f/(20.0f*10.0f*(0.002f/3.0f))/2048.0f;
 
 
 	for(uint8_t i = 0; i < PHASES; i++)
 	{
 		for (uint8_t j = 0; j <  currents.size(); ++j)
 		{
-			float sum = 0.0f;
 			uint8_t s = (j + samples_index - currents.size())%ADC_SEQ_BUFFERED;
 
-			// start with the rest of the last full decent
-			// @note we evaluate the last FULL decent so current sample
-			// is one cycle delayed
-			for(uint8_t k = 1; k < LENGTH_ADC_SEQ - 1; k+=2)
-			{
-				// even samples are dc
-				sum += samples[i][s][k];
-			}
-			currents[j].array[i] = ADC2CURRENT * sum - ac_offsets.array[i];
+			currents[j].array[i] = ADC2CURRENT * samples[i][s][3] - ac_offsets.array[i];
 		}
 	}
 }
@@ -406,8 +350,8 @@ float hardware::adc::GetDCBusVoltage(void)
 		/*
 		 * VDC is sampled by ADC1 2 times as a non current sample
 		 */
-		sum += samples[0][i][non_cur_index[0]];
-		sum += samples[0][i][non_cur_index[1]];
+		sum += samples[0][i][1];
+		sum += samples[0][i][2];
 	}
 
 	vdc = (float)sum * ADC_2_VDC;
@@ -428,7 +372,7 @@ float hardware::adc::GetBridgeTemp(void)
 		/*
 		 * Bridge temperature is sampled by ADC2 first non current sample
 		 */
-		sum += samples[1][i][non_cur_index[0]];
+		sum += samples[1][i][1];
 	}
 
 	return adc2ntc_temperature(sum/ADC_SEQ_BUFFERED);
@@ -447,7 +391,7 @@ float hardware::adc::GetMotorTemp(void)
 		/*
 		 * Motor temperature is sampled by ADC2 second non current sample
 		 */
-		sum += samples[1][i][non_cur_index[1]];
+		sum += samples[1][i][2];
 	}
 
 	return adc2ntc_temperature(sum/ADC_SEQ_BUFFERED);
@@ -468,8 +412,8 @@ float hardware::adc::GetThrottle(void)
 		/*
 		 * ACC is sampled by ADC3 DCC is the first and ACC the second sample
 		 */
-		sum -= samples[2][i][non_cur_index[0]];
-		sum += samples[2][i][non_cur_index[1]];
+		sum -= samples[2][i][1];
+		sum += samples[2][i][2];
 	}
 
 	throttle = (float)sum *ADC_2_THROTTLE;

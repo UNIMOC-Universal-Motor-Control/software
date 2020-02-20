@@ -171,8 +171,8 @@ void hardware::pwm::Init(void)
 
 	PWMP->tim->CR1 |= STM32_TIM_CR1_CEN; // pwm timer start again
 
-	/* set adc trigger offset */
-	pwmEnableChannel(ADC_TRIGP, 3, PERIOD/4 - 50);
+	/* set adc trigger offset = minimal */
+	pwmEnableChannel(ADC_TRIGP, 3, 1);
 
 	/* enable pwms */
 	pwmEnableChannel(PWMP, 0, PERIOD/2);
