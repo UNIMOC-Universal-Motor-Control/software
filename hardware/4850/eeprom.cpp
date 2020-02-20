@@ -64,8 +64,8 @@ constexpr uint32_t SIZE				= 512; 	// AT32C04 4KBit EEPROM
 
 constexpr uint32_t CRC32MASK   		= 0x04C11DB7;
 
-constexpr uint32_t READ_TIMEOUT		= TIME_MS2I(5);
-constexpr uint32_t WRITE_TIMEOUT	= TIME_MS2I(20);
+constexpr uint32_t READ_TIMEOUT		= TIME_MS2I(250);
+constexpr uint32_t WRITE_TIMEOUT	= TIME_MS2I(300);
 
 /**
  * I2C configuration for EEPROM bus.
@@ -79,7 +79,7 @@ static const I2CConfig i2ccfg = {
 };
 
 I2CDriver* const I2CP = &I2CD1;
-i2cflags_t error = 0;
+volatile i2cflags_t i2c_error = 0;
 
 /**
  * Calculate CRC32 checksum of a buffer.
@@ -196,7 +196,7 @@ uint8_t hardware::memory::Read(const uint32_t address, const void* const buffer,
 	}
 	else
 	{
-		error = i2cGetErrors(I2CP);
+		i2c_error = i2cGetErrors(I2CP);
 		result = 0xFF;
 	}
 
@@ -275,7 +275,7 @@ uint8_t hardware::memory::Write(const uint32_t address, void const * buffer, con
 	}
 	else
 	{
-		error = i2cGetErrors(I2CP);
+		i2c_error = i2cGetErrors(I2CP);
 		result = 0xFF;
 	}
 
