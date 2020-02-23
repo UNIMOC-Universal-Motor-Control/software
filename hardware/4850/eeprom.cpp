@@ -38,8 +38,8 @@ static void select_half(const uint16_t half);
  * Write Protection and
  * Page Address Functions 			0 1 1 0 A2 A1 A0 R/W
  */
-constexpr uint8_t RW_ADDRESS		= 0x50;	// the driver adds the R/W bit
-
+constexpr i2caddr_t RW_ADDRESS		= 0xA0>>1;	// the driver adds the R/W bit
+constexpr i2caddr_t RPA_ADDRESS		= 0x6D>>1;
 /**
  * To provide the greatest flexibility and backwards compatibility with the previous generations of SPD devices, the
  * AT34C04 memory organization is organized into two independent 2-Kbit memory arrays. Each 2-Kbit (256-byte)
@@ -55,7 +55,8 @@ constexpr uint8_t RW_ADDRESS		= 0x50;	// the driver adds the R/W bit
  * address to the second half of the memory. After receiving the control byte, the AT34C04 should return an ACK
  * and the Master should follow by sending two data bytes of don’t care values.
  */
-constexpr uint8_t SPA(uint8_t half) { return (0x6C | ((half & 0x01)>>1)); };
+constexpr i2caddr_t SPA(uint8_t half) { return ((0x6C | ((half & 0x01)>>1)) >> 1); };
+constexpr i2caddr_t RPA(uint8_t half) { return ((0x6E | ((half & 0x01)>>1)) >> 1); };
 constexpr uint8_t PAGE(uint8_t x) 	{ return (x & 0x07) << 1; };
 constexpr uint32_t MAX_WRITE_BYTES	= 16;
 constexpr uint32_t PAGE_SIZE		= 16;
@@ -94,7 +95,7 @@ uint32_t hardware::memory::Crc32(const void* const buffer, const uint32_t length
 	uint8_t* ptr = (uint8_t*)buffer;
 
 	// Bytes 0 to 3 are CRC
-	for (byte = 4; byte < (length - 4); byte++)
+	for (byte = 4; byte < length; byte++)
 	{
 		// apply bit wise CRC mask
 		for(bit = 0; bit < 8; bit++)
@@ -118,10 +119,10 @@ static void select_half(const uint16_t half)
 	(void)half;
 	osalDbgAssert(half < 2, "EEPROM: Half out of bounds");
 
-	uint8_t spa_cmd = SPA(half)>>1;
 	uint8_t dummy[2];
 
-	i2cMasterTransmitTimeout(I2CP, spa_cmd , dummy, 2, nullptr, 0, READ_TIMEOUT);
+	i2cMasterTransmitTimeout(I2CP, SPA(half), dummy, sizeof(dummy), nullptr, 0, READ_TIMEOUT);
+	i2cMasterTransmitTimeout(I2CP, RPA_ADDRESS, dummy, sizeof(dummy), nullptr, 0, READ_TIMEOUT);
 }
 
 
@@ -171,24 +172,24 @@ uint8_t hardware::memory::Read(const uint32_t address, const void* const buffer,
 	}
 
 	status |= i2cMasterTransmitTimeout(I2CP, RW_ADDRESS,
-			&wordaddr, 1, nullptr, 0, READ_TIMEOUT);
-
-	osalThreadSleepMilliseconds(5);
-
-	status |= i2cMasterReceiveTimeout(I2CP, RW_ADDRESS, (uint8_t*)buffer, read_length, READ_TIMEOUT);
+			&wordaddr, 1, (uint8_t*)buffer, read_length, READ_TIMEOUT);
 
 	// Read the rest of the Data if we started in half 0
-	if(read_length < length)
+	if(read_length < length && status == MSG_OK)
 	{
+		uint8_t* buffer_addr = (uint8_t*)buffer + read_length;
+
 		select_half(1);
 		wordaddr = 0;
+		read_length = length- read_length;
+
 		status |= i2cMasterTransmitTimeout(I2CP, RW_ADDRESS,
-				&wordaddr, 1, nullptr, 0, READ_TIMEOUT);
-
-		osalThreadSleepMilliseconds(5);
-
-		status |= i2cMasterReceiveTimeout(I2CP, RW_ADDRESS, (uint8_t*)buffer, read_length, READ_TIMEOUT);
+				&wordaddr, 1, buffer_addr, read_length, READ_TIMEOUT);
 	}
+
+	// buffer needs to be invalidated because data was written from dma
+	cacheBufferInvalidate(buffer, length);
+
 
 	if(status == MSG_OK)
 	{
@@ -218,10 +219,12 @@ uint8_t hardware::memory::Write(const uint32_t address, void const * buffer, con
 	uint8_t result = 0;
 	uint8_t half = 0;
 	uint8_t write_addr = (address % (SIZE/2));
+	uint8_t* buffer_addr = (uint8_t*)buffer;
 	uint32_t written_bytes = 0;
 	uint32_t write_length = 0;
 	msg_t status = MSG_OK;
-	uint8_t write_buffer[PAGE_SIZE + 1] = {0};
+	// is accessed via dma and needs to be flushed
+	__attribute__((aligned (32))) uint8_t write_buffer[PAGE_SIZE + 1] = {0};
 
 	osalDbgAssert((address + length) < SIZE, "EEPROM: Write out of bounds");
 	osalDbgAssert(buffer != NULL, "EEPROM: Write buffer not existing");
@@ -236,8 +239,14 @@ uint8_t hardware::memory::Write(const uint32_t address, void const * buffer, con
 	{
 		write_length = PAGE_SIZE - write_addr%PAGE_SIZE;
 
+		buffer_addr += written_bytes;
 		write_buffer[0] = write_addr;
-		memcpy(&write_buffer[1], buffer, write_length);
+
+		std::memcpy(write_buffer + 1, buffer_addr, write_length);
+
+		// write buffer out to ram so that dma can access it.
+		cacheBufferFlush(write_buffer, sizeof(write_buffer));
+
 		status |= i2cMasterTransmitTimeout(I2CP, RW_ADDRESS,
 				write_buffer, write_length + 1, nullptr, 0, WRITE_TIMEOUT);
 
@@ -258,8 +267,14 @@ uint8_t hardware::memory::Write(const uint32_t address, void const * buffer, con
 		if(write_length > PAGE_SIZE) write_length = PAGE_SIZE;
 		write_addr = address + written_bytes;
 
+		buffer_addr += written_bytes;
 		write_buffer[0] = write_addr;
-		std::memcpy(&write_buffer[1], (uint8_t*)buffer + written_bytes, write_length);
+
+		std::memcpy(write_buffer + 1, buffer_addr, write_length);
+
+		// write buffer out to ram so that dma can access it.
+		cacheBufferFlush(write_buffer, sizeof(write_buffer));
+
 		status |= i2cMasterTransmitTimeout(I2CP, RW_ADDRESS,
 				write_buffer, write_length + 1, nullptr, 0, WRITE_TIMEOUT);
 

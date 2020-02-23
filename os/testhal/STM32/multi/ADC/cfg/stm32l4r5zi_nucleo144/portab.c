@@ -58,7 +58,7 @@ void adcerrorcallback(ADCDriver *adcp, adcerror_t err);
 /*
  * ADC conversion group 1.
  * Mode:        One shot, 2 channels, SW triggered.
- * Channels:    IN0, IN5.
+ * Channels:    IN5, IN6.
  */
 const ADCConversionGroup portab_adcgrpcfg1 = {
   .circular     = false,
@@ -74,7 +74,7 @@ const ADCConversionGroup portab_adcgrpcfg1 = {
     0U
   },
   .sqr          = {
-    ADC_SQR1_SQ1_N(ADC_CHANNEL_IN0) | ADC_SQR1_SQ2_N(ADC_CHANNEL_IN5),
+    ADC_SQR1_SQ1_N(ADC_CHANNEL_IN5) | ADC_SQR1_SQ2_N(ADC_CHANNEL_IN6),
     0U,
     0U,
     0U
@@ -84,7 +84,7 @@ const ADCConversionGroup portab_adcgrpcfg1 = {
 /*
  * ADC conversion group 2.
  * Mode:        Continuous, 2 channels, HW triggered by GPT4-TRGO.
- * Channels:    IN0, IN5.
+ * Channels:    IN5, IN6.
  */
 const ADCConversionGroup portab_adcgrpcfg2 = {
   .circular     = true,
@@ -101,7 +101,7 @@ const ADCConversionGroup portab_adcgrpcfg2 = {
     0U
   },
   .sqr          = {
-    ADC_SQR1_SQ1_N(ADC_CHANNEL_IN0) | ADC_SQR1_SQ2_N(ADC_CHANNEL_IN5),
+    ADC_SQR1_SQ1_N(ADC_CHANNEL_IN5) | ADC_SQR1_SQ2_N(ADC_CHANNEL_IN6),
     0U,
     0U,
     0U
@@ -128,7 +128,7 @@ void portab_setup(void) {
 
   /* ADC inputs.*/
   palSetPadMode(GPIOA, 0, PAL_MODE_INPUT_ANALOG);
-  palSetPadMode(GPIOB, 1, PAL_MODE_INPUT_ANALOG);
+  palSetPadMode(GPIOA, 1, PAL_MODE_INPUT_ANALOG);
 }
 
 /** @} */

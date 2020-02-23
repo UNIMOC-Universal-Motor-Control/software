@@ -85,6 +85,25 @@ int main(void)
 	 * initialize hardware with no control thread
 	 */
 	hardware::memory::Init();
+
+	while(1)
+	{
+		uint8_t buffer[16];
+		for (uint8_t i = 0; i < 16; ++i)
+		{
+			buffer[i] = 0x50 + i;
+		}
+
+		hardware::memory::Write(0, buffer, 16);
+
+		hardware::memory::Read(0, buffer, 16);
+
+		if(buffer[0] != 0x50)
+		{
+			palToggleLine(LINE_HALL_A);
+		}
+	}
+
 	hardware::pwm::Init();
 	hardware::adc::Init();
 

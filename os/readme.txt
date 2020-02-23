@@ -74,11 +74,18 @@
 *****************************************************************************
 
 *** Next ***
+- EXT: Updated lwIP to version 2.1.2.
+- HAL: Added support for timers 9..17, 20..22 to STM32 PWM driver.
+- HAL: Added support for timers 9..17, 20..22 to STM32 ICU driver.
+- HAL: Added support for timers 10 and 13 to STM32 GPT driver.
+- HAL: Added support for timers 9..14 to STM32 ST driver.
+- HAL: STM32 ST driver is now integrated with new IRQ infrastructure and
+       performs cross-checks with GPT, ICU and PWM drivers on timers usage.
 - HAL: Improved support for shared handlers. Now there are centralized
        inclusion modules (.inc) containing shared handlers. The new modules
        can be included by the various STM32 platforms. So far the new system
-       has been implemented for STM32G0, STM32G4, STM32L0, STM32F7. It shall
-       be gradually introduced for all the others.
+       has been implemented for STM32G0, STM32G4, STM32L0, STM32L4, STM32L4+,
+       STM32F7, STM3277. It shall be gradually introduced for all the others.
 - HAL: Idle callback support for STM32 USARTv1 UART driver.
 - LIB: Added support for asynchronous jobs queues to OSLIB.
 - LIB: Added support for delegate threads to OSLIB.
@@ -148,6 +155,31 @@
 - HAL: Added a new interface for range-finder devices (used by EX).
 - HAL: Added mcuconf.h updater tool for STM32F407 (backported to 19.1.1).
 - NIL: Integrated NIL 4.0.
+- FIX: Fixed state check in CMSIS osKernelInitialize() wrapper (bug #1075)
+       (backported to 19.1.4)(backported to 18.2.3).
+- FIX: Fixed missing IRQ disabling in ADCv1 and ADCv3 STM32 drivers (bug #1073)
+       (backported to 19.1.4)(backported to 18.2.3).
+- FIX: Fixed missing parenthesis in ADC _adc_isr_error_code macro (bug #1072)
+       (backported to 19.1.4)(backported to 18.2.3).
+- FIX: Fixed invalid macro check in test library (bug #1071)
+       (backported to 19.1.4).
+- FIX: Fixed non-standard declaration in STM32 ADCv3 driver (bug #1070)
+       (backported to 19.1.4)(backported to 18.2.3).
+- FIX: Fixed problem in the I2C fallback driver (bug #1069)
+       (backported to 19.1.4)(backported to 18.2.3).
+- FIX: Fixed TIM8 missing on STM32H7xx (bug #1068)
+       (backported to 19.1.4)(backported to 18.2.3).
+- FIX: Fixed Sharing issues with GPT TIMv1 driver (bug #1067)
+       (backported to 19.1.4)(backported to 18.2.3).
+- FIX: Fixed incorrect pointer type in lwipthread.c low_level_input causes
+       panic on packet reception (bug #1009)
+       (backported to 19.1.4)(backported to 18.2.3).
+- FIX: Fixed wrong check on STM32_DAC_DUAL_MODE in DACv1 STM32 driver
+       (bug #1065)(backported to 19.1.4)(backported to 18.2.3).
+- FIX: Fixed I2Cv1 extra interrupts (bug #1064)
+       (backported to 19.1.4)(backported to 18.2.3).
+- FIX: Fixed I2C4 broken on STM32H7xx (bug #1063)
+       (backported to 19.1.4)(backported to 18.2.3).
 - FIX: Fixed I2C fallback driver broken (bug #1061)
        (backported to 19.1.4)(backported to 18.2.3).
 - FIX: Fixed STM32 ADC1 sample time macros (bug #1059)

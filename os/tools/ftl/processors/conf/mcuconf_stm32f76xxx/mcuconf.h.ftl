@@ -121,6 +121,14 @@
 #define STM32_IRQ_EXTI4_PRIORITY            ${doc.STM32_IRQ_EXTI4_PRIORITY!"6"}
 #define STM32_IRQ_EXTI5_9_PRIORITY          ${doc.STM32_IRQ_EXTI5_9_PRIORITY!"6"}
 #define STM32_IRQ_EXTI10_15_PRIORITY        ${doc.STM32_IRQ_EXTI10_15_PRIORITY!"6"}
+#define STM32_IRQ_EXTI16_PRIORITY           ${doc.STM32_IRQ_EXTI16_PRIORITY!"6"}
+#define STM32_IRQ_EXTI17_PRIORITY           ${doc.STM32_IRQ_EXTI17_PRIORITY!"6"}
+#define STM32_IRQ_EXTI18_PRIORITY           ${doc.STM32_IRQ_EXTI18_PRIORITY!"6"}
+#define STM32_IRQ_EXTI19_PRIORITY           ${doc.STM32_IRQ_EXTI19_PRIORITY!"6"}
+#define STM32_IRQ_EXTI20_PRIORITY           ${doc.STM32_IRQ_EXTI20_PRIORITY!"6"}
+#define STM32_IRQ_EXTI21_PRIORITY           ${doc.STM32_IRQ_EXTI21_PRIORITY!"6"}
+#define STM32_IRQ_EXTI22_PRIORITY           ${doc.STM32_IRQ_EXTI22_PRIORITY!"6"}
+#define STM32_IRQ_EXTI23_PRIORITY           ${doc.STM32_IRQ_EXTI23_PRIORITY!"6"}
 
 #define STM32_IRQ_TIM1_BRK_TIM9_PRIORITY    ${doc.STM32_IRQ_TIM1_BRK_TIM9_PRIORITY!"7"}
 #define STM32_IRQ_TIM1_UP_TIM10_PRIORITY    ${doc.STM32_IRQ_TIM1_UP_TIM10_PRIORITY!"7"}
@@ -137,14 +145,14 @@
 #define STM32_IRQ_TIM8_TRGCO_TIM14_PRIORITY ${doc.STM32_IRQ_TIM8_TRGCO_TIM14_PRIORITY!"7"}
 #define STM32_IRQ_TIM8_CC_PRIORITY          ${doc.STM32_IRQ_TIM8_CC_PRIORITY!"7"}
 
-#define STM32_IRQ_USART1_PRIORITY           ${doc.STM32_IRQ_USART1_PRIORITY!"7"}
-#define STM32_IRQ_USART2_PRIORITY           ${doc.STM32_IRQ_USART2_PRIORITY!"7"}
-#define STM32_IRQ_USART3_PRIORITY           ${doc.STM32_IRQ_USART3_PRIORITY!"7"}
-#define STM32_IRQ_UART4_PRIORITY            ${doc.STM32_IRQ_UART4_PRIORITY!"7"}
-#define STM32_IRQ_UART5_PRIORITY            ${doc.STM32_IRQ_UART5_PRIORITY!"7"}
-#define STM32_IRQ_USART6_PRIORITY           ${doc.STM32_IRQ_USART6_PRIORITY!"7"}
-#define STM32_IRQ_UART7_PRIORITY            ${doc.STM32_IRQ_UART7_PRIORITY!"7"}
-#define STM32_IRQ_UART8_PRIORITY            ${doc.STM32_IRQ_UART8_PRIORITY!"7"}
+#define STM32_IRQ_USART1_PRIORITY           ${doc.STM32_IRQ_USART1_PRIORITY!"12"}
+#define STM32_IRQ_USART2_PRIORITY           ${doc.STM32_IRQ_USART2_PRIORITY!"12"}
+#define STM32_IRQ_USART3_PRIORITY           ${doc.STM32_IRQ_USART3_PRIORITY!"12"}
+#define STM32_IRQ_UART4_PRIORITY            ${doc.STM32_IRQ_UART4_PRIORITY!"12"}
+#define STM32_IRQ_UART5_PRIORITY            ${doc.STM32_IRQ_UART5_PRIORITY!"12"}
+#define STM32_IRQ_USART6_PRIORITY           ${doc.STM32_IRQ_USART6_PRIORITY!"12"}
+#define STM32_IRQ_UART7_PRIORITY            ${doc.STM32_IRQ_UART7_PRIORITY!"12"}
+#define STM32_IRQ_UART8_PRIORITY            ${doc.STM32_IRQ_UART8_PRIORITY!"12"}
 
 /*
  * ADC driver system settings.
@@ -199,9 +207,14 @@
 #define STM32_GPT_USE_TIM7                  ${doc.STM32_GPT_USE_TIM7!"FALSE"}
 #define STM32_GPT_USE_TIM8                  ${doc.STM32_GPT_USE_TIM8!"FALSE"}
 #define STM32_GPT_USE_TIM9                  ${doc.STM32_GPT_USE_TIM9!"FALSE"}
+#define STM32_GPT_USE_TIM10                 ${doc.STM32_GPT_USE_TIM10!"FALSE"}
 #define STM32_GPT_USE_TIM11                 ${doc.STM32_GPT_USE_TIM11!"FALSE"}
 #define STM32_GPT_USE_TIM12                 ${doc.STM32_GPT_USE_TIM12!"FALSE"}
+#define STM32_GPT_USE_TIM13                 ${doc.STM32_GPT_USE_TIM13!"FALSE"}
 #define STM32_GPT_USE_TIM14                 ${doc.STM32_GPT_USE_TIM14!"FALSE"}
+#define STM32_GPT_USE_TIM15                 ${doc.STM32_GPT_USE_TIM15!"FALSE"}
+#define STM32_GPT_USE_TIM16                 ${doc.STM32_GPT_USE_TIM16!"FALSE"}
+#define STM32_GPT_USE_TIM17                 ${doc.STM32_GPT_USE_TIM17!"FALSE"}
 
 /*
  * I2C driver system settings.
@@ -239,6 +252,14 @@
 #define STM32_ICU_USE_TIM5                  ${doc.STM32_ICU_USE_TIM5!"FALSE"}
 #define STM32_ICU_USE_TIM8                  ${doc.STM32_ICU_USE_TIM8!"FALSE"}
 #define STM32_ICU_USE_TIM9                  ${doc.STM32_ICU_USE_TIM9!"FALSE"}
+#define STM32_ICU_USE_TIM10                 ${doc.STM32_ICU_USE_TIM10!"FALSE"}
+#define STM32_ICU_USE_TIM11                 ${doc.STM32_ICU_USE_TIM11!"FALSE"}
+#define STM32_ICU_USE_TIM12                 ${doc.STM32_ICU_USE_TIM12!"FALSE"}
+#define STM32_ICU_USE_TIM13                 ${doc.STM32_ICU_USE_TIM13!"FALSE"}
+#define STM32_ICU_USE_TIM14                 ${doc.STM32_ICU_USE_TIM14!"FALSE"}
+#define STM32_ICU_USE_TIM15                 ${doc.STM32_ICU_USE_TIM15!"FALSE"}
+#define STM32_ICU_USE_TIM16                 ${doc.STM32_ICU_USE_TIM16!"FALSE"}
+#define STM32_ICU_USE_TIM17                 ${doc.STM32_ICU_USE_TIM17!"FALSE"}
 
 /*
  * MAC driver system settings.
@@ -262,6 +283,14 @@
 #define STM32_PWM_USE_TIM5                  ${doc.STM32_PWM_USE_TIM5!"FALSE"}
 #define STM32_PWM_USE_TIM8                  ${doc.STM32_PWM_USE_TIM8!"FALSE"}
 #define STM32_PWM_USE_TIM9                  ${doc.STM32_PWM_USE_TIM9!"FALSE"}
+#define STM32_PWM_USE_TIM10                 ${doc.STM32_PWM_USE_TIM10!"FALSE"}
+#define STM32_PWM_USE_TIM11                 ${doc.STM32_PWM_USE_TIM11!"FALSE"}
+#define STM32_PWM_USE_TIM12                 ${doc.STM32_PWM_USE_TIM12!"FALSE"}
+#define STM32_PWM_USE_TIM13                 ${doc.STM32_PWM_USE_TIM13!"FALSE"}
+#define STM32_PWM_USE_TIM14                 ${doc.STM32_PWM_USE_TIM14!"FALSE"}
+#define STM32_PWM_USE_TIM15                 ${doc.STM32_PWM_USE_TIM15!"FALSE"}
+#define STM32_PWM_USE_TIM16                 ${doc.STM32_PWM_USE_TIM16!"FALSE"}
+#define STM32_PWM_USE_TIM17                 ${doc.STM32_PWM_USE_TIM17!"FALSE"}
 
 /*
  * RTC driver system settings.

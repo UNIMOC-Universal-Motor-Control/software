@@ -70,7 +70,7 @@ static inline void exti4_irq_deinit(void) {
 #if (HAL_USE_PAL && (PAL_USE_WAIT || PAL_USE_CALLBACKS)) || defined(__DOXYGEN__)
 #if !defined(STM32_DISABLE_EXTI4_HANDLER)
 /**
- * @brief   EXTI[0] interrupt handler.
+ * @brief   EXTI[4] interrupt handler.
  *
  * @isr
  */
@@ -79,9 +79,7 @@ OSAL_IRQ_HANDLER(STM32_EXTI4_HANDLER) {
 
   OSAL_IRQ_PROLOGUE();
 
-  pr = EXTI->PR1;
-  pr &= EXTI->IMR1 & (1U << 4);
-  EXTI->PR1 = pr;
+  extiGetAndClearGroup1(1U << 4, pr);
 
   exti_serve_irq(pr, 0);
 

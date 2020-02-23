@@ -15,7 +15,7 @@
 */
 
 /*
- * ST32F746xG Ethernet setup.
+ * STM32F746xG Ethernet setup.
  * 
  * RAM1 - Data, Heap.
  * RAM2 - ETH.

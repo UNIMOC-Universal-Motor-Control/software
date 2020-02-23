@@ -51,13 +51,13 @@
  */
 #if defined(STM32G431xx) || defined(STM32G441xx) || defined(STM32G471xx) || \
     defined(__DOXYGEN__)
-#define PLATFORM_NAME           "STM32G04 Access Line"
+#define PLATFORM_NAME           "STM32G4 Access Line"
 
 #elif defined(STM32G473xx)
-#define PLATFORM_NAME           "STM32G0 Performance Line"
+#define PLATFORM_NAME           "STM32G4 Performance Line"
 
 #elif defined(STM32G483xx)
-#define PLATFORM_NAME           "STM32G0 Performance Line with Crypto"
+#define PLATFORM_NAME           "STM32G4 Performance Line with Crypto"
 
 #elif defined(STM32G474xx)
 #define PLATFORM_NAME           "STM32G4 Hi-resolution Line"
@@ -90,43 +90,12 @@
 /** @} */
 
 /**
- * @name    PWR_CR1 register bits definitions
+ * @name    VOS field definitions
  * @{
  */
 #define STM32_VOS_MASK          (3U << 9U)  /**< Core voltage mask.         */
 #define STM32_VOS_RANGE1        (1U << 9U)  /**< Core voltage 1.2 Volts.    */
 #define STM32_VOS_RANGE2        (2U << 9U)  /**< Core voltage 1.0 Volts.    */
-/** @} */
-
-/**
- * @name    PWR_CR2 register bits definitions
- * @{
- */
-#define STM32_PVDE_DISABLED     (0U << 1U)      /**< PVD enable bit off.    */
-#define STM32_PVDE_ENABLED      (1U << 1U)      /**< PVD enable bit on.     */
-
-#define STM32_PLS_MASK          (7U << 1U)      /**< PLS bits mask.         */
-#define STM32_PLS(n)            ((n) << 1U)     /**< PLS level.             */
-#define STM32_PLS_LEV0          STM32_PLS(0U)   /**< PLS level 0.           */
-#define STM32_PLS_LEV1          STM32_PLS(1U)   /**< PLS level 1.           */
-#define STM32_PLS_LEV2          STM32_PLS(2U)   /**< PLS level 2.           */
-#define STM32_PLS_LEV3          STM32_PLS(3U)   /**< PLS level 3.           */
-#define STM32_PLS_LEV4          STM32_PLS(4U)   /**< PLS level 4.           */
-#define STM32_PLS_LEV5          STM32_PLS(5U)   /**< PLS level 5.           */
-#define STM32_PLS_LEV6          STM32_PLS(6U)   /**< PLS level 6.           */
-#define STM32_PLS_LEV7          STM32_PLS(7U)   /**< PLS level 7.           */
-
-#define STM32_PVMEN1_DISABLED   (0U << 6U)      /**< PVMEN1 enable bit off. */
-#define STM32_PVMEN1_ENABLED    (1U << 6U)      /**< PVMEN1 enable bit on.  */
-
-#define STM32_PVMEN2_DISABLED   (0U << 7U)      /**< PVMEN2 enable bit off. */
-#define STM32_PVMEN2_ENABLED    (1U << 7U)      /**< PVMEN2 enable bit on.  */
-/** @} */
-
-/**
- * @name    RCC_CR register bits definitions
- * @{
- */
 /** @} */
 
 /**
@@ -160,11 +129,11 @@
 
 #define STM32_PPRE2_MASK        (7U << 11U)  /**< PPRE2 field mask.         */
 #define STM32_PPRE2_FIELD(n)    ((n) << 11U) /**< PPRE2 field value.        */
-#define STM32_PPRE2_DIV1        STM32_PPRE1_FIELD(0U)
-#define STM32_PPRE2_DIV2        STM32_PPRE1_FIELD(4U)
-#define STM32_PPRE2_DIV4        STM32_PPRE1_FIELD(5U)
-#define STM32_PPRE2_DIV8        STM32_PPRE1_FIELD(6U)
-#define STM32_PPRE2_DIV16       STM32_PPRE1_FIELD(7U)
+#define STM32_PPRE2_DIV1        STM32_PPRE2_FIELD(0U)
+#define STM32_PPRE2_DIV2        STM32_PPRE2_FIELD(4U)
+#define STM32_PPRE2_DIV4        STM32_PPRE2_FIELD(5U)
+#define STM32_PPRE2_DIV8        STM32_PPRE2_FIELD(6U)
+#define STM32_PPRE2_DIV16       STM32_PPRE2_FIELD(7U)
 
 #define STM32_MCOSEL_MASK       (15U << 24U)/**< MCOSEL field mask.         */
 #define STM32_MCOSEL_NOCLOCK    (0U << 24U) /**< No clock on MCO pin.       */
@@ -277,10 +246,10 @@
 #define STM32_CLK48SEL_HSI48    (0U << 26U) /**< CLK48 source is HSI48.     */
 #define STM32_CLK48SEL_PLLQCLK  (2U << 26U) /**< CLK48 source is PLLQCLK.   */
 
-#define STM32_ADC12SEL_MASK     (3U << 30U) /**< ADC12SEL mask.             */
-#define STM32_ADC12SEL_NOCLK    (0U << 30U) /**< ADC12 source is none.      */
-#define STM32_ADC12SEL_PLLPCLK  (1U << 30U) /**< ADC12 source is PLLPCLK.   */
-#define STM32_ADC12SEL_SYSCLK   (2U << 30U) /**< ADC12 source is SYSCLK.    */
+#define STM32_ADC12SEL_MASK     (3U << 28U) /**< ADC12SEL mask.             */
+#define STM32_ADC12SEL_NOCLK    (0U << 28U) /**< ADC12 source is none.      */
+#define STM32_ADC12SEL_PLLPCLK  (1U << 28U) /**< ADC12 source is PLLPCLK.   */
+#define STM32_ADC12SEL_SYSCLK   (2U << 28U) /**< ADC12 source is SYSCLK.    */
 
 #define STM32_ADC345SEL_MASK    (3U << 30U) /**< ADC345SEL mask.            */
 #define STM32_ADC345SEL_NOCLK   (0U << 30U) /**< ADC345 source is none.     */
@@ -348,8 +317,21 @@
  * @brief   PWR CR2 register initialization value.
  */
 #if !defined(STM32_PWR_CR2) || defined(__DOXYGEN__)
-#define STM32_PWR_CR2                       (STM32_PLS_LEV0 |               \
-                                             STM32_PVDE_DISABLED)
+#define STM32_PWR_CR2                       (PWR_CR2_PLS_LEV0)
+#endif
+
+/**
+ * @brief   PWR CR3 register initialization value.
+ */
+#if !defined(STM32_PWR_CR3) || defined(__DOXYGEN__)
+#define STM32_PWR_CR3                       (PWR_CR3_EIWF)
+#endif
+
+/**
+ * @brief   PWR CR4 register initialization value.
+ */
+#if !defined(STM32_PWR_CR4) || defined(__DOXYGEN__)
+#define STM32_PWR_CR4                       (0U)
 #endif
 
 /**
@@ -705,6 +687,11 @@
 #define STM32_SYSCLK_MAX            170000000
 
 /**
+ * @brief   Maximum SYSCLK clock frequency without voltage boost.
+ */
+#define STM32_SYSCLK_MAX_NOBOOST    150000000
+
+/**
  * @brief   Maximum HSE clock frequency at current voltage setting.
  */
 #define STM32_HSECLK_MAX            48000000
@@ -827,6 +814,7 @@
 
 #elif STM32_VOS == STM32_VOS_RANGE2
 #define STM32_SYSCLK_MAX            26000000
+#define STM32_SYSCLK_MAX_NOBOOST    150000000
 #define STM32_HSECLK_MAX            26000000
 #define STM32_HSECLK_BYP_MAX        26000000
 #define STM32_HSECLK_MIN            8000000
@@ -877,8 +865,8 @@
     #error "HSI16 not enabled, required by STM32_SW and STM32_PLLSRC"
   #endif
 
-  #if (STM32_MCOSEL == STM32_MCOSEL_HSI16) ||                                 \
-      ((STM32_MCOSEL == STM32_MCOSEL_PLLRCLK) &&                              \
+  #if (STM32_MCOSEL == STM32_MCOSEL_HSI16) ||                               \
+      ((STM32_MCOSEL == STM32_MCOSEL_PLLRCLK) &&                            \
        (STM32_PLLSRC == STM32_PLLSRC_HSI16))
     #error "HSI16 not enabled, required by STM32_MCOSEL"
   #endif
@@ -977,8 +965,8 @@
     #error "HSE not enabled, required by STM32_SW and STM32_PLLSRC"
   #endif
 
-  #if (STM32_MCOSEL == STM32_MCOSEL_HSE) ||                               \
-      ((STM32_MCOSEL == STM32_MCOSEL_PLLRCLK) &&                          \
+  #if (STM32_MCOSEL == STM32_MCOSEL_HSE) ||                                 \
+      ((STM32_MCOSEL == STM32_MCOSEL_PLLRCLK) &&                            \
        (STM32_PLLSRC == STM32_PLLSRC_HSE))
     #error "HSE not enabled, required by STM32_MCOSEL"
   #endif
@@ -1041,7 +1029,7 @@
 /**
  * @brief   STM32_PLLM field.
  */
-#if ((STM32_PLLM_VALUE >= 1) && (STM32_PLLM_VALUE <= 16)) ||                 \
+#if ((STM32_PLLM_VALUE >= 1) && (STM32_PLLM_VALUE <= 16)) ||                \
     defined(__DOXYGEN__)
   #define STM32_PLLM                ((STM32_PLLM_VALUE - 1) << 4)
 #else
@@ -1160,7 +1148,7 @@
 #endif
 
 /**
- * @brief   STM32_PLLPDIV field. (Only for STM32L496xx/4A6xx)
+ * @brief   STM32_PLLPDIV field.
  */
 #if (STM32_PLLPDIV_VALUE == 0) ||                                           \
     ((STM32_PLLPDIV_VALUE >= 2) && (STM32_PLLPDIV_VALUE <= 31)) ||          \
@@ -1319,7 +1307,7 @@
   #define STM32_HCLK                (STM32_SYSCLK / 512)
 
 #else
- #error "invalid STM32_HPRE value specified"
+  #error "invalid STM32_HPRE value specified"
 #endif
 
 /*
@@ -1329,27 +1317,27 @@
   #error "STM32_HCLK exceeding maximum frequency (STM32_SYSCLK_MAX)"
 #endif
 
- /**
-  * @brief   APB1 frequency.
-  */
- #if (STM32_PPRE1 == STM32_PPRE1_DIV1) || defined(__DOXYGEN__)
-   #define STM32_PCLK1               (STM32_HCLK / 1)
+/**
+ * @brief   APB1 frequency.
+ */
+#if (STM32_PPRE1 == STM32_PPRE1_DIV1) || defined(__DOXYGEN__)
+  #define STM32_PCLK1               (STM32_HCLK / 1)
 
- #elif STM32_PPRE1 == STM32_PPRE1_DIV2
-   #define STM32_PCLK1               (STM32_HCLK / 2)
+#elif STM32_PPRE1 == STM32_PPRE1_DIV2
+  #define STM32_PCLK1               (STM32_HCLK / 2)
 
- #elif STM32_PPRE1 == STM32_PPRE1_DIV4
-   #define STM32_PCLK1               (STM32_HCLK / 4)
+#elif STM32_PPRE1 == STM32_PPRE1_DIV4
+  #define STM32_PCLK1               (STM32_HCLK / 4)
 
- #elif STM32_PPRE1 == STM32_PPRE1_DIV8
-   #define STM32_PCLK1               (STM32_HCLK / 8)
+#elif STM32_PPRE1 == STM32_PPRE1_DIV8
+  #define STM32_PCLK1               (STM32_HCLK / 8)
 
- #elif STM32_PPRE1 == STM32_PPRE1_DIV16
-   #define STM32_PCLK1               (STM32_HCLK / 16)
+#elif STM32_PPRE1 == STM32_PPRE1_DIV16
+  #define STM32_PCLK1               (STM32_HCLK / 16)
 
- #else
-   #error "invalid STM32_PPRE1 value specified"
- #endif
+#else
+  #error "invalid STM32_PPRE1 value specified"
+#endif
 
 /*
  * APB1 frequency check.
@@ -1732,8 +1720,8 @@
 #elif STM32_ADC12SEL == STM32_ADC12SEL_PLLPCLK
   #define STM32_ADC12CLK            STM32_PLL_P_CLKOUT
 
-#elif STM32_ADC12SEL == STM32_ADC12SEL_HSI16
-  #define STM32_ADC12CLK            STM32_HSI16CLK
+#elif STM32_ADC12SEL == STM32_ADC12SEL_SYSCLK
+  #define STM32_ADC12CLK            STM32_SYSCLK
 
 #else
   #error "invalid source selected for ADC clock"
@@ -1748,8 +1736,8 @@
 #elif STM32_ADC345SEL == STM32_ADC345SEL_PLLPCLK
   #define STM32_ADC345CLK           STM32_PLL_P_CLKOUT
 
-#elif STM32_ADC345SEL == STM32_ADC345SEL_HSI16
-  #define STM32_ADC345CLK           STM32_HSI16CLK
+#elif STM32_ADC345SEL == STM32_ADC345SEL_SYSCLK
+  #define STM32_ADC345CLK           STM32_SYSCLK
 
 #else
   #error "invalid source selected for ADC clock"
@@ -1827,6 +1815,13 @@
   #define STM32_FLASHBITS           FLASH_ACR_LATENCY_8WS
 #endif
 
+/* Frequency-dependent settings for PWR_CR5.*/
+#if STM32_SYSCLK > STM32_SYSCLK_MAX_NOBOOST
+#define STM32_CR5BITS               0
+#else
+#define STM32_CR5BITS               PWR_CR5_R1MODE
+#endif
+
 /*===========================================================================*/
 /* Driver data structures and types.                                         */
 /*===========================================================================*/
@@ -1841,10 +1836,13 @@
 
 /* Various helpers.*/
 #include "nvic.h"
+#include "cache.h"
+#include "mpu_v7m.h"
 #include "stm32_isr.h"
 #include "stm32_dma.h"
 #include "stm32_exti.h"
 #include "stm32_rcc.h"
+#include "stm32_tim.h"
 
 #ifdef __cplusplus
 extern "C" {

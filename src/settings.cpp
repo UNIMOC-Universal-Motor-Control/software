@@ -22,8 +22,10 @@
 
 /**
  * @namespace system settings
+ *
+ * @note aligned to 32bytes boundarys for better cache handling
  */
-settings_ts settings =
+__attribute__((aligned (32))) settings_ts settings =
 {
 	/**
 	 * mechanic system settings
@@ -152,9 +154,9 @@ settings_ts settings =
  */
 void settings_s::Save(void)
 {
-	settings.crc = hardware::memory::Crc32(&settings, sizeof(settings_ts) - sizeof(uint32_t));
+	settings.crc = hardware::memory::Crc32(&settings, 15/*sizeof(settings_ts) - sizeof(uint32_t)*/);
 
-	hardware::memory::Write(1, &settings, sizeof(settings_ts));
+	hardware::memory::Write(0, &settings, sizeof(settings_ts));
 }
 
 /**
@@ -164,11 +166,12 @@ void settings_s::Save(void)
 bool settings_s::Load(void)
 {
 	bool result = false;
-	settings_ts tmp;
+	// align to cache lines for better cache handling
+	__attribute__((aligned (32))) settings_ts tmp;
 
-	hardware::memory::Read(1, &tmp, sizeof(settings_ts));
+	hardware::memory::Read(0, &tmp, sizeof(settings_ts));
 
-	if(tmp.crc == hardware::memory::Crc32(&tmp, sizeof(settings_ts) - sizeof(uint32_t)))
+	if(tmp.crc == hardware::memory::Crc32(&tmp, 15/*sizeof(settings_ts) - sizeof(uint32_t)*/))
 	{
 		std::memcpy(&settings, &tmp, sizeof(settings_ts));
 		result = true;

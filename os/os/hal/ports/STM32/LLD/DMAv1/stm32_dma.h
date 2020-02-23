@@ -349,7 +349,7 @@ typedef struct {
 /**
  * @brief   Associates a peripheral data register to a DMA stream.
  * @note    This function can be invoked in both ISR or thread context.
- * @pre     The stream must have been allocated using @p dmaStreamAllocate().
+ * @pre     The stream must have been allocated using @p dmaStreamAlloc().
  * @post    After use the stream can be released using @p dmaStreamRelease().
  *
  * @param[in] dmastp    pointer to a stm32_dma_stream_t structure
@@ -358,13 +358,13 @@ typedef struct {
  * @special
  */
 #define dmaStreamSetPeripheral(dmastp, addr) {                              \
-  (dmastp)->channel->CPAR  = (uint32_t)(addr);                              \
+  (dmastp)->channel->CPAR = (uint32_t)(addr);                               \
 }
 
 /**
  * @brief   Associates a memory destination to a DMA stream.
  * @note    This function can be invoked in both ISR or thread context.
- * @pre     The stream must have been allocated using @p dmaStreamAllocate().
+ * @pre     The stream must have been allocated using @p dmaStreamAlloc().
  * @post    After use the stream can be released using @p dmaStreamRelease().
  *
  * @param[in] dmastp    pointer to a stm32_dma_stream_t structure
@@ -373,13 +373,13 @@ typedef struct {
  * @special
  */
 #define dmaStreamSetMemory0(dmastp, addr) {                                 \
-  (dmastp)->channel->CMAR  = (uint32_t)(addr);                              \
+  (dmastp)->channel->CMAR = (uint32_t)(addr);                               \
 }
 
 /**
  * @brief   Sets the number of transfers to be performed.
  * @note    This function can be invoked in both ISR or thread context.
- * @pre     The stream must have been allocated using @p dmaStreamAllocate().
+ * @pre     The stream must have been allocated using @p dmaStreamAlloc().
  * @post    After use the stream can be released using @p dmaStreamRelease().
  *
  * @param[in] dmastp    pointer to a stm32_dma_stream_t structure
@@ -388,13 +388,13 @@ typedef struct {
  * @special
  */
 #define dmaStreamSetTransactionSize(dmastp, size) {                         \
-  (dmastp)->channel->CNDTR  = (uint32_t)(size);                             \
+  (dmastp)->channel->CNDTR = (uint32_t)(size);                              \
 }
 
 /**
  * @brief   Returns the number of transfers to be performed.
  * @note    This function can be invoked in both ISR or thread context.
- * @pre     The stream must have been allocated using @p dmaStreamAllocate().
+ * @pre     The stream must have been allocated using @p dmaStreamAlloc().
  * @post    After use the stream can be released using @p dmaStreamRelease().
  *
  * @param[in] dmastp    pointer to a stm32_dma_stream_t structure
@@ -407,7 +407,7 @@ typedef struct {
 /**
  * @brief   Programs the stream mode settings.
  * @note    This function can be invoked in both ISR or thread context.
- * @pre     The stream must have been allocated using @p dmaStreamAllocate().
+ * @pre     The stream must have been allocated using @p dmaStreamAlloc().
  * @post    After use the stream can be released using @p dmaStreamRelease().
  *
  * @param[in] dmastp    pointer to a stm32_dma_stream_t structure
@@ -432,7 +432,7 @@ typedef struct {
 /**
  * @brief   DMA stream enable.
  * @note    This function can be invoked in both ISR or thread context.
- * @pre     The stream must have been allocated using @p dmaStreamAllocate().
+ * @pre     The stream must have been allocated using @p dmaStreamAlloc().
  * @post    After use the stream can be released using @p dmaStreamRelease().
  *
  * @param[in] dmastp    pointer to a stm32_dma_stream_t structure
@@ -450,7 +450,7 @@ typedef struct {
  * @note    This function can be invoked in both ISR or thread context.
  * @note    Interrupts enabling flags are set to zero after this call, see
  *          bug 3607518.
- * @pre     The stream must have been allocated using @p dmaStreamAllocate().
+ * @pre     The stream must have been allocated using @p dmaStreamAlloc().
  * @post    After use the stream can be released using @p dmaStreamRelease().
  *
  * @param[in] dmastp    pointer to a stm32_dma_stream_t structure
@@ -466,7 +466,7 @@ typedef struct {
 /**
  * @brief   DMA stream interrupt sources clear.
  * @note    This function can be invoked in both ISR or thread context.
- * @pre     The stream must have been allocated using @p dmaStreamAllocate().
+ * @pre     The stream must have been allocated using @p dmaStreamAlloc().
  * @post    After use the stream can be released using @p dmaStreamRelease().
  *
  * @param[in] dmastp    pointer to a stm32_dma_stream_t structure
@@ -481,7 +481,7 @@ typedef struct {
  * @brief   Starts a memory to memory operation using the specified stream.
  * @note    The default transfer data mode is "byte to byte" but it can be
  *          changed by specifying extra options in the @p mode parameter.
- * @pre     The stream must have been allocated using @p dmaStreamAllocate().
+ * @pre     The stream must have been allocated using @p dmaStreamAlloc().
  * @post    After use the stream can be released using @p dmaStreamRelease().
  *
  * @param[in] dmastp    pointer to a stm32_dma_stream_t structure
@@ -507,7 +507,7 @@ typedef struct {
 
 /**
  * @brief   Polled wait for DMA transfer end.
- * @pre     The stream must have been allocated using @p dmaStreamAllocate().
+ * @pre     The stream must have been allocated using @p dmaStreamAlloc().
  * @post    After use the stream can be released using @p dmaStreamRelease().
  *
  * @param[in] dmastp    pointer to a stm32_dma_stream_t structure
