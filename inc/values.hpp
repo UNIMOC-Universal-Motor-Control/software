@@ -83,6 +83,18 @@ typedef struct values_s
 				float phi;
 
 			} setpoint;
+
+			/**
+			 * motor rotor values filtered
+			 */
+			struct filtered_s
+			{
+				///< Current in rotor frame
+				systems::dq i;
+
+				///< Filtered angular velocity in rotor frame
+				float omega;
+			} filtered;
 		} rotor;
 	} motor;
 

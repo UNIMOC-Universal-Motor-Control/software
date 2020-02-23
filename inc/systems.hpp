@@ -34,6 +34,26 @@ namespace math {
     constexpr float PIby2 =         PI / 2.0f;
     constexpr float SQRT2 =        std::sqrt(2.0f);
     constexpr float SQRT1_2 =      1.0f/std::sqrt(2.0f);
+
+    /**
+     * compute sqrt in a fast way with sufficient accuracy
+     *
+     * @ref see https://bits.stephan-brumme.com/squareRoot.html
+     *
+     * @param x			value
+     * @return			sqrt(x)
+     */
+    constexpr inline float sqrt_fast(const float x)
+    {
+      unsigned int i = *(unsigned int*) &x;
+
+      // adjust bias
+      i  += 127 << 23;
+      // approximation of square root
+      i >>= 1;
+
+      return *(float*) &i;
+    }
 };
 
 /**

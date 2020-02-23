@@ -51,9 +51,11 @@ namespace control
 	 * @param feed_forward 	feed forward control input.
 	 * @retval controller output
 	 */
-	float pi::Calculate(float  error, float feed_forward)
+	float pi::Calculate(const float setpoint, const float actual, const float feedforward)
 	{
-		output_unlimited = error_sum + error * kp + feed_forward;  	// regulator equation
+		float error = setpoint - actual;
+
+		output_unlimited = error_sum + error * kp + feedforward;  	// regulator equation
 
 		if(output_unlimited > positive_limit)				// upper saturation
 		{
@@ -78,6 +80,65 @@ namespace control
 		}
 		return output;
 	}
+
+	/**
+	 * @brief Pi controller constructor with all essential parameters.
+	 *
+	 * The motor in rotor frame is G_m = 1/(L_s (s + j w) + R_s)
+	 * The controller in rotor frame is G_c = (K_p (s + j w) + K_i)/s
+	 *
+	 * so to get G_o = 1/s for the open loop, K_p = L_s and K_i = R_s
+	 *
+	 * @param new_ts                set sample time.
+	 * @param rs	                series resistance of the winding
+	 * @param l                		series inductance of the winding
+	 * @param new_limit   			output limit.
+	 */
+	complex_current::complex_current(const float new_ts, const float rs, const systems::dq l, const float new_limit):
+						ts(new_ts), error_sum{0.0f, 0.0f}, output_unlimited{0.0f, 0.0f}, output{0.0f, 0.0f}, kp{l.d, l.q},
+						ki(rs), limit(new_limit)
+	{}
+
+	/**
+	 * @brief calculate regulator equation with feed forward and anti windup.
+	 * @param setpoint				setpoint vector
+	 * @param act					actual current vector
+	 * @param omega					angular velocity in rad/s of the motor
+	 * @return						controllers output voltage vector
+	 */
+	systems::dq complex_current::Calculate(const systems::dq setpoint, const systems::dq act, const float omega)
+	{
+		systems::dq error = {setpoint.d - act.d, setpoint.q -act.q};
+
+		output_unlimited.d = error_sum.d + error.d * kp.d;  				// regulator equation
+		output_unlimited.q = error_sum.q + error.q * kp.q;
+
+		float length = systems::Length(output_unlimited);
+
+		if(length > limit)													// saturation
+		{
+			output.d = limit/length * output_unlimited.d;					// scale to fit the limit
+			output.q = limit/length * output_unlimited.q;
+		}
+		else																// normal operation
+		{
+			std::memcpy(&output, &output_unlimited, sizeof(systems::dq));
+		}
+
+		// anti windup strategy is only to limit if
+		// integration of the error takes the output
+		// more over the limit.
+		// if not we are free to integrate
+		if(std::memcmp(&output, &output_unlimited, sizeof(systems::dq))
+				|| ((error.d * output_unlimited.d) <= 0.0f) || ((error.q * output_unlimited.q) <= 0.0f))
+		{
+			// (K_p * j w + K_i)/s
+			error_sum.d += (error.d * ki - error.q * omega * kp.d) * ts;
+			error_sum.q += (error.q * ki + error.d * omega * kp.q) * ts;
+		}
+		return output;
+	}
+
 	/**
 	 * @brief FOC controller constructor with all essential parameters.
 	 *
@@ -111,21 +172,21 @@ namespace control
 
 		// calculate feedforward
 		systems::dq feedforward = {0.0f, 0.0f};
-		feedforward.d = settings.motor.Rs * values.motor.rotor.setpoint.i.d
-				- values.motor.rotor.setpoint.omega * settings.motor.L.q * values.motor.rotor.setpoint.i.q;
+		feedforward.d = settings.motor.Rs * values.motor.rotor.filtered.i.d
+				- values.motor.rotor.filtered.omega * settings.motor.L.q * values.motor.rotor.filtered.i.q;
 
-		feedforward.q = settings.motor.Rs * values.motor.rotor.setpoint.i.q
-				+ values.motor.rotor.setpoint.omega * settings.motor.L.d * values.motor.rotor.setpoint.i.d
-				+ values.motor.rotor.setpoint.omega * settings.motor.Psi;
+		feedforward.q = settings.motor.Rs * values.motor.rotor.filtered.i.q
+				+ values.motor.rotor.filtered.omega * settings.motor.L.d * values.motor.rotor.filtered.i.d
+				+ values.motor.rotor.filtered.omega * settings.motor.Psi;
 
 		// only set voltages with active current control
 		if(settings.control.current)
 		{
 			// direct current control
-			values.motor.rotor.u.d = d.Calculate(values.motor.rotor.setpoint.i.d - values.motor.rotor.i.d, feedforward.d);
+			values.motor.rotor.u.d = d.Calculate(values.motor.rotor.setpoint.i.d, values.motor.rotor.i.d, feedforward.d);
 
 			// quadrature current control
-			values.motor.rotor.u.q = q.Calculate(values.motor.rotor.setpoint.i.q - values.motor.rotor.i.q, feedforward.q);
+			values.motor.rotor.u.q = q.Calculate(values.motor.rotor.setpoint.i.q, values.motor.rotor.i.q, feedforward.q);
 		}
 	}
 }/* namespace control */

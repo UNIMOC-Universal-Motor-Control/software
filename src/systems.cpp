@@ -144,7 +144,7 @@ namespace systems
      */
     float Length(const dq& vector)
     {
-        return sqrt(vector.d*vector.d + vector.q*vector.q);
+        return math::sqrt_fast(vector.d*vector.d + vector.q*vector.q);
     }
 
     /**
@@ -155,7 +155,7 @@ namespace systems
      */
     float Length(const alpha_beta& vector)
     {
-        return sqrt(vector.alpha*vector.alpha + vector.beta*vector.beta);
+        return math::sqrt_fast(vector.alpha*vector.alpha + vector.beta*vector.beta);
     }
 
     /**

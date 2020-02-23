@@ -69,6 +69,18 @@ values_ts values =
 				///< rotor angle setpoint
 				.phi = 0.0f,
 			},
+
+			/**
+			 * motor rotor values filtered
+			 */
+			.filtered =
+			{
+				///< Filtered current in rotor frame
+				.i = {0.0f, 0.0f},
+
+				///< Filtered angular velocity in rotor frame
+				.omega= 0.0f,
+			},
 		},
 	},
 
