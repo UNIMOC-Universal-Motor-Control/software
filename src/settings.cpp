@@ -154,7 +154,7 @@ __attribute__((aligned (32))) settings_ts settings =
  */
 void settings_s::Save(void)
 {
-	settings.crc = hardware::memory::Crc32(&settings, 15/*sizeof(settings_ts) - sizeof(uint32_t)*/);
+	settings.crc = hardware::memory::Crc32(&settings, sizeof(settings_ts) - sizeof(uint32_t));
 
 	hardware::memory::Write(0, &settings, sizeof(settings_ts));
 }
@@ -171,7 +171,7 @@ bool settings_s::Load(void)
 
 	hardware::memory::Read(0, &tmp, sizeof(settings_ts));
 
-	if(tmp.crc == hardware::memory::Crc32(&tmp, 15/*sizeof(settings_ts) - sizeof(uint32_t)*/))
+	if(tmp.crc == hardware::memory::Crc32(&tmp, sizeof(settings_ts) - sizeof(uint32_t)))
 	{
 		std::memcpy(&settings, &tmp, sizeof(settings_ts));
 		result = true;

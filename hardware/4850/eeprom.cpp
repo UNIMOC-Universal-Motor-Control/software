@@ -119,10 +119,9 @@ static void select_half(const uint16_t half)
 	(void)half;
 	osalDbgAssert(half < 2, "EEPROM: Half out of bounds");
 
-	uint8_t dummy[2];
+	uint8_t dummy = 0xA5;
 
-	i2cMasterTransmitTimeout(I2CP, SPA(half), dummy, sizeof(dummy), nullptr, 0, READ_TIMEOUT);
-	i2cMasterTransmitTimeout(I2CP, RPA_ADDRESS, dummy, sizeof(dummy), nullptr, 0, READ_TIMEOUT);
+	i2cMasterTransmitTimeout(I2CP, SPA(half), &dummy, sizeof(dummy), nullptr, 0, READ_TIMEOUT);
 }
 
 
@@ -267,7 +266,7 @@ uint8_t hardware::memory::Write(const uint32_t address, void const * buffer, con
 		if(write_length > PAGE_SIZE) write_length = PAGE_SIZE;
 		write_addr = address + written_bytes;
 
-		buffer_addr += written_bytes;
+		buffer_addr = (uint8_t*)buffer + written_bytes;
 		write_buffer[0] = write_addr;
 
 		std::memcpy(write_buffer + 1, buffer_addr, write_length);
