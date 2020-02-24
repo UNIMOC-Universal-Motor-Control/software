@@ -12,8 +12,6 @@
 * @brief  FreeMASTER Driver hardware dependent stuff
 *
 *******************************************************************************/
-#include "freemaster.h"
-
 
 #ifndef __FREEMASTER_KXX_H
 #define __FREEMASTER_KXX_H
@@ -199,7 +197,7 @@ FMSTR_BPTR FMSTR_ValueToBuffer32(FMSTR_BPTR pDest, FMSTR_U32 src);
 #define FMSTR_SETREG8(base, offset, value)      (*(volatile FMSTR_U8*)(((FMSTR_U32)(base))+(offset)) = value)
 #define FMSTR_GETREG8(base, offset)             (*(volatile FMSTR_U8*)(((FMSTR_U32)(base))+(offset)))
 #define FMSTR_SETBIT8(base, offset, bit)        (*(volatile FMSTR_U8*)(((FMSTR_U32)(base))+(offset)) |= bit)
-#define FMSTR_CLRBIT8(base, offset, bit)        (*(volatile FMSTR_U8*)(((FMSTR_U32)(base))+(offset)) &= (FMSTR_U16)~((FMSTR_U16)(bit)))
+#define FMSTR_CLRBIT8(base, offset, bit)        (*(volatile FMSTR_U8*)(((FMSTR_U32)(base))+(offset)) &= (FMSTR_U8)~((FMSTR_U8)(bit)))
 #define FMSTR_SETREG16(base, offset, value)     (*(volatile FMSTR_U16*)(((FMSTR_U32)(base))+(offset)) = value)
 #define FMSTR_GETREG16(base, offset)            (*(volatile FMSTR_U16*)(((FMSTR_U32)(base))+(offset)))
 #define FMSTR_SETBIT16(base, offset, bit)       (*(volatile FMSTR_U16*)(((FMSTR_U32)(base))+(offset)) |= bit)

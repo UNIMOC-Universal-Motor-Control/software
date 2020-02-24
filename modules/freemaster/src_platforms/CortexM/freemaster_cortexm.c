@@ -12,11 +12,9 @@
 * @brief  FreeMASTER Driver Kxx-hardware dependent stuff
 *
 *******************************************************************************/
-
-#include "freemaster_cortexm.h"
-
 #include "freemaster.h"
 #include "freemaster_private.h"
+#include "freemaster_cortexm.h"
 
 #if !(FMSTR_DISABLE)
 /*******************************************************************************

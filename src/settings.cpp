@@ -25,7 +25,7 @@
  *
  * @note aligned to 32bytes boundarys for better cache handling
  */
-__attribute__((aligned (32))) settings_ts settings =
+settings_ts settings =
 {
 	/**
 	 * mechanic system settings

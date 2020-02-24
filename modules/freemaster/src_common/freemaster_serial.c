@@ -1,12 +1,12 @@
 /*******************************************************************************
 *
-* Copyright 2004-2014 Freescale Semiconductor, Inc.
+* Copyright 2004-2016 NXP Semiconductor, Inc.
 *
-* This software is owned or controlled by Freescale Semiconductor.
-* Use of this software is governed by the Freescale FreeMASTER License
+* This software is owned or controlled by NXP Semiconductor.
+* Use of this software is governed by the NXP FreeMASTER License
 * distributed with this Material.
 * See the LICENSE file distributed for more details.
-*
+* 
 ****************************************************************************//*!
 *
 * @brief  FreeMASTER serial communication routines
@@ -21,7 +21,7 @@
 #if FMSTR_USE_SERIAL
 
 /***********************************
-*  local variables
+*  local variables 
 ***********************************/
 
 /* Runtime base address used when constant address is not specified */
@@ -36,14 +36,14 @@ serial_t* pSerialObj;
 #endif
 
 /* FreeMASTER communication buffer (in/out) plus the STS and LEN bytes */
-static FMSTR_BCHR pcm_pCommBuffer[FMSTR_COMM_BUFFER_SIZE+3];
+static FMSTR_BCHR pcm_pCommBuffer[FMSTR_COMM_BUFFER_SIZE+3];    
 
 /* FreeMASTER runtime flags */
 /*lint -e{960} using union */
-typedef volatile union
+typedef volatile union 
 {
     FMSTR_FLAGS all;
-
+    
     struct
     {
         unsigned bTxActive : 1;         /* response is being transmitted */
@@ -68,7 +68,7 @@ typedef volatile union
         unsigned bUsbReadyToDecode : 1; /* FreeMASTER packet is received, ready to decode in Poll function in Short Interrupt mode */
 #endif
     } flg;
-
+    
 } FMSTR_SERIAL_FLAGS;
 
 static FMSTR_SERIAL_FLAGS pcm_wFlags;
@@ -90,8 +90,8 @@ static FMSTR_BCHR  pcm_nRxCheckSum; /* checksum of data being received */
 #define FMSTR_SCI_TXEMPTY(wSciSR) ((wSciSR) & FMSTR_SCISR_TC)
 #endif
 #ifndef FMSTR_SCI_RXREADY
-    /* when overrun flag is defined, use it also to detect incoming character (and to
-     * make sure the OR flag is cleared in modules where RDRF and OR are independent */
+    /* when overrun flag is defined, use it also to detect incoming character (and to 
+     * make sure the OR flag is cleared in modules where RDRF and OR are independent */ 
     #ifdef FMSTR_SCISR_OR
     #define FMSTR_SCI_RXREADY(wSciSR) ((wSciSR) & (FMSTR_SCISR_RDRF | FMSTR_SCISR_OR))
     #else
@@ -102,7 +102,7 @@ static FMSTR_BCHR  pcm_nRxCheckSum; /* checksum of data being received */
 #if FMSTR_DEBUG_TX
 /* The poll counter is used to roughly measure duration of test frame transmission.
  * The test frame will be sent once per N.times this measured period. */
-static FMSTR_S32 pcm_nDebugTxPollCount;
+static FMSTR_S32 pcm_nDebugTxPollCount; 
 /* the N factor for multiplying the transmission time to get the wait time */
 #define FMSTR_DEBUG_TX_POLLCNT_XFACTOR 32
 #define FMSTR_DEBUG_TX_POLLCNT_MIN     (-1*0x4000000L)
@@ -123,7 +123,7 @@ static void FMSTR_SendError(FMSTR_BCHR nErrCode);
 
 #if (FMSTR_USE_SCI) || (FMSTR_USE_ESCI) || (FMSTR_USE_LPUART) || (FMSTR_USE_JTAG)
 /***********************************
-*  local variables
+*  local variables 
 ***********************************/
 
 /* SHORT_INTR receive queue (circular buffer) */
@@ -159,13 +159,13 @@ static void FMSTR_RxQueue(FMSTR_BCHR nRxChar)
 {
     /* future value of write pointer */
     FMSTR_BPTR wpnext = pcm_pRQueueWP + 1;
-
+    
     /*lint -e{946} pointer arithmetic is okay here (same array) */
     if(wpnext >= (pcm_pRQueueBuffer + FMSTR_COMM_RQUEUE_SIZE))
     {
         wpnext = pcm_pRQueueBuffer;
     }
-
+    
     /* any space in queue? */
     if(wpnext != pcm_pRQueueRP)
     {
@@ -188,9 +188,9 @@ static void FMSTR_RxQueue(FMSTR_BCHR nRxChar)
 #if FMSTR_SHORT_INTR
 
 static void FMSTR_RxDequeue(void)
-{
+{ 
     FMSTR_BCHR nChar = 0U;
-
+    
     /* get all queued characters */
     while(pcm_pRQueueRP != pcm_pRQueueWP)
     {
@@ -201,7 +201,7 @@ static void FMSTR_RxDequeue(void)
         {
             pcm_pRQueueRP = pcm_pRQueueBuffer;
         }
-
+        
         /* emulate the SCI receive event */
         if(!pcm_wFlags.flg.bTxActive)
         {
@@ -242,7 +242,7 @@ void FMSTR_ProcessSCI(void)
             if(!FMSTR_Tx(&ch))
                 FMSTR_SCI_PUTCHAR((FMSTR_U8) ch);
         }
-
+        
 #if FMSTR_SCI_HAS_TXQUEUE
         /* waiting for transmission complete flag? */
         if(pcm_wFlags.flg.bTxWaitTC && FMSTR_SCI_TXEMPTY(wSciSR))
@@ -259,7 +259,7 @@ void FMSTR_ProcessSCI(void)
         {
             /*lint -esym(550, nRxChar) */
             volatile FMSTR_U16 nRxChar;
-            nRxChar = FMSTR_SCI_GETCHAR();
+            nRxChar = FMSTR_SCI_GETCHAR(); 
             FMSTR_UNUSED(nRxChar);
         }
 #endif
@@ -276,8 +276,8 @@ void FMSTR_ProcessSCI(void)
 #if FMSTR_SHORT_INTR
             FMSTR_RxQueue(nRxChar);
 #else
-            (void)FMSTR_Rx(nRxChar);
-#endif
+            (void)FMSTR_Rx(nRxChar);  
+#endif          
         }
 #if FMSTR_DEBUG_TX
         /* time to send another test frame? */
@@ -307,9 +307,9 @@ static void FMSTR_FlushJtagTx(void);
 
 /**************************************************************************//*!
 *
-* @brief    Flush one communication JTAG word
+* @brief    Flush one communication JTAG word 
 *
-* This function gets the 4 bytes from FreeMASTER TX buffer and place them to
+* This function gets the 4 bytes from FreeMASTER TX buffer and place them to 
 * JTAG transmit register.
 *
 ******************************************************************************/
@@ -353,7 +353,7 @@ void FMSTR_ProcessJTAG(void)
         /* able to transmit a new character? (TX must be empty = read-out by PC) */
         if(!(wJtagSR & FMSTR_JTAG_OTXRXSR_TDF))
         {
-
+        
 #if FMSTR_USE_JTAG_TXFIX
             /* if TDF bit is useless due to silicon bug, use the RX flag */
             /* instead (PC sends us a dummy word to kick the RX flag on) */
@@ -361,7 +361,7 @@ void FMSTR_ProcessJTAG(void)
 #endif
             {
                 FMSTR_FlushJtagTx();
-            }
+            }               
         }
 
         /* ignore (read-out) the JTAG-received word */
@@ -380,9 +380,9 @@ void FMSTR_ProcessJTAG(void)
         {
             register FMSTR_U32 nRxDWord;
             FMSTR_INDEX i;
-
+            
             nRxDWord = FMSTR_JTAG_GETDWORD();
-
+            
             /* process all bytes, MSB first */
             for(i=0; i<4; i++)
             {
@@ -391,7 +391,7 @@ void FMSTR_ProcessJTAG(void)
 
 #else
                 (void)FMSTR_Rx((FMSTR_BCHR)((nRxDWord >> 24U) & 0xffU));
-
+            
                 /* ignore the rest if previous bytes triggered a transmission */
                 /* (i.e. the packet was complete and only filled-up to 32bit word) */
                 if(pcm_wFlags.flg.bTxActive)
@@ -411,7 +411,7 @@ void FMSTR_ProcessJTAG(void)
 /******************************************************************************
 *
 * FreeMASTER MQX IO serial communication routines
-*
+* 
 *******************************************************************************/
 
 #if FMSTR_USE_MQX_IO
@@ -420,7 +420,7 @@ void FMSTR_ProcessJTAG(void)
 #include <bsp.h>
 
 /***********************************
-*  local variables
+*  local variables 
 ***********************************/
 
 static FILE_PTR devfd = NULL;       /* pointer to open FreeMASTER communication interface */
@@ -439,7 +439,7 @@ static void FMSTR_ProcessMQXIO(void);
 ******************************************************************************/
 
 static FMSTR_BOOL FMSTR_InitMQX(void)
-{
+{   
     /* Open communication port */
     devfd = fopen (FMSTR_MQX_IO_CHANNEL, (char const *)FMSTR_MQX_IO_PARAMETER);
 
@@ -450,18 +450,18 @@ static FMSTR_BOOL FMSTR_InitMQX(void)
 *
 * @brief    Handle MQX IO serial communication (both TX and RX)
 *
-* This function calls MQX IO fread() function to get character and process it by
-*
+* This function calls MQX IO fread() function to get character and process it by 
+* 
 * FMSTR_Rx function when FreeMASTER packet is receiving. This function also transmit
 *
-* FreeMASTER response. Character to be send is provided by call of FMSTR_Tx function
-*
+* FreeMASTER response. Character to be send is provided by call of FMSTR_Tx function 
+* 
 * and passed down to fwrite() function.
 *
 *******************************************************************************/
 
 static void FMSTR_ProcessMQXIO(void)
-{
+{ 
     if (devfd != NULL)
     {
          static FMSTR_U8 TxChar = 0;
@@ -470,7 +470,7 @@ static void FMSTR_ProcessMQXIO(void)
         {
             FMSTR_U8 nRxChar;
             /* read all available bytes from communication interface */
-            while (fread(&nRxChar, 1, 1, devfd)) {
+            while (fread(&nRxChar, 1, 1, devfd)) { 
                 if(FMSTR_Rx(nRxChar))
                     break;
             }
@@ -517,7 +517,7 @@ static void FMSTR_ProcessMQXIO(void)
 
 #if FMSTR_USE_USB_CDC
 
-/* Use legacy Freescale 'Medical USB' stack */
+/* Use legacy NXP 'Medical USB' stack */
 #if FMSTR_USB_LEGACY_STACK
 
 #include "usb_cdc.h"        /* USB CDC Class Header File - see support/USB folder */
@@ -1041,7 +1041,7 @@ void FMSTR_ProcessMBED(void)
             FMSTR_BCHR nRxChar = 0U;
             nRxChar = (FMSTR_BCHR) serial_getc(pSerialObj);
 
-            (void)FMSTR_Rx(nRxChar);
+            (void)FMSTR_Rx(nRxChar);  
         }
     }
 }
@@ -1118,7 +1118,7 @@ static void FMSTR_Listen(void)
 #if (FMSTR_USE_SCI) || (FMSTR_USE_ESCI) || (FMSTR_USE_LPUART)
     FMSTR_SCI_DTXI();   /* disable SCI transmit interrupt */
     FMSTR_SCI_ERXI();   /* enable SCI receive interrupt */
-
+    
 #elif FMSTR_USE_JTAG
     FMSTR_JTAG_DTXI();  /* disable JTAG transmit interrupt  */
     FMSTR_JTAG_ERXI();  /* enable JTAG receive interrupt  */
@@ -1127,7 +1127,7 @@ static void FMSTR_Listen(void)
     if(!FMSTR_JTAG_ERXI_CHECK())
         pcm_wFlags.flg.bJtagRIEPending = 1;
 
-#elif FMSTR_USE_MBED
+#elif FMSTR_USE_MBED 
     /* disable TX interrupt */
     serial_irq_set(pSerialObj, TxIrq, 0);
 #endif /* (FMSTR_USE_SCI) || (FMSTR_USE_ESCI) || (FMSTR_USE_LPUART) / FMSTR_USE_JTAG / FMSTR_USE_MBED  */
@@ -1135,7 +1135,7 @@ static void FMSTR_Listen(void)
 #endif /* FMSTR_SHORT_INTR || FMSTR_LONG_INTR */
 
 #if FMSTR_DEBUG_TX
-    /* we have just finished the transmission of the test frame, now wait the 32x times the sendtime
+    /* we have just finished the transmission of the test frame, now wait the 32x times the sendtime 
        to receive any command from PC (count<0 is measurement, count>0 is waiting, count=0 is send trigger) */
     if(pcm_nDebugTxPollCount < 0)
         pcm_nDebugTxPollCount *= -(FMSTR_DEBUG_TX_POLLCNT_XFACTOR);
@@ -1144,7 +1144,7 @@ static void FMSTR_Listen(void)
 
 /**************************************************************************//*!
 *
-* @brief    Send response of given error code (no data)
+* @brief    Send response of given error code (no data) 
 *
 * @param    nErrCode - error code to be sent
 *
@@ -1159,12 +1159,12 @@ static void FMSTR_SendError(FMSTR_BCHR nErrCode)
 
 /**************************************************************************//*!
 *
-* @brief    Finalize transmit buffer before transmitting
+* @brief    Finalize transmit buffer before transmitting 
 *
 * @param    nLength - response length (1 for status + data length)
 *
 *
-* This Function takes the data already prepared in the transmit buffer
+* This Function takes the data already prepared in the transmit buffer 
 * (inlcuding the status byte). It computes the check sum and kicks on tx.
 *
 ******************************************************************************/
@@ -1177,7 +1177,7 @@ void FMSTR_SendResponse(FMSTR_BPTR pResponse, FMSTR_SIZE8 nLength)
 
     /* remember the buffer to be sent */
     pcm_pTxBuff = pResponse;
-
+    
     /* status byte and data are already there, compute checksum only     */
     for (i=0U; i<nLength; i++)
     {
@@ -1188,13 +1188,13 @@ void FMSTR_SendResponse(FMSTR_BPTR pResponse, FMSTR_SIZE8 nLength)
         /* prevent saturation to happen on DSP platforms */
         chSum &= 0xffU;
     }
-
+    
     /* store checksum after the message */
     pResponse = FMSTR_ValueToBuffer8(pResponse, (FMSTR_U8) (((FMSTR_U8)(~chSum)) + 1U));
 
     /* send the message and the checksum and the SOB */
-    pcm_nTxTodo = (FMSTR_SIZE8) (nLength + 1U);
-
+    pcm_nTxTodo = (FMSTR_SIZE8) (nLength + 1U); 
+    
     /* now transmitting the response */
     pcm_wFlags.flg.bTxActive = 1U;
 
@@ -1208,23 +1208,23 @@ void FMSTR_SendResponse(FMSTR_BPTR pResponse, FMSTR_SIZE8 nLength)
 
     /* do not replicate the initial SOB  */
     pcm_wFlags.flg.bTxLastCharSOB = 0U;
-
+    
 #if (FMSTR_USE_SCI) || (FMSTR_USE_ESCI) || (FMSTR_USE_LPUART)
     {
-        /*lint -esym(550, dummySR) */
+        /*lint -esym(550, dummySR) */        
         volatile FMSTR_SCISR dummySR;
 
         /* disable receiver, enable transmitter (single-wire communication) */
 #if !FMSTR_SCI_TWOWIRE_ONLY
         FMSTR_SCI_RD();
         FMSTR_SCI_TE();
-#endif
+#endif        
         /* kick on the SCI transmission (also clears TX Empty flag on some platforms) */
         dummySR = FMSTR_SCI_GETSR();
         FMSTR_SCI_PUTCHAR(FMSTR_SOB);
         FMSTR_UNUSED(dummySR);
     }
-
+    
 #elif FMSTR_USE_JTAG
     /* kick on the JTAG transmission */
     FMSTR_FlushJtagTx();
@@ -1235,7 +1235,7 @@ void FMSTR_SendResponse(FMSTR_BPTR pResponse, FMSTR_SIZE8 nLength)
 #if (FMSTR_USE_SCI) || (FMSTR_USE_ESCI) || (FMSTR_USE_LPUART)
     FMSTR_SCI_DRXI();
     FMSTR_SCI_ETXI();
-
+    
 #elif FMSTR_USE_JTAG
 #if FMSTR_USE_JTAG_TXFIX
     /* in TX-bugfix mode, keep the RX interrupt enabled as it */
@@ -1243,12 +1243,12 @@ void FMSTR_SendResponse(FMSTR_BPTR pResponse, FMSTR_SIZE8 nLength)
     FMSTR_JTAG_ERXI();
 #else
     /* otherwise, JTAG is very same as the SCI */
-    if(pcm_wFlags.flg.bTxActive) //enable TX interrupt only when is not one word response
+    if(pcm_wFlags.flg.bTxActive) //enable TX interrupt only when is not one word response 
     {
         FMSTR_JTAG_DRXI();
         FMSTR_JTAG_ETXI();
     }
-#endif
+#endif              
 
 #elif FMSTR_USE_USB_CDC
     if ((pcm_wFlags.flg.bUsbCdcStartApp) && (pcm_wFlags.flg.bTxActive) && (pcm_wFlags.flg.bUsbCdcStartTrans))
@@ -1268,7 +1268,7 @@ void FMSTR_SendResponse(FMSTR_BPTR pResponse, FMSTR_SIZE8 nLength)
         /* enabled TX interrupt */
     serial_irq_set(pSerialObj, TxIrq, 1);
 #endif
-#endif /* FMSTR_LONG_INTR || FMSTR_SHORT_INTR */
+#endif /* FMSTR_LONG_INTR || FMSTR_SHORT_INTR */    
 #if FMSTR_USE_CHIBIOS
     /* initialize communication */
     streamPut(FMSTR_SD, (FMSTR_U8) FMSTR_SOB);
@@ -1278,8 +1278,8 @@ void FMSTR_SendResponse(FMSTR_BPTR pResponse, FMSTR_SIZE8 nLength)
 /**************************************************************************//*!
 *
 * @brief    Output buffer transmission
-*
-* @param  pTxChar  The character to be transmit
+* 
+* @param  pTxChar  The character to be transmit 
 *
 * get ready buffer(prepare data to send)
 *
@@ -1295,13 +1295,13 @@ FMSTR_BOOL FMSTR_Tx(FMSTR_U8* pTxChar)
         pcm_wFlags.flg.bTxFirstSobSend = 0U;
         return FMSTR_FALSE;
     }
-#endif
+#endif      
     if (pcm_nTxTodo)
     {
         /* fetch & send character ready to transmit */
         /*lint -e{534} ignoring return value */
         (void)FMSTR_ValueFromBuffer8(pTxChar, pcm_pTxBuff);
-
+        
         /* first, handle the replicated SOB characters */
         if (*pTxChar == FMSTR_SOB)
         {
@@ -1317,8 +1317,8 @@ FMSTR_BOOL FMSTR_Tx(FMSTR_U8* pTxChar)
         pcm_pTxBuff = FMSTR_SkipInBuffer(pcm_pTxBuff, 1U);
         return FMSTR_FALSE;
     }
-
-    /* when SCI TX buffering is enabled, we must first wait until all
+    
+    /* when SCI TX buffering is enabled, we must first wait until all 
        characters are physically transmitted (before disabling transmitter) */
 #if (FMSTR_USE_SCI) || (FMSTR_USE_ESCI) || (FMSTR_USE_LPUART)
   #if FMSTR_SCI_HAS_TXQUEUE
@@ -1331,7 +1331,7 @@ FMSTR_BOOL FMSTR_Tx(FMSTR_U8* pTxChar)
   #else
     /* start listening immediately */
     FMSTR_Listen();
-  #endif
+  #endif  
 #else
     /* start listening immediately */
     FMSTR_Listen();
@@ -1343,12 +1343,12 @@ FMSTR_BOOL FMSTR_Tx(FMSTR_U8* pTxChar)
 
 /**************************************************************************//*!
 *
-* @brief  Handle received character
+* @brief  Handle received character 
 *
-* @param  nRxChar  The character to be processed
-*
-* Handle the character received and -if the message is complete- call the
-* protocol decode routine.
+* @param  nRxChar  The character to be processed 
+* 
+* Handle the character received and -if the message is complete- call the 
+* protocol decode routine. 
 *
 ******************************************************************************/
 
@@ -1366,7 +1366,7 @@ FMSTR_BOOL FMSTR_Rx(FMSTR_BCHR nRxChar)
             return FMSTR_FALSE;
         }
     }
-
+    
     /* we have got a common character preceded by the SOB -  */
     /* this is the command code! */
     if(pflg->flg.bRxLastCharSOB)
@@ -1378,7 +1378,7 @@ FMSTR_BOOL FMSTR_Rx(FMSTR_BCHR nRxChar)
         /* start computing the checksum */
         pcm_nRxCheckSum = nRxChar;
         pcm_nRxTodo = 0U;
-
+    
         /* if the standard command was received, the message length will come in next byte */
         pflg->flg.bRxMsgLengthNext = 1U;
 
@@ -1388,7 +1388,7 @@ FMSTR_BOOL FMSTR_Rx(FMSTR_BCHR nRxChar)
             /* fast command received, there will be no length information */
             pflg->flg.bRxMsgLengthNext = 0U;
             /* as it is encoded in the command byte directly */
-            pcm_nRxTodo = (FMSTR_SIZE8)
+            pcm_nRxTodo = (FMSTR_SIZE8) 
                 (((((FMSTR_SIZE8)nRxChar) & FMSTR_FASTCMD_DATALEN_MASK) >> FMSTR_FASTCMD_DATALEN_SHIFT) + 1U);
         }
 
@@ -1429,7 +1429,7 @@ FMSTR_BOOL FMSTR_Rx(FMSTR_BCHR nRxChar)
                 FMSTR_SendError(FMSTR_STC_CMDCSERR);
             }
             /* message is okay */
-            else
+            else 
             {
 #if (FMSTR_USE_USB_CDC) && (FMSTR_SHORT_INTR)
                 /* Decode protocol and send response in Poll function */
@@ -1443,8 +1443,8 @@ FMSTR_BOOL FMSTR_Rx(FMSTR_BCHR nRxChar)
             return FMSTR_TRUE;
         }
         /* not the last character yet */
-        else
-        {
+        else 
+        {   
             /* is there still a space in the buffer? */
             if(pcm_pRxBuff)
             {
@@ -1475,7 +1475,7 @@ FMSTR_BOOL FMSTR_Rx(FMSTR_BCHR nRxChar)
 ******************************************************************************/
 
 FMSTR_BOOL FMSTR_InitSerial(void)
-{
+{   
     /* initialize all state variables */
     pcm_wFlags.all = 0U;
     pcm_nTxTodo = 0U;
@@ -1485,24 +1485,24 @@ FMSTR_BOOL FMSTR_InitSerial(void)
     if(!pcm_pSciBaseAddr)
         return FMSTR_FALSE;
 #endif
-
+    
 #if FMSTR_USE_MBED
     /* valid runtime serial object must be assigned */
     if (!pSerialObj)
         return FMSTR_FALSE;
 #endif
-
+    
     /* low-level-specific init */
 #ifdef FMSTR_SCI_INIT
     FMSTR_SCI_INIT()
 #endif
-
+            
     /* Initialize SCI and JTAG interface */
 #if (FMSTR_USE_SCI) || (FMSTR_USE_ESCI) || (FMSTR_USE_LPUART) && (FMSTR_SCI_TWOWIRE_ONLY)
     /* to enable TX and RX together in FreeMASTER initialization */
     FMSTR_SCI_TE_RE();
 #endif
-
+    
 #if (FMSTR_SHORT_INTR) & ((FMSTR_USE_SCI) || (FMSTR_USE_ESCI) || (FMSTR_USE_LPUART) || (FMSTR_USE_JTAG))
     pcm_pRQueueRP = pcm_pRQueueBuffer;
     pcm_pRQueueWP = pcm_pRQueueBuffer;
@@ -1519,7 +1519,7 @@ FMSTR_BOOL FMSTR_InitSerial(void)
 #endif
 
 #if FMSTR_DEBUG_TX
-    /* this zero will initiate the test frame transmission
+    /* this zero will initiate the test frame transmission 
      * as soon as possible during Listen */
     pcm_nDebugTxPollCount = 0;
 #endif
@@ -1558,14 +1558,14 @@ void FMSTR_SetSciMbedObject(FMSTR_ADDR pSerObj)
 *
 * @brief    API: Main "Polling" call from the application main loop
 *
-* This function either handles all the SCI communication (polling-only mode =
+* This function either handles all the SCI communication (polling-only mode = 
 * FMSTR_POLL_DRIVEN) or decodes messages received on the background by SCI interrupt
-* (short-interrupt mode = FMSTR_SHORT_INTR).
+* (short-interrupt mode = FMSTR_SHORT_INTR). 
 *
 * In the JTAG interrupt-driven mode (both short and long), this function also checks
-* if setting the JTAG RIE bit failed recently. This may happen because of the
+* if setting the JTAG RIE bit failed recently. This may happen because of the 
 * RIE is held low by the EONCE hardware until the EONCE is first accessed from host.
-* FMSTR_Init (->FMSTR_Listen) is often called while the PC-side FreeMASTER is still
+* FMSTR_Init (->FMSTR_Listen) is often called while the PC-side FreeMASTER is still 
 * turned off. So really, the JTAG is not enabled by this time and RIE bit is not set.
 * This problem is detected (see how bJtagRIEPending is set above in FSMTR_Listen)
 * and it is tried to be fixed periodically here in FMSTR_Poll.
@@ -1573,7 +1573,7 @@ void FMSTR_SetSciMbedObject(FMSTR_ADDR pSerObj)
 *******************************************************************************/
 
 void FMSTR_Poll(void)
-{
+{ 
 #if !FMSTR_POLL_DRIVEN && FMSTR_USE_JTAG
     /* in the interrupt-driven JTAG mode, the JTAG RIE may have failed to be set recently */
     if(pcm_wFlags.flg.bJtagRIEPending)
@@ -1584,28 +1584,28 @@ void FMSTR_Poll(void)
         if(FMSTR_JTAG_ERXI_CHECK())
             pcm_wFlags.flg.bJtagRIEPending = 0; /* yes!, enough until it fails again (never?) */
     }
-#endif
+#endif    
 
 #if FMSTR_USE_MQX_IO
     /* polled MQX IO mode */
-    FMSTR_ProcessMQXIO();
+    FMSTR_ProcessMQXIO(); 
 #endif
 
 #if FMSTR_POLL_DRIVEN
 
 #if (FMSTR_USE_SCI) || (FMSTR_USE_ESCI) || (FMSTR_USE_LPUART)
     /* polled SCI mode */
-    FMSTR_ProcessSCI();
-
+    FMSTR_ProcessSCI(); 
+    
 #elif FMSTR_USE_JTAG
     /* polled JTAG mode */
-    FMSTR_ProcessJTAG();
+    FMSTR_ProcessJTAG(); 
 #elif FMSTR_USE_CHIBIOS
     /* poll the serial driver */
     FMSTR_ProcessChibiOS();
 #endif
-
-#elif FMSTR_SHORT_INTR
+    
+#elif FMSTR_SHORT_INTR 
 
 #if FMSTR_USE_USB_CDC
     /*  */
@@ -1613,7 +1613,7 @@ void FMSTR_Poll(void)
 #elif ((FMSTR_USE_SCI) || (FMSTR_USE_ESCI) || (FMSTR_USE_LPUART) || FMSTR_USE_JTAG)
 
     /* process queued SCI characters */
-    FMSTR_RxDequeue();
+    FMSTR_RxDequeue(); 
 #endif
 
 #endif

@@ -21,7 +21,7 @@
 #define __FREEMASTER_H
 
 /* identify our current platform */
-#define FMSTR_PLATFORM_KXX 1
+#define FMSTR_PLATFORM_CHIBIOS 1
 
 /* FreeMASTER configuration */
 #include "freemaster_defcfg.h"

@@ -1,9 +1,9 @@
 /*******************************************************************************
 *
-* Copyright 2004-2013 Freescale Semiconductor, Inc.
+* Copyright 2004-2016 NXP Semiconductor, Inc.
 *
-* This software is owned or controlled by Freescale Semiconductor.
-* Use of this software is governed by the Freescale FreeMASTER License
+* This software is owned or controlled by NXP Semiconductor.
+* Use of this software is governed by the NXP FreeMASTER License
 * distributed with this Material.
 * See the LICENSE file distributed for more details.
 * 
@@ -87,7 +87,39 @@
     #define FMSTR_CAN_TEST_RIDR(pctx, idr0, idr1, idr2, idr3) FMSTR_FCAN_TEST_RIDR(pctx, idr0, idr1, idr2, idr3) 
     #define FMSTR_CAN_RLEN(pctx) FMSTR_FCAN_RLEN(pctx) 
     #define FMSTR_CAN_GETBYTE(pctx) FMSTR_FCAN_GETBYTE(pctx) 
-    #define FMSTR_CAN_RFINISH(pctx) FMSTR_FCAN_RFINISH(pctx) 
+    #define FMSTR_CAN_RFINISH(pctx) FMSTR_FCAN_RFINISH(pctx)
+
+#elif FMSTR_USE_MCAN
+
+    #define FMSTR_CAN_ETXI() FMSTR_MCAN_ETXI()
+    #define FMSTR_CAN_DTXI() FMSTR_MCAN_DTXI()
+    #define FMSTR_CAN_ERXI() FMSTR_MCAN_ERXI()
+    #define FMSTR_CAN_DRXI() FMSTR_MCAN_DRXI()
+    #define FMSTR_CAN_TEST_RXFLG() FMSTR_MCAN_TEST_RXFLG()
+    #define FMSTR_CAN_CLEAR_RXFLG() FMSTR_MCAN_CLEAR_RXFLG()
+    #define FMSTR_CAN_TEST_TXFLG() FMSTR_MCAN_TEST_TXFLG()
+    #define FMSTR_CAN_MAKEIDR0(id) FMSTR_MCAN_MAKEIDR0(id)
+    #define FMSTR_CAN_MAKEIDR1(id) FMSTR_MCAN_MAKEIDR1(id)
+    #define FMSTR_CAN_MAKEIDR2(id) FMSTR_MCAN_MAKEIDR2(id)
+    #define FMSTR_CAN_MAKEIDR3(id) FMSTR_MCAN_MAKEIDR3(id)
+
+    #define FMSTR_CAN_TCTX FMSTR_MCAN_TCTX
+    #define FMSTR_CAN_TCFG(pctx) FMSTR_MCAN_TCFG(pctx)
+    #define FMSTR_CAN_TID(pctx, idr0, idr1, idr2, idr3) FMSTR_MCAN_TID(pctx, idr0, idr1, idr2, idr3)
+    #define FMSTR_CAN_TLEN(pctx, len) FMSTR_MCAN_TLEN(pctx, len)
+    #define FMSTR_CAN_TPRI(pctx, txPri) FMSTR_MCAN_TPRI(pctx, txPri)
+    #define FMSTR_CAN_PUTBYTE(pctx, dataByte) FMSTR_MCAN_PUTBYTE(pctx, dataByte)
+    #define FMSTR_CAN_TX(pctx) FMSTR_MCAN_TX(pctx)
+
+    #define FMSTR_CAN_RCTX FMSTR_MCAN_RCTX
+    #define FMSTR_CAN_RINIT(idr0, idr1, idr2, idr3) FMSTR_MCAN_RINIT(idr0, idr1, idr2, idr3)
+    #define FMSTR_CAN_TINIT(idr0, idr1, idr2, idr3) FMSTR_MCAN_TINIT(idr0, idr1, idr2, idr3)
+    #define FMSTR_CAN_RCFG() FMSTR_MCAN_RCFG()
+    #define FMSTR_CAN_RX(pctx) FMSTR_MCAN_RX(pctx)
+    #define FMSTR_CAN_TEST_RIDR(pctx, idr0, idr1, idr2, idr3) FMSTR_MCAN_TEST_RIDR(pctx, idr0, idr1, idr2, idr3)
+    #define FMSTR_CAN_RLEN(pctx) FMSTR_MCAN_RLEN(pctx)
+    #define FMSTR_CAN_GETBYTE(pctx) FMSTR_MCAN_GETBYTE(pctx)
+    #define FMSTR_CAN_RFINISH(pctx) FMSTR_MCAN_RFINISH(pctx)
 
 #else
 #error CAN interface undefined
@@ -371,7 +403,7 @@ void FMSTR_SendResponse(FMSTR_BPTR pResponse, FMSTR_SIZE8 nLength)
 #if FMSTR_LONG_INTR || FMSTR_SHORT_INTR
     FMSTR_CAN_ETXI();
 #endif
-#if (FMSTR_SHORT_INTR) && ((FMSTR_USE_FLEXCAN) || (FMSTR_USE_FLEXCAN32))
+#if (FMSTR_SHORT_INTR) && ((FMSTR_USE_FLEXCAN) || (FMSTR_USE_FLEXCAN32) || (FMSTR_USE_MCAN))
     FMSTR_ProcessCanTx();
 #endif
 }
@@ -712,16 +744,16 @@ void FMSTR_ProcessCanRx(void)
 #endif
     }
 #if FMSTR_DEBUG_TX
-	/* time to send another test frame? */
-	else if(pcm_bDebugTx && pcm_nDebugTxPollCount == 0)
-	{
-		/* yes, start sending it now */
-		if(FMSTR_SendTestFrame(pcm_pCommBuffer))
-		{
-			/* measure how long it takes to transmit it */
-			pcm_nDebugTxPollCount = -1;
-		}
-	}
+    /* time to send another test frame? */
+    else if(pcm_bDebugTx && pcm_nDebugTxPollCount == 0)
+    {
+        /* yes, start sending it now */
+        if(FMSTR_SendTestFrame(pcm_pCommBuffer))
+        {
+            /* measure how long it takes to transmit it */
+            pcm_nDebugTxPollCount = -1;
+        }
+    }
 #endif
 }
 
@@ -735,7 +767,7 @@ void FMSTR_ProcessCanRx(void)
 
 void FMSTR_ProcessCanTx(void)
 {
-#if FMSTR_USE_MSCAN
+#if (FMSTR_USE_MSCAN || FMSTR_USE_MCAN)
     /* any TX buffer available? */
     if(FMSTR_CAN_TEST_TXFLG())
     {

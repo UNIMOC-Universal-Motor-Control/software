@@ -1,9 +1,9 @@
 /*******************************************************************************
 *
-* Copyright 2004-2014 Freescale Semiconductor, Inc.
+* Copyright 2004-2016 NXP Semiconductor, Inc.
 *
-* This software is owned or controlled by Freescale Semiconductor.
-* Use of this software is governed by the Freescale FreeMASTER License
+* This software is owned or controlled by NXP Semiconductor.
+* Use of this software is governed by the NXP FreeMASTER License
 * distributed with this Material.
 * See the LICENSE file distributed for more details.
 * 

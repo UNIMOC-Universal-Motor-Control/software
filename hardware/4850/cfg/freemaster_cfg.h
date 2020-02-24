@@ -74,7 +74,6 @@
 
 #define FMSTR_USE_RECORDER     1    /* enable/disable recorder support */
 #define FMSTR_MAX_REC_VARS     8    /* max. number of recorder variables (2..8) */
-#define FMSTR_USE_FASTREC      0    /* enable fast recorder */
 #define FMSTR_REC_OWNBUFF      0    /* use user-allocated rec. buffer (1=yes) */
 
 /* built-in recorder buffer (use when FMSTR_REC_OWNBUFF is 0) */
@@ -92,7 +91,6 @@
 #define FMSTR_USE_TSA          0    /* enable TSA functionality */
 #define FMSTR_USE_TSA_SAFETY   1    /* enable access to TSA variables only */
 #define FMSTR_USE_TSA_INROM    1    /* TSA tables declared as const (put to ROM) */
-#define FMSTR_USE_TSA_DYNAMIC  1    /* enable dynamic TSA table */
 
 /*****************************************************************************
 * Enable/Disable read/write memory commands
@@ -106,9 +104,9 @@
 * Enable/Disable read/write variable commands (a bit faster than Read Mem)
 ******************************************************************************/
 
-#define FMSTR_USE_READVAR      1    /* enable read variable fast commands */
-#define FMSTR_USE_WRITEVAR     1    /* enable write variable fast commands */
-#define FMSTR_USE_WRITEVARMASK 1    /* enable write variable bits fast commands */
+#define FMSTR_USE_READVAR      0    /* enable read variable fast commands */
+#define FMSTR_USE_WRITEVAR     0    /* enable write variable fast commands */
+#define FMSTR_USE_WRITEVARMASK 0    /* enable write variable bits fast commands */
 
 
 #endif /* __FREEMASTER_CFG_H */

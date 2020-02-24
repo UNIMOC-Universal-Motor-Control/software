@@ -1,9 +1,9 @@
 /*******************************************************************************
 *
-* Copyright 2004-2013 Freescale Semiconductor, Inc.
+* Copyright 2004-2013 NXP Semiconductor, Inc.
 *
-* This software is owned or controlled by Freescale Semiconductor.
-* Use of this software is governed by the Freescale FreeMASTER License
+* This software is owned or controlled by NXP Semiconductor.
+* Use of this software is governed by the NXP FreeMASTER License
 * distributed with this Material.
 * See the LICENSE file distributed for more details.
 * 
@@ -12,7 +12,7 @@
 * @brief  FreeMASTER SFIO (Matlab/Simulink interface) encapsulation handler
 *
 * This file contains the SFIO communication handler and enables the SFIO tool
-* to run over FreeMASTER. For more information, see Freescale SFIO documentation.
+* to run over FreeMASTER. For more information, see NXP SFIO documentation.
 * 
 *******************************************************************************/
 

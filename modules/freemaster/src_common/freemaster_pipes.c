@@ -1,9 +1,9 @@
 /*******************************************************************************
 *
-* Copyright 2014-2015 Freescale Semiconductor, Inc.
+* Copyright 2014-2015 NXP Semiconductor, Inc.
 *
-* This software is owned or controlled by Freescale Semiconductor.
-* Use of this software is governed by the Freescale FreeMASTER License
+* This software is owned or controlled by NXP Semiconductor.
+* Use of this software is governed by the NXP FreeMASTER License
 * distributed with this Material.
 * See the LICENSE file distributed for more details.
 * 
@@ -1453,7 +1453,7 @@ FMSTR_BPTR FMSTR_PipeFrame(FMSTR_BPTR pMessageIO)
         else
             pp->flags.flg.bExpectOdd = !pp->flags.flg.bExpectOdd;
     }    
-
+    
     /* process received data */
     if(nFrameLen > 0)
     {
@@ -1461,7 +1461,7 @@ FMSTR_BPTR FMSTR_PipeFrame(FMSTR_BPTR pMessageIO)
            pipe-transmit buffer (this is how PC acknowledges how many bytes it 
            received and saved from the last response) */
         pMessageIO = FMSTR_ValueFromBuffer8(&nByte, pMessageIO);
-           
+    
         /* discard bytes from pipe's transmit buffer */
         if(nByte)
             FMSTR_PipeDiscardBytes(&pp->tx, nByte);

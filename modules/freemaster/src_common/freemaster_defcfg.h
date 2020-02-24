@@ -1,9 +1,9 @@
 /*******************************************************************************
 *
-* Copyright 2004-2015 Freescale Semiconductor, Inc.
+* Copyright 2004-2016 NXP Semiconductor, Inc.
 *
-* This software is owned or controlled by Freescale Semiconductor.
-* Use of this software is governed by the Freescale FreeMASTER License
+* This software is owned or controlled by NXP Semiconductor.
+* Use of this software is governed by the NXP FreeMASTER License
 * distributed with this Material.
 * See the LICENSE file distributed for more details.
 * 
@@ -20,7 +20,7 @@
 #include "freemaster_cfg.h"
 
 /* Define global version macro */
-#define FMSTR_VERSION 0x00010900 /* 1.9.0 */
+#define FMSTR_VERSION 0x00020000 /* 2.0.0 */
 
 /******************************************************************************
 * Configuration check 
@@ -74,11 +74,14 @@
 #ifndef FMSTR_USE_FLEXCAN
 #define FMSTR_USE_FLEXCAN 0  /* CAN communication (FlexCAN) */
 #endif
+#ifndef FMSTR_USE_MCAN
+#define FMSTR_USE_MCAN 0 /* CAN communication (mCAN)*/
+#endif
 #ifndef FMSTR_USE_FLEXCAN32
 #define FMSTR_USE_FLEXCAN32 0  /* CAN communication (FlexCAN 32bit) */
 #endif
 #ifndef FMSTR_USE_CAN
-    #if ((FMSTR_USE_MSCAN) || (FMSTR_USE_FLEXCAN)  || (FMSTR_USE_FLEXCAN32))
+    #if ((FMSTR_USE_MSCAN) || (FMSTR_USE_FLEXCAN)  || (FMSTR_USE_FLEXCAN32) || (FMSTR_USE_MCAN))
     #define FMSTR_USE_CAN 1
     #else
     #define FMSTR_USE_CAN 0
@@ -91,7 +94,7 @@
 #define FMSTR_USE_MQX_IO 0  /* communication over MQX serial driver */
 #endif
 #ifndef FMSTR_USE_USB_CDC
-#define FMSTR_USE_USB_CDC 0 /* communication over Freescale USB CDC class driver */
+#define FMSTR_USE_USB_CDC 0 /* communication over NXP USB CDC class driver */
 #endif
 #ifndef FMSTR_USE_PDBDM
 #define FMSTR_USE_PDBDM 0  /* communication over Packet-Driven BDM protocol */ 
@@ -155,18 +158,38 @@
     #if ((FMSTR_USE_FLEXCAN) || (FMSTR_USE_FLEXCAN32))
         /* Flexcan TX message buffer must be defined */
         #ifndef FMSTR_FLEXCAN_TXMB
-        //#error FlexCAN transmit buffer needs to be specified (use FMSTR_FLEXCAN_TXMB)
+        /* #error FlexCAN transmit buffer needs to be specified (use FMSTR_FLEXCAN_TXMB) */
         #warning "FlexCAN Message Buffer 0 is used for transmitting messages"
         #define FMSTR_FLEXCAN_TXMB 0
         #endif
         /* Flexcan RX message buffer must be defined */
         #ifndef FMSTR_FLEXCAN_RXMB
-        //#error FlexCAN receive buffer needs to be specified (use FMSTR_FLEXCAN_RXMB)
+        /* #error FlexCAN receive buffer needs to be specified (use FMSTR_FLEXCAN_RXMB) */
         #warning "FlexCAN Message Buffer 1 is used for receiving messages"
         #define FMSTR_FLEXCAN_RXMB 1
         #endif
     #endif
   
+   /* MCAN  needs to know offset of the mcan shared memory, offsets of the buffers into shared memory,
+    * transmit/receive MB numbers */
+    #if FMSTR_USE_MCAN
+        #ifndef FMSTR_MCAN_TXMB
+        #error "MCAN transmit buffer number must be defined"
+        #endif
+        #ifndef FMSTR_MCAN_RXMB
+        #error "MCAN receive buffer number must be defined"
+        #endif
+        #ifndef FMSTR_MCAN_TXMB_OFFSET
+        #error "MCAN transmit buffers offset into shared memory must be defined"
+        #endif
+        #ifndef FMSTR_MCAN_RXMB_OFFSET
+        #error "MCAN receive buffers offset into shared memory must be defined"
+        #endif
+        #ifndef FMSTR_MCAN_SHAREDMEMORY_OFFSET
+        #error "MCAN shared memory address must be defined"
+        #endif
+    #endif
+
     /* incoming (command) CAN message ID */
     #ifndef FMSTR_CAN_CMDID
     #define FMSTR_CAN_CMDID 0x7aa

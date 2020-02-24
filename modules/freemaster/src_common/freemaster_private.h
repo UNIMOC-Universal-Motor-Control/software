@@ -1,9 +1,9 @@
 /*******************************************************************************
 *
-* Copyright 2004-2014 Freescale Semiconductor, Inc.
+* Copyright 2004-2016 NXP Semiconductor, Inc.
 *
-* This software is owned or controlled by Freescale Semiconductor.
-* Use of this software is governed by the Freescale FreeMASTER License
+* This software is owned or controlled by NXP Semiconductor.
+* Use of this software is governed by the NXP FreeMASTER License
 * distributed with this Material.
 * See the LICENSE file distributed for more details.
 * 
@@ -129,11 +129,43 @@
 
 #if defined(FMSTR_PLATFORM_KXX)
     #if FMSTR_PLATFORM_KXX
-    #include "../src_platforms/CortexM/freemaster_cortexm.h"
+    #include "freemaster_Kxx.h"
     #define FMSTR_PLATFORM KXX
     #else
     #undef FMSTR_PLATFORM_KXX
     #endif
+#endif
+
+#if defined(FMSTR_PLATFORM_S32xx)
+    #if FMSTR_PLATFORM_S32xx
+    #include "freemaster_S32xx.h"
+    #define FMSTR_PLATFORM S32xx
+    #else
+    #undef FMSTR_PLATFORM_S32xx
+    #endif
+#endif
+
+#if defined(FMSTR_PLATFORM_KEAxx)
+    #if FMSTR_PLATFORM_KEAxx
+    #include "freemaster_KEAxx.h"
+    #define FMSTR_PLATFORM KEAxx
+    #else
+    #undef FMSTR_PLATFORM_KEAxx
+    #endif
+#endif
+
+#if defined(FMSTR_PLATFORM_MPC57xx)
+    #if FMSTR_PLATFORM_MPC57xx
+    #include "freemaster_MPC57xx.h"
+    #define FMSTR_PLATFORM MPC57xx
+    #else
+    #undef FMSTR_PLATFORM_MPC57xx
+    #endif
+#endif
+
+#if defined(FMSTR_PLATFORM_CHIBIOS)
+	#include "freemaster_cortexm.h"
+	#define FMSTR_PLATFORM KXX
 #endif
 
 #ifndef FMSTR_PLATFORM
@@ -279,29 +311,14 @@ FMSTR_BOOL FMSTR_InitLinTL(void);
 /* CAN is MSCAN or FLEXCAN */
 #if FMSTR_USE_CAN
 
-    /* if CANHW is not specified in freemaster.h, the platform is not yet tested with CAN */
-    #if (!defined(FMSTR_CANHW_MSCAN)) && (FMSTR_USE_MSCAN)
-    #warning MSCAN support not yet fully tested on this platform
+    /* can't be a few */
+    #if ((((FMSTR_USE_MSCAN)?1:0) + ((FMSTR_USE_FLEXCAN)?1:0) + ((FMSTR_USE_FLEXCAN32)?1:0) + ((FMSTR_USE_MCAN)?1:0)) > 1)
+    #error Can not configure FreeMASTER to use MSCAN, FlexCAN, MCAN together
     #endif
 
-    /* if CANHW is not specified in freemaster.h, the platform is not yet tested with CAN */
-    #if (!defined(FMSTR_CANHW_FLEXCAN)) && (FMSTR_USE_FLEXCAN)
-    #warning FlexCAN support not yet fully tested on this platform
-    #endif
-
-    /* if CANHW is not specified in freemaster.h, the platform is not yet tested with CAN */
-    #if (!defined(FMSTR_CANHW_FLEXCAN32)) && (FMSTR_USE_FLEXCAN32)
-    #warning FlexCAN32 support not yet fully tested on this platform
-    #endif
-
-    /* can't be both*/
-    #if ((((FMSTR_USE_MSCAN)?1:0) + ((FMSTR_USE_FLEXCAN)?1:0) + ((FMSTR_USE_FLEXCAN32)?1:0)) > 1)
-    #error Can not configure FreeMASTER to use both MSCAN and FlexCAN
-    #endif
-    
     /* should be at least one */
-    #if !(FMSTR_USE_MSCAN) && !(FMSTR_USE_FLEXCAN)  && !(FMSTR_USE_FLEXCAN32)
-    #error Please select if MSCAN or FlexCAN will be used
+    #if !(FMSTR_USE_MSCAN) && !(FMSTR_USE_FLEXCAN)  && !(FMSTR_USE_FLEXCAN32) && !(FMSTR_USE_MCAN)
+    #error Please select if MSCAN, MCAN or FlexCAN will be used
     #endif
 
     /* flexcan needs to know the transmit and receive MB number */
@@ -313,8 +330,8 @@ FMSTR_BOOL FMSTR_InitLinTL(void);
 
 #else
 
-    /* Cannot define define FMSTR_USE_CAN by user */
-    #if (FMSTR_USE_FLEXCAN) || (FMSTR_USE_MSCAN) || (FMSTR_USE_FLEXCAN32)
+    /* Cannot define FMSTR_USE_CAN by user */
+    #if (FMSTR_USE_FLEXCAN) || (FMSTR_USE_MSCAN) || (FMSTR_USE_FLEXCAN32) || (FMSTR_USE_MCAN)
     #error Please enable FMSTR_USE_CAN option when configuring FlexCan or msCan interface
     #endif
 
@@ -389,7 +406,7 @@ FMSTR_BOOL FMSTR_InitLinTL(void);
 #endif
 
 #if FMSTR_USE_USB_CDC
-    /* by default, the new USB stack from Kinetis SDK is used, set to 1 for to use legacy Freescale 'Medical USB' stack */
+    /* by default, the new USB stack from Kinetis SDK is used, set to 1 for to use legacy NXP 'Medical USB' stack */
     #ifndef FMSTR_USB_LEGACY_STACK
         #define FMSTR_USB_LEGACY_STACK 0
     #endif
