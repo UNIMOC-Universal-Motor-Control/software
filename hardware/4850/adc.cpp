@@ -340,8 +340,9 @@ void hardware::adc::GetCurrentsInjection(std::array<systems::abc, pwm::INJECTION
  */
 float hardware::adc::GetDCBusVoltage(void)
 {
-	constexpr float ADC_2_VDC = (20e3f+1e3f)/1e3f * 3.3f/(4096.0f * 2.0f * ADC_SEQ_BUFFERED);
-	uint32_t sum = 0;
+	constexpr float divisor = 4096.0f * 2.0f * ADC_SEQ_BUFFERED;
+	constexpr float ADC_2_VDC = (20e3f+1e3f)/1e3f * 3.3f/divisor;
+	uint32_t sum = divisor;
 	float vdc;
 
 
@@ -350,10 +351,11 @@ float hardware::adc::GetDCBusVoltage(void)
 		/*
 		 * VDC is sampled by ADC1 2 times as a non current sample
 		 */
-		sum += samples[0][i][1];
-		sum += samples[0][i][2];
+		sum -= samples[0][i][1];
+		sum -= samples[0][i][2];
 	}
 
+	// Filter inverts the values
 	vdc = (float)sum * ADC_2_VDC;
 
 	return vdc;
@@ -365,16 +367,17 @@ float hardware::adc::GetDCBusVoltage(void)
  */
 float hardware::adc::GetBridgeTemp(void)
 {
-	uint32_t sum = 0;
+	uint32_t sum = 4096 * ADC_SEQ_BUFFERED;
 
 	for(uint32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
 	{
 		/*
 		 * Bridge temperature is sampled by ADC2 first non current sample
 		 */
-		sum += samples[1][i][1];
+		sum -= samples[1][i][1];
 	}
 
+	// Filter inverts the values
 	return adc2ntc_temperature(sum/ADC_SEQ_BUFFERED);
 }
 
@@ -384,16 +387,17 @@ float hardware::adc::GetBridgeTemp(void)
  */
 float hardware::adc::GetMotorTemp(void)
 {
-	uint32_t sum = 0;
+	uint32_t sum = 4096 * ADC_SEQ_BUFFERED;
 
 	for(uint32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
 	{
 		/*
 		 * Motor temperature is sampled by ADC2 second non current sample
 		 */
-		sum += samples[1][i][2];
+		sum -= samples[1][i][2];
 	}
 
+	// Filter inverts the values
 	return adc2ntc_temperature(sum/ADC_SEQ_BUFFERED);
 }
 
