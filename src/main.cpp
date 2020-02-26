@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <cstring>
+#include <stdint.h>
 #include "ch.hpp"
 #include "hal.h"
 #include "usbcfg.h"
@@ -102,6 +103,13 @@ int main(void)
 	 */
 	while (true)
 	{
+		values.converter.temp = hardware::adc::GetBridgeTemp();
+		values.motor.temp = hardware::adc::GetMotorTemp();
+
+
+		if(save) settings.Save();
+				save = false;
+
 		if(hardware::pwm::OutputActive())
 		{
 			palSetLine(LINE_LED_PWM);
@@ -110,10 +118,7 @@ int main(void)
 		{
 			palClearLine(LINE_LED_PWM);
 		}
-		BaseThread::sleep(TIME_MS2I(500));
-
-		if(save) settings.Save();
-		save = false;
+		BaseThread::sleep(TIME_MS2I(10));
 	}
 }
 
