@@ -116,13 +116,15 @@ namespace control
 		systems::dq		kp;
 		///< integral action time  (compensated time constant)
 		float			ki;			// integral gain
+		///< rotor flux constant for feed forward
+		float 			psi;
 	public:
 		///< output limit
 		float			limit;
 
 
 		/**
-		 * @brief Pi controller constructor with all essential parameters.
+		 * @brief complex current controller constructor with all essential parameters.
 		 *
 		 * The motor in rotor frame is G_m = 1/(L_s (s + j w) + R_s)
 		 * The controller in rotor frame is G_c = (K_p (s + j w) + K_i)/s
@@ -132,9 +134,10 @@ namespace control
 		 * @param new_ts                set sample time.
 		 * @param rs	                series resistance of the winding
 		 * @param l                		series inductance of the winding
+		 * @param psi                	rotor flux constant
 		 * @param new_limit   			output limit.
 		 */
-		complex_current(const float new_ts, const float rs, const systems::dq l, const float new_limit);
+		complex_current(const float new_ts, const float rs, const systems::dq l, const float new_psi, const float new_limit);
 
 		/**
 		 * @brief calculate regulator equation with feed forward and anti windup.
@@ -155,64 +158,112 @@ namespace control
 		 *
 		 * @param rs	                series resistance of the winding
 		 * @param l                		series inductance of the winding
+		 * @param psi                	rotor flux constant
 		 */
-		constexpr inline void SetParameters(const float rs, const systems::dq l) { kp.d = l.d; kp.q = l.q; ki = rs; };
+		constexpr inline void SetParameters(const float rs, const systems::dq l, const float new_psi) { kp.d = l.d; kp.q = l.q; ki = rs; psi = new_psi;};
 
 		///< @brief Reset controller and integral part to 0
 		constexpr inline void Reset(void) {error_sum = {0.0f, 0.0f};  output_unlimited = {0.0f, 0.0f}; output = {0.0f, 0.0f};};
 	};
 
-//	/**
-//	 * smith predictor with pi controller and anti windup
-//	 */
-//	class smith_predictor_pi
-//	{
-//	private:
-//		///< sample time (call timing of controller )
-//		const float 	ts;
-//
-//		///< pi-controller
-//		pi ctrl;
-//
-//
-//		filter::biquad fw;
-//	public:
-//		///< positive output limit (not necessarily positive)
-//		float			positive_limit;
-//		///< negative output limit (not necessarily negative)
-//		float			negative_limit;
-//
-//		/**
-//		 * @brief Pi controller constructor with all essential parameters.
-//		 *
-//		 * @param new_ts                set sample time.
-//		 * @param new_kp                proportional gain.
-//		 * @param new_tn                integral action time.
-//		 * @param new_positive_limit    positive output limit.
-//		 * @param new_negative_limit    negative output limit.
-//		 */
-//		pi(const float ts, const float kp, const float tn,
-//				const float positive_limit, const float negative_limit);
-//		/**
-//		 * @brief calculate regulator equation with feed forward and anti windup.
-//		 *
-//		 * @param error         control loop error.
-//		 * @param feed_forward  feed forward control input.
-//		 * @retval controller output
-//		 */
-//		float Calculate(float  error, float feedforward);
-//
-//		/**
-//		 * @brief set controller dynamic parameters.
-//		 *
-//		 * @param new_kp				proportional gain.
-//		 * @param new_tn				integral action time.
-//		 */
-//		inline void SetParameters(const float new_kp, const float new_tn) { kp = new_kp; ki = SetKi(kp, ts, new_tn); };
-//
-//		///< @brief Reset controller and integral part to 0
-//		inline void Reset(void) {error_sum = 0.0f;  output_unlimited = 0.0f; output = 0.0f;};
-//	};
+	/**
+	 * smith predictor with pi controller and anti windup
+	 */
+	class smith_predictor_current
+	{
+	private:
+		///< sample time (call timing of controller )
+		const float ts;
+
+		///< quality factor of the hardware filter model
+		const float hwQ;
+
+		///< corner frequency of the hardware filter model
+		const float hwFc;
+
+		///< quality factor of the software filter and its model
+		const float fQ;
+
+		///< corner frequency of the software filter and its model
+		const float fFc;
+
+		///< current-controller
+		complex_current ctrl;
+
+		///< current filter d-axis
+		filter::biquad fd;
+
+		///< current filter q-axis
+		filter::biquad fq;
+
+		///< omega filter for feed forward
+		filter::biquad fomega;
+
+		///< hardware current filter d-axis
+		filter::biquad hwd;
+
+		///< hardware current filter q-axis
+		filter::biquad hwq;
+
+		///< smith predictor model of the current filter d-axis
+		filter::biquad sd;
+
+		///< smith predictor model of the current filter q-axis
+		filter::biquad sq;
+
+
+	public:
+
+		/**
+		 * @brief smith predictor with complex current controller
+		 * 		  constructor with all essential parameters.
+		 *
+		 * The motor in rotor frame is G_m = 1/(L_s (s + j w) + R_s)
+		 * The controller in rotor frame is G_c = (K_p (s + j w) + K_i)/s
+		 *
+		 * so to get G_o = 1/s for the open loop, K_p = L_s and K_i = R_s
+		 *
+		 * @param new_ts                set sample time.
+		 * @param rs	                series resistance of the winding
+		 * @param l                		series inductance of the winding
+		 * @param psi                	rotor flux constant
+		 * @param new_limit   			output limit.
+		 * @param new_hwQ				quality factor of the hardware filter model
+		 * @param new_hwFc				corner frequency of the hardware filter model
+		 * @param new_fQ				quality factor of the software filter and its model
+		 * @param new_fFc				corner frequency of the software filter and its model
+		 *
+		 */
+		smith_predictor_current(const float new_ts, const float rs, const systems::dq l, const float psi, const float new_limit,
+				const float new_hwQ, const float new_hwFc, const float new_fQ, const float new_fFc);
+
+		/**
+		 * @brief calculate regulator equation with feed forward and anti windup.
+		 * @param setpoint				setpoint vector
+		 * @param act					actual current vector
+		 * @param omega					angular velocity in rad/s of the motor
+		 * @return						controllers output voltage vector
+		 */
+		systems::dq Calculate(const systems::dq setpoint, const systems::dq act, const float omega);
+
+		/**
+		 * @brief set controller dynamic parameters.
+		 *
+		 * The motor in rotor frame is G_m = 1/(L_s (s + j w) + R_s)
+		 * The controller in rotor frame is G_c = (K_p (s + j w) + K_i)/s
+		 *
+		 * so to get G_o = 1/s for the open loop, K_p = L_s and K_i = R_s
+		 *
+		 * @param rs	                series resistance of the winding
+		 * @param l                		series inductance of the winding
+		 * @param psi                	rotor flux constant
+		 */
+		constexpr inline void SetParameters(const float rs, const systems::dq l, const float psi) { ctrl.SetParameters(rs, l, psi); };
+
+		///< @brief Reset controller and integral part to 0
+		constexpr inline void Reset(void) { ctrl.Reset(); };
+
+	};
 
 	/**
 	 * field orientated current controller

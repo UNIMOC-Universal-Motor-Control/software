@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <cstring>
 #include "controller.hpp"
+#include "filter.hpp"
 #include "values.hpp"
 #include "settings.hpp"
 #include "hardware_interface.hpp"
@@ -92,11 +93,12 @@ namespace control
 	 * @param new_ts                set sample time.
 	 * @param rs	                series resistance of the winding
 	 * @param l                		series inductance of the winding
+	 * @param psi                	rotor flux constant
 	 * @param new_limit   			output limit.
 	 */
-	complex_current::complex_current(const float new_ts, const float rs, const systems::dq l, const float new_limit):
+	complex_current::complex_current(const float new_ts, const float rs, const systems::dq l, const float new_psi, const float new_limit):
 						ts(new_ts), error_sum{0.0f, 0.0f}, output_unlimited{0.0f, 0.0f}, output{0.0f, 0.0f}, kp{l.d, l.q},
-						ki(rs), limit(new_limit)
+						ki(rs), psi(new_psi), limit(new_limit)
 	{}
 
 	/**
@@ -111,7 +113,7 @@ namespace control
 		systems::dq error = {setpoint.d - act.d, setpoint.q -act.q};
 
 		output_unlimited.d = error_sum.d + error.d * kp.d;  				// regulator equation
-		output_unlimited.q = error_sum.q + error.q * kp.q;
+		output_unlimited.q = error_sum.q + error.q * kp.q + omega * psi;	// with feed forward
 
 		float length = systems::Length(output_unlimited);
 
@@ -138,6 +140,47 @@ namespace control
 		}
 		return output;
 	}
+
+	/**
+	 * @brief smith predictor with complex current controller
+	 * 		  constructor with all essential parameters.
+	 *
+	 * The motor in rotor frame is G_m = 1/(L_s (s + j w) + R_s)
+	 * The controller in rotor frame is G_c = (K_p (s + j w) + K_i)/s
+	 *
+	 * so to get G_o = 1/s for the open loop, K_p = L_s and K_i = R_s
+	 *
+	 * @param new_ts                set sample time.
+	 * @param rs	                series resistance of the winding
+	 * @param l                		series inductance of the winding
+	 * @param psi                	rotor flux constant
+	 * @param new_limit   			output limit.
+	 */
+	smith_predictor_current::smith_predictor_current(const float new_ts, const float rs, const systems::dq l,
+			const float psi, const float new_limit, const float new_hwQ, const float new_hwFc,
+			const float new_fQ, const float new_fFc): ts(new_ts), hwQ(new_hwQ), hwFc(new_hwFc), fQ(new_fQ),
+			fFc(new_fFc), ctrl(new_ts, rs, l , psi, new_limit),
+			fd(filter::lowpass, fFc, fQ, 0.0f), fq(filter::lowpass, fFc, fQ, 0.0f),
+			fomega(filter::lowpass, fFc, fQ, 0.0f),
+			hwd(filter::lowpass, hwFc, hwQ, 0.0f), hwq(filter::lowpass, hwFc, hwQ, 0.0f),
+			sd(filter::lowpass, fFc, fQ, 0.0f), sq(filter::lowpass, fFc, fQ, 0.0f)
+	{}
+
+	/**
+	 * @brief calculate regulator equation with feed forward and anti windup.
+	 * @param setpoint				setpoint vector
+	 * @param act					actual current vector
+	 * @param omega					angular velocity in rad/s of the motor
+	 * @return						controllers output voltage vector
+	 */
+	systems::dq smith_predictor_current::Calculate(const systems::dq setpoint, const systems::dq act, const float omega)
+	{
+		systems::dq u;
+
+		return u;
+	}
+
+
 
 	/**
 	 * @brief FOC controller constructor with all essential parameters.

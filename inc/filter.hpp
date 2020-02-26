@@ -70,7 +70,7 @@ public:
  */
 
 ///< Filter types for the biquad class
-enum class biquad_type_ec
+enum biquad_type_ec
 {
     lowpass = 0,//!< lowpass
     highpass,   //!< highpass
@@ -92,7 +92,7 @@ public:
 	 * @param type	type of filter
 	 * @param Fc	corner frequency normed to 1/(sampling frequency)
 	 * @param Q		quality factor of the filter response
-	 * @param peak_gain gain of the filter.
+	 * @param peak_gain gain of the filter in dB
 	 */
     biquad(const biquad_type_ec type, const float Fc, const float Q, const float peak_gain);
 
