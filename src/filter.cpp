@@ -212,40 +212,40 @@ namespace filter
 			if (peak_gain >= 0)
 			{    // boost
 				norm = 1.0f / (1 + math::SQRT2 * K + K * K);
-				a0 = (1.0f + sqrt(2.0f*V) * K + V * K * K) * norm;
+				a0 = (1.0f + math::sqrt_fast(2.0f*V) * K + V * K * K) * norm;
 				a1 = 2.0f * (V * K * K - 1.0f) * norm;
-				a2 = (1.0f - sqrt(2.0f*V) * K + V * K * K) * norm;
+				a2 = (1.0f - math::sqrt_fast(2.0f*V) * K + V * K * K) * norm;
 				b1 = 2.0f * (K * K - 1.0f) * norm;
 				b2 = (1.0f - math::SQRT2 * K + K * K) * norm;
 			}
 			else
 			{    // cut
-				norm = 1.0f / (1.0f + sqrt(2.0f*V) * K + V * K * K);
+				norm = 1.0f / (1.0f + math::sqrt_fast(2.0f*V) * K + V * K * K);
 				a0 = (1.0f + math::SQRT2 * K + K * K) * norm;
 				a1 = 2.0f * (K * K - 1.0f) * norm;
 				a2 = (1.0f - math::SQRT2 * K + K * K) * norm;
 				b1 = 2.0f * (V * K * K - 1.0f) * norm;
-				b2 = (1.0f - sqrt(2.0f*V) * K + V * K * K) * norm;
+				b2 = (1.0f - math::sqrt_fast(2.0f*V) * K + V * K * K) * norm;
 			}
 			break;
 		case biquad_type_ec::highshelf:
 			if (peak_gain >= 0)
 			{    // boost
 				norm = 1.0f / (1.0f + math::SQRT2 * K + K * K);
-				a0 = (V + sqrt(2.0f*V) * K + K * K) * norm;
+				a0 = (V + math::sqrt_fast(2.0f*V) * K + K * K) * norm;
 				a1 = 2.0f * (K * K - V) * norm;
-				a2 = (V - sqrt(2.0f*V) * K + K * K) * norm;
+				a2 = (V - math::sqrt_fast(2.0f*V) * K + K * K) * norm;
 				b1 = 2.0f * (K * K - 1.0f) * norm;
 				b2 = (1.0f - math::SQRT2 * K + K * K) * norm;
 			}
 			else
 			{    // cut
-				norm = 1.0f / (V + sqrt(2.0f*V) * K + K * K);
+				norm = 1.0f / (V + math::sqrt_fast(2.0f*V) * K + K * K);
 				a0 = (1.0f + math::SQRT2 * K + K * K) * norm;
 				a1 = 2.0f * (K * K - 1.0f) * norm;
 				a2 = (1.0f - math::SQRT2 * K + K * K) * norm;
 				b1 = 2.0f * (K * K - V) * norm;
-				b2 = (V - sqrt(2.0f*V) * K + K * K) * norm;
+				b2 = (V - math::sqrt_fast(2.0f*V) * K + K * K) * norm;
 			}
 			break;
 		}

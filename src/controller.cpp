@@ -225,6 +225,7 @@ namespace control
 		// only set voltages with active current control
 		if(settings.control.current)
 		{
+			constexpr float _1bysqrt3 = 1.0f / std::sqrt(3);
 			// Current controller is limited to 1/sqrt(3)*DC Bus Voltage due to SVM
 			ctrl.limit = _1bysqrt3 * values.battery.u;
 

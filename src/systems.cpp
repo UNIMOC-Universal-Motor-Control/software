@@ -288,7 +288,7 @@ namespace systems
          */
         alpha_beta Clark(const abc& vector)
         {
-            const float sqrt3by2 = sqrt(3.0f)/2.0f;
+            const float sqrt3by2 = math::sqrt_fast(3.0f)/2.0f;
             const float _2by3 = 2.0f / 3.0f;
 
             alpha_beta result;
@@ -328,7 +328,7 @@ namespace systems
          */
         abc InverseClark(const alpha_beta& vector)
         {
-            const float sqrt3by2 = sqrt(3.0f)/2.0f;
+            const float sqrt3by2 = math::sqrt_fast(3.0f)/2.0f;
             abc result;
 
             result.a = vector.alpha;

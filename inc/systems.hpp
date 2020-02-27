@@ -28,6 +28,27 @@
  * @namespace math constants
  */
 namespace math {
+
+	/**
+	 * compute sqrt in a fast way with sufficient accuracy
+	 *
+	 * @ref see https://bits.stephan-brumme.com/squareRoot.html
+	 *
+	 * @param x			value
+	 * @return			sqrt(x)
+	 */
+	inline float sqrt_fast(float x)
+	{
+	  unsigned int i = *(unsigned int*) &x;
+
+	  // adjust bias
+	  i  += 127 << 23;
+	  // approximation of square root
+	  i >>= 1;
+
+	  return *(float*) &i;
+	}
+
     constexpr float PI =           std::atan(1.0f) * 4.0f;
     constexpr float E =            2.71828182845904523536;
     constexpr float _2PI =         2.0f * PI;
@@ -35,25 +56,7 @@ namespace math {
     constexpr float SQRT2 =        std::sqrt(2.0f);
     constexpr float SQRT1_2 =      1.0f/std::sqrt(2.0f);
 
-    /**
-     * compute sqrt in a fast way with sufficient accuracy
-     *
-     * @ref see https://bits.stephan-brumme.com/squareRoot.html
-     *
-     * @param x			value
-     * @return			sqrt(x)
-     */
-    constexpr inline float sqrt_fast(const float x)
-    {
-      unsigned int i = *(unsigned int*) &x;
 
-      // adjust bias
-      i  += 127 << 23;
-      // approximation of square root
-      i >>= 1;
-
-      return *(float*) &i;
-    }
 };
 
 /**
