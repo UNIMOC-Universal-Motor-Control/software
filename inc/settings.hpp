@@ -45,13 +45,13 @@ typedef struct settings_s
 	struct motor_s
 	{
 		///< Stator resistance
-		float Rs;
+		float rs;
 
 		///< anisotropic inductance vector
-		systems::dq L;
+		systems::dq l;
 
 		///< velocity constant Kv
-		float Psi;
+		float psi;
 
 		///< number of pole pairs
 		uint32_t P;

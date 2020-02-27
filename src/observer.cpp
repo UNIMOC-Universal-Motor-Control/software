@@ -48,8 +48,8 @@ namespace observer
         const float tsj = ts/settings.mechanics.J;
 
         // electric torque
-        values.motor.m_el = _3by2 * settings.motor.Psi * values.motor.rotor.i.q +
-                (settings.motor.L.d - settings.motor.L.q) * values.motor.rotor.i.d *
+        values.motor.m_el = _3by2 * settings.motor.psi * values.motor.rotor.i.q +
+                (settings.motor.l.d - settings.motor.l.q) * values.motor.rotor.i.d *
                 values.motor.rotor.i.q;
 
         // omega
@@ -139,8 +139,8 @@ namespace observer
     float flux::Calculate(const systems::sin_cos& sin_cos )
     {
         // BEMF voltage and feedback
-        rotor.bemf.d = values.motor.rotor.u.d - settings.motor.Rs * values.motor.rotor.i.d + rotor.feedback.d;
-        rotor.bemf.q = values.motor.rotor.u.q - settings.motor.Rs * values.motor.rotor.i.q + rotor.feedback.q;
+        rotor.bemf.d = values.motor.rotor.u.d - settings.motor.rs * values.motor.rotor.i.d + rotor.feedback.d;
+        rotor.bemf.q = values.motor.rotor.u.q - settings.motor.rs * values.motor.rotor.i.q + rotor.feedback.q;
 
         // rotate the bemf to stator system
         stator.bemf = systems::transform::InversePark(rotor.bemf, sin_cos);
@@ -153,14 +153,14 @@ namespace observer
         rotor.flux = systems::transform::Park(stator.flux, sin_cos);
 
         // sub the voltage inducted in the inductors of the stator
-        rotor.flux.d -= values.motor.rotor.i.d * settings.motor.L.d;
-        rotor.flux.q -= values.motor.rotor.i.q * settings.motor.L.q;
+        rotor.flux.d -= values.motor.rotor.i.d * settings.motor.l.d;
+        rotor.flux.q -= values.motor.rotor.i.q * settings.motor.l.q;
 
         // compare actual flux with flux parameter
-        rotor.feedback.d = settings.observer.C.d * (settings.motor.Psi - rotor.flux.d);
+        rotor.feedback.d = settings.observer.C.d * (settings.motor.psi - rotor.flux.d);
         rotor.feedback.q = settings.observer.C.q * (0.0f - rotor.flux.q);
 
-        return rotor.flux.q / settings.motor.Psi;
+        return rotor.flux.q / settings.motor.psi;
     }
 
     /**

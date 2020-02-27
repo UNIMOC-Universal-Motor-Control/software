@@ -175,6 +175,15 @@ namespace control
 		///< sample time (call timing of controller )
 		const float ts;
 
+		///< series resistance of the winding
+		float rs;
+
+		///< series inductance of the winding
+		systems::dq l;
+
+		///< rotor flux constant
+		float psi;
+
 		///< quality factor of the hardware filter model
 		const float hwQ;
 
@@ -211,8 +220,18 @@ namespace control
 		///< smith predictor model of the current filter q-axis
 		filter::biquad sq;
 
+		///< output voltage vector
+		systems::dq u;
+
+		///< current estimate of the smith predictor model
+		systems::dq i;
+
+		///< current estimate of the smith predictor model after the filter
+		systems::dq i_filtered;
 
 	public:
+		///< output limit
+		float			limit;
 
 		/**
 		 * @brief smith predictor with complex current controller
@@ -234,8 +253,8 @@ namespace control
 		 * @param new_fFc				corner frequency of the software filter and its model
 		 *
 		 */
-		smith_predictor_current(const float new_ts, const float rs, const systems::dq l, const float psi, const float new_limit,
-				const float new_hwQ, const float new_hwFc, const float new_fQ, const float new_fFc);
+		smith_predictor_current(const float new_ts, const float new_rs, const systems::dq new_l, const float new_psi,
+				const float new_limit, const float new_hwQ, const float new_hwFc, const float new_fQ, const float new_fFc);
 
 		/**
 		 * @brief calculate regulator equation with feed forward and anti windup.
@@ -258,7 +277,13 @@ namespace control
 		 * @param l                		series inductance of the winding
 		 * @param psi                	rotor flux constant
 		 */
-		constexpr inline void SetParameters(const float rs, const systems::dq l, const float psi) { ctrl.SetParameters(rs, l, psi); };
+		constexpr inline void SetParameters(const float new_rs, const systems::dq new_l, const float new_psi)
+		{
+			rs = new_rs;
+			l = new_l;
+			psi = new_psi;
+			ctrl.SetParameters(rs, l, psi);
+		};
 
 		///< @brief Reset controller and integral part to 0
 		constexpr inline void Reset(void) { ctrl.Reset(); };
@@ -271,19 +296,19 @@ namespace control
 	class foc
 	{
 	private:
-		///< d-current controller
-		pi d;
-		///< q-current controller
-		pi q;
+		///< current controller with complex pole and smith predictor
+		smith_predictor_current ctrl;
 	public:
 		/**
-		 * @brief FOC controller constructor with all essential parameters.
+		 * @brief constructor of the foc with all essential parameters.
 		 *
-		 * @param new_ts                set sample time.
-		 * @param new_kp                proportional gain.
-		 * @param new_tn                integral action time.
+		 * @param hwQ				    quality factor of the hardware filter model
+		 * @param hwFc				    corner frequency of the hardware filter model
+		 * @param fQ				    quality factor of the software filter and its model
+		 * @param fFc				    corner frequency of the software filter and its model
+		 *
 		 */
-		foc(const float new_ts, const float new_kp, const float new_tn);
+		foc(const float hwQ, const float hwFc, const float fQ, const float fFc);
 		/**
 		 * @brief calculate foc current controller
 		 */
@@ -292,13 +317,15 @@ namespace control
 		/**
 		 * @brief set controller dynamic parameters.
 		 *
-		 * @param new_kp                proportional gain.
-		 * @param new_tn                integral action time.
+		 *
+		 * @param rs	                series resistance of the winding
+		 * @param l                		series inductance of the winding
+		 * @param psi                	rotor flux constant
 		 */
-		inline void SetParameters(const float new_kp, const float new_tn) { d.SetParameters(new_kp, new_tn); q.SetParameters(new_kp, new_tn); };
+		constexpr inline void SetParameters(const float rs, const systems::dq l, const float psi) 	{	ctrl.SetParameters(rs, l, psi);		};
 
 		///< @brief Reset controller and integral part to 0
-		inline void Reset(void) { d.Reset(); q.Reset(); };
+		inline void Reset(void) { ctrl.Reset(); };
 	};
 
 

@@ -151,15 +151,15 @@ namespace control
 	 * so to get G_o = 1/s for the open loop, K_p = L_s and K_i = R_s
 	 *
 	 * @param new_ts                set sample time.
-	 * @param rs	                series resistance of the winding
-	 * @param l                		series inductance of the winding
-	 * @param psi                	rotor flux constant
+	 * @param new_rs                series resistance of the winding
+	 * @param new_l            		series inductance of the winding
+	 * @param new_psi              	rotor flux constant
 	 * @param new_limit   			output limit.
 	 */
-	smith_predictor_current::smith_predictor_current(const float new_ts, const float rs, const systems::dq l,
-			const float psi, const float new_limit, const float new_hwQ, const float new_hwFc,
-			const float new_fQ, const float new_fFc): ts(new_ts), hwQ(new_hwQ), hwFc(new_hwFc), fQ(new_fQ),
-			fFc(new_fFc), ctrl(new_ts, rs, l , psi, new_limit),
+	smith_predictor_current::smith_predictor_current(const float new_ts, const float new_rs, const systems::dq new_l,
+			const float new_psi, const float new_limit, const float new_hwQ, const float new_hwFc,
+			const float new_fQ, const float new_fFc): ts(new_ts), rs(new_rs), l(new_l), psi(new_psi),
+			hwQ(new_hwQ), hwFc(new_hwFc), fQ(new_fQ), fFc(new_fFc), ctrl(new_ts, rs, l , psi, new_limit),
 			fd(filter::lowpass, fFc, fQ, 0.0f), fq(filter::lowpass, fFc, fQ, 0.0f),
 			fomega(filter::lowpass, fFc, fQ, 0.0f),
 			hwd(filter::lowpass, hwFc, hwQ, 0.0f), hwq(filter::lowpass, hwFc, hwQ, 0.0f),
@@ -175,22 +175,45 @@ namespace control
 	 */
 	systems::dq smith_predictor_current::Calculate(const systems::dq setpoint, const systems::dq act, const float omega)
 	{
-		systems::dq u;
+		values.motor.rotor.filtered.omega = fomega.Process(omega);
+		values.motor.rotor.filtered.i.d = fd.Process(act.d);
+		values.motor.rotor.filtered.i.q = fq.Process(act.q);
+
+		// calculate the model output delayed to the filtered current.
+		// using the old i values to take the deadtime of one controlcycle into account!
+		i_filtered.d = sd.Process(hwd.Process(i.d));
+		i_filtered.q = sq.Process(hwq.Process(i.q));
+
+		// current prediction model
+		i.d += (u.d - rs*i.d - l.q*values.motor.rotor.filtered.omega*i.q)*ts;
+		i.q += (u.q - rs*i.q - l.d*values.motor.rotor.filtered.omega*i.d - psi*values.motor.rotor.filtered.omega)*ts;
+
+		// correct the current prediction with the error of the filtered
+		systems::dq i_feedback =
+		{
+				i.d + values.motor.rotor.filtered.i.d - i_filtered.d,
+				i.q + values.motor.rotor.filtered.i.q - i_filtered.q
+		};
+
+		// update the limit for the controller
+		ctrl.limit = limit;
+		u = ctrl.Calculate(setpoint, i_feedback , values.motor.rotor.filtered.omega);
 
 		return u;
 	}
 
-
-
 	/**
-	 * @brief FOC controller constructor with all essential parameters.
+	 * @brief constructor of the foc with all essential parameters.
 	 *
-	 * @param new_ts                set sample time.
-	 * @param new_kp                proportional gain.
-	 * @param new_tn                integral action time.
+	 * @param hwQ				    quality factor of the hardware filter model
+	 * @param hwFc				    corner frequency of the hardware filter model
+	 * @param fQ				    quality factor of the software filter and its model
+	 * @param fFc				    corner frequency of the software filter and its model
+	 *
 	 */
-	foc::foc(const float new_ts, const float new_kp, const float new_tn):
-			d(new_ts, new_kp, new_tn, 0.0f, 0.0f), q(new_ts, new_kp, new_tn, 0.0f, 0.0f)
+	foc::foc(const float hwQ, const float hwFc, const float fQ, const float fFc):
+			ctrl(settings.converter.ts, settings.motor.rs, settings.motor.l, settings.motor.psi, 0.0f,
+				hwQ, hwFc, fQ, fFc)
 	{}
 
 
@@ -199,37 +222,13 @@ namespace control
 	 */
 	void foc::Calculate(void)
 	{
-		const float _1bysqrt3 = 1.0f / sqrt(3.0f);
-		float limit = 0.0;
-
-		// leave limits at zero if current control is inactive.
-		if(settings.control.current)
-		{
-			limit = _1bysqrt3 * values.battery.u;
-		}
-
-		// Current controller is limited to 1/sqrt(3)*DC Bus Voltage due to SVM
-		d.positive_limit = q.positive_limit = limit;
-		d.negative_limit = q.negative_limit = -limit;
-
-
-		// calculate feedforward
-		systems::dq feedforward = {0.0f, 0.0f};
-		feedforward.d = settings.motor.Rs * values.motor.rotor.filtered.i.d
-				- values.motor.rotor.filtered.omega * settings.motor.L.q * values.motor.rotor.filtered.i.q;
-
-		feedforward.q = settings.motor.Rs * values.motor.rotor.filtered.i.q
-				+ values.motor.rotor.filtered.omega * settings.motor.L.d * values.motor.rotor.filtered.i.d
-				+ values.motor.rotor.filtered.omega * settings.motor.Psi;
-
 		// only set voltages with active current control
 		if(settings.control.current)
 		{
-			// direct current control
-			values.motor.rotor.u.d = d.Calculate(values.motor.rotor.setpoint.i.d, values.motor.rotor.i.d, feedforward.d);
+			// Current controller is limited to 1/sqrt(3)*DC Bus Voltage due to SVM
+			ctrl.limit = _1bysqrt3 * values.battery.u;
 
-			// quadrature current control
-			values.motor.rotor.u.q = q.Calculate(values.motor.rotor.setpoint.i.q, values.motor.rotor.i.q, feedforward.q);
+			values.motor.rotor.u = ctrl.Calculate(values.motor.rotor.setpoint.i, values.motor.rotor.i, values.motor.rotor.omega);
 		}
 	}
 }/* namespace control */

@@ -128,7 +128,7 @@ namespace control
 	 * generic constructor
 	 */
 	thread::thread():flux(), mech(settings.observer.Q, settings.observer.R),
-			foc(settings.converter.ts, settings.motor.Rs, 1.0f)
+			foc(settings.converter.ts, settings.motor.rs, 1.0f)
 	{}
 
 	/**
