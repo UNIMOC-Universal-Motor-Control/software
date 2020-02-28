@@ -128,7 +128,11 @@ namespace control
 	 * generic constructor
 	 */
 	thread::thread():flux(), mech(settings.observer.Q, settings.observer.R),
-			foc(settings.converter.ts, settings.motor.rs, 1.0f)
+			/*
+			 * R1 = 1k7, R2 = 47k, R3 = 4k7, C1 = 10n, C2 = 1n
+			 * Q = 0.47619047619048, Fc = 3386.2753849339
+			 */
+			foc(0.47619047619048f, 3386.2753849339f/hardware::Fc * hardware::pwm::INJECTION_CYCLES, 0.5f, 0.01f)
 	{}
 
 	/**

@@ -1092,7 +1092,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">save</member>
-			<member name="last_addr" type="uint32">0x20004598</member>
+			<member name="last_addr" type="uint32">0x20004700</member>
 			<member name="byte_size" type="sint32">1</member>
 			<member name="treat_as" type="sint32">0</member>
 			<member name="type_fmt" type="string">Fixed point number</member>
@@ -1802,7 +1802,7 @@
 			<member name="name" type="string">settings.motor.Psi</member>
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
-			<member name="address" type="string">settings.motor.Psi</member>
+			<member name="address" type="string">settings.motor.psi</member>
 			<member name="last_addr" type="uint32">0x20010018</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="treat_as" type="sint32">2</member>
@@ -1851,7 +1851,7 @@
 			<member name="name" type="string">settings.motor.Rs</member>
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
-			<member name="address" type="string">settings.motor.Rs</member>
+			<member name="address" type="string">settings.motor.rs</member>
 			<member name="last_addr" type="uint32">0x2001000C</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="treat_as" type="sint32">2</member>
@@ -1949,7 +1949,7 @@
 			<member name="name" type="string">settings.motor.L[0]</member>
 			<member name="unit" type="string">H</member>
 			<member name="period" type="sint32">1000</member>
-			<member name="address" type="string">settings.motor.L + 0</member>
+			<member name="address" type="string">settings.motor.l + 0</member>
 			<member name="last_addr" type="uint32">0x20010010</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="treat_as" type="sint32">2</member>
@@ -1995,10 +1995,10 @@
 		</object>
 		<object name="ObjId0301" type="CObList"/>
 		<object name="ObjId0302" type="CVariable">
-			<member name="name" type="string">settings.motor.L[1]</member>
+			<member name="name" type="string">settings.motor.l[1]</member>
 			<member name="unit" type="string">H</member>
 			<member name="period" type="sint32">1000</member>
-			<member name="address" type="string">settings.motor.L + 4</member>
+			<member name="address" type="string">settings.motor.l + 4</member>
 			<member name="last_addr" type="uint32">0x20010014</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="treat_as" type="sint32">2</member>
@@ -2598,6 +2598,7 @@
 			<member name="item10" type="CObject_ptr">ObjId0318</member>
 			<member name="item11" type="CObject_ptr">ObjId0280</member>
 			<member name="item12" type="CObject_ptr">ObjId0236</member>
+			<member name="item13" type="CObject_ptr">ObjId0248</member>
 		</object>
 		<object name="ObjId0329" type="CObList"/>
 		<object name="ObjId0330" type="CObList"/>
@@ -2613,27 +2614,27 @@
 			<member name="forecolor" type="uint32">0x0</member>
 		</object>
 		<object name="ObjId0332" type="CObArray" length="4">
-			<member name="index0" type="CObject_ptr">ObjId0333</member>
-			<member name="index1" type="CObject_ptr">ObjId0334</member>
-			<member name="index2" type="CObject_ptr">ObjId0335</member>
-			<member name="index3" type="CObject_ptr">ObjId0336</member>
+			<member name="index0" type="CObject_ptr">ObjId0334</member>
+			<member name="index1" type="CObject_ptr">ObjId0336</member>
+			<member name="index2" type="CObject_ptr">ObjId0333</member>
+			<member name="index3" type="CObject_ptr">ObjId0335</member>
 		</object>
-		<object name="ObjId0333" type="CPrjItemBlock_ColInfo">
+		<object name="ObjId0334" type="CPrjItemBlock_ColInfo">
 			<member name="column_visible" type="sint32">1</member>
 			<member name="column_width" type="sint32">209</member>
 			<member name="column_ix" type="sint32">0</member>
 		</object>
-		<object name="ObjId0334" type="CPrjItemBlock_ColInfo">
+		<object name="ObjId0336" type="CPrjItemBlock_ColInfo">
 			<member name="column_visible" type="sint32">1</member>
 			<member name="column_width" type="sint32">120</member>
 			<member name="column_ix" type="sint32">1</member>
 		</object>
-		<object name="ObjId0335" type="CPrjItemBlock_ColInfo">
+		<object name="ObjId0333" type="CPrjItemBlock_ColInfo">
 			<member name="column_visible" type="sint32">1</member>
 			<member name="column_width" type="sint32">120</member>
 			<member name="column_ix" type="sint32">2</member>
 		</object>
-		<object name="ObjId0336" type="CPrjItemBlock_ColInfo">
+		<object name="ObjId0335" type="CPrjItemBlock_ColInfo">
 			<member name="column_visible" type="sint32">1</member>
 			<member name="column_width" type="sint32">50</member>
 			<member name="column_ix" type="sint32">3</member>
@@ -2641,36 +2642,43 @@
 		<object name="ObjId0337" type="CMapObToObEx">
 			<member name="key0" type="CObject_ptr">ObjId0236</member>
 			<member name="value0" type="CObject_ptr">ObjId0338</member>
-			<member name="key1" type="CObject_ptr">ObjId0280</member>
-			<member name="value1" type="CObject_ptr">ObjId0340</member>
-			<member name="key2" type="CObject_ptr">ObjId0283</member>
-			<member name="value2" type="CObject_ptr">ObjId0342</member>
-			<member name="key3" type="CObject_ptr">ObjId0287</member>
-			<member name="value3" type="CObject_ptr">ObjId0344</member>
-			<member name="key4" type="CObject_ptr">ObjId0290</member>
-			<member name="value4" type="CObject_ptr">ObjId0346</member>
-			<member name="key5" type="CObject_ptr">ObjId0293</member>
-			<member name="value5" type="CObject_ptr">ObjId0348</member>
-			<member name="key6" type="CObject_ptr">ObjId0296</member>
-			<member name="value6" type="CObject_ptr">ObjId0350</member>
-			<member name="key7" type="CObject_ptr">ObjId0305</member>
-			<member name="value7" type="CObject_ptr">ObjId0352</member>
-			<member name="key8" type="CObject_ptr">ObjId0310</member>
-			<member name="value8" type="CObject_ptr">ObjId0354</member>
-			<member name="key9" type="CObject_ptr">ObjId0315</member>
-			<member name="value9" type="CObject_ptr">ObjId0356</member>
-			<member name="key10" type="CObject_ptr">ObjId0318</member>
-			<member name="value10" type="CObject_ptr">ObjId0358</member>
-			<member name="key11" type="CObject_ptr">ObjId0321</member>
-			<member name="value11" type="CObject_ptr">ObjId0360</member>
-			<member name="key12" type="CObject_ptr">ObjId0324</member>
-			<member name="value12" type="CObject_ptr">ObjId0362</member>
+			<member name="key1" type="CObject_ptr">ObjId0248</member>
+			<member name="value1" type="CObject_ptr">ObjId0467</member>
+			<member name="key2" type="CObject_ptr">ObjId0280</member>
+			<member name="value2" type="CObject_ptr">ObjId0340</member>
+			<member name="key3" type="CObject_ptr">ObjId0283</member>
+			<member name="value3" type="CObject_ptr">ObjId0342</member>
+			<member name="key4" type="CObject_ptr">ObjId0287</member>
+			<member name="value4" type="CObject_ptr">ObjId0344</member>
+			<member name="key5" type="CObject_ptr">ObjId0290</member>
+			<member name="value5" type="CObject_ptr">ObjId0346</member>
+			<member name="key6" type="CObject_ptr">ObjId0293</member>
+			<member name="value6" type="CObject_ptr">ObjId0348</member>
+			<member name="key7" type="CObject_ptr">ObjId0296</member>
+			<member name="value7" type="CObject_ptr">ObjId0350</member>
+			<member name="key8" type="CObject_ptr">ObjId0305</member>
+			<member name="value8" type="CObject_ptr">ObjId0352</member>
+			<member name="key9" type="CObject_ptr">ObjId0310</member>
+			<member name="value9" type="CObject_ptr">ObjId0354</member>
+			<member name="key10" type="CObject_ptr">ObjId0315</member>
+			<member name="value10" type="CObject_ptr">ObjId0356</member>
+			<member name="key11" type="CObject_ptr">ObjId0318</member>
+			<member name="value11" type="CObject_ptr">ObjId0358</member>
+			<member name="key12" type="CObject_ptr">ObjId0321</member>
+			<member name="value12" type="CObject_ptr">ObjId0360</member>
+			<member name="key13" type="CObject_ptr">ObjId0324</member>
+			<member name="value13" type="CObject_ptr">ObjId0362</member>
 		</object>
 		<object name="ObjId0338" type="CPrjItemBlock_VarInfo">
 			<member name="row_height" type="sint32">15</member>
 			<member name="row_cell_formats" type="CObArrayEx">ObjId0339</member>
 		</object>
 		<object name="ObjId0339" type="CObArray" length="0"/>
+		<object name="ObjId0467" type="CPrjItemBlock_VarInfo">
+			<member name="row_height" type="sint32">15</member>
+			<member name="row_cell_formats" type="CObArrayEx">ObjId0468</member>
+		</object>
+		<object name="ObjId0468" type="CObArray" length="0"/>
 		<object name="ObjId0340" type="CPrjItemBlock_VarInfo">
 			<member name="row_height" type="sint32">15</member>
 			<member name="row_cell_formats" type="CObArrayEx">ObjId0341</member>

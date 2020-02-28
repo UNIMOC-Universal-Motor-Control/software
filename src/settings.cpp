@@ -42,13 +42,13 @@ settings_ts settings =
 	.motor =
 	{
 		///< Stator resistance
-		.Rs = 200e-3f,
+		.rs = 200e-3f,
 
 		///< anisotropic inductance vector
-		.L = {500e-6f, 600e-6f},
+		.l = {500e-6f, 600e-6f},
 
 		///< magnetic flux inducted voltage in rotor
-		.Psi = unit::RpmV2VsRad(75.0f) / (8.0f / 2.0f),
+		.psi = unit::RpmV2VsRad(75.0f) / (8.0f / 2.0f),
 
 		///< number of pole pairs
 		.P = 8 / 2,

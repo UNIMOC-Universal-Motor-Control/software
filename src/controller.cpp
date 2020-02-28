@@ -131,7 +131,7 @@ namespace control
 		// integration of the error takes the output
 		// more over the limit.
 		// if not we are free to integrate
-		if(std::memcmp(&output, &output_unlimited, sizeof(systems::dq))
+		if(0 == std::memcmp(&output, &output_unlimited, sizeof(systems::dq))
 				|| ((error.d * output_unlimited.d) <= 0.0f) || ((error.q * output_unlimited.q) <= 0.0f))
 		{
 			// (K_p * j w + K_i)/s

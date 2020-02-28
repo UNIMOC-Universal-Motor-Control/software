@@ -367,14 +367,14 @@ float hardware::adc::GetDCBusVoltage(void)
  */
 float hardware::adc::GetBridgeTemp(void)
 {
-	uint32_t sum = 4096 * ADC_SEQ_BUFFERED;
+	uint32_t sum = 0;
 
 	for(uint32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
 	{
 		/*
 		 * Bridge temperature is sampled by ADC2 first non current sample
 		 */
-		sum -= samples[1][i][1];
+		sum += samples[1][i][1];
 	}
 
 	// Filter inverts the values
@@ -387,14 +387,14 @@ float hardware::adc::GetBridgeTemp(void)
  */
 float hardware::adc::GetMotorTemp(void)
 {
-	uint32_t sum = 4096 * ADC_SEQ_BUFFERED;
+	uint32_t sum = 0;
 
 	for(uint32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
 	{
 		/*
 		 * Motor temperature is sampled by ADC2 second non current sample
 		 */
-		sum -= samples[1][i][2];
+		sum += samples[1][i][2];
 	}
 
 	// Filter inverts the values
