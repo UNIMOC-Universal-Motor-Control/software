@@ -144,9 +144,10 @@ namespace control
 		 * @param setpoint				setpoint vector
 		 * @param act					actual current vector
 		 * @param omega					angular velocity in rad/s of the motor
+		 * @param gain					controller gain factor
 		 * @return						controllers output voltage vector
 		 */
-		systems::dq Calculate(const systems::dq setpoint, const systems::dq act, const float omega);
+		systems::dq Calculate(const systems::dq setpoint, const systems::dq act, const float omega, const float gain);
 
 		/**
 		 * @brief set controller dynamic parameters.
@@ -261,9 +262,10 @@ namespace control
 		 * @param setpoint				setpoint vector
 		 * @param act					actual current vector
 		 * @param omega					angular velocity in rad/s of the motor
+		 * @param gain					controller gain factor
 		 * @return						controllers output voltage vector
 		 */
-		systems::dq Calculate(const systems::dq setpoint, const systems::dq act, const float omega);
+		systems::dq Calculate(const systems::dq setpoint, const systems::dq act, const float omega, const float gain);
 
 		/**
 		 * @brief set controller dynamic parameters.

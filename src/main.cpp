@@ -229,7 +229,7 @@ namespace control
 					observer::mechanic::Correct(correction);
 				}
 
-				if(settings.control.current)
+				if(settings.control.current.active)
 				{
 					// calculate the field orientated controllers
 					foc.Calculate();
@@ -303,7 +303,7 @@ namespace control
 					modules::freemaster::Recorder();
 				}
 
-				if(settings.control.current)
+				if(settings.control.current.active)
 				{
 					// calculate the field orientated controllers
 					foc.Calculate();

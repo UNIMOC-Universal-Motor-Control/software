@@ -98,9 +98,19 @@ settings_ts settings =
 	 */
 	.control =
 	{
-		///< current control switch
-		.current = false,
+		/**
+		 * current controller settings
+		 */
+		.current =
+		{
+			///< current control switch
+			.active = false,
+
+			///< gain of the current controller
+			.gain = 1.0f,
+		},
 	},
+
 
 	/**
 	 * observer settings

@@ -101,9 +101,17 @@ typedef struct settings_s
 	 */
 	struct control_s
 	{
-		///< current control switch
-		bool current;
+		/**
+		 * current controller settings
+		 */
+		struct current_s
+		{
+			///< current control switch
+			bool active;
 
+			///< gain of the current controller
+			float gain;
+		}current;
 	} control;
 
 	/**

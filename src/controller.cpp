@@ -106,11 +106,12 @@ namespace control
 	 * @param setpoint				setpoint vector
 	 * @param act					actual current vector
 	 * @param omega					angular velocity in rad/s of the motor
+	 * @param gain					controller gain factor
 	 * @return						controllers output voltage vector
 	 */
-	systems::dq complex_current::Calculate(const systems::dq setpoint, const systems::dq act, const float omega)
+	systems::dq complex_current::Calculate(const systems::dq setpoint, const systems::dq act, const float omega, const float gain)
 	{
-		systems::dq error = {setpoint.d - act.d, setpoint.q -act.q};
+		systems::dq error = {gain * (setpoint.d - act.d), gain * (setpoint.q -act.q)};
 
 		output_unlimited.d = error_sum.d + error.d * kp.d;  				// regulator equation
 		output_unlimited.q = error_sum.q + error.q * kp.q + omega * psi;	// with feed forward
@@ -171,9 +172,10 @@ namespace control
 	 * @param setpoint				setpoint vector
 	 * @param act					actual current vector
 	 * @param omega					angular velocity in rad/s of the motor
+	 * @param gain					controller gain factor
 	 * @return						controllers output voltage vector
 	 */
-	systems::dq smith_predictor_current::Calculate(const systems::dq setpoint, const systems::dq act, const float omega)
+	systems::dq smith_predictor_current::Calculate(const systems::dq setpoint, const systems::dq act, const float omega, const float gain)
 	{
 		values.motor.rotor.filtered.omega = fomega.Process(omega);
 		values.motor.rotor.filtered.i.d = fd.Process(act.d);
@@ -197,7 +199,7 @@ namespace control
 
 		// update the limit for the controller
 		ctrl.limit = limit;
-		u = ctrl.Calculate(setpoint, i_feedback , values.motor.rotor.filtered.omega);
+		u = ctrl.Calculate(setpoint, i_feedback , values.motor.rotor.filtered.omega, gain);
 
 		return u;
 	}
@@ -223,13 +225,13 @@ namespace control
 	void foc::Calculate(void)
 	{
 		// only set voltages with active current control
-		if(settings.control.current)
+		if(settings.control.current.active)
 		{
 			constexpr float _1bysqrt3 = 1.0f / std::sqrt(3);
 			// Current controller is limited to 1/sqrt(3)*DC Bus Voltage due to SVM
 			ctrl.limit = _1bysqrt3 * values.battery.u;
 
-			values.motor.rotor.u = ctrl.Calculate(values.motor.rotor.setpoint.i, values.motor.rotor.i, values.motor.rotor.omega);
+			values.motor.rotor.u = ctrl.Calculate(values.motor.rotor.setpoint.i, values.motor.rotor.i, values.motor.rotor.omega, settings.control.current.gain);
 		}
 	}
 }/* namespace control */
