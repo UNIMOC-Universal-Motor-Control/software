@@ -76,13 +76,6 @@ int main(void)
 	hardware::control_thread = controller.start(HIGHPRIO);
 
 	/*
-	 * Set hall inputs to outputs for debugging
-	 */
-	palSetLineMode(LINE_HALL_A, PAL_MODE_OUTPUT_PUSHPULL);
-	palSetLineMode(LINE_HALL_B, PAL_MODE_OUTPUT_PUSHPULL);
-	palSetLineMode(LINE_HALL_C, PAL_MODE_OUTPUT_PUSHPULL);
-
-	/*
 	 * initialize hardware with no control thread
 	 */
 	hardware::memory::Init();
@@ -92,10 +85,6 @@ int main(void)
 	settings.Load();
 
 	hardware::pwm::EnableOutputs();
-
-	palClearLine(LINE_LED_ERROR);
-	palClearLine(LINE_LED_MODE);
-	palClearLine(LINE_LED_PWM);
 
 	/*
 	 * Normal main() thread activity, in this demo it does nothing except
