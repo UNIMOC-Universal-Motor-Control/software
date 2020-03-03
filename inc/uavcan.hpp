@@ -39,6 +39,47 @@ namespace uavcan
 	{
 	private:
 
+		enum struct uavcan_health_e: std::uint8_t
+		{
+			UAVCAN_NODE_HEALTH_OK                                      = 0,
+			UAVCAN_NODE_HEALTH_WARNING                                 = 1,
+			UAVCAN_NODE_HEALTH_ERROR                                   = 2,
+			UAVCAN_NODE_HEALTH_CRITICAL                                = 3,
+		};
+
+		enum struct uavcan_mode_e: std::uint8_t
+		{
+			UAVCAN_NODE_MODE_OPERATIONAL                               = 0,
+			UAVCAN_NODE_MODE_INITIALIZATION                            = 1,
+		};
+
+		static constexpr std::uint8_t APP_VERSION_MAJOR = 0;
+		static constexpr std::uint8_t APP_VERSION_MINOR = 1;
+		static constexpr char APP_NODE_NAME[] = "org.unimoc.hardware.4850";
+		static constexpr std::uint32_t GIT_HASH = 0xBADC0FFE;            // Normally this should be queried from the VCS when building the firmware
+
+		static constexpr std::size_t UAVCAN_GET_NODE_INFO_RESPONSE_MAX_SIZE = ((3015 + 7) / 8);
+		static constexpr std::uint64_t UAVCAN_GET_NODE_INFO_DATA_TYPE_SIGNATURE = 0xee468a8121c46a9e;
+		static constexpr std::uint32_t UAVCAN_GET_NODE_INFO_DATA_TYPE_ID = 1;
+
+
+		static constexpr std::uint32_t UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_ID  			= 1030;
+		static constexpr std::uint64_t UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_SIGNATURE	= 0x217f5c87d7ec951d;
+		static constexpr std::size_t UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_MAX_VALUE		= 8192;
+
+		static constexpr std::size_t UNIQUE_ID_LENGTH_BYTES                        = 16;
+
+		static constexpr std::size_t UAVCAN_NODE_STATUS_MESSAGE_SIZE               = 7;
+		static constexpr std::uint32_t UAVCAN_NODE_STATUS_DATA_TYPE_ID             = 341;
+		static constexpr std::uint64_t UAVCAN_NODE_STATUS_DATA_TYPE_SIGNATURE      = 0x0f0868d0c1a7c6f1;
+
+		static constexpr std::uint32_t UAVCAN_PROTOCOL_DEBUG_KEYVALUE_ID           = 16370;
+		static constexpr std::uint64_t UAVCAN_PROTOCOL_DEBUG_KEYVALUE_SIGNATURE    = 0xe02f25d6e0c98ae0;
+		static constexpr std::size_t UAVCAN_PROTOCOL_DEBUG_KEYVALUE_MESSAGE_SIZE   = 62;
+
+		static constexpr std::uint32_t UAVCAN_PROTOCOL_PARAM_GETSET_ID             = 11;
+		static constexpr std::uint64_t UAVCAN_PROTOCOL_PARAM_GETSET_SIGNATURE      = 0xa7b622f939d1a4d5;
+
 		///< The Libcanard library instance
 		static CanardInstance canard;
 
@@ -51,6 +92,13 @@ namespace uavcan
 		static void Init(void);
 
 		/**
+		 * @brief send perodic messages like node status
+		 */
+		static void Spin(void);
+
+		/**
+		 * @brief on reveive callback to determine if the message is handled or not
+		 *
 		 * this callback is called every time a transfer is received
 		 * to determine if it should be passed further to the library
 		 * or ignored. Here we should filter out all messages
@@ -63,20 +111,81 @@ namespace uavcan
 		 * @param source_node_id
 		 * @return
 		 */
-		static bool shouldAcceptTransfer(const CanardInstance* ins,
+		static bool ShouldAcceptTransfer(const CanardInstance* ins,
 				uint64_t* out_data_type_signature,
 				uint16_t data_type_id,
 				CanardTransferType transfer_type,
 				uint8_t source_node_id);
 
 		/**
-		 *  this callback is called every time a transfer is received
-		 *  and accepted in shouldAcceptTransfer.
-		 *  It is a good idea to put incoming data handlers here.
+		 * @brief handle accepted incomming messages
+		 *
+		 * this callback is called every time a transfer is received
+		 * and accepted in shouldAcceptTransfer.
+		 * It is a good idea to put incoming data handlers here.
 		 * @param ins
 		 * @param transfer
 		 */
-		static void onTransferReceived(CanardInstance* ins, CanardRxTransfer* transfer);
+		static void OnTransferReceived(CanardInstance* ins, CanardRxTransfer* transfer);
+
+
+		/**
+		 * @brief prepare node status message
+		 *
+		 * To make a node status message we will have to compose it manually. For that we will need three values:
+		 *    - Uptime in seconds.
+		 *    - Node health. Our node will always be 100% healthy.
+		 *    - Node mode. Our node will always be in the operational mode.
+		 *
+		 * @param buffer
+		 */
+		static void MakeNodeStatusMessage(uint8_t buffer[UAVCAN_NODE_STATUS_MESSAGE_SIZE]);
+
+		/**
+		 * @brief answer for the Node Info request.
+		 *
+		 * When the UAVCAN GUI Tool receives this message for the first time,
+		 * it will attempt to get more info about the new node,
+		 * so we also have to implement a handler that will form a GetNodeInfo response
+		 * and send it back to the requesting node (client)
+		 *
+		 * @param buffer
+		 * @return
+		 */
+		static uint16_t MakeNodeInfoMessage(uint8_t buffer[UAVCAN_GET_NODE_INFO_RESPONSE_MAX_SIZE]);
+
+		/**
+		 * @brief handle a GetNodeInfo request
+		 * @param transfer
+		 */
+		static void GetNodeInfoHandleCanard(CanardRxTransfer* transfer);
+
+		/**
+		 * Generates a unique 24byte number out of the 96bit unique id of the mcu
+		 * @param out_uid unique id output buffer
+		 */
+		static void ReadUniqueID(std::uint8_t* out_uid);
+
+		/**
+		 * uavcan receive handling thread
+		 */
+		class rx : public chibios_rt::BaseStaticThread<256>
+		{
+		private:
+
+		protected:
+			/**
+			 * CAN receive thread function
+			 */
+			virtual void main(void);
+
+		public:
+			/**
+			 * generic constructor
+			 */
+			rx();
+		};
+
 
 	protected:
 		/**
