@@ -21,6 +21,7 @@
 
 #include <cstdint>
 #include "systems.hpp"
+#include "uavcan.hpp"
 
 
 /**
@@ -118,6 +119,18 @@ typedef struct values_s
 		///< powerstage temperature
 		float temp;
 	} converter;
+
+	/**
+	 * CAN interface
+	 */
+	struct uavcan_s
+	{
+		///< Health status of the node
+		uavcan::health_e health;
+
+		///< Operation mode of the node
+		uavcan::mode_e mode;
+	} uavcan;
 } values_ts;
 
 extern values_ts values;

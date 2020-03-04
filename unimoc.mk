@@ -2,16 +2,14 @@
 BASEDIR := ../../
 
 # included modules
-include ${BASEDIR}/modules/freemaster/freemaster.mk
-include ${BASEDIR}/modules/libcanard/libcanard.mk  
+include ${BASEDIR}/libcanard/libcanard.mk  
 
 # List of all the Project related hardware independent files.
 # C code
-UNIMOCSRC := ${FREEMASTERSRC} ${LIBCANARDSRC}  
+UNIMOCSRC := ${LIBCANARDSRC}  
 
 # Cpp code
-UNIMOCCPPSRC := ${FREEMASTERCPPSRC} \
-                ${LIBCANARDCPPSRC} \
+UNIMOCCPPSRC := ${LIBCANARDCPPSRC} \
                 ${BASEDIR}/src/main.cpp \
                 ${BASEDIR}/src/controller.cpp \
                 ${BASEDIR}/src/filter.cpp \
@@ -22,8 +20,7 @@ UNIMOCCPPSRC := ${FREEMASTERCPPSRC} \
                 ${BASEDIR}/src/uavcan.cpp \
 
 # Required include directories
-UNIMOCINC := ${FREEMASTERINC} \
-             ${LIBCANARDINC} \
+UNIMOCINC := ${LIBCANARDINC} \
              ${BASEDIR}/inc \
              ${BASEDIR}/hardware/interface \
 

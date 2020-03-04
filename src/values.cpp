@@ -100,6 +100,17 @@ values_ts values =
 		///< power stage temperature
 		.temp = 0.0f,
 	},
+	/**
+	 * CAN interface
+	 */
+	.uavcan =
+	{
+		///< Health status of the node
+		.health = uavcan::health_e::UAVCAN_NODE_HEALTH_OK,
+
+		///< Operation mode of the node
+		.mode = uavcan::mode_e::UAVCAN_NODE_MODE_INITIALIZATION,
+	},
 };
 
 

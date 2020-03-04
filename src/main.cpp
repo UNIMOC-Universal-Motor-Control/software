@@ -20,14 +20,12 @@
 #include <stdint.h>
 #include "ch.hpp"
 #include "hal.h"
-#include "usbcfg.h"
 #include "hardware_interface.hpp"
-#include "freemaster_wrapper.hpp"
+#include "uavcan.hpp"
 #include "main.hpp"
 
 using namespace chibios_rt;
 
-static modules::freemaster::thread freemaster;
 static control::thread controller;
 
 volatile bool save = false;
@@ -48,31 +46,9 @@ int main(void)
 	halInit();
 	System::init();
 
-	/*
-	 * Initializes two serial-over-USB CDC drivers.
-	 */
-	sduObjectInit(&SDU1);
-	sduStart(&SDU1, &serusbcfg1);
-	sduObjectInit(&SDU2);
-	sduStart(&SDU2, &serusbcfg2);
+	// main is just above idle
+	chThdSetPriority(IDLEPRIO);
 
-	/*
-	 * Activates the USB driver and then the USB bus pull-up on D+.
-	 * Note, a delay is inserted in order to not have to disconnect the cable
-	 * after a reset.
-	 */
-	usbDisconnectBus(serusbcfg1.usbp);
-	usbDisconnectBus(serusbcfg2.usbp);
-	chThdSleepMilliseconds(1500);
-	usbStart(serusbcfg1.usbp, &usbcfg);
-	usbStart(serusbcfg2.usbp, &usbcfg);
-	usbConnectBus(serusbcfg1.usbp);
-	usbConnectBus(serusbcfg2.usbp);
-
-	/*
-	 * start freemaster thread
-	 */
-	freemaster.start(NORMALPRIO);
 	hardware::control_thread = controller.start(HIGHPRIO);
 
 	/*
@@ -81,10 +57,15 @@ int main(void)
 	hardware::memory::Init();
 	hardware::pwm::Init();
 	hardware::adc::Init();
+	uavcan::Init();
 
 	settings.Load();
 
 	hardware::pwm::EnableOutputs();
+
+	// set node operational
+	values.uavcan.mode = uavcan::mode_e::UAVCAN_NODE_MODE_OPERATIONAL;
+
 
 	/*
 	 * Normal main() thread activity, in this demo it does nothing except
@@ -107,7 +88,8 @@ int main(void)
 		{
 			palClearLine(LINE_LED_PWM);
 		}
-		BaseThread::sleep(TIME_MS2I(10));
+
+		uavcan::Run();
 	}
 }
 
@@ -162,8 +144,6 @@ namespace control
 
 			/* Checks if an IRQ happened else wait.*/
 			chEvtWaitAny((eventmask_t)1);
-
-			palSetLine(LINE_HALL_C);
 
 			hardware::adc::PrepareSamples();
 
@@ -246,8 +226,6 @@ namespace control
 
 					// next transform to abc system
 					u_abc[i] = systems::transform::InverseClark(u_tmp);
-
-					modules::freemaster::Recorder();
 				}
 			}
 			else
@@ -288,8 +266,6 @@ namespace control
 					{
 						values.motor.rotor.phi += values.motor.rotor.omega * settings.converter.ts;
 					}
-
-					modules::freemaster::Recorder();
 				}
 
 				if(settings.control.current.active)
@@ -326,7 +302,6 @@ namespace control
 			}
 
 			hardware::pwm::SetDutys(u_abc);
-			palClearLine(LINE_HALL_C);
 		}
 
 	}

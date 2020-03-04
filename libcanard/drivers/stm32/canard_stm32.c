@@ -6,10 +6,10 @@
  * Author: Pavel Kirienko <pavel.kirienko@zubax.com>
  */
 
-#include "../../../libcanard/drivers/stm32/canard_stm32.h"
-
 #include <unistd.h>
-#include "../../../libcanard/drivers/stm32/_internal_bxcan.h"
+#include "ch.h"
+#include "drivers/stm32/canard_stm32.h"
+#include "drivers/stm32/_internal_bxcan.h"
 
 
 #if CANARD_STM32_USE_CAN2
@@ -137,7 +137,7 @@ static bool waitMSRINAKBitStateChange(volatile const CanardSTM32CANType* const b
         }
 
         // Sleep 1 millisecond
-        usleep(1000);           // TODO: This function may be missing on some platforms
+        chThdSleepMilliseconds(1);
     }
 
     return false;
