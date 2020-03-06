@@ -34,16 +34,21 @@ class uavcan
 {
 private:
 	static constexpr sysinterval_t UAVCAN_SPIN_PERIOD = TIME_S2I(1);
+	static constexpr sysinterval_t UAVCAN_PUBLISH_PERIOD = TIME_MS2I(10);
 
 	static constexpr std::uint8_t APP_VERSION_MAJOR = 0;
 	static constexpr std::uint8_t APP_VERSION_MINOR = 1;
 	static constexpr char APP_NODE_NAME[] = "org.unimoc.hardware.4850";
 	static constexpr std::uint32_t GIT_HASH = 0xBADC0FFE;            // Normally this should be queried from the VCS when building the firmware
 
+	static constexpr std::uint32_t UAVCAN_NODE_ID_ALLOCATION_DATA_TYPE_ID = 1;
+	static constexpr std::uint64_t UAVCAN_NODE_ID_ALLOCATION_DATA_TYPE_SIGNATURE = 0x0b2a812620a11d40;
+	static constexpr std::uint64_t UAVCAN_NODE_ID_ALLOCATION_RANDOM_TIMEOUT_RANGE_USEC = 400000UL;
+	static constexpr std::uint64_t UAVCAN_NODE_ID_ALLOCATION_REQUEST_DELAY_OFFSET_USEC = 600000UL;
+
 	static constexpr std::size_t UAVCAN_GET_NODE_INFO_RESPONSE_MAX_SIZE = ((3015 + 7) / 8);
 	static constexpr std::uint64_t UAVCAN_GET_NODE_INFO_DATA_TYPE_SIGNATURE = 0xee468a8121c46a9e;
 	static constexpr std::uint32_t UAVCAN_GET_NODE_INFO_DATA_TYPE_ID = 1;
-
 
 	static constexpr std::uint32_t UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_ID  			= 1030;
 	static constexpr std::uint64_t UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_SIGNATURE	= 0x217f5c87d7ec951d;
@@ -68,6 +73,17 @@ private:
 	///< Arena for memory allocation, used by the libcanard library
 	static uint8_t canard_memory_pool[1024];
 
+	/*
+	 * Variables used for dynamic node ID allocation.
+	 * RTFM at http://uavcan.org/Specification/6._Application_level_functions/#dynamic-node-id-allocation
+	 */
+	///< When the next node ID allocation request should be sent
+	static uint64_t send_next_node_id_allocation_request_at;
+
+	///< Depends on the stage of the next request
+	static uint8_t node_id_allocation_unique_id_offset;
+
+
 	/**
 	 * @brief send perodic messages like node status
 	 */
@@ -82,6 +98,13 @@ private:
 	 * @brief get messages from the mailboxes and handle them
 	 */
 	static void Receive(void);
+
+	/**
+	 * @brief publish a float value with key
+	 * @param value
+	 * @param key		key is 3 characters long at best
+	 */
+	static void PublishFloatbyKey(const float value, const char* const key);
 
 	/**
 	 * @brief on reveive callback to determine if the message is handled or not
@@ -148,10 +171,21 @@ private:
 	static void GetNodeInfoHandleCanard(CanardRxTransfer* transfer);
 
 	/**
+	 * @brief used to get command values from the GUI
+	 * @param transfer
+	 */
+	static void RawcmdHandleCanard(CanardRxTransfer* transfer);
+
+	/**
 	 * Generates a unique 24byte number out of the 96bit unique id of the mcu
 	 * @param out_uid unique id output buffer
 	 */
 	static void ReadUniqueID(std::uint8_t* out_uid);
+
+	/**
+	 * Returns a pseudo random float in the range [0, 1].
+	 */
+	static float GetRandomFloat(void);
 
 public:
 	enum struct health_e: std::uint8_t

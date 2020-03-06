@@ -154,6 +154,20 @@ settings_ts settings =
 		},
 	},
 
+
+	/**
+	 * uavcan settings
+	 */
+	.uavcan =
+	{
+		///< node id
+		.node_id = 0,
+
+		///< drive id for commands 0 to 3
+		.drive_id = 0,
+	},
+
+
 	///< crc32 value for the hole settings
 	.crc = 0,
 };
@@ -188,4 +202,9 @@ bool settings_s::Load(void)
 	}
 	return result;
 }
+
+const parameter_ts parameters[] =
+{
+	{.setting = (void*)&settings.motor.rs, .name = "motor.rs", .default_val = 0.2f, .min_val = 1e-3f, .max_val = 10.0f, .type = parameter_s::type_e::PARAM_TYPE_FLOAT},
+};
 

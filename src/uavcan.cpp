@@ -21,6 +21,7 @@
 #include "uavcan.hpp"
 #include "hal.h"
 #include "values.hpp"
+#include "settings.hpp"
 #include "drivers/stm32/canard_stm32.h"
 
 
@@ -28,7 +29,19 @@
 CanardInstance uavcan::canard;
 
 ///< Arena for memory allocation, used by the libcanard library
-std::uint8_t uavcan::canard_memory_pool[1024] = {0};
+std::uint8_t uavcan::canard_memory_pool[1024];
+
+
+/*
+ * Variables used for dynamic node ID allocation.
+ * RTFM at http://uavcan.org/Specification/6._Application_level_functions/#dynamic-node-id-allocation
+ */
+///< When the next node ID allocation request should be sent
+uint64_t uavcan::send_next_node_id_allocation_request_at;
+
+///< Depends on the stage of the next request
+uint8_t uavcan::node_id_allocation_unique_id_offset;
+
 
 constexpr char uavcan::APP_NODE_NAME[];
 constexpr std::uint32_t uavcan::GIT_HASH;
@@ -61,7 +74,40 @@ void uavcan::Init(void)
 			ShouldAcceptTransfer,              // Callback, see CanardShouldAcceptTransfer
 			NULL);
 
-	canardSetLocalNodeID(&canard, 100);
+	// only set node id if we have save one.
+	if(settings.uavcan.node_id != CANARD_BROADCAST_NODE_ID)
+	{
+		canardSetLocalNodeID(&canard, settings.uavcan.node_id);
+	}
+}
+
+/**
+ * uavcan handling
+ */
+void uavcan::Run(void)
+{
+	static sysinterval_t publish_time = 0;
+
+	Send();
+	Receive();
+	Spin();
+
+	// rate limiting
+	if(chibios_rt::System::isSystemTimeWithin(publish_time, publish_time + UAVCAN_PUBLISH_PERIOD))
+	{
+		return;
+	}
+	else
+	{
+		publish_time = chibios_rt::System::getTime();
+
+		PublishFloatbyKey(values.motor.rotor.i.d, "i.d");
+		PublishFloatbyKey(values.motor.rotor.i.q, "i.q");
+		PublishFloatbyKey(values.motor.rotor.omega, "w");
+		PublishFloatbyKey(values.motor.rotor.phi, "phi");
+		PublishFloatbyKey(values.motor.y.alpha, "y.a");
+		PublishFloatbyKey(values.motor.y.beta, "y.b");
+	}
 }
 
 /**
@@ -130,6 +176,29 @@ void uavcan::Receive(void)
 }
 
 /**
+ * @brief publish a float value with key
+ * @param value
+ * @param key		key is 3 characters long at best and 58 the longest
+ */
+void uavcan::PublishFloatbyKey(const float value, const char* const key)
+{
+	static uint8_t transfer_id = 0;
+	uint8_t buffer[UAVCAN_PROTOCOL_DEBUG_KEYVALUE_MESSAGE_SIZE];
+
+	canardEncodeScalar(buffer, 0, 32, &value);
+
+	memcpy(&buffer[4], key, strlen(key));
+
+	canardBroadcast(&canard,
+			UAVCAN_PROTOCOL_DEBUG_KEYVALUE_SIGNATURE,
+			UAVCAN_PROTOCOL_DEBUG_KEYVALUE_ID,
+			&transfer_id,
+			CANARD_TRANSFER_PRIORITY_LOW,
+			buffer,
+			4 + strlen(key));
+}
+
+/**
  * this callback is called every time a transfer is received
  * to determine if it should be passed further to the library
  * or ignored. Here we should filter out all messages
@@ -149,19 +218,39 @@ bool uavcan::ShouldAcceptTransfer(const CanardInstance* ins,
 		uint8_t source_node_id)
 {
 	(void)source_node_id;
-	(void)ins;
 
-	if ((transfer_type == CanardTransferTypeRequest) &&
-			(data_type_id == UAVCAN_GET_NODE_INFO_DATA_TYPE_ID))
+	if (canardGetLocalNodeID(ins) == CANARD_BROADCAST_NODE_ID)
 	{
-		*out_data_type_signature = UAVCAN_GET_NODE_INFO_DATA_TYPE_SIGNATURE;
-		return true;
+		/*
+		 * If we're in the process of allocation of dynamic node ID, accept only relevant transfers.
+		 */
+		if ((transfer_type == CanardTransferTypeBroadcast) &&
+				(data_type_id == UAVCAN_NODE_ID_ALLOCATION_DATA_TYPE_ID))
+		{
+			*out_data_type_signature = UAVCAN_NODE_ID_ALLOCATION_DATA_TYPE_SIGNATURE;
+			return true;
+		}
 	}
-
-	if(data_type_id == UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_ID)
+	else
 	{
-		*out_data_type_signature = UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_SIGNATURE;
-		return true;
+		if ((transfer_type == CanardTransferTypeRequest) &&
+				(data_type_id == UAVCAN_GET_NODE_INFO_DATA_TYPE_ID))
+		{
+			*out_data_type_signature = UAVCAN_GET_NODE_INFO_DATA_TYPE_SIGNATURE;
+			return true;
+		}
+
+		if (data_type_id == UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_ID)
+		{
+			*out_data_type_signature = UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_SIGNATURE;
+			return true;
+		}
+
+		if (data_type_id == UAVCAN_PROTOCOL_PARAM_GETSET_ID)
+		{
+			*out_data_type_signature = UAVCAN_PROTOCOL_PARAM_GETSET_SIGNATURE;
+			return true;
+		}
 	}
 
 	return false;
@@ -178,12 +267,90 @@ bool uavcan::ShouldAcceptTransfer(const CanardInstance* ins,
  */
 void uavcan::OnTransferReceived(CanardInstance* ins, CanardRxTransfer* transfer)
 {
-	(void)ins;
+	/*
+	 * Dynamic node ID allocation protocol.
+	 * Taking this branch only if we don't have a node ID, ignoring otherwise.
+	 */
+	if ((canardGetLocalNodeID(ins) == CANARD_BROADCAST_NODE_ID) &&
+			(transfer->transfer_type == CanardTransferTypeBroadcast) &&
+			(transfer->data_type_id == UAVCAN_NODE_ID_ALLOCATION_DATA_TYPE_ID))
+	{
+		// Rule C - updating the randomized time interval
+		send_next_node_id_allocation_request_at =
+				(uint64_t)chibios_rt::System::getTime()*(1000000UL/CH_CFG_ST_FREQUENCY) + UAVCAN_NODE_ID_ALLOCATION_REQUEST_DELAY_OFFSET_USEC +
+				(uint64_t)(GetRandomFloat() * UAVCAN_NODE_ID_ALLOCATION_RANDOM_TIMEOUT_RANGE_USEC);
+
+		if (transfer->source_node_id == CANARD_BROADCAST_NODE_ID)
+		{
+			puts("Allocation request from another allocatee");
+			node_id_allocation_unique_id_offset = 0;
+			return;
+		}
+
+		// Copying the unique ID from the message
+		static const uint8_t UniqueIDBitOffset = 8;
+		uint8_t received_unique_id[UNIQUE_ID_LENGTH_BYTES];
+		uint8_t received_unique_id_len = 0;
+		for (; received_unique_id_len < (transfer->payload_len - (UniqueIDBitOffset / 8U)); received_unique_id_len++)
+		{
+			assert(received_unique_id_len < UNIQUE_ID_LENGTH_BYTES);
+			const uint8_t bit_offset = (uint8_t)(UniqueIDBitOffset + received_unique_id_len * 8U);
+			(void) canardDecodeScalar(transfer, bit_offset, 8, false, &received_unique_id[received_unique_id_len]);
+		}
+
+		// Obtaining the local unique ID
+		uint8_t my_unique_id[UNIQUE_ID_LENGTH_BYTES];
+		ReadUniqueID(my_unique_id);
+
+		// Matching the received UID against the local one
+		if (memcmp(received_unique_id, my_unique_id, received_unique_id_len) != 0)
+		{
+			//printf("Mismatching allocation response from %d:", transfer->source_node_id);
+			for (uint8_t i = 0; i < received_unique_id_len; i++)
+			{
+				//printf(" %02x/%02x", received_unique_id[i], my_unique_id[i]);
+			}
+			puts("");
+			node_id_allocation_unique_id_offset = 0;
+			return;         // No match, return
+		}
+
+		if (received_unique_id_len < UNIQUE_ID_LENGTH_BYTES)
+		{
+			// The allocator has confirmed part of unique ID, switching to the next stage and updating the timeout.
+			node_id_allocation_unique_id_offset = received_unique_id_len;
+			send_next_node_id_allocation_request_at -= UAVCAN_NODE_ID_ALLOCATION_REQUEST_DELAY_OFFSET_USEC;
+
+			//printf("Matching allocation response from %d offset %d\n",
+//					transfer->source_node_id, node_id_allocation_unique_id_offset);
+		}
+		else
+		{
+			// Allocation complete - copying the allocated node ID from the message
+			uint8_t allocated_node_id = 0;
+			(void) canardDecodeScalar(transfer, 0, 7, false, &allocated_node_id);
+			assert(allocated_node_id <= 127);
+
+			canardSetLocalNodeID(ins, allocated_node_id);
+			//printf("Node ID %d allocated by %d\n", allocated_node_id, transfer->source_node_id);
+		}
+	}
+
 
 	if ((transfer->transfer_type == CanardTransferTypeRequest) &&
 			(transfer->data_type_id == UAVCAN_GET_NODE_INFO_DATA_TYPE_ID))
 	{
 		GetNodeInfoHandleCanard(transfer);
+	}
+
+	if (transfer->data_type_id == UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_ID)
+	{
+		RawcmdHandleCanard(transfer);
+	}
+
+	if (transfer->data_type_id == UAVCAN_PROTOCOL_PARAM_GETSET_ID)
+	{
+//		GetsetHandleCanard(transfer);
 	}
 
 }
@@ -244,8 +411,11 @@ uint16_t uavcan::MakeNodeInfoMessage(std::uint8_t buffer[UAVCAN_GET_NODE_INFO_RE
 void uavcan::GetNodeInfoHandleCanard(CanardRxTransfer* transfer)
 {
 	uint8_t buffer[UAVCAN_GET_NODE_INFO_RESPONSE_MAX_SIZE];
+
 	memset(buffer, 0, UAVCAN_GET_NODE_INFO_RESPONSE_MAX_SIZE);
+
 	const uint16_t len = MakeNodeInfoMessage(buffer);
+
 	int result = canardRequestOrRespond(&canard,
 			transfer->source_node_id,
 			UAVCAN_GET_NODE_INFO_DATA_TYPE_SIGNATURE,
@@ -259,6 +429,21 @@ void uavcan::GetNodeInfoHandleCanard(CanardRxTransfer* transfer)
 	if (result < 0)
 	{
 		// TODO: handle the error
+	}
+}
+
+/**
+ * @brief used to get command values from the GUI
+ * @param transfer
+ */
+void uavcan::RawcmdHandleCanard(CanardRxTransfer* transfer)
+{
+	std::int32_t cmd;
+	std::uint32_t offset = 14*settings.uavcan.drive_id;
+	if(canardDecodeScalar(transfer, offset, 14, true, &cmd)>=14)
+	{
+		constexpr float _1by8192 = 1.0f/8192.0f;
+		values.motor.rotor.setpoint.i.q = (float)cmd*_1by8192*settings.motor.limits.current;
 	}
 }
 
@@ -280,16 +465,20 @@ void uavcan::ReadUniqueID(std::uint8_t* out_uid)
 }
 
 /**
- * uavcan handling
+ * Returns a pseudo random float in the range [0, 1].
  */
-void uavcan::Run(void)
+float uavcan::GetRandomFloat(void)
 {
-	while(1)
+	static bool initialized = false;
+	if (!initialized)                   // This is not thread safe, but a race condition here is not harmful.
 	{
-		Send();
-		Receive();
-		Spin();
+		///< Pointer to 96bit unique id of the MCU, see ref man page 1397
+		const std::uint32_t* const UID = (std::uint32_t*)0x1FF07A10;
+		initialized = true;
+		srand(*UID);
 	}
+	// coverity[dont_call]
+	return (float)rand() / (float)RAND_MAX;
 }
 
 
