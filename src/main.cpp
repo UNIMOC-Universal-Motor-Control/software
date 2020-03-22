@@ -163,8 +163,6 @@ namespace control
 			/* Checks if an IRQ happened else wait.*/
 			chEvtWaitAny((eventmask_t)1);
 
-			palSetLine(LINE_HALL_C);
-
 			hardware::adc::PrepareSamples();
 
 			values.battery.u = hardware::adc::GetDCBusVoltage();
@@ -326,7 +324,6 @@ namespace control
 			}
 
 			hardware::pwm::SetDutys(u_abc);
-			palClearLine(LINE_HALL_C);
 		}
 
 	}

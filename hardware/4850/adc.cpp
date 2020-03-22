@@ -341,7 +341,7 @@ void hardware::adc::GetCurrentsInjection(std::array<systems::abc, pwm::INJECTION
 float hardware::adc::GetDCBusVoltage(void)
 {
 	constexpr float divisor = 4096.0f * 2.0f * ADC_SEQ_BUFFERED;
-	constexpr float ADC_2_VDC = (20e3f+1e3f)/1e3f * 3.3f/divisor;
+	constexpr float ADC_2_VDC = (24e3f+1.2e3f)/1.2e3f * 3.3f/divisor;
 	uint32_t sum = divisor;
 	float vdc;
 
