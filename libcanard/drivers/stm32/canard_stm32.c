@@ -213,6 +213,7 @@ int16_t canardSTM32Init(const CanardSTM32CANTimings* const timings,
     BXCAN->MCR &= ~CANARD_STM32_CAN_MCR_SLEEP;                  // Exit sleep mode
     BXCAN->MCR |= CANARD_STM32_CAN_MCR_INRQ;                    // Request init
 
+    chThdSleepMilliseconds(1);
     if (!waitMSRINAKBitStateChange(BXCAN, true))                // Wait for synchronization
     {
         BXCAN->MCR = CANARD_STM32_CAN_MCR_RESET;
@@ -234,6 +235,7 @@ int16_t canardSTM32Init(const CanardSTM32CANTimings* const timings,
 
     BXCAN->MCR &= ~CANARD_STM32_CAN_MCR_INRQ;   // Leave init mode
 
+    chThdSleepMilliseconds(1);
     if (!waitMSRINAKBitStateChange(BXCAN, false))
     {
         BXCAN->MCR = CANARD_STM32_CAN_MCR_RESET;

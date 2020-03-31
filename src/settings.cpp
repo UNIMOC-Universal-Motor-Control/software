@@ -161,7 +161,7 @@ settings_ts settings =
 	.uavcan =
 	{
 		///< node id
-		.node_id = 0,
+		.node_id = 2,
 
 		///< drive id for commands 0 to 3
 		.drive_id = 0,

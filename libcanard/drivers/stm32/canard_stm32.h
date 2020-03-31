@@ -10,7 +10,7 @@
 #define CANARD_STM32_H
 
 #include <string.h>     // NOLINT
-#include "../../../libcanard/canard.h"
+#include "canard.h"
 
 
 #ifdef __cplusplus

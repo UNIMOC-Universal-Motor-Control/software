@@ -131,7 +131,7 @@
  *          infinite loop.
  */
 #if !defined(CH_CFG_NO_IDLE_THREAD)
-#define CH_CFG_NO_IDLE_THREAD               TRUE
+#define CH_CFG_NO_IDLE_THREAD               FALSE
 #endif
 
 /** @} */

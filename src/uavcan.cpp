@@ -93,7 +93,7 @@ void uavcan::Run(void)
 	Spin();
 
 	// rate limiting
-	if(chibios_rt::System::isSystemTimeWithin(publish_time, publish_time + UAVCAN_PUBLISH_PERIOD))
+	if(!chibios_rt::System::isSystemTimeWithin(publish_time, publish_time + UAVCAN_PUBLISH_PERIOD))
 	{
 		return;
 	}
@@ -119,7 +119,7 @@ void uavcan::Spin(void)
 	static uint8_t transfer_id = 0;           // This variable MUST BE STATIC; refer to the libcanard documentation for the background
 
 	// rate limiting
-	if(chibios_rt::System::isSystemTimeWithin(spin_time, spin_time + UAVCAN_SPIN_PERIOD))
+	if(!chibios_rt::System::isSystemTimeWithin(spin_time, spin_time + UAVCAN_SPIN_PERIOD))
 	{
 		return;
 	}

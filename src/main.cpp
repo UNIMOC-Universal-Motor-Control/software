@@ -21,7 +21,7 @@
 #include "ch.hpp"
 #include "hal.h"
 #include "hardware_interface.hpp"
-#include "uavcan.hpp"
+//#include "uavcan.hpp"
 #include "main.hpp"
 
 using namespace chibios_rt;
@@ -46,9 +46,6 @@ int main(void)
 	halInit();
 	System::init();
 
-	// main is just above idle
-	chThdSetPriority(IDLEPRIO);
-
 	hardware::control_thread = controller.start(HIGHPRIO);
 
 	/*
@@ -57,9 +54,9 @@ int main(void)
 	hardware::memory::Init();
 	hardware::pwm::Init();
 	hardware::adc::Init();
-	uavcan::Init();
+//	uavcan::Init();
 
-	settings.Load();
+//	settings.Load();
 
 	hardware::pwm::EnableOutputs();
 
@@ -77,8 +74,8 @@ int main(void)
 		values.motor.temp = hardware::adc::GetMotorTemp();
 
 
-		if(save) settings.Save();
-				save = false;
+//		if(save) settings.Save();
+//				save = false;
 
 		if(hardware::pwm::OutputActive())
 		{
