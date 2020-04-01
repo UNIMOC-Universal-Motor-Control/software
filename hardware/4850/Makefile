@@ -5,7 +5,7 @@
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -Og -ggdb -fomit-frame-pointer -falign-functions=16 -fsingle-precision-constant
+  USE_OPT = -Os -ggdb -fomit-frame-pointer -falign-functions=16 -fsingle-precision-constant
 endif
 
 # C specific options here (added to USE_OPT).
@@ -30,7 +30,7 @@ endif
 
 # Enable this if you want link time optimizations (LTO).
 ifeq ($(USE_LTO),)
-  USE_LTO = yes
+  USE_LTO = no
 endif
 
 # Enable this if you want to see the full log while compiling.
@@ -122,6 +122,7 @@ LDSCRIPT= $(STARTUPLD)/STM32F730x8.ld
 # setting.
 CSRC = $(ALLCSRC) \
        $(CHIBIOS)/os/various/syscalls.c \
+       usbcfg.c \
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.

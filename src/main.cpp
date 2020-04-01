@@ -20,12 +20,15 @@
 #include <stdint.h>
 #include "ch.hpp"
 #include "hal.h"
+#include "usbcfg.h"
 #include "hardware_interface.hpp"
-//#include "uavcan.hpp"
+#include "freemaster_wrapper.hpp"
+#include "uavcan.hpp"
 #include "main.hpp"
 
 using namespace chibios_rt;
 
+static modules::freemaster::thread freemaster;
 static control::thread controller;
 
 volatile bool save = false;
@@ -46,7 +49,21 @@ int main(void)
 	halInit();
 	System::init();
 
-	hardware::control_thread = controller.start(HIGHPRIO);
+	/*
+	 * Initializes two serial-over-USB CDC drivers.
+	 */
+	sduObjectInit(&SDU1);
+	sduStart(&SDU1, &serusbcfg1);
+
+	/*
+	 * Activates the USB driver and then the USB bus pull-up on D+.
+	 * Note, a delay is inserted in order to not have to disconnect the cable
+	 * after a reset.
+	 */
+	usbDisconnectBus(serusbcfg1.usbp);
+	chThdSleepMilliseconds(1500);
+	usbStart(serusbcfg1.usbp, &usbcfg);
+	usbConnectBus(serusbcfg1.usbp);
 
 	/*
 	 * initialize hardware with no control thread
@@ -54,15 +71,23 @@ int main(void)
 	hardware::memory::Init();
 	hardware::pwm::Init();
 	hardware::adc::Init();
-//	uavcan::Init();
+	uavcan::Init();
 
-//	settings.Load();
+	settings.Load();
+
 
 	hardware::pwm::EnableOutputs();
 
 	// set node operational
 	values.uavcan.mode = uavcan::mode_e::UAVCAN_NODE_MODE_OPERATIONAL;
 
+	chThdSetPriority(LOWPRIO);
+
+	/*
+	 * start threads
+	 */
+	freemaster.start(NORMALPRIO);
+	hardware::control_thread = controller.start(HIGHPRIO);
 
 	/*
 	 * Normal main() thread activity, in this demo it does nothing except
@@ -74,8 +99,8 @@ int main(void)
 		values.motor.temp = hardware::adc::GetMotorTemp();
 
 
-//		if(save) settings.Save();
-//				save = false;
+		if(save) settings.Save();
+				save = false;
 
 		if(hardware::pwm::OutputActive())
 		{
@@ -85,7 +110,6 @@ int main(void)
 		{
 			palClearLine(LINE_LED_PWM);
 		}
-
 		uavcan::Run();
 	}
 }

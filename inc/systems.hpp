@@ -21,6 +21,7 @@
 
 #include <cstdint>
 #include <cmath>
+#include <cstring>
 #include <climits>
 #include <array>
 
@@ -39,22 +40,24 @@ namespace math {
 	 */
 	inline float sqrt_fast(float x)
 	{
-	  unsigned int i = *(unsigned int*) &x;
+		std::uint32_t i;
+		std::memcpy(&i, &x, sizeof(std::uint32_t));
 
-	  // adjust bias
-	  i  += 127 << 23;
-	  // approximation of square root
-	  i >>= 1;
+		// adjust bias
+		i  += 127 << 23;
+		// approximation of square root
+		i >>= 1;
 
-	  return *(float*) &i;
+		std::memcpy(&x, &i, sizeof(float));
+		return x;
 	}
 
-    constexpr float PI =           std::atan(1.0f) * 4.0f;
-    constexpr float E =            2.71828182845904523536;
-    constexpr float _2PI =         2.0f * PI;
-    constexpr float PIby2 =         PI / 2.0f;
-    constexpr float SQRT2 =        std::sqrt(2.0f);
-    constexpr float SQRT1_2 =      1.0f/std::sqrt(2.0f);
+	constexpr float PI =           std::atan(1.0f) * 4.0f;
+	constexpr float E =            2.71828182845904523536;
+	constexpr float _2PI =         2.0f * PI;
+	constexpr float PIby2 =        PI / 2.0f;
+	constexpr float SQRT2 =        std::sqrt(2.0f);
+	constexpr float SQRT1_2 =      1.0f/std::sqrt(2.0f);
 
 
 };
