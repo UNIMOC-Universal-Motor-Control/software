@@ -545,7 +545,7 @@
 #define FMSTR_DEMO_SUPPORT_FLT 1  /* support for float type */
 #endif
 #ifndef FMSTR_DEMO_SUPPORT_DBL
-#define FMSTR_DEMO_SUPPORT_DBL 1  /* support for double type */
+#define FMSTR_DEMO_SUPPORT_DBL 0  /* support for double type */
 #endif
 
 #endif /* __FREEMASTER_DEF_CFG_H */

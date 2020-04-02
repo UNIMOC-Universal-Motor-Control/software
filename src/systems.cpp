@@ -32,7 +32,7 @@ constexpr uint32_t FAST_MATH_TABLE_SIZE = 512;
  @par
   where PI value is  3.14159265358979
  */
-const float SINE_TABLE[FAST_MATH_TABLE_SIZE + 1] =
+constexpr float SINE_TABLE[FAST_MATH_TABLE_SIZE + 1] =
 {
 		0.00000000f, 0.01227154f, 0.02454123f, 0.03680722f, 0.04906767f, 0.06132074f,
 		0.07356456f, 0.08579731f, 0.09801714f, 0.11022221f, 0.12241068f, 0.13458071f,
@@ -144,7 +144,7 @@ namespace systems
      */
     float Length(const dq& vector)
     {
-        return math::sqrt_fast(vector.d*vector.d + vector.q*vector.q);
+        return std::sqrt(vector.d*vector.d + vector.q*vector.q);
     }
 
     /**
@@ -155,7 +155,7 @@ namespace systems
      */
     float Length(const alpha_beta& vector)
     {
-        return math::sqrt_fast(vector.alpha*vector.alpha + vector.beta*vector.beta);
+        return std::sqrt(vector.alpha*vector.alpha + vector.beta*vector.beta);
     }
 
     /**
@@ -190,7 +190,7 @@ namespace systems
      */
     void SinCos(const float theta, sin_cos& out)
     {
-    	const float _1by2PI = 1.0f/math::_2PI;
+    	constexpr float _1by2PI = 1.0f/math::_2PI;
     	float Dn = math::_2PI / FAST_MATH_TABLE_SIZE;    /* delta between the two points (fixed), in this case 2*pi/FAST_MATH_TABLE_SIZE */
     	float fract, in;                                 /* Temporary input, output variables */
     	uint16_t indexS, indexC;                         /* Index variable */
@@ -288,8 +288,8 @@ namespace systems
          */
         alpha_beta Clark(const abc& vector)
         {
-            const float sqrt3by2 = math::sqrt_fast(3.0f)/2.0f;
-            const float _2by3 = 2.0f / 3.0f;
+            constexpr float sqrt3by2 = std::sqrt(3.0f)/2.0f;
+            constexpr float _2by3 = 2.0f / 3.0f;
 
             alpha_beta result;
 
@@ -328,7 +328,7 @@ namespace systems
          */
         abc InverseClark(const alpha_beta& vector)
         {
-            const float sqrt3by2 = math::sqrt_fast(3.0f)/2.0f;
+            constexpr float sqrt3by2 = std::sqrt(3.0f)/2.0f;
             abc result;
 
             result.a = vector.alpha;

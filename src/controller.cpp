@@ -18,6 +18,7 @@
  */
 #include <cstdint>
 #include <cstring>
+#include <cmath>
 #include "controller.hpp"
 #include "filter.hpp"
 #include "values.hpp"
@@ -32,15 +33,14 @@ namespace control
 	/**
 	 * @brief Pi controller constructor with all essential parameters.
 	 *
-	 * @param new_ts				set sample time.
 	 * @param new_kp				proportional gain.
 	 * @param new_tn				integral action time.
 	 * @param new_positive_limit	positive output limit.
 	 * @param new_negative_limit	negative output limit.
 	 */
-	pi::pi(const float new_ts, const float new_kp, const float new_tn,
+	pi::pi(const float new_kp, const float new_tn,
 			const float new_positive_limit, const float new_negative_limit):
-			ts(new_ts), error_sum(0.0f), output_unlimited(0.0f), output(0.0f), kp(new_kp),
+			error_sum(0.0f), output_unlimited(0.0f), output(0.0f), kp(new_kp),
 			ki(SetKi(kp, ts, new_tn)), positive_limit(new_positive_limit), negative_limit(new_negative_limit)
 	{}
 
@@ -90,14 +90,13 @@ namespace control
 	 *
 	 * so to get G_o = 1/s for the open loop, K_p = L_s and K_i = R_s
 	 *
-	 * @param new_ts                set sample time.
 	 * @param rs	                series resistance of the winding
 	 * @param l                		series inductance of the winding
 	 * @param psi                	rotor flux constant
 	 * @param new_limit   			output limit.
 	 */
-	complex_current::complex_current(const float new_ts, const float rs, const systems::dq l, const float new_psi, const float new_limit):
-						ts(new_ts), error_sum{0.0f, 0.0f}, output_unlimited{0.0f, 0.0f}, output{0.0f, 0.0f}, kp{l.d, l.q},
+	complex_current::complex_current(const float rs, const systems::dq l, const float new_psi, const float new_limit):
+						error_sum{0.0f, 0.0f}, output_unlimited{0.0f, 0.0f}, output{0.0f, 0.0f}, kp{l.d, l.q},
 						ki(rs), psi(new_psi), limit(new_limit)
 	{}
 
@@ -151,16 +150,15 @@ namespace control
 	 *
 	 * so to get G_o = 1/s for the open loop, K_p = L_s and K_i = R_s
 	 *
-	 * @param new_ts                set sample time.
 	 * @param new_rs                series resistance of the winding
 	 * @param new_l            		series inductance of the winding
 	 * @param new_psi              	rotor flux constant
 	 * @param new_limit   			output limit.
 	 */
-	smith_predictor_current::smith_predictor_current(const float new_ts, const float new_rs, const systems::dq new_l,
+	smith_predictor_current::smith_predictor_current(const float new_rs, const systems::dq new_l,
 			const float new_psi, const float new_limit, const float new_hwQ, const float new_hwFc,
-			const float new_fQ, const float new_fFc): ts(new_ts), rs(new_rs), l(new_l), psi(new_psi),
-			hwQ(new_hwQ), hwFc(new_hwFc), fQ(new_fQ), fFc(new_fFc), ctrl(new_ts, rs, l , psi, new_limit),
+			const float new_fQ, const float new_fFc): rs(new_rs), l(new_l), psi(new_psi),
+			hwQ(new_hwQ), hwFc(new_hwFc), fQ(new_fQ), fFc(new_fFc), ctrl(rs, l , psi, new_limit),
 			fd(filter::lowpass, fFc, fQ, 0.0f), fq(filter::lowpass, fFc, fQ, 0.0f),
 			fomega(filter::lowpass, fFc, fQ, 0.0f),
 			hwd(filter::lowpass, hwFc, hwQ, 0.0f), hwq(filter::lowpass, hwFc, hwQ, 0.0f),
@@ -214,7 +212,7 @@ namespace control
 	 *
 	 */
 	foc::foc(const float hwQ, const float hwFc, const float fQ, const float fFc):
-			ctrl(settings.converter.ts, settings.motor.rs, settings.motor.l, settings.motor.psi, 0.0f,
+			ctrl(settings.motor.rs, settings.motor.l, settings.motor.psi, 0.0f,
 				hwQ, hwFc, fQ, fFc)
 	{}
 
@@ -227,7 +225,7 @@ namespace control
 		// only set voltages with active current control
 		if(settings.control.current.active)
 		{
-			constexpr float _1bysqrt3 = 1.0f / std::sqrt(3);
+			constexpr float _1bysqrt3 = 1.0f / std::sqrt(3.0f);
 			// Current controller is limited to 1/sqrt(3)*DC Bus Voltage due to SVM
 			ctrl.limit = _1bysqrt3 * values.battery.u;
 

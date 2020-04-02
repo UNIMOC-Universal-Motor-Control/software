@@ -162,6 +162,8 @@ namespace control
 		 */
 		while (TRUE)
 		{
+			systems::sin_cos sin_cos;
+			float angle;
 
 			/* Checks if an IRQ happened else wait.*/
 			chEvtWaitAny((eventmask_t)1);
@@ -172,66 +174,76 @@ namespace control
 
 			hardware::adc::GetCurrentsMean(i_dc);
 
-			if(settings.motor.u_inj != 0.0f)
+			i_abc = InjectionMean(i_dc);
+
+			hardware::adc::GetCurrentsInjection(i_ac);
+
+			for (uint8_t i = 0; i < hardware::pwm::INJECTION_CYCLES; ++i)
 			{
-				systems::sin_cos sin_cos;
+				i_ab_ac[i] = systems::transform::Clark(i_ac[i]);
+			}
+			values.motor.y = admittance.GetVector(i_ab_ac);
 
-				// slow control with injection
-				settings.converter.ts = hardware::Tc * hardware::pwm::INJECTION_CYCLES;
+			// calculate the sine and cosine of the new angle
+			angle = values.motor.rotor.phi
+					+ values.motor.rotor.omega * hardware::Tc;
 
-				i_abc = InjectionMean(i_dc);
+			// calculate new
+			systems::SinCos(angle, sin_cos);
 
-				hardware::adc::GetCurrentsInjection(i_ac);
+			// convert 3 phase system to ortogonal
+			i_ab = systems::transform::Clark(i_abc);
+			// convert current samples from clark to rotor frame;
+			values.motor.rotor.i = systems::transform::Park(i_ab, sin_cos);
 
-				for (uint8_t i = 0; i < hardware::pwm::INJECTION_CYCLES; ++i)
+			// transform the admittance vector to rotor frame
+			// the admittance vector is rotating with double the rotor frequency
+			y_dq = systems::transform::Park(values.motor.y, sin_cos);
+			y_ab.alpha = y_dq.d;
+			y_ab.beta = y_dq.q;
+			values.motor.rotor.y = systems::transform::Park(y_ab, sin_cos);
+
+			if(settings.observer.admittance)
+			{
+				// calculate the mech observer from admittance vector
+				mech.Update(values.motor.rotor.y.q, correction);
+
+				// predict motor behavior
+				observer::mechanic::Predict();
+				// correct the prediction
+				observer::mechanic::Correct(correction);
+			}
+			else if(settings.observer.flux)
+			{
+				// calculate the flux observer
+				float flux_error = flux.Calculate(sin_cos);
+				mech.Update(flux_error, correction);
+
+				// predict motor behavior
+				observer::mechanic::Predict();
+				// correct the prediction
+				observer::mechanic::Correct(correction);
+			}
+			else
+			{
+				values.motor.rotor.phi += values.motor.rotor.omega * hardware::Tc;
+			}
+
+			if(settings.control.current.active)
+			{
+				// calculate the field orientated controllers
+				foc.Calculate();
+			}
+
+			// transform the voltages to stator frame
+			u_ab = systems::transform::InversePark(values.motor.rotor.u, sin_cos);
+
+			// add the injection pattern to the voltage output
+			for (uint8_t i = 0; i < hardware::pwm::INJECTION_CYCLES; ++i)
+			{
+				if(settings.motor.u_inj > 0.0f)
 				{
-					i_ab_ac[i] = systems::transform::Clark(i_ac[i]);
-				}
-				values.motor.y = admittance.GetVector(i_ab_ac);
-
-				// calculate the sine and cosine of the new angle
-				float angle = values.motor.rotor.phi
-						+ values.motor.rotor.omega * settings.converter.ts;
-
-				// calculate new
-				systems::SinCos(angle, sin_cos);
-
-				// convert 3 phase system to ortogonal
-				i_ab = systems::transform::Clark(i_abc);
-				// convert current samples from clark to rotor frame;
-				values.motor.rotor.i = systems::transform::Park(i_ab, sin_cos);
-
-				// transform the admittance vector to rotor frame
-				// the admittance vector is rotating with double the rotor frequency
-				y_dq = systems::transform::Park(values.motor.y, sin_cos);
-				y_ab.alpha = y_dq.d;
-				y_ab.beta = y_dq.q;
-				values.motor.rotor.y = systems::transform::Park(y_ab, sin_cos);
-
-				if(settings.observer.admittance)
-				{
-					// calculate the mech observer from admittance vector
-					mech.Update(values.motor.rotor.y.q, correction);
-
-					// predict motor behavior
-					observer::mechanic::Predict();
-					// correct the prediction
-					observer::mechanic::Correct(correction);
-				}
-
-				if(settings.control.current.active)
-				{
-					// calculate the field orientated controllers
-					foc.Calculate();
-				}
-
-				// transform the voltages to stator frame
-				u_ab = systems::transform::InversePark(values.motor.rotor.u, sin_cos);
-
-				// add the injection pattern to the voltage output
-				for (uint8_t i = 0; i < hardware::pwm::INJECTION_CYCLES; ++i)
-				{
-					const std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES> inj_pat =
+					constexpr std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES> inj_pat =
 					{{
 							{1.0f, 0.0f},
 							{0.0f, 1.0f},
@@ -241,68 +253,30 @@ namespace control
 
 					systems::alpha_beta u_tmp =
 					{
-						u_ab.alpha + settings.motor.u_inj * inj_pat[i].alpha,
-						u_ab.beta + settings.motor.u_inj * inj_pat[i].beta
+							u_ab.alpha + settings.motor.u_inj * inj_pat[i].alpha,
+							u_ab.beta + settings.motor.u_inj * inj_pat[i].beta
 					};
 
 					// next transform to abc system
 					u_abc[i] = systems::transform::InverseClark(u_tmp);
 				}
-			}
-			else
-			{
-				std::array<systems::sin_cos, hardware::pwm::INJECTION_CYCLES> sin_cos;
-
-				// highspeed control without injection
-				settings.converter.ts = hardware::Tc;
-
-				for (uint8_t i = 0; i < hardware::pwm::INJECTION_CYCLES; ++i)
+				else
 				{
-					values.motor.i = i_dc[i];
-
-					// calculate the sine and cosine of the new angle
-					float angle = values.motor.rotor.phi
-							+ values.motor.rotor.omega * settings.converter.ts;
-
-					// calculate new sine and cosine
-					systems::SinCos(angle, sin_cos[i]);
-
-					// convert 3 phase system to ortogonal
-					i_ab = systems::transform::Clark(values.motor.i);
-					// convert current samples from clark to rotor frame;
-					values.motor.rotor.i = systems::transform::Park(i_ab, sin_cos[i]);
-
-					if(settings.observer.flux)
-					{
-						// calculate the flux observer
-						float flux_error = flux.Calculate(sin_cos[i]);
-						mech.Update(flux_error, correction);
-
-						// predict motor behavior
-						observer::mechanic::Predict();
-						// correct the prediction
-						observer::mechanic::Correct(correction);
-					}
-					else
-					{
-						values.motor.rotor.phi += values.motor.rotor.omega * settings.converter.ts;
-					}
-				}
-
-				if(settings.control.current.active)
-				{
-					// calculate the field orientated controllers
-					foc.Calculate();
-				}
-
-				for (uint8_t i = 0; i < hardware::pwm::INJECTION_CYCLES; ++i)
-				{
-					// transform the voltages to stator frame
-					u_ab = systems::transform::InversePark(values.motor.rotor.u, sin_cos[i]);
-					// next transform to abc system
+					// transform to ab system
 					u_abc[i] = systems::transform::InverseClark(u_ab);
+
+					// do not advance in the last cycle its useless
+					if(i < hardware::pwm::INJECTION_CYCLES - 1)
+					{
+						// advance the angle for all dutys to make a round curve
+						angle += values.motor.rotor.omega * hardware::Tc;
+
+						// calculate new
+						systems::SinCos(angle, sin_cos);
+					}
 				}
 			}
+
 
 			//scale the voltages
 			if(std::fabs(values.battery.u)> 10.0f)

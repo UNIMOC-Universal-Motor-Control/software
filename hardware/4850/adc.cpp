@@ -297,7 +297,7 @@ void hardware::adc::GetCurrentsMean(std::array<systems::abc, pwm::INJECTION_CYCL
 	/*
 	 * Three 2mR shunts in parallel with a 20V/V gain map to 2048 per 1.65V
 	 */
-	const float ADC2CURRENT = 1.65f/(20.0f*(0.002f/3.0f))/2048.0f;
+	constexpr float ADC2CURRENT = 1.65f/(20.0f*(0.002f/3.0f))/2048.0f;
 
 	for(uint8_t i = 0; i < PHASES; i++)
 	{
@@ -320,7 +320,7 @@ void hardware::adc::GetCurrentsInjection(std::array<systems::abc, pwm::INJECTION
 	 * Three 2mR shunts in parallel with a 20V/V gain map to 2048 per 1.65V and 10V/V gain
 	 * in the high pass
 	 */
-	const float ADC2CURRENT = 1.65f/(20.0f*10.0f*(0.002f/3.0f))/2048.0f;
+	constexpr float ADC2CURRENT = 1.65f/(20.0f*10.0f*(0.002f/3.0f))/2048.0f;
 
 
 	for(uint8_t i = 0; i < PHASES; i++)
@@ -435,7 +435,7 @@ float hardware::adc::GetThrottle(void)
  */
 static float adc2ntc_temperature(const uint16_t adc_value)
 {
-	const float oneby256 = 1.0f/256.0f;
+	constexpr float oneby256 = 1.0f/256.0f;
 	int16_t p1,p2;
 	/* get the points from table left an right of the actual adc value */
 	p1 = ntc_table[ (adc_value >> 8)  ];

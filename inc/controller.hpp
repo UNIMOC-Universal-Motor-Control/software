@@ -25,6 +25,7 @@
 #include "ch.hpp"
 #include "filter.hpp"
 #include "systems.hpp"
+#include "hardware_interface.hpp"
 
 /**
  * @namespace controller classes
@@ -39,7 +40,7 @@ namespace control
 	{
 	private:
 		///< sample time (call timing of controller )
-		const float 	ts;
+		static constexpr float ts = hardware::Tc;
 		///< integral error sum
 		float 			error_sum;
 		///< unlimited controller output
@@ -63,13 +64,12 @@ namespace control
 		/**
 		 * @brief Pi controller constructor with all essential parameters.
 		 *
-		 * @param new_ts                set sample time.
 		 * @param new_kp                proportional gain.
 		 * @param new_tn                integral action time.
 		 * @param new_positive_limit    positive output limit.
 		 * @param new_negative_limit    negative output limit.
 		 */
-		pi(const float ts, const float kp, const float tn,
+		pi(const float kp, const float tn,
 				const float positive_limit, const float negative_limit);
 		/**
 		 * @brief calculate regulator equation with feed forward and anti windup.
@@ -105,7 +105,7 @@ namespace control
 	{
 	private:
 		///< sample time (call timing of controller )
-		const float 	ts;
+		static constexpr float ts = hardware::Tc;
 		///< integral error sum
 		systems::dq		error_sum;
 		///< unlimited controller output
@@ -131,13 +131,12 @@ namespace control
 		 *
 		 * so to get G_o = 1/s for the open loop, K_p = L_s and K_i = R_s
 		 *
-		 * @param new_ts                set sample time.
 		 * @param rs	                series resistance of the winding
 		 * @param l                		series inductance of the winding
 		 * @param psi                	rotor flux constant
 		 * @param new_limit   			output limit.
 		 */
-		complex_current(const float new_ts, const float rs, const systems::dq l, const float new_psi, const float new_limit);
+		complex_current(const float rs, const systems::dq l, const float new_psi, const float new_limit);
 
 		/**
 		 * @brief calculate regulator equation with feed forward and anti windup.
@@ -174,7 +173,7 @@ namespace control
 	{
 	private:
 		///< sample time (call timing of controller )
-		const float ts;
+		static constexpr float ts = hardware::Tc;
 
 		///< series resistance of the winding
 		float rs;
@@ -254,7 +253,7 @@ namespace control
 		 * @param new_fFc				corner frequency of the software filter and its model
 		 *
 		 */
-		smith_predictor_current(const float new_ts, const float new_rs, const systems::dq new_l, const float new_psi,
+		smith_predictor_current(const float new_rs, const systems::dq new_l, const float new_psi,
 				const float new_limit, const float new_hwQ, const float new_hwFc, const float new_fQ, const float new_fFc);
 
 		/**

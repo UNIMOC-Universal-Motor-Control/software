@@ -23,7 +23,6 @@
 #include "systems.hpp"
 
 
-
 /**
  * settings to be saved in non volatile memory
  */
@@ -140,9 +139,6 @@ typedef struct settings_s
 	 */
 	struct converter_s
 	{
-		///< control period
-		float ts;
-
 		/**
 		 * converter limits
 		 */

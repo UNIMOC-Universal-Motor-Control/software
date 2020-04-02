@@ -91,10 +91,10 @@ extern void SetDutys(const std::array<systems::abc, INJECTION_CYCLES> dutys);
 } /* namespace pwm */
 
 ///< Control cycle time
-constexpr float Tc = (float)(pwm::PERIOD + 1) / (float)pwm::TIMER_CLOCK;
+constexpr float Tc = ((float)(pwm::PERIOD + 1) / (float)pwm::TIMER_CLOCK)*pwm::INJECTION_CYCLES;
 
 ///< Control cycle frequency
-constexpr float Fc = (float)pwm::TIMER_CLOCK / (float)(pwm::PERIOD + 1);
+constexpr float Fc = 1.0f/Tc;
 
 namespace adc
 {

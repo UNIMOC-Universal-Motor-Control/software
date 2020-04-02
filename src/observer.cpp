@@ -44,7 +44,7 @@ namespace observer
     void mechanic::Predict(void)
     {
         // update constants
-        const float ts = settings.converter.ts;
+        constexpr float ts = hardware::Tc;
         const float tsj = ts/settings.mechanics.J;
 
         // electric torque
@@ -85,8 +85,8 @@ namespace observer
      */
     void mechanic::Update(const float angle_error, std::array<float, 3>& out_error)
     {
-        float ts = settings.converter.ts;
-        float tsj = ts/settings.mechanics.J;
+        constexpr float ts = hardware::Tc;
+        const float tsj = ts/settings.mechanics.J;
 
         /// kalman filter for flux error
         pk[0][2] = p[0][2] - p[2][2] * tsj;
@@ -146,8 +146,8 @@ namespace observer
         stator.bemf = systems::transform::InversePark(rotor.bemf, sin_cos);
 
         // integrate bemf to flux
-        stator.flux.alpha +=  stator.bemf.alpha * settings.converter.ts;
-        stator.flux.beta  +=  stator.bemf.beta  * settings.converter.ts;
+        stator.flux.alpha +=  stator.bemf.alpha * hardware::Tc;
+        stator.flux.beta  +=  stator.bemf.beta  * hardware::Tc;
 
         // transform flux to rotor system
         rotor.flux = systems::transform::Park(stator.flux, sin_cos);

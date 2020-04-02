@@ -29,37 +29,12 @@
  * @namespace math constants
  */
 namespace math {
-
-	/**
-	 * compute sqrt in a fast way with sufficient accuracy
-	 *
-	 * @ref see https://bits.stephan-brumme.com/squareRoot.html
-	 *
-	 * @param x			value
-	 * @return			sqrt(x)
-	 */
-	inline float sqrt_fast(float x)
-	{
-		std::uint32_t i;
-		std::memcpy(&i, &x, sizeof(std::uint32_t));
-
-		// adjust bias
-		i  += 127 << 23;
-		// approximation of square root
-		i >>= 1;
-
-		std::memcpy(&x, &i, sizeof(float));
-		return x;
-	}
-
-	constexpr float PI =           std::atan(1.0f) * 4.0f;
-	constexpr float E =            2.71828182845904523536;
+	constexpr float PI =           M_PI;
+	constexpr float E =            2.71828182845904523536f;
 	constexpr float _2PI =         2.0f * PI;
 	constexpr float PIby2 =        PI / 2.0f;
 	constexpr float SQRT2 =        std::sqrt(2.0f);
 	constexpr float SQRT1_2 =      1.0f/std::sqrt(2.0f);
-
-
 };
 
 /**

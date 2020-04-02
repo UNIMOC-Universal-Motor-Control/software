@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "settings.hpp"
-#include "hardware_interface.hpp"
 #include <cstring>
+#include "hardware_interface.hpp"
 
 /**
  * @namespace system settings
@@ -138,9 +138,6 @@ settings_ts settings =
 	 */
 	.converter =
 	{
-		///< control period
-		.ts = hardware::Tc,
-
 		/**
 		 * converter limits
 		 */
