@@ -154,15 +154,13 @@ namespace control
 	 * @param new_l            		series inductance of the winding
 	 * @param new_psi              	rotor flux constant
 	 * @param new_limit   			output limit.
+	 * @param hwf					coefficients for hardware filter model
+	 * @param swf					coefficients for software filter and its model
 	 */
-	smith_predictor_current::smith_predictor_current(const float new_rs, const systems::dq new_l,
-			const float new_psi, const float new_limit, const float new_hwQ, const float new_hwFc,
-			const float new_fQ, const float new_fFc): rs(new_rs), l(new_l), psi(new_psi),
-			hwQ(new_hwQ), hwFc(new_hwFc), fQ(new_fQ), fFc(new_fFc), ctrl(rs, l , psi, new_limit),
-			fd(filter::lowpass, fFc, fQ, 0.0f), fq(filter::lowpass, fFc, fQ, 0.0f),
-			fomega(filter::lowpass, fFc, fQ, 0.0f),
-			hwd(filter::lowpass, hwFc, hwQ, 0.0f), hwq(filter::lowpass, hwFc, hwQ, 0.0f),
-			sd(filter::lowpass, fFc, fQ, 0.0f), sq(filter::lowpass, fFc, fQ, 0.0f)
+	smith_predictor_current::smith_predictor_current(const float new_rs, const systems::dq new_l, const float new_psi,
+			const float new_limit, const filter::biquad_coefficients_ts hwf, const filter::biquad_coefficients_ts swf):
+			rs(new_rs), l(new_l), psi(new_psi), hwf(hwf), swf(swf), ctrl(rs, l , psi, new_limit),
+			fd(swf), fq(swf), fomega(swf), hwd(hwf), hwq(hwf), sd(swf), sq(swf)
 	{}
 
 	/**
@@ -205,15 +203,12 @@ namespace control
 	/**
 	 * @brief constructor of the foc with all essential parameters.
 	 *
-	 * @param hwQ				    quality factor of the hardware filter model
-	 * @param hwFc				    corner frequency of the hardware filter model
-	 * @param fQ				    quality factor of the software filter and its model
-	 * @param fFc				    corner frequency of the software filter and its model
+	 * @param hwf					coefficients for hardware filter model
+	 * @param swf					coefficients for software filter and its model
 	 *
 	 */
-	foc::foc(const float hwQ, const float hwFc, const float fQ, const float fFc):
-			ctrl(settings.motor.rs, settings.motor.l, settings.motor.psi, 0.0f,
-				hwQ, hwFc, fQ, fFc)
+	foc::foc(const filter::biquad_coefficients_ts hwf, const filter::biquad_coefficients_ts swf):
+			ctrl(settings.motor.rs, settings.motor.l, settings.motor.psi, 0.0f,	hwf, swf)
 	{}
 
 

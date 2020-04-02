@@ -117,14 +117,16 @@ int main(void)
 namespace control
 {
 	/**
+	 * R1 = 4k7, R2 = 47k, R3 = 4k7, C1 = 10n, C2 = 1n
+	 * Q = 0.47619047619048, Fc = 3386.2753849339
+	 */
+	constexpr filter::biquad_coefficients_ts hw_coeff = filter::BiquadCalc(filter::biquad_type_et::lowpass, 0.47619047619048f, 3386.2753849339f/hardware::Fc, 0.0f);
+	constexpr filter::biquad_coefficients_ts sw_coeff = filter::BiquadCalc(filter::biquad_type_et::lowpass, 0.5f, 0.01f, 0.0f);
+
+	/**
 	 * generic constructor
 	 */
-	thread::thread():flux(), mech(settings.observer.Q, settings.observer.R),
-			/*
-			 * R1 = 1k7, R2 = 47k, R3 = 4k7, C1 = 10n, C2 = 1n
-			 * Q = 0.47619047619048, Fc = 3386.2753849339
-			 */
-			foc(0.47619047619048f, 3386.2753849339f/hardware::Fc * hardware::pwm::INJECTION_CYCLES, 0.5f, 0.01f)
+	thread::thread():flux(), mech(settings.observer.Q, settings.observer.R), foc(hw_coeff, sw_coeff)
 	{}
 
 	/**

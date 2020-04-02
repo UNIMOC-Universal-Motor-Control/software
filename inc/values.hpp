@@ -69,6 +69,9 @@ typedef struct values_s
 			///< rotor angle
 			float phi;
 
+			///< rotor full rotation from start
+			std::int32_t rotation;
+
 			/**
 			 * motor rotor system setpoints
 			 */

@@ -61,8 +61,17 @@ namespace observer
         // integrate load
         //values.motor.m_l += 0;
 
-        // limit phi to +- 2 * pi
-        values.motor.rotor.phi = fmodf(values.motor.rotor.phi, math::_2PI);
+        // limit phi to 2 * pi and count rotations
+        if(values.motor.rotor.phi > math::_2PI)
+        {
+        	values.motor.rotor.phi -= math::_2PI;
+        	values.motor.rotor.rotation++;
+        }
+        else if(values.motor.rotor.phi < 0.0)
+        {
+        	values.motor.rotor.phi += math::_2PI;
+        	values.motor.rotor.rotation--;
+        }
     }
 
     /**

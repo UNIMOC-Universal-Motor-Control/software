@@ -184,17 +184,11 @@ namespace control
 		///< rotor flux constant
 		float psi;
 
-		///< quality factor of the hardware filter model
-		const float hwQ;
+		///< coefficients for hardware filter model
+		const filter::biquad_coefficients_ts hwf;
 
-		///< corner frequency of the hardware filter model
-		const float hwFc;
-
-		///< quality factor of the software filter and its model
-		const float fQ;
-
-		///< corner frequency of the software filter and its model
-		const float fFc;
+		///< coefficients for software filter and its model
+		const filter::biquad_coefficients_ts swf;
 
 		///< current-controller
 		complex_current ctrl;
@@ -247,14 +241,12 @@ namespace control
 		 * @param l                		series inductance of the winding
 		 * @param psi                	rotor flux constant
 		 * @param new_limit   			output limit.
-		 * @param new_hwQ				quality factor of the hardware filter model
-		 * @param new_hwFc				corner frequency of the hardware filter model
-		 * @param new_fQ				quality factor of the software filter and its model
-		 * @param new_fFc				corner frequency of the software filter and its model
+		 * @param hwf					coefficients for hardware filter model
+		 * @param swf					coefficients for software filter and its model
 		 *
 		 */
 		smith_predictor_current(const float new_rs, const systems::dq new_l, const float new_psi,
-				const float new_limit, const float new_hwQ, const float new_hwFc, const float new_fQ, const float new_fFc);
+				const float new_limit, const filter::biquad_coefficients_ts hwf, const filter::biquad_coefficients_ts swf);
 
 		/**
 		 * @brief calculate regulator equation with feed forward and anti windup.
@@ -303,13 +295,11 @@ namespace control
 		/**
 		 * @brief constructor of the foc with all essential parameters.
 		 *
-		 * @param hwQ				    quality factor of the hardware filter model
-		 * @param hwFc				    corner frequency of the hardware filter model
-		 * @param fQ				    quality factor of the software filter and its model
-		 * @param fFc				    corner frequency of the software filter and its model
+		 * @param hwf					coefficients for hardware filter model
+		 * @param swf					coefficients for software filter and its model
 		 *
 		 */
-		foc(const float hwQ, const float hwFc, const float fQ, const float fFc);
+		foc(const filter::biquad_coefficients_ts hwf, const filter::biquad_coefficients_ts swf);
 		/**
 		 * @brief calculate foc current controller
 		 */

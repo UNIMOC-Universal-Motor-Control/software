@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <cmath>
 #include <climits>
+#include "systems.hpp"
 
 
 namespace filter
@@ -70,7 +71,7 @@ public:
  */
 
 ///< Filter types for the biquad class
-enum biquad_type_ec
+typedef enum biquad_type_e
 {
     lowpass = 0,//!< lowpass
     highpass,   //!< highpass
@@ -79,7 +80,137 @@ enum biquad_type_ec
     peak,       //!< peak
     lowshelf,   //!< lowshelf
     highshelf   //!< highshelf
-};
+} biquad_type_et;
+
+///< internal coefficient structure
+typedef struct biquad_coefficients_s
+{
+	float a0, a1, a2, b1, b2;
+} biquad_coefficients_ts;
+
+/**
+ * @brief calculate biquad coefficients
+ *
+ * This function shall only be used at compile time
+ * otherwise it pulls a lot of bloat
+ *
+ * @param type	type of filter
+ * @param fc	corner frequency normed to 1/(sampling frequency)
+ * @param q		quality factor of the filter response
+ * @param peak_gain gain of the filter.
+ */
+constexpr biquad_coefficients_ts BiquadCalc(const biquad_type_et type, const float fc, const float q, const float peak_gain)
+{
+	biquad_coefficients_ts __coeff = {.a0 = 0.0f, .a1 = 0.0f, .a2 = 0.0f, .b1 = 0.0f, .b2 = 0.0f};
+	float norm = 0.0f;
+	float V = std::pow(10.0f, std::fabs(peak_gain) / 20.0f);
+	float K = std::tan(math::PI * fc);
+
+	switch (type)
+	{
+	case biquad_type_et::lowpass:
+
+		norm = 1.0f / (1.0f + K / q + K * K);
+		__coeff.a0 = K * K * norm;
+		__coeff.a1 = 2.0f * __coeff.a0;
+		__coeff.a2 = __coeff.a0;
+		__coeff.b1 = 2.0f * (K * K - 1.0f) * norm;
+		__coeff.b2 = (1.0f - K / q + K * K) * norm;
+		break;
+
+	case biquad_type_et::highpass:
+
+		norm = 1.0f / (1.0f + K / q + K * K);
+		__coeff.a0 = 1.0f * norm;
+		__coeff.a1 = -2.0f * __coeff.a0;
+		__coeff.a2 = __coeff.a0;
+		__coeff.b1 = 2.0f * (K * K - 1.0f) * norm;
+		__coeff.b2 = (1.0f - K / q + K * K) * norm;
+		break;
+
+	case biquad_type_et::bandpass:
+
+		norm = 1.0f / (1.0f + K / q + K * K);
+		__coeff.a0 = K / q * norm;
+		__coeff.a1 = 0.0f;
+		__coeff.a2 = -__coeff.a0;
+		__coeff.b1 = 2.0f * (K * K - 1.0f) * norm;
+		__coeff.b2 = (1.0f - K / q + K * K) * norm;
+		break;
+
+	case biquad_type_et::notch:
+
+		norm = 1.0f / (1.0f + K / q + K * K);
+		__coeff.a0 = (1.0f + K * K) * norm;
+		__coeff.a1 = 2.0f * (K * K - 1) * norm;
+		__coeff.a2 = __coeff.a0;
+		__coeff.b1 = __coeff.a1;
+		__coeff.b2 = (1.0f - K / q + K * K) * norm;
+		break;
+
+	case biquad_type_et::peak:
+
+		if (peak_gain >= 0.0f)
+		{    // boost
+			norm = 1.0f / (1.0f + 1.0f/q * K + K * K);
+			__coeff.a0 = (1.0f + V/q * K + K * K) * norm;
+			__coeff.a1 = 2.0f * (K * K - 1.0f) * norm;
+			__coeff.a2 = (1.0f - V/q * K + K * K) * norm;
+			__coeff.b1 = __coeff.a1;
+			__coeff.b2 = (1.0f - 1.0f/q * K + K * K) * norm;
+		}
+		else
+		{    // cut
+			norm = 1 / (1 + V/q * K + K * K);
+			__coeff.a0 = (1 + 1/q * K + K * K) * norm;
+			__coeff.a1 = 2 * (K * K - 1) * norm;
+			__coeff.a2 = (1 - 1/q * K + K * K) * norm;
+			__coeff.b1 = __coeff.a1;
+			__coeff.b2 = (1 - V/q * K + K * K) * norm;
+		}
+		break;
+	case biquad_type_et::lowshelf:
+		if (peak_gain >= 0)
+		{    // boost
+			norm = 1.0f / (1 + math::SQRT2 * K + K * K);
+			__coeff.a1 = 2.0f * (V * K * K - 1.0f) * norm;
+			__coeff.a2 = (1.0f - std::sqrt(2.0f*V) * K + V * K * K) * norm;
+			__coeff.b1 = 2.0f * (K * K - 1.0f) * norm;
+			__coeff.b2 = (1.0f - math::SQRT2 * K + K * K) * norm;
+		}
+		else
+		{    // cut
+			norm = 1.0f / (1.0f + std::sqrt(2.0f*V) * K + V * K * K);
+			__coeff.a0 = (1.0f + math::SQRT2 * K + K * K) * norm;
+			__coeff.a1 = 2.0f * (K * K - 1.0f) * norm;
+			__coeff.a2 = (1.0f - math::SQRT2 * K + K * K) * norm;
+			__coeff.b1 = 2.0f * (V * K * K - 1.0f) * norm;
+			__coeff.b2 = (1.0f - std::sqrt(2.0f*V) * K + V * K * K) * norm;
+		}
+		break;
+	case biquad_type_et::highshelf:
+		if (peak_gain >= 0)
+		{    // boost
+			norm = 1.0f / (1.0f + math::SQRT2 * K + K * K);
+			__coeff.a0 = (V + std::sqrt(2.0f*V) * K + K * K) * norm;
+			__coeff.a1 = 2.0f * (K * K - V) * norm;
+			__coeff.a2 = (V - std::sqrt(2.0f*V) * K + K * K) * norm;
+			__coeff.b1 = 2.0f * (K * K - 1.0f) * norm;
+			__coeff.b2 = (1.0f - math::SQRT2 * K + K * K) * norm;
+		}
+		else
+		{    // cut
+			norm = 1.0f / (V + std::sqrt(2.0f*V) * K + K * K);
+			__coeff.a0 = (1.0f + math::SQRT2 * K + K * K) * norm;
+			__coeff.a1 = 2.0f * (K * K - 1.0f) * norm;
+			__coeff.a2 = (1.0f - math::SQRT2 * K + K * K) * norm;
+			__coeff.b1 = 2.0f * (K * K - V) * norm;
+			__coeff.b2 = (V - std::sqrt(2.0f*V) * K + K * K) * norm;
+		}
+		break;
+	}
+	return __coeff;
+}
 
 /**
  * Class for second order IIR filter in direct transposed form II
@@ -87,47 +218,13 @@ enum biquad_type_ec
 class biquad
 {
 public:
+
+
 	/**
-	 * Constructor of biquad second order IIR filter
-	 * @param type	type of filter
-	 * @param Fc	corner frequency normed to 1/(sampling frequency)
-	 * @param Q		quality factor of the filter response
-	 * @param peak_gain gain of the filter in dB
+	 * Constructor of biquad second order IIR filterj
+	 * @param coeff  Coefficients pre calculated
 	 */
-    biquad(const biquad_type_ec type, const float Fc, const float Q, const float peak_gain);
-
-    /**
-     * set type of biquad filter
-     * @param type new type of filter
-     */
-    void SetType(const biquad_type_ec type);
-
-    /**
-     * set the quality factor of the filter
-     * @param Q new quality factor
-     */
-    void SetQ(const float Q);
-
-    /**
-     * set new corner frequency
-     * @param Fc new corner frequency
-     */
-    void SetFc(const float Fc);
-
-    /**
-     * set new gain of the filter
-     * @param peak_gain in db
-     */
-    void SetPeakGain(const float peak_gain);
-
-    /**
-     * set all relevant biquad parameters at once
-     * @param type new type
-     * @param Fc new corner freq.
-     * @param Q new quality factor
-     * @param peak_gain new gain
-     */
-    void SetBiquad(const biquad_type_ec type, const float Fc, const float Q, const float peak_gain);
+    biquad(const biquad_coefficients_ts coeff);
 
     /**
      * calculate the filter
@@ -137,17 +234,9 @@ public:
     float Process(const float in);
 
 protected:
-    /**
-     * calculate internal coefficients
-     */
-    void CalcBiquad(void);
-
-    ///< type of filter
-    biquad_type_ec type;
     ///< internal coefficients
-    float a0, a1, a2, b1, b2;
-    ///< settings of the filter
-    float Fc, Q, peak_gain;
+    biquad_coefficients_ts coeff;
+
     ///< internal unit delay states
     float z1, z2;
 };
@@ -159,9 +248,9 @@ protected:
  */
 inline float biquad::Process(const float in)
 {
-    float out = in * a0 + z1;
-    z1 = in * a1 + z2 - b1 * out;
-    z2 = in * a2 - b2 * out;
+    float out = in * coeff.a0 + z1;
+    z1 = in * coeff.a1 + z2 - coeff.b1 * out;
+    z2 = in * coeff.a2 - coeff.b2 * out;
     return out;
 }
 

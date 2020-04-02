@@ -57,6 +57,9 @@ values_ts values =
 			///< rotor angle
 			.phi = 0.0f,
 
+			///< rotor full rotation from start
+			.rotation = 0,
+
 			///< motor rotor system setpoints
 			.setpoint =
 			{
