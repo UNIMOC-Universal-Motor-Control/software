@@ -248,7 +248,7 @@ void hardware::adc::Init(void)
  */
 void hardware::adc::PrepareSamples(void)
 {
-	static bool first_time = true;
+	static std::int8_t first_time = 50;
 	/* DMA buffer invalidation because data cache, only invalidating the
      * buffer just filled.
      */
@@ -258,8 +258,9 @@ void hardware::adc::PrepareSamples(void)
 	if(samples_index < (ADC_SEQ_BUFFERED - 1)) samples_index+=pwm::INJECTION_CYCLES;
 	else samples_index = 0;
 
-	// first two full cycles
-	if(first_time && pwm::OutputActive())
+	if(first_time) first_time--;
+	// wait for first cycles to settle everything
+	if(first_time < 1)
 	{
 		first_time = false;
 
@@ -378,7 +379,7 @@ float hardware::adc::GetBridgeTemp(void)
 	}
 
 	// Filter inverts the values
-	return adc2ntc_temperature(sum/ADC_SEQ_BUFFERED);
+	return adc2ntc_temperature(4096 - sum/ADC_SEQ_BUFFERED);
 }
 
 /**
@@ -398,7 +399,7 @@ float hardware::adc::GetMotorTemp(void)
 	}
 
 	// Filter inverts the values
-	return adc2ntc_temperature(sum/ADC_SEQ_BUFFERED);
+	return adc2ntc_temperature(4096 - sum/ADC_SEQ_BUFFERED);
 }
 
 /**
@@ -435,14 +436,14 @@ float hardware::adc::GetThrottle(void)
  */
 static float adc2ntc_temperature(const uint16_t adc_value)
 {
-	constexpr float oneby256 = 1.0f/256.0f;
+	constexpr float onebylen = 1.0f/NTC_TABLE_LEN;
 	int16_t p1,p2;
 	/* get the points from table left an right of the actual adc value */
-	p1 = ntc_table[ (adc_value >> 8)  ];
-	p2 = ntc_table[ (adc_value >> 8)+1];
+	p1 = ntc_table[adc_value/NTC_TABLE_LEN  ];
+	p2 = ntc_table[adc_value/NTC_TABLE_LEN + 1];
 
 	/* linear interpolation between both points */
-	return ((float)p1 - ( (float)(p1-p2) * (float)(adc_value & 0x00FF) ) * oneby256)*0.01f;
+	return ((float)p1 - ( (float)(p1-p2) * (float)(adc_value & 0x01FF) ) * onebylen)*0.01f;
 };
 
 /**
