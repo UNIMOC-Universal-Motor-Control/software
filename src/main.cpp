@@ -50,22 +50,6 @@ int main(void)
 	System::init();
 
 	/*
-	 * Initializes two serial-over-USB CDC drivers.
-	 */
-	sduObjectInit(&SDU1);
-	sduStart(&SDU1, &serusbcfg1);
-
-	/*
-	 * Activates the USB driver and then the USB bus pull-up on D+.
-	 * Note, a delay is inserted in order to not have to disconnect the cable
-	 * after a reset.
-	 */
-	usbDisconnectBus(serusbcfg1.usbp);
-	chThdSleepMilliseconds(1500);
-	usbStart(serusbcfg1.usbp, &usbcfg);
-	usbConnectBus(serusbcfg1.usbp);
-
-	/*
 	 * initialize hardware with no control thread
 	 */
 	hardware::memory::Init();
@@ -77,6 +61,22 @@ int main(void)
 
 
 	hardware::pwm::EnableOutputs();
+
+	/*
+	 * Initializes two serial-over-USB CDC drivers.
+	 */
+	sduObjectInit(&SDU1);
+	sduStart(&SDU1, &serusbcfg);
+
+	/*
+	 * Activates the USB driver and then the USB bus pull-up on D+.
+	 * Note, a delay is inserted in order to not have to disconnect the cable
+	 * after a reset.
+	 */
+	usbDisconnectBus(serusbcfg.usbp);
+	chThdSleepMilliseconds(1500);
+	usbStart(serusbcfg.usbp, &usbcfg);
+	usbConnectBus(serusbcfg.usbp);
 
 	// set node operational
 	values.uavcan.mode = uavcan::mode_e::UAVCAN_NODE_MODE_OPERATIONAL;

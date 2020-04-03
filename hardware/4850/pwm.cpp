@@ -78,10 +78,12 @@ static inline void set_dutys(PWMDriver *pwmp)
 		}
 	}
 
+	osalSysLockFromISR();
 	for (uint16_t i = 0; i < PHASES; ++i)
 	{
-		pwmEnableChannel(pwmp, i, duty_counts[duty_buffer_cycle][duty_injection_cycle].array[i]);
+		pwmEnableChannelI(pwmp, i, duty_counts[duty_buffer_cycle][duty_injection_cycle].array[i]);
 	}
+	osalSysUnlockFromISR();
 }
 
 
