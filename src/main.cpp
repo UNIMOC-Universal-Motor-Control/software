@@ -97,6 +97,7 @@ int main(void)
 	{
 		values.converter.temp = hardware::adc::GetBridgeTemp();
 		values.motor.temp = hardware::adc::GetMotorTemp();
+		values.converter.throttle = hardware::adc::GetThrottle();
 
 
 		if(save) settings.Save();

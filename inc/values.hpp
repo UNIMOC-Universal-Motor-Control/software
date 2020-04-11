@@ -121,6 +121,9 @@ typedef struct values_s
 	{
 		///< powerstage temperature
 		float temp;
+
+		///< throttle input
+		float throttle;
 	} converter;
 
 	/**

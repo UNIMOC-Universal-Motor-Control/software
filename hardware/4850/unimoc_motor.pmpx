@@ -18,7 +18,7 @@
 			<member name="mapfile_pre_select" type="sint32">0</member>
 			<member name="comm_params_saved" type="sint32">1</member>
 			<member name="comm_state_saved" type="sint32">0</member>
-			<member name="comm_state_enabled" type="sint32">0</member>
+			<member name="comm_state_enabled" type="sint32">1</member>
 			<member name="comm_port" type="sint32">15</member>
 			<member name="comm_port_hint" type="string">COM16</member>
 			<member name="comm_speed" type="sint32">115200</member>
@@ -88,6 +88,7 @@
 			<member name="item45" type="CObject_ptr">ObjId0453</member>
 			<member name="item46" type="CObject_ptr">ObjId0469</member>
 			<member name="item47" type="CObject_ptr">ObjId0474</member>
+			<member name="item48" type="CObject_ptr">ObjId0490</member>
 		</object>
 		<object name="ObjId0136" type="CVariable">
 			<member name="name" type="string">values.battery.u</member>
@@ -2522,6 +2523,55 @@
 			<member name="enum_items" type="CObList">ObjId0476</member>
 		</object>
 		<object name="ObjId0476" type="CObList"/>
+		<object name="ObjId0490" type="CVariable">
+			<member name="name" type="string">values.converter.throttle</member>
+			<member name="unit" type="string">%</member>
+			<member name="period" type="sint32">1000</member>
+			<member name="address" type="string">values.converter.throttle</member>
+			<member name="last_addr" type="uint32">0x2001015C</member>
+			<member name="byte_size" type="sint32">4</member>
+			<member name="treat_as" type="sint32">2</member>
+			<member name="type_fmt" type="string">IEEE floating point</member>
+			<member name="bit_shift" type="sint32">0</member>
+			<member name="bit_mask" type="string">no mask (-1)</member>
+			<member name="value_trf" type="CObject_ptr">NULL</member>
+			<member name="enum_enabled" type="sint32">0</member>
+			<member name="enum_num_always" type="sint32">0</member>
+			<member name="enum_default_val" type="string">unknown</member>
+			<member name="enum_num_with_default" type="sint32">1</member>
+			<member name="enum_list" type="CEnumDoubleToString">ObjId0491</member>
+			<member name="show_as" type="sint32">4</member>
+			<member name="show_val" type="sint32">1</member>
+			<member name="show_max" type="sint32">0</member>
+			<member name="show_min" type="sint32">0</member>
+			<member name="show_num_fixed_digs" type="sint32">2147483647</member>
+			<member name="show_num_lzero_fill" type="sint32">0</member>
+			<member name="show_num_afp_digs" type="sint32">2147483647</member>
+			<member name="show_num_exp" type="sint32">0</member>
+			<member name="show_ascii_zterm" type="sint32">0</member>
+			<member name="show_ascii_rev" type="sint32">0</member>
+			<member name="show_ascii_hex" type="sint32">1</member>
+			<member name="show_ascii_chwdt" type="sint32">1</member>
+			<member name="filt_enabled" type="sint32">0</member>
+			<member name="filt_reset_onmod" type="sint32">1</member>
+			<member name="filt_time" type="uint32">0x1388</member>
+			<member name="modif_mode" type="sint32">0</member>
+			<member name="modif_edit_mode" type="sint32">2</member>
+			<member name="modif_set_mode" type="sint32">0</member>
+			<member name="modif_auto_fin" type="sint32">1</member>
+			<member name="modif_auto_hide" type="sint32">1</member>
+			<member name="modif_predefs_modes" type="uint32">0x1</member>
+			<member name="modif_predefs_other" type="string"/>
+			<member name="modif_set_min" type="string"/>
+			<member name="modif_set_max" type="string"/>
+			<member name="modif_set_step" type="string"/>
+			<member name="modif_address" type="string"/>
+			<member name="modif_last_addr" type="uint32">0x0</member>
+		</object>
+		<object name="ObjId0491" type="CEnumDoubleToString">
+			<member name="enum_items" type="CObList">ObjId0492</member>
+		</object>
+		<object name="ObjId0492" type="CObList"/>
 		<object name="ObjId0002" type="CObList"/>
 		<object name="ObjId0003" type="CObList"/>
 		<object name="ObjId0004" type="CMapWordToOb"/>
@@ -2534,9 +2584,9 @@
 		</object>
 		<object name="ObjId0007" type="CPrjDoc_Hi509FileType"/>
 		<object name="ObjId0008" type="CObList">
-			<member name="item0" type="CObject_ptr">ObjId0489</member>
+			<member name="item0" type="CObject_ptr">ObjId0500</member>
 		</object>
-		<object name="ObjId0489" type="CPrjDoc_MapFileInfo">
+		<object name="ObjId0500" type="CPrjDoc_MapFileInfo">
 			<member name="file_name" type="string">.\build\unimoc_4850.elf</member>
 			<member name="file_type" type="CObject_ptr">ObjId0006</member>
 		</object>
@@ -2785,6 +2835,7 @@
 			<member name="item15" type="CObject_ptr">ObjId0203</member>
 			<member name="item16" type="CObject_ptr">ObjId0206</member>
 			<member name="item17" type="CObject_ptr">ObjId0209</member>
+			<member name="item18" type="CObject_ptr">ObjId0490</member>
 		</object>
 		<object name="ObjId0366" type="CObList"/>
 		<object name="ObjId0367" type="CObList">
@@ -3095,27 +3146,27 @@
 			<member name="forecolor" type="uint32">0x0</member>
 		</object>
 		<object name="ObjId0369" type="CObArray" length="4">
-			<member name="index0" type="CObject_ptr">ObjId0485</member>
-			<member name="index1" type="CObject_ptr">ObjId0486</member>
-			<member name="index2" type="CObject_ptr">ObjId0487</member>
-			<member name="index3" type="CObject_ptr">ObjId0488</member>
+			<member name="index0" type="CObject_ptr">ObjId0493</member>
+			<member name="index1" type="CObject_ptr">ObjId0494</member>
+			<member name="index2" type="CObject_ptr">ObjId0495</member>
+			<member name="index3" type="CObject_ptr">ObjId0496</member>
 		</object>
-		<object name="ObjId0485" type="CPrjItemBlock_ColInfo">
+		<object name="ObjId0493" type="CPrjItemBlock_ColInfo">
 			<member name="column_visible" type="sint32">1</member>
 			<member name="column_width" type="sint32">202</member>
 			<member name="column_ix" type="sint32">0</member>
 		</object>
-		<object name="ObjId0486" type="CPrjItemBlock_ColInfo">
+		<object name="ObjId0494" type="CPrjItemBlock_ColInfo">
 			<member name="column_visible" type="sint32">1</member>
 			<member name="column_width" type="sint32">120</member>
 			<member name="column_ix" type="sint32">1</member>
 		</object>
-		<object name="ObjId0487" type="CPrjItemBlock_ColInfo">
+		<object name="ObjId0495" type="CPrjItemBlock_ColInfo">
 			<member name="column_visible" type="sint32">1</member>
 			<member name="column_width" type="sint32">120</member>
 			<member name="column_ix" type="sint32">2</member>
 		</object>
-		<object name="ObjId0488" type="CPrjItemBlock_ColInfo">
+		<object name="ObjId0496" type="CPrjItemBlock_ColInfo">
 			<member name="column_visible" type="sint32">1</member>
 			<member name="column_width" type="sint32">50</member>
 			<member name="column_ix" type="sint32">3</member>
@@ -3167,6 +3218,8 @@
 			<member name="value21" type="CObject_ptr">ObjId0462</member>
 			<member name="key22" type="CObject_ptr">ObjId0453</member>
 			<member name="value22" type="CObject_ptr">ObjId0464</member>
+			<member name="key23" type="CObject_ptr">ObjId0490</member>
+			<member name="value23" type="CObject_ptr">ObjId0497</member>
 		</object>
 		<object name="ObjId0375" type="CPrjItemBlock_VarInfo">
 			<member name="row_height" type="sint32">15</member>
@@ -3283,6 +3336,11 @@
 			<member name="row_cell_formats" type="CObArrayEx">ObjId0465</member>
 		</object>
 		<object name="ObjId0465" type="CObArray" length="0"/>
+		<object name="ObjId0497" type="CPrjItemBlock_VarInfo">
+			<member name="row_height" type="sint32">15</member>
+			<member name="row_cell_formats" type="CObArrayEx">ObjId0498</member>
+		</object>
+		<object name="ObjId0498" type="CObArray" length="0"/>
 		<object name="ObjId0013" type="CPrjItemBlock_CellFormat">
 			<member name="font_name" type="string">Tahoma</member>
 			<member name="font_set" type="uint8">0x0</member>

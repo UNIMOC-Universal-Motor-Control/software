@@ -19,6 +19,7 @@
 #include <cstring>
 #include <cstdint>
 #include <cmath>
+#include <array>
 #include <algorithm>
 #include "hardware_interface.hpp"
 #include "hal.h"
@@ -76,31 +77,47 @@ static float adc2ntc_temperature(const uint16_t adc_value);
  * the value still is with that.
  */
 
-///< Number of NTC resistor LUT values
-static constexpr uint16_t NTC_TABLE_LEN = 128;
-///< NTC adc value to temperature in 0.01°C LUT
-static const std::array<int16_t, NTC_TABLE_LEN> ntc_table =
+/**
+ * @note C++ Black Magic :D
+ * 		 compile time calculation of lookup table
+ *
+ * @ref https://stackoverflow.com/questions/19016099/lookup-table-with-constexpr
+ */
+typedef struct NTC_LUT_S
 {
-	28399, 23653, 18907, 16501, 14928, 13775,
-	12871, 12131, 11507, 10968, 10495, 10073,
-	9693, 9347, 9030, 8737, 8465, 8211, 7972,
-	7748, 7535, 7334, 7142, 6959, 6784, 6616,
-	6455, 6299, 6150, 6005, 5865, 5729, 5598,
-	5470, 5346, 5224, 5106, 4991, 4878, 4768,
-	4660, 4554, 4450, 4349, 4249, 4150, 4054,
-	3958, 3865, 3772, 3681, 3591, 3502, 3414,
-	3327, 3241, 3156, 3072, 2988, 2905, 2823,
-	2742, 2661, 2580, 2500, 2420, 2341, 2262,
-	2184, 2105, 2027, 1949, 1872, 1794, 1716,
-	1639, 1561, 1484, 1406, 1328, 1250, 1172,
-	1093, 1014, 935, 855, 775, 695, 613, 532,
-	449, 366, 282, 197, 111, 23, -65, -154, -245,
-	-338, -432, -528, -626, -725, -828, -932,
-	-1040, -1150, -1264, -1381, -1503, -1629,
-	-1760, -1897, -2041, -2192, -2352, -2522,
-	-2704, -2901, -3115, -3351, -3616, -3920,
-	-4278, -4720, -5311, -6245
-};
+	///< nominal value of the NTC
+	static constexpr float R0 = 10e3f;
+
+	///< Pullup resistor
+	static constexpr float Rp = 10e3f;
+
+	///< Nominal Temperature in K
+	static constexpr float T0 = 25.0f + 273.15f;
+
+	///< NTCs beta coefficient
+	static constexpr float B = 2950.0f;
+
+	///< Resistor Value for infinite temperature
+	static constexpr float R8 = R0 * std::exp(-B/T0);
+
+	///< Number of NTC resistor LUT values
+	static constexpr uint16_t TABLE_LEN = 128;
+
+	///< NTC adc value to temperature in 0.01°C LUT
+	std::array<int16_t, TABLE_LEN> table;
+
+    constexpr NTC_LUT_S() : table()
+    {
+        for (uint32_t i = 0; i < TABLE_LEN; ++i)
+        {
+        	float r = Rp/(TABLE_LEN/(i+1) - 1);
+        	float t = B/(std::log(r/R8));
+        	table[i] = (int16_t)(t*100.0f);
+        }
+    }
+}NTC_LUT_ST;
+
+constexpr NTC_LUT_ST NTC_TABLE();
 
 ///< Samples in ADC sequence.
 /// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
@@ -408,7 +425,8 @@ float hardware::adc::GetMotorTemp(void)
  */
 float hardware::adc::GetThrottle(void)
 {
-	constexpr float ADC_2_THROTTLE = 1.0f/(4096.0f * ADC_SEQ_BUFFERED);
+	/// FIXME because of 10k input resistor pot only reach 800
+	constexpr float ADC_2_THROTTLE = 1.0f/(790.0f * ADC_SEQ_BUFFERED);
 	int32_t sum = 0;
 	float throttle;
 
@@ -436,11 +454,11 @@ float hardware::adc::GetThrottle(void)
  */
 static float adc2ntc_temperature(const uint16_t adc_value)
 {
-	constexpr float onebylen = 1.0f/NTC_TABLE_LEN;
+	constexpr float onebylen = 1.0f/NTC_TABLE.TABLE_LEN;
 	int16_t p1,p2;
 	/* get the points from table left an right of the actual adc value */
-	p1 = ntc_table[adc_value/NTC_TABLE_LEN  ];
-	p2 = ntc_table[adc_value/NTC_TABLE_LEN + 1];
+	p1 = NTC_TABLE.table[adc_value/NTC_TABLE.TABLE_LEN    ];
+	p2 = NTC_TABLE.table[adc_value/NTC_TABLE.TABLE_LEN + 1];
 
 	/* linear interpolation between both points */
 	return ((float)p1 - ( (float)(p1-p2) * (float)(adc_value & 0x01FF) ) * onebylen)*0.01f;

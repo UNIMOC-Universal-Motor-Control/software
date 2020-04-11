@@ -102,6 +102,9 @@ values_ts values =
 	{
 		///< power stage temperature
 		.temp = 0.0f,
+
+		///< throttle input
+		.throttle = 0.0f,
 	},
 	/**
 	 * CAN interface
