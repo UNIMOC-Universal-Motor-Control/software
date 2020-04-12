@@ -95,7 +95,7 @@ typedef struct NTC_LUT_S
 	static constexpr float T0 = 25.0f + 273.15f;
 
 	///< NTCs beta coefficient
-	static constexpr float B = 2950.0f;
+	static constexpr float B = 3950.0f;
 
 	///< Resistor Value for infinite temperature
 	static constexpr float R8 = R0 * std::exp(-B/T0);
@@ -117,7 +117,7 @@ typedef struct NTC_LUT_S
     }
 }NTC_LUT_ST;
 
-constexpr NTC_LUT_ST NTC_TABLE();
+const NTC_LUT_ST NTC_TABLE;
 
 ///< Samples in ADC sequence.
 /// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
@@ -461,7 +461,7 @@ static float adc2ntc_temperature(const uint16_t adc_value)
 	p2 = NTC_TABLE.table[adc_value/NTC_TABLE.TABLE_LEN + 1];
 
 	/* linear interpolation between both points */
-	return ((float)p1 - ( (float)(p1-p2) * (float)(adc_value & 0x01FF) ) * onebylen)*0.01f;
+	return ((float)p1 - ( (float)(p1-p2) * (float)(adc_value & NTC_TABLE.TABLE_LEN) ) * onebylen)*0.01f;
 };
 
 /**
