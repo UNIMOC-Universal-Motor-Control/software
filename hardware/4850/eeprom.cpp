@@ -300,7 +300,7 @@ uint8_t hardware::memory::Write(const uint32_t address, void const * buffer, con
  * Get the size of the non-volatile memory
  * @return size of non-volatile memory in bytes
  */
-uint32_t hardware::memory::GetSize(void)
+uint32_t hardware::memory::Size(void)
 {
 	// AT32C04 4KBit EEPROM
 	return SIZE;

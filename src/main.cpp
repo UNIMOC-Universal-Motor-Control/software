@@ -60,7 +60,7 @@ int main(void)
 	settings.Load();
 
 
-	hardware::pwm::EnableOutputs();
+	hardware::pwm::output::Enable();
 
 	/*
 	 * Initializes two serial-over-USB CDC drivers.
@@ -95,15 +95,15 @@ int main(void)
 	 */
 	while (true)
 	{
-		values.converter.temp = hardware::adc::GetBridgeTemp();
-		values.motor.temp = hardware::adc::GetMotorTemp();
-		values.converter.throttle = hardware::adc::GetThrottle();
+		values.converter.temp = hardware::adc::temperature::Bridge();
+		values.motor.temp = hardware::adc::temperature::Motor();
+		values.converter.throttle = hardware::adc::Throttle();
 
 
 		if(save) settings.Save();
 				save = false;
 
-		if(hardware::pwm::OutputActive())
+		if(hardware::pwm::output::Active())
 		{
 			palSetLine(LINE_LED_PWM);
 		}
@@ -173,13 +173,13 @@ namespace control
 
 			hardware::adc::PrepareSamples();
 
-			values.battery.u = hardware::adc::GetDCBusVoltage();
+			values.battery.u = hardware::adc::voltage::DCBus();
 
-			hardware::adc::GetCurrentsMean(i_dc);
+			hardware::adc::current::Mean(i_dc);
 
 			i_abc = InjectionMean(i_dc);
 
-			hardware::adc::GetCurrentsInjection(i_ac);
+			hardware::adc::current::Injection(i_ac);
 
 			for (uint8_t i = 0; i < hardware::pwm::INJECTION_CYCLES; ++i)
 			{
@@ -299,7 +299,7 @@ namespace control
 				u_abc.fill(tmp);
 			}
 
-			hardware::pwm::SetDutys(u_abc);
+			hardware::pwm::Dutys(u_abc);
 		}
 
 	}

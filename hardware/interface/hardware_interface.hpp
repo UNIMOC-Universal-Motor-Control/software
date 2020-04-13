@@ -65,28 +65,31 @@ constexpr uint32_t INJECTION_CYCLES = 4;
  */
 extern void Init();
 
+namespace output {
+
 /**
  * Enable PWM Outputs.
  * @note Power output is active after this call
  */
-extern void EnableOutputs(void);
+extern void Enable(void);
 
 /**
  * Disable PWM Outputs.
  */
-extern void DisableOutputs(void);
+extern void Disable(void);
 
 /**
  * Get pwm output state
  * @return pwm output state, true = pwm active
  */
-extern bool OutputActive(void);
+extern bool Active(void);
+} /* namespace output */
 
 /**
  * Set the normalized duty cycles for each phase
  * @param dutys -1 = LOW, 0 = 50%, 1=HIGH
  */
-extern void SetDutys(const std::array<systems::abc, INJECTION_CYCLES> dutys);
+extern void Dutys(const std::array<systems::abc, INJECTION_CYCLES> dutys);
 
 } /* namespace pwm */
 
@@ -115,43 +118,78 @@ extern void Init();
  */
 extern void PrepareSamples(void);
 
+namespace current {
+
 /**
  * Get current means of the current in the last control
  * cycles
  * @param currents references to the current mean samples
  */
-extern void GetCurrentsMean(std::array<systems::abc, pwm::INJECTION_CYCLES>& currents);
+extern void Mean(std::array<systems::abc, pwm::INJECTION_CYCLES>& currents);
 
 /**
  * Get current injection samples in the last control cycle
  * @param currents points to the current injection samples
  */
-extern void GetCurrentsInjection(std::array<systems::abc, pwm::INJECTION_CYCLES>& currents);
+extern void Injection(std::array<systems::abc, pwm::INJECTION_CYCLES>& currents);
 
+namespace offset {
 
+	/**
+	 * set dc current offsets
+	 * @param offset in A
+	 */
+	extern void DC(systems::abc& offset);
+
+	/**
+	 * set AC current offsetsS
+	 * @param offset in A
+	 */
+	extern void AC(systems::abc& offset);
+} /* namespace offset */
+
+namespace gain {
+
+	/**
+	 * set dc current gains
+	 * @param gain in A/A
+	 */
+	extern void DC(systems::abc& gain);
+	/**
+	 * set ac current gains
+	 * @param gain in A/A
+	 */
+	extern void AC(systems::abc& gain);
+} /* namespace gain */
+} /* namespace current*/
+
+namespace voltage {
 /**
  * Read the DC Bus voltage
  * @return DC Bus voltage in Volts
  */
-extern float GetDCBusVoltage(void);
+extern float DCBus(void);
+} /* namespace voltage */
 
+namespace temperature {
 /**
  * Get the temperature of the power electronics
  * @return Temperature of the power electronics in °C
  */
-extern float GetBridgeTemp(void);
+extern float Bridge(void);
 
 /**
  * Get the temperature of the motor
  * @return Temperature of the Motor in °C
  */
-extern float GetMotorTemp(void);
+extern float Motor(void);
+} /* namespace temperature */
 
 /**
  * Get the external throttle command value
  * @return Throttle in a range of -1 to 1
  */
-extern float GetThrottle(void);
+extern float Throttle(void);
 
 } /* namespace adc */
 
@@ -187,7 +225,7 @@ extern uint8_t Write(const uint32_t address, void const * buffer, const uint32_t
  * Get the size of the non-volatile memory
  * @return size of non-volatile memory in bytes
  */
-extern uint32_t GetSize(void);
+extern uint32_t Size(void);
 
 /**
  * Calculate CRC32 checksum of a buffer.

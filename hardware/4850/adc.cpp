@@ -147,10 +147,16 @@ uint32_t samples_index = 0;
 chibios_rt::ThreadReference hardware::control_thread = nullptr;
 
 ///< dc current offsets
-systems::abc dc_offsets = {0.0f, 0.0f, 0.0f};
+systems::abc dc_offset = {0.0f, 0.0f, 0.0f};
 
 ///< ac current offsets
-systems::abc ac_offsets = {0.0f, 0.0f, 0.0f};
+systems::abc ac_offset = {0.0f, 0.0f, 0.0f};
+
+///< dc current gains
+systems::abc dc_gain = {1.0f, 1.0f, 1.0f};
+
+///< ac current offsets
+systems::abc ac_gain = {1.0f, 1.0f, 1.0f};
 
 
 /**
@@ -265,7 +271,6 @@ void hardware::adc::Init(void)
  */
 void hardware::adc::PrepareSamples(void)
 {
-	static std::int8_t first_time = 50;
 	/* DMA buffer invalidation because data cache, only invalidating the
      * buffer just filled.
      */
@@ -274,35 +279,6 @@ void hardware::adc::PrepareSamples(void)
 
 	if(samples_index < (ADC_SEQ_BUFFERED - 1)) samples_index+=pwm::INJECTION_CYCLES;
 	else samples_index = 0;
-
-	if(first_time) first_time--;
-	// wait for first cycles to settle everything
-	if(first_time < 1)
-	{
-		first_time = false;
-
-		// save current measured current values as offsets
-		std::array<systems::abc, pwm::INJECTION_CYCLES> offsets;
-		GetCurrentsMean(offsets);
-		for(uint8_t p = 0; p < PHASES; p++)
-		{
-			for (uint8_t i = 0; i < pwm::INJECTION_CYCLES; ++i)
-			{
-				dc_offsets.array[p] += offsets[i].array[p];
-			}
-			dc_offsets.array[p] /= pwm::INJECTION_CYCLES;
-		}
-
-		GetCurrentsInjection(offsets);
-		for(uint8_t p = 0; p < PHASES; p++)
-		{
-			for (uint8_t i = 0; i < pwm::INJECTION_CYCLES; ++i)
-			{
-				ac_offsets.array[p] += offsets[i].array[p];
-			}
-			ac_offsets.array[p] /= pwm::INJECTION_CYCLES;
-		}
-	}
 }
 
 /**
@@ -310,7 +286,7 @@ void hardware::adc::PrepareSamples(void)
  * cycles
  * @param currents references to the current mean samples
  */
-void hardware::adc::GetCurrentsMean(std::array<systems::abc, pwm::INJECTION_CYCLES>& currents)
+void hardware::adc::current::Mean(std::array<systems::abc, pwm::INJECTION_CYCLES>& currents)
 {
 	/*
 	 * Three 2mR shunts in parallel with a 20V/V gain map to 2048 per 1.65V
@@ -323,7 +299,8 @@ void hardware::adc::GetCurrentsMean(std::array<systems::abc, pwm::INJECTION_CYCL
 		{
 			uint8_t s = (j + samples_index - currents.size())%ADC_SEQ_BUFFERED;
 
-			currents[j].array[i] = ADC2CURRENT * samples[i][s][0] - dc_offsets.array[i];
+			currents[j].array[i] = (ADC2CURRENT * samples[i][s][0]
+									- dc_offset.array[i]) * dc_gain.array[i];
 		}
 	}
 }
@@ -332,7 +309,7 @@ void hardware::adc::GetCurrentsMean(std::array<systems::abc, pwm::INJECTION_CYCL
  * Get current injection samples in the last control cycle
  * @param currents references to the current injection samples
  */
-void hardware::adc::GetCurrentsInjection(std::array<systems::abc, pwm::INJECTION_CYCLES>& currents)
+void hardware::adc::current::Injection(std::array<systems::abc, pwm::INJECTION_CYCLES>& currents)
 {
 	/*
 	 * Three 2mR shunts in parallel with a 20V/V gain map to 2048 per 1.65V and 10V/V gain
@@ -347,16 +324,54 @@ void hardware::adc::GetCurrentsInjection(std::array<systems::abc, pwm::INJECTION
 		{
 			uint8_t s = (j + samples_index - currents.size())%ADC_SEQ_BUFFERED;
 
-			currents[j].array[i] = ADC2CURRENT * samples[i][s][3] - ac_offsets.array[i];
+			currents[j].array[i] = (ADC2CURRENT * samples[i][s][3]
+										- ac_offset.array[i]) * ac_gain.array[i];
 		}
 	}
 }
 
 /**
+ * set dc current offsets
+ * @param offset in A
+ */
+void hardware::adc::current::offset::DC(systems::abc& offset)
+{
+	dc_offset = {offset.a, offset.b, offset.c};
+}
+
+/**
+ * set AC current offsetsS
+ * @param offset in A
+ */
+void hardware::adc::current::offset::AC(systems::abc& offset)
+{
+	ac_offset = {offset.a, offset.b, offset.c};
+}
+
+/**
+ * set dc current gains
+ * @param gain in A/A
+ */
+void hardware::adc::current::gain::DC(systems::abc& gain)
+{
+	dc_gain = {gain.a, gain.b, gain.c};
+}
+
+/**
+ * set ac current gains
+ * @param gain in A/A
+ */
+void hardware::adc::current::gain::AC(systems::abc& gain)
+{
+	ac_gain = {gain.a, gain.b, gain.c};
+}
+
+
+/**
  * Read the DC Bus voltage
  * @return DC Bus voltage in Volts
  */
-float hardware::adc::GetDCBusVoltage(void)
+float hardware::adc::voltage::DCBus(void)
 {
 	constexpr float divisor = 4096.0f * 2.0f * ADC_SEQ_BUFFERED;
 	constexpr float ADC_2_VDC = (24e3f+1.2e3f)/1.2e3f * 3.3f/divisor;
@@ -383,7 +398,7 @@ float hardware::adc::GetDCBusVoltage(void)
  * Get the temperature of the power electronics
  * @return Temperature of the power electronics in °C
  */
-float hardware::adc::GetBridgeTemp(void)
+float hardware::adc::temperature::Bridge(void)
 {
 	uint32_t sum = 0;
 
@@ -403,7 +418,7 @@ float hardware::adc::GetBridgeTemp(void)
  * Get the temperature of the motor
  * @return Temperature of the Motor in °C
  */
-float hardware::adc::GetMotorTemp(void)
+float hardware::adc::temperature::Motor(void)
 {
 	uint32_t sum = 0;
 
@@ -423,7 +438,7 @@ float hardware::adc::GetMotorTemp(void)
  * Get the external throttle command value
  * @return Throttle in a range of -1 to 1
  */
-float hardware::adc::GetThrottle(void)
+float hardware::adc::Throttle(void)
 {
 	/// FIXME because of 10k input resistor pot only reach 800
 	constexpr float ADC_2_THROTTLE = 1.0f/(790.0f * ADC_SEQ_BUFFERED);

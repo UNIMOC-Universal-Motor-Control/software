@@ -188,7 +188,7 @@ void hardware::pwm::Init(void)
  * Enable PWM Outputs.
  * @note Power output is active after this call
  */
-void hardware::pwm::EnableOutputs(void)
+void hardware::pwm::output::Enable(void)
 {
 	palSetLine(LINE_EN_PWM_OUT);
 
@@ -199,7 +199,7 @@ void hardware::pwm::EnableOutputs(void)
 /**
  * Disable PWM Outputs.
  */
-void hardware::pwm::DisableOutputs(void)
+void hardware::pwm::output::Disable(void)
 {
 	palClearLine(LINE_EN_PWM_OUT);
 }
@@ -208,7 +208,7 @@ void hardware::pwm::DisableOutputs(void)
  * Get pwm output state
  * @return pwm output state, true = pwm active
  */
-bool hardware::pwm::OutputActive(void)
+bool hardware::pwm::output::Active(void)
 {
 	return (PWMP->tim->BDTR & STM32_TIM_BDTR_MOE);
 }
@@ -217,7 +217,7 @@ bool hardware::pwm::OutputActive(void)
  * Set the normalized duty cycles for each phase
  * @param dutys -1 = LOW, 0 = 50%, 1=HIGH
  */
-void hardware::pwm::SetDutys(const std::array<systems::abc, INJECTION_CYCLES> dutys)
+void hardware::pwm::Dutys(const std::array<systems::abc, INJECTION_CYCLES> dutys)
 {
 	const int16_t mid = PERIOD/2;
 	uint8_t c = (duty_buffer_cycle + 1)%DUTY_BUFFER_CYCLES;
