@@ -110,8 +110,8 @@ typedef struct NTC_LUT_S
     {
         for (uint32_t i = 0; i < TABLE_LEN; ++i)
         {
-        	float r = Rp/(TABLE_LEN/(i+1) - 1);
-        	float t = B/(std::log(r/R8));
+        	float r = Rp/((float)TABLE_LEN/(float)(i+1) - 1.0f);
+        	float t = B/std::log(r/R8) - T0 + 25.0f;
         	table[i] = (int16_t)(t*100.0f);
         }
     }
@@ -411,7 +411,7 @@ float hardware::adc::temperature::Bridge(void)
 	}
 
 	// Filter inverts the values
-	return adc2ntc_temperature(4096 - sum/ADC_SEQ_BUFFERED);
+	return adc2ntc_temperature(sum/ADC_SEQ_BUFFERED);
 }
 
 /**
@@ -431,7 +431,7 @@ float hardware::adc::temperature::Motor(void)
 	}
 
 	// Filter inverts the values
-	return adc2ntc_temperature(4096 - sum/ADC_SEQ_BUFFERED);
+	return adc2ntc_temperature(sum/ADC_SEQ_BUFFERED);
 }
 
 /**
@@ -470,13 +470,14 @@ float hardware::adc::Throttle(void)
 static float adc2ntc_temperature(const uint16_t adc_value)
 {
 	constexpr float onebylen = 1.0f/NTC_TABLE.TABLE_LEN;
+	constexpr uint16_t conv_faktor = 4096/NTC_TABLE.TABLE_LEN;
 	int16_t p1,p2;
 	/* get the points from table left an right of the actual adc value */
-	p1 = NTC_TABLE.table[adc_value/NTC_TABLE.TABLE_LEN    ];
-	p2 = NTC_TABLE.table[adc_value/NTC_TABLE.TABLE_LEN + 1];
+	p1 = NTC_TABLE.table[adc_value/conv_faktor    ];
+	p2 = NTC_TABLE.table[adc_value/conv_faktor + 1];
 
 	/* linear interpolation between both points */
-	return ((float)p1 - ( (float)(p1-p2) * (float)(adc_value & NTC_TABLE.TABLE_LEN) ) * onebylen)*0.01f;
+	return ((float)p1 - ( (float)(p1-p2) * (float)(adc_value & (NTC_TABLE.TABLE_LEN - 1)) ) * onebylen)*0.01f;
 };
 
 /**
