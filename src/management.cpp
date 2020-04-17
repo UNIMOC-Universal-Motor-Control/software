@@ -18,6 +18,7 @@
  */
 #include <cstring>
 #include <stdint.h>
+#include <array>
 #include "ch.hpp"
 #include "hal.h"
 #include "hardware_interface.hpp"
@@ -25,11 +26,49 @@
 
 using namespace chibios_rt;
 
+
+volatile bool save = false;
+
+
 /**
  * @namespace controller management classes
  */
 namespace management
 {
+	/**
+	 * @namespace observer flags
+	 */
+	namespace observer
+	{
+		///< release admittance observer
+		bool admittance = false;
+
+		///< release injection signal for observer
+		bool injection = false;
+
+		///< release flux observer
+		bool flux = false;
+
+		///< release mechanic observer
+		bool mechanic = false;
+	}
+
+	/**
+	 * @namespace controller flags
+	 */
+	namespace control
+	{
+		///< release current control
+		bool current = false;
+
+		///< release speed control
+		bool speed = false;
+
+		///< release position control
+		bool position = false;
+	}
+
+
 	/**
 	 * generic constructor
 	 */
@@ -50,6 +89,56 @@ namespace management
 		 */
 		while (TRUE)
 		{
+			values.converter.temp = hardware::adc::temperature::Bridge();
+			values.motor.temp = hardware::adc::temperature::Motor();
+			values.converter.throttle = hardware::adc::Throttle();
+
+
+			if(save) settings.Save();
+			save = false;
+
+			if(hardware::pwm::output::Active()) palSetLine(LINE_LED_PWM);
+			else palClearLine(LINE_LED_PWM);
+
+
+			switch(sequencer)
+			{
+			/* Startup point */
+			case STARTUP:
+				settings.Load();
+
+				sequencer = CURRENT_OFFSETS;
+				delay = 100; // wait 100ms before taking current samples
+				break;
+			/* measure current offsets */
+			case CURRENT_OFFSETS:
+				if(delay)
+				{
+					delay--;
+				}
+				else
+				{
+					systems::abc dummy_gain = {1.0f, 1.0f, 1.0f};
+					systems::abc offsets;
+					std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> ac_offsets;
+					hardware::adc::current::gain::DC(dummy_gain);
+					hardware::adc::current::gain::AC(dummy_gain);
+					hardware::adc::current::Mean(offsets);
+					hardware::adc::current::offset::DC(offsets);
+					hardware::adc::current::Injection(ac_offsets);
+					offsets = hardware::adc::current::InjectionMean(ac_offsets);
+					hardware::adc::current::offset::AC(offsets);
+					// set original gains
+					hardware::adc::current::gain::DC(settings.converter.dc_gains);
+					hardware::adc::current::gain::AC(settings.converter.ac_gains);
+
+					sequencer = RUN;
+				}
+				break;
+			case RUN:
+
+				break;
+			}
 
 			sleepUntil(deadline + CYCLE_TIME);
 		}

@@ -23,6 +23,7 @@
 #include "usbcfg.h"
 #include "hardware_interface.hpp"
 #include "freemaster_wrapper.hpp"
+#include "management.hpp"
 #include "uavcan.hpp"
 #include "main.hpp"
 
@@ -30,8 +31,7 @@ using namespace chibios_rt;
 
 static modules::freemaster::thread freemaster;
 static control::thread controller;
-
-volatile bool save = false;
+static management::thread manager;
 
 /**
  * Code entry point
@@ -56,11 +56,6 @@ int main(void)
 	hardware::pwm::Init();
 	hardware::adc::Init();
 	uavcan::Init();
-
-	settings.Load();
-
-
-	hardware::pwm::output::Enable();
 
 	/*
 	 * Initializes two serial-over-USB CDC drivers.
@@ -88,6 +83,7 @@ int main(void)
 	 */
 	freemaster.start(NORMALPRIO);
 	hardware::control_thread = controller.start(HIGHPRIO);
+	manager.start(NORMALPRIO + 1);
 
 	/*
 	 * Normal main() thread activity, in this demo it does nothing except
@@ -95,213 +91,6 @@ int main(void)
 	 */
 	while (true)
 	{
-		values.converter.temp = hardware::adc::temperature::Bridge();
-		values.motor.temp = hardware::adc::temperature::Motor();
-		values.converter.throttle = hardware::adc::Throttle();
-
-
-		if(save) settings.Save();
-				save = false;
-
-		if(hardware::pwm::output::Active())
-		{
-			palSetLine(LINE_LED_PWM);
-		}
-		else
-		{
-			palClearLine(LINE_LED_PWM);
-		}
 		uavcan::Run();
 	}
 }
-
-namespace control
-{
-	/**
-	 * R1 = 4k7, R2 = 47k, R3 = 4k7, C1 = 10n, C2 = 1n
-	 * Q = 0.47619047619048, Fc = 3386.2753849339
-	 */
-	constexpr filter::biquad_coefficients_ts hw_coeff = filter::BiquadCalc(filter::biquad_type_et::lowpass, 0.47619047619048f, 3386.2753849339f/hardware::Fc, 0.0f);
-	constexpr filter::biquad_coefficients_ts sw_coeff = filter::BiquadCalc(filter::biquad_type_et::lowpass, 0.5f, 0.01f, 0.0f);
-
-	/**
-	 * generic constructor
-	 */
-	thread::thread():flux(), mech(settings.observer.Q, settings.observer.R), foc(hw_coeff, sw_coeff)
-	{}
-
-	/**
-	 * calculate the mean of a hole injection cycle of adc measurements
-	 * @param currents referes to the samples of one hole injection cycle
-	 * @return the mean per phase of the injection cycle
-	 */
-	systems::abc thread::InjectionMean(const std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& currents)
-	{
-		systems::abc abc;
-
-		for (uint8_t k = 0; k < currents[0].array.size(); ++k)
-		{
-			abc.array[k] = 0.0f;
-			for (uint8_t i = 0; i < currents.size(); ++i)
-			{
-				abc.array[k] += currents[i].array[k];
-			}
-			abc.array[k] /= currents.size();
-		}
-		return abc;
-	}
-
-
-	/**
-	 * @brief Thread main function
-	 */
-	void thread::main(void)
-	{
-		setName("Control");
-
-
-		/*
-		 * Normal main() thread activity
-		 */
-		while (TRUE)
-		{
-			systems::sin_cos sin_cos;
-			float angle;
-
-			/* Checks if an IRQ happened else wait.*/
-			chEvtWaitAny((eventmask_t)1);
-
-			hardware::adc::PrepareSamples();
-
-			values.battery.u = hardware::adc::voltage::DCBus();
-
-			hardware::adc::current::Mean(i_dc);
-
-			i_abc = InjectionMean(i_dc);
-
-			hardware::adc::current::Injection(i_ac);
-
-			for (uint8_t i = 0; i < hardware::pwm::INJECTION_CYCLES; ++i)
-			{
-				i_ab_ac[i] = systems::transform::Clark(i_ac[i]);
-			}
-			values.motor.y = admittance.GetVector(i_ab_ac);
-
-			// calculate the sine and cosine of the new angle
-			angle = values.motor.rotor.phi
-					+ values.motor.rotor.omega * hardware::Tc;
-
-			// calculate new
-			systems::SinCos(angle, sin_cos);
-
-			// convert 3 phase system to ortogonal
-			i_ab = systems::transform::Clark(i_abc);
-			// convert current samples from clark to rotor frame;
-			values.motor.rotor.i = systems::transform::Park(i_ab, sin_cos);
-
-			// transform the admittance vector to rotor frame
-			// the admittance vector is rotating with double the rotor frequency
-			y_dq = systems::transform::Park(values.motor.y, sin_cos);
-			y_ab.alpha = y_dq.d;
-			y_ab.beta = y_dq.q;
-			values.motor.rotor.y = systems::transform::Park(y_ab, sin_cos);
-
-			if(settings.observer.admittance)
-			{
-				// calculate the mech observer from admittance vector
-				mech.Update(values.motor.rotor.y.q, correction);
-
-				// predict motor behavior
-				observer::mechanic::Predict();
-				// correct the prediction
-				observer::mechanic::Correct(correction);
-			}
-			else if(settings.observer.flux)
-			{
-				// calculate the flux observer
-				float flux_error = flux.Calculate(sin_cos);
-				mech.Update(flux_error, correction);
-
-				// predict motor behavior
-				observer::mechanic::Predict();
-				// correct the prediction
-				observer::mechanic::Correct(correction);
-			}
-			else
-			{
-				values.motor.rotor.phi += values.motor.rotor.omega * hardware::Tc;
-			}
-
-			if(settings.control.current.active)
-			{
-				// calculate the field orientated controllers
-				foc.Calculate();
-			}
-
-			// transform the voltages to stator frame
-			u_ab = systems::transform::InversePark(values.motor.rotor.u, sin_cos);
-
-			// add the injection pattern to the voltage output
-			for (uint8_t i = 0; i < hardware::pwm::INJECTION_CYCLES; ++i)
-			{
-				if(settings.motor.u_inj > 0.0f)
-				{
-					constexpr std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES> inj_pat =
-					{{
-							{1.0f, 0.0f},
-							{0.0f, 1.0f},
-							{-1.0f, 0.0f},
-							{0.0f, -1.0f}
-					}};
-
-					systems::alpha_beta u_tmp =
-					{
-							u_ab.alpha + settings.motor.u_inj * inj_pat[i].alpha,
-							u_ab.beta + settings.motor.u_inj * inj_pat[i].beta
-					};
-
-					// next transform to abc system
-					u_abc[i] = systems::transform::InverseClark(u_tmp);
-				}
-				else
-				{
-					// transform to ab system
-					u_abc[i] = systems::transform::InverseClark(u_ab);
-
-					// do not advance in the last cycle its useless
-					if(i < hardware::pwm::INJECTION_CYCLES - 1)
-					{
-						// advance the angle for all dutys to make a round curve
-						angle += values.motor.rotor.omega * hardware::Tc;
-
-						// calculate new
-						systems::SinCos(angle, sin_cos);
-					}
-				}
-			}
-
-
-			//scale the voltages
-			if(std::fabs(values.battery.u)> 10.0f)
-			{
-				for (uint8_t i = 0; i < hardware::pwm::INJECTION_CYCLES; ++i)
-				{
-					u_abc[i].a /= values.battery.u;
-					u_abc[i].b /= values.battery.u;
-					u_abc[i].c /= values.battery.u;
-				}
-
-			}
-			else
-			{
-				systems::abc tmp = {0};
-				// faulty dc bus voltage
-				u_abc.fill(tmp);
-			}
-
-			hardware::pwm::Dutys(u_abc);
-		}
-
-	}
-}/* namespace control */
-

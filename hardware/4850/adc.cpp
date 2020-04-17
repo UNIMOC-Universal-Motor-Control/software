@@ -286,22 +286,23 @@ void hardware::adc::PrepareSamples(void)
  * cycles
  * @param currents references to the current mean samples
  */
-void hardware::adc::current::Mean(std::array<systems::abc, pwm::INJECTION_CYCLES>& currents)
+void hardware::adc::current::Mean(systems::abc& currents)
 {
 	/*
 	 * Three 2mR shunts in parallel with a 20V/V gain map to 2048 per 1.65V
 	 */
-	constexpr float ADC2CURRENT = 1.65f/(20.0f*(0.002f/3.0f))/2048.0f;
+	constexpr float ADC2CURRENT = 1.65f/(20.0f*(0.002f/3.0f))/(2048.0f * pwm::INJECTION_CYCLES);
 
 	for(uint8_t i = 0; i < PHASES; i++)
 	{
-		for (uint8_t j = 0; j < currents.size(); ++j)
+		std::uint16_t tmp = 0;
+		for (uint8_t j = 0; j < pwm::INJECTION_CYCLES; ++j)
 		{
-			uint8_t s = (j + samples_index - currents.size())%ADC_SEQ_BUFFERED;
+			uint8_t s = (j + samples_index - pwm::INJECTION_CYCLES)%ADC_SEQ_BUFFERED;
 
-			currents[j].array[i] = (ADC2CURRENT * samples[i][s][0]
-									- dc_offset.array[i]) * dc_gain.array[i];
+			tmp += samples[i][s][0];
 		}
+		currents.array[i] = ((ADC2CURRENT * (float)tmp) - dc_offset.array[i]) * dc_gain.array[i];
 	}
 }
 
@@ -328,6 +329,27 @@ void hardware::adc::current::Injection(std::array<systems::abc, pwm::INJECTION_C
 										- ac_offset.array[i]) * ac_gain.array[i];
 		}
 	}
+}
+
+/**
+ * calculate the mean of a hole injection cycle of adc measurements
+ * @param currents referes to the samples of one hole injection cycle
+ * @return the mean per phase of the injection cycle
+ */
+systems::abc hardware::adc::current::InjectionMean(const std::array<systems::abc, pwm::INJECTION_CYCLES>& currents)
+{
+	systems::abc abc;
+
+	for (uint8_t k = 0; k < currents[0].array.size(); ++k)
+	{
+		abc.array[k] = 0.0f;
+		for (uint8_t i = 0; i < currents.size(); ++i)
+		{
+			abc.array[k] += currents[i].array[k];
+		}
+		abc.array[k] /= currents.size();
+	}
+	return abc;
 }
 
 /**

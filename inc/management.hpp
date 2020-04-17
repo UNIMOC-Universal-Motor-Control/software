@@ -35,6 +35,38 @@
  */
 namespace management
 {
+	/**
+	 * @namespace observer flags
+	 */
+	namespace observer
+	{
+		///< release admittance observer
+		extern bool admittance;
+
+		///< release injection signal for observer
+		extern bool injection;
+
+		///< release flux observer
+		extern bool flux;
+
+		///< release mechanic observer
+		extern bool mechanic;
+	}
+
+	/**
+	 * @namespace controller flags
+	 */
+	namespace control
+	{
+		///< release current control
+		extern bool current;
+
+		///< release speed control
+		extern bool speed;
+
+		///< release position control
+		extern bool position;
+	}
 
 	/**
 	 * controller management thread
@@ -44,14 +76,13 @@ namespace management
 	private:
 		static constexpr systime_t CYCLE_TIME = TIME_MS2I(1);
 		systime_t deadline;
+		std::uint32_t delay;
 
 		enum state_e
 		{
 			STARTUP,
 			CURRENT_OFFSETS,
-			CURRENT_GAINS,
 			RUN,
-
 		} sequencer;
 
 

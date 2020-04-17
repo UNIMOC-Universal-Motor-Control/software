@@ -26,60 +26,7 @@
 #include <array>
 #include "ch.hpp"
 #include "controller.hpp"
-#include "systems.hpp"
-#include "values.hpp"
-#include "settings.hpp"
-#include "observer.hpp"
 
-/**
- * @namespace controller classes
- */
-namespace control
-{
-
-	/**
-	 * generic FOC controller thread
-	 */
-	class thread : public chibios_rt::BaseStaticThread<256>
-	{
-	private:
-		observer::flux       	flux;
-		observer::admittance    admittance;
-		observer::mechanic   	mech;
-		control::foc      		foc;
-		std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>  	u_abc;
-		systems::alpha_beta  	u_ab;
-		systems::abc 			i_abc;
-		systems::alpha_beta 	i_ab;
-		std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> i_dc;
-		std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> i_ac;
-		std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES> i_ab_ac;
-		systems::alpha_beta 	y_ab;
-		systems::dq			 	y_dq;
-		std::array<float, 3>   	correction;
-
-
-		/**
-		 * calculate the mean of a hole injection cycle of adc measurements
-		 * @param currents referes to the samples of one hole injection cycle
-		 * @return the mean per phase of the injection cycle
-		 */
-		systems::abc InjectionMean(const std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& currents);
-
-	protected:
-		/**
-		 * Thread function
-		 */
-		virtual void main(void);
-
-	public:
-		/**
-		 * generic constructor
-		 */
-		thread();
-	};
-
-} /* namespace control */
 
 
 #endif /* INC_MAIN_HPP_ */

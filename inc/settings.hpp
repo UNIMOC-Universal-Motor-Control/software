@@ -139,6 +139,12 @@ typedef struct settings_s
 	 */
 	struct converter_s
 	{
+		///< DC current measurement gains
+		systems::abc dc_gains;
+
+		///< AC current measurement gains
+		systems::abc ac_gains;
+
 		/**
 		 * converter limits
 		 */

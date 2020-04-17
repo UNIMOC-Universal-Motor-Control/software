@@ -125,13 +125,21 @@ namespace current {
  * cycles
  * @param currents references to the current mean samples
  */
-extern void Mean(std::array<systems::abc, pwm::INJECTION_CYCLES>& currents);
+extern void Mean(systems::abc& currents);
 
 /**
  * Get current injection samples in the last control cycle
  * @param currents points to the current injection samples
  */
 extern void Injection(std::array<systems::abc, pwm::INJECTION_CYCLES>& currents);
+
+/**
+ * calculate the mean of a hole injection cycle of adc measurements
+ * @param currents referes to the samples of one hole injection cycle
+ * @return the mean per phase of the injection cycle
+ */
+extern systems::abc InjectionMean(const std::array<systems::abc, pwm::INJECTION_CYCLES>& currents);
+
 
 namespace offset {
 

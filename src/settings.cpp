@@ -138,6 +138,12 @@ settings_ts settings =
 	 */
 	.converter =
 	{
+		///< DC current measurement gains
+		.dc_gains = {1.0f, 1.0f, 1.0f},
+
+		///< AC current measurement gains
+		.ac_gains = {1.0f, 1.0f, 1.0f},
+
 		/**
 		 * converter limits
 		 */

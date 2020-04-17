@@ -20,6 +20,7 @@
 #define INC_OBSERVER_HPP_
 
 #include "systems.hpp"
+#include "hardware_interface.hpp"
 
 /**
  * @namespace different observer classes
