@@ -397,7 +397,7 @@ float hardware::adc::voltage::DCBus(void)
 {
 	constexpr float divisor = 4096.0f * 2.0f * ADC_SEQ_BUFFERED;
 	constexpr float ADC_2_VDC = (24e3f+1.2e3f)/1.2e3f * 3.3f/divisor;
-	uint32_t sum = divisor;
+	uint32_t sum = 0;
 	float vdc;
 
 
@@ -406,8 +406,8 @@ float hardware::adc::voltage::DCBus(void)
 		/*
 		 * VDC is sampled by ADC1 2 times as a non current sample
 		 */
-		sum -= samples[0][i][1];
-		sum -= samples[0][i][2];
+		sum += samples[0][i][1];
+		sum += samples[0][i][2];
 	}
 
 	// Filter inverts the values

@@ -89,6 +89,9 @@ namespace management
 		 */
 		while (TRUE)
 		{
+			deadline = chibios_rt::System::getTime();
+
+
 			values.converter.temp = hardware::adc::temperature::Bridge();
 			values.motor.temp = hardware::adc::temperature::Motor();
 			values.converter.throttle = hardware::adc::Throttle();
@@ -97,15 +100,19 @@ namespace management
 			if(save) settings.Save();
 			save = false;
 
-			if(hardware::pwm::output::Active()) palSetLine(LINE_LED_PWM);
-			else palClearLine(LINE_LED_PWM);
-
-
 			switch(sequencer)
 			{
 			/* Startup point */
 			case STARTUP:
+				hardware::pwm::output::Disable();
+
 				settings.Load();
+
+				// clear all leds
+				palClearLine(LINE_LED_RUN);
+				palClearLine(LINE_LED_MODE);
+				palClearLine(LINE_LED_ERROR);
+				palClearLine(LINE_LED_PWM);
 
 				sequencer = CURRENT_OFFSETS;
 				delay = 100; // wait 100ms before taking current samples
@@ -136,11 +143,25 @@ namespace management
 				}
 				break;
 			case RUN:
+				// software release for PWM
+				hardware::pwm::output::Enable();
+
+				// handle PWM led to show PWM status
+				if(hardware::pwm::output::Active()) palSetLine(LINE_LED_PWM);
+				else palClearLine(LINE_LED_PWM);
+				// set Run Mode LED
+				palSetLine(LINE_LED_RUN);
+
+				// activate control and observers
+				control::current = settings.control.current.active;
+				observer::injection = settings.observer.admittance;
+				observer::admittance = settings.observer.admittance;
+				observer::flux = settings.observer.flux;
 
 				break;
 			}
 
-			sleepUntil(deadline + CYCLE_TIME);
+			sleepUntilWindowed(deadline, deadline + CYCLE_TIME);
 		}
 	}
 
