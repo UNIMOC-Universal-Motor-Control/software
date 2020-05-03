@@ -48,14 +48,9 @@ constexpr uint32_t DEADTIME = 300;
 /**
  * PWM frequency in Hz
  *
- * The ADC sampling relies on the PWM frequency!
- * Each ADC samples 16 samples with a sample time of 15clk + 12clk for conversion
- * + 1clk for triggering. ADC clock is divided by 8 from PWM clock.
- *
- * So Period of the PWM needs to be greater than 16*28*8=3584clk.
  * With center aligned PWM this is the period of PWM half period.
  */
-constexpr uint32_t PERIOD = 3600;
+constexpr uint32_t PERIOD = 6749;
 
 ///< current injection cycles used for low speed position estimation
 constexpr uint32_t INJECTION_CYCLES = 4;

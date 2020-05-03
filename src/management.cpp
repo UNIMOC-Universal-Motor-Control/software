@@ -154,7 +154,7 @@ namespace management
 
 				// activate control and observers
 				control::current = settings.control.current.active;
-				observer::injection = settings.observer.admittance;
+				observer::injection = settings.motor.u_inj > 0.0f;
 				observer::admittance = settings.observer.admittance;
 				observer::flux = settings.observer.flux;
 
