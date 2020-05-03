@@ -172,49 +172,6 @@ namespace observer
         return rotor.flux.q / settings.motor.psi;
     }
 
-    /**
-     * @brief trivial admittance observer constructor
-     */
-    admittance::admittance(void){}
-
-    /**
-     * @brief calculate the mean stator admittance.
-     *
-     * @note call only once per control cycle
-     *
-     * @retval mean stator admittance.
-     */
-    systems::alpha_beta admittance::GetMean(std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& ad)
-    {
-    	static systems::alpha_beta last = {0.0f, 0.0f};
-        systems::alpha_beta y;
-        // statonary part of the admittance vector, float sampling
-        y.alpha = ((last.alpha - ad[0].alpha) + (ad[0].beta -  ad[1].beta) -  (ad[1].alpha - ad[2].alpha) - (ad[2].beta  - ad[3].beta));
-        y.beta  = ((last.beta -  ad[0].beta) -  (ad[0].alpha - ad[1].alpha) - (ad[1].beta -  ad[2].beta)  + (ad[2].alpha - ad[3].alpha));
-
-        last = ad[3];
-        return y;
-    }
-
-    /**
-     * @brief calculate the stator admittance vector.
-     *
-     * @note call only once per control cycle
-     *
-     * @retval stator admittance vector.
-     */
-    systems::alpha_beta admittance::GetVector(std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& ad)
-    {
-    	static systems::alpha_beta last = {0.0f, 0.0f};
-        systems::alpha_beta yd;
-        // rotating part of the admittance vector, float sampling
-        yd.alpha = ((last.beta -  ad[0].beta)  + (ad[0].alpha - ad[1].alpha) - (ad[1].beta -  ad[2].beta)  - (ad[2].alpha - ad[3].alpha));
-        yd.beta  = ((last.alpha - ad[0].alpha) - (ad[0].beta -  ad[1].beta)  - (ad[1].alpha - ad[2].alpha) + (ad[2].beta -  ad[3].beta));
-
-        last = ad[3];
-        return yd;
-    }
-
 }/* namespace observer */
 
 

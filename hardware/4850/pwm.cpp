@@ -23,9 +23,6 @@
 using namespace hardware;
 using namespace hardware::pwm;
 
-///> cycles of dutys buffered in the hardware layer.
-constexpr uint8_t DUTY_BUFFER_CYCLES = 4;
-
 ///< PWM driver instance
 PWMDriver* PWMP = &PWMD1;
 
@@ -33,13 +30,8 @@ PWMDriver* PWMP = &PWMD1;
 PWMDriver* ADC_TRIGP = &PWMD4;
 
 ///< PWM duty counts
-std::array<std::array<systems::abc, INJECTION_CYCLES>, DUTY_BUFFER_CYCLES> duty_counts = {0};
+systems::abc duty_counts = {0};
 
-///< PWM duty buffer cycle
-uint8_t duty_buffer_cycle = 0;
-
-///< PWM duty injection cycle
-uint8_t duty_injection_cycle = 0;
 
 /**
  * macro to calculate DTG value for BDTR
@@ -59,31 +51,17 @@ constexpr uint16_t DTG(const uint32_t deadtime)
  * callback sets the pwm duty and triggers the control task
  * @param pwmp
  */
-static inline void set_dutys(PWMDriver *pwmp)
+static inline void control_callback(PWMDriver *pwmp)
 {
-	if(duty_injection_cycle < INJECTION_CYCLES - 1) duty_injection_cycle++;
-	else
+	(void)pwmp;
+
+	if(!hardware::control_thread.isNull() )
 	{
-		duty_injection_cycle = 0;
-
-		if(duty_buffer_cycle < DUTY_BUFFER_CYCLES - 1) duty_buffer_cycle++;
-		else duty_buffer_cycle = 0;
-
-		if(!hardware::control_thread.isNull() )
-		{
-			/* Wakes up the thread.*/
-			osalSysLockFromISR();
-			chEvtSignalI(hardware::control_thread.getInner(), (eventmask_t)1);
-			osalSysUnlockFromISR();
-		}
+		/* Wakes up the thread.*/
+		osalSysLockFromISR();
+		chEvtSignalI(hardware::control_thread.getInner(), (eventmask_t)1);
+		osalSysUnlockFromISR();
 	}
-
-	osalSysLockFromISR();
-	for (uint16_t i = 0; i < PHASES; ++i)
-	{
-		pwmEnableChannelI(pwmp, i, duty_counts[duty_buffer_cycle][duty_injection_cycle].array[i]);
-	}
-	osalSysUnlockFromISR();
 }
 
 
@@ -94,7 +72,7 @@ const PWMConfig pwmcfg =
 {
 		TIMER_CLOCK,
 		PERIOD,
-		set_dutys,
+		control_callback,
 		{ /*  */
 				{PWM_OUTPUT_ACTIVE_HIGH | PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH, nullptr},
 				{PWM_OUTPUT_ACTIVE_HIGH | PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH, nullptr},
@@ -217,22 +195,18 @@ bool hardware::pwm::output::Active(void)
  * Set the normalized duty cycles for each phase
  * @param dutys -1 = LOW, 0 = 50%, 1=HIGH
  */
-void hardware::pwm::Dutys(const std::array<systems::abc, INJECTION_CYCLES> dutys)
+void hardware::pwm::Dutys(const systems::abc& dutys)
 {
-	const int16_t mid = PERIOD/2;
-	uint8_t c = (duty_buffer_cycle + 1)%DUTY_BUFFER_CYCLES;
+	constexpr int16_t mid = PERIOD/2;
 
-	for (uint16_t k = 0; k < INJECTION_CYCLES; ++k)
+	for (uint16_t i = 0; i < PHASES; ++i)
 	{
-		for (uint16_t i = 0; i < PHASES; ++i)
-		{
-			int16_t new_duty = mid + (int16_t)((float)mid * dutys[k].array[i]);
+		int16_t new_duty = mid + (int16_t)((float)mid * dutys.array[i]);
 
-			if(new_duty < 0) new_duty = 0;
-			if(new_duty > (int16_t)PERIOD) new_duty = PERIOD;
+		if(new_duty < 0) new_duty = 0;
+		if(new_duty > (int16_t)PERIOD) new_duty = PERIOD;
 
-			duty_counts[c][k].array[i] = (uint16_t)new_duty;
-		}
+		pwmEnableChannel(PWMP, i, new_duty);
 	}
 }
 

@@ -24,9 +24,6 @@ values_ts values =
 {
 	.motor =
 	{
-		///< Admittance mean
-		.y = {0.0f, 0.0f},
-
 		///< electric torque
 		.m_el = 0.0f,
 
@@ -39,6 +36,9 @@ values_ts values =
 		///< motor phase current
 		.i = {0.0f, 0.0f, 0.0f},
 
+		///< motor phase voltage
+		.u = {0.0f, 0.0f, 0.0f},
+
 		///< motor rotor system values
 		.rotor =
 		{
@@ -47,9 +47,6 @@ values_ts values =
 
 			///< Voltage in rotor frame
 			.u = {0.0f, 0.0f},
-
-			///< Admittance vector in rotor frame
-			.y = {0.0f, 0.0f},
 
 			///< angular velocity in rotor frame
 			.omega = 0.0f,

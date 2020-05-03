@@ -7,7 +7,7 @@ include ${BASEDIR}/modules/libcanard/libcanard.mk
 
 # List of all the Project related hardware independent files.
 # C code
-UNIMOCSRC := ${FREEMASTERSRC} ${LIBCANARDSRC} \
+UNIMOCSRC := ${FREEMASTERSRC} \
 
 # Cpp code
 UNIMOCCPPSRC := ${FREEMASTERCPPSRC} \

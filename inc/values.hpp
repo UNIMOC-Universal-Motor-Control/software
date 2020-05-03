@@ -34,9 +34,6 @@ typedef struct values_s
 	 */
 	struct motor_s
 	{
-		///< Admittance mean
-		systems::alpha_beta y;
-
 		///< electric torque
 		float m_el;
 
@@ -49,6 +46,9 @@ typedef struct values_s
 		///< motor phase current
 		systems::abc i;
 
+		///< motor phase voltage
+		systems::abc u;
+
 		/**
 		 * motor rotor system values
 		 */
@@ -59,9 +59,6 @@ typedef struct values_s
 
 			///< Voltage in rotor frame
 			systems::dq u;
-
-			///< Admittance deviation in rotor frame
-			systems::dq y;
 
 			///< angular velocity in rotor frame
 			float omega;

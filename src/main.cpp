@@ -55,7 +55,6 @@ int main(void)
 	hardware::memory::Init();
 	hardware::pwm::Init();
 	hardware::adc::Init();
-	uavcan::Init();
 
 	/*
 	 * Initializes two serial-over-USB CDC drivers.
@@ -73,9 +72,6 @@ int main(void)
 	usbStart(serusbcfg.usbp, &usbcfg);
 	usbConnectBus(serusbcfg.usbp);
 
-	// set node operational
-	values.uavcan.mode = uavcan::mode_e::UAVCAN_NODE_MODE_OPERATIONAL;
-
 	chThdSetPriority(LOWPRIO);
 
 	/*
@@ -91,6 +87,6 @@ int main(void)
 	 */
 	while (true)
 	{
-		uavcan::Run();
+		chThdSleepSeconds(1);
 	}
 }

@@ -105,8 +105,6 @@ void uavcan::Run(void)
 		PublishFloatbyKey(values.motor.rotor.i.q, "i.q");
 		PublishFloatbyKey(values.motor.rotor.omega, "w");
 		PublishFloatbyKey(values.motor.rotor.phi, "phi");
-		PublishFloatbyKey(values.motor.y.alpha, "y.a");
-		PublishFloatbyKey(values.motor.y.beta, "y.b");
 	}
 }
 

@@ -55,9 +55,6 @@ typedef struct settings_s
 		///< number of pole pairs
 		uint32_t P;
 
-		///< square injection voltage amplitude
-		float u_inj;
-
 		/**
 		 * motor limits
 		 */
@@ -121,9 +118,6 @@ typedef struct settings_s
 		///< flux observer switch
 		bool flux;
 
-		///< admittance observer switch
-		bool admittance;
-
 		///< modell variance
 		float Q;
 
@@ -139,12 +133,6 @@ typedef struct settings_s
 	 */
 	struct converter_s
 	{
-		///< DC current measurement gains
-		systems::abc dc_gains;
-
-		///< AC current measurement gains
-		systems::abc ac_gains;
-
 		/**
 		 * converter limits
 		 */

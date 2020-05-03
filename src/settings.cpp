@@ -53,9 +53,6 @@ settings_ts settings =
 		///< number of pole pairs
 		.P = 8 / 2,
 
-		///< square injection voltage amplitude
-		.u_inj = 0.0f,
-
 		/**
 		 * motor limit settings
 		 */
@@ -120,9 +117,6 @@ settings_ts settings =
 		///< flux observer switch
 		.flux = false,
 
-		///< admittance observer switch
-		.admittance = false,
-
 		///< modell variance
 		.Q = 1e-5f,
 
@@ -138,12 +132,6 @@ settings_ts settings =
 	 */
 	.converter =
 	{
-		///< DC current measurement gains
-		.dc_gains = {1.0f, 1.0f, 1.0f},
-
-		///< AC current measurement gains
-		.ac_gains = {1.0f, 1.0f, 1.0f},
-
 		/**
 		 * converter limits
 		 */

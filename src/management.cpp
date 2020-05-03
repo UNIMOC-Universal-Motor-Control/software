@@ -125,19 +125,7 @@ namespace management
 				}
 				else
 				{
-					systems::abc dummy_gain = {1.0f, 1.0f, 1.0f};
-					systems::abc offsets;
-					std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> ac_offsets;
-					hardware::adc::current::gain::DC(dummy_gain);
-					hardware::adc::current::gain::AC(dummy_gain);
-					hardware::adc::current::Mean(offsets);
-					hardware::adc::current::offset::DC(offsets);
-					hardware::adc::current::Injection(ac_offsets);
-					offsets = hardware::adc::current::InjectionMean(ac_offsets);
-					hardware::adc::current::offset::AC(offsets);
-					// set original gains
-					hardware::adc::current::gain::DC(settings.converter.dc_gains);
-					hardware::adc::current::gain::AC(settings.converter.ac_gains);
+					hardware::adc::current::SetOffset();
 
 					sequencer = RUN;
 				}
@@ -154,8 +142,6 @@ namespace management
 
 				// activate control and observers
 				control::current = settings.control.current.active;
-				observer::injection = settings.motor.u_inj > 0.0f;
-				observer::admittance = settings.observer.admittance;
 				observer::flux = settings.observer.flux;
 
 				break;

@@ -52,13 +52,16 @@ constexpr uint32_t DEADTIME = 300;
  */
 constexpr uint32_t PERIOD = 6749;
 
-///< current injection cycles used for low speed position estimation
-constexpr uint32_t INJECTION_CYCLES = 4;
-
 /**
  * Initialize PWM hardware with outputs disabled!
  */
 extern void Init();
+
+/**
+ * Set the normalized duty cycles for each phase
+ * @param dutys -1 = LOW, 0 = 50%, 1=HIGH
+ */
+extern void Dutys(const systems::abc& dutys);
 
 namespace output {
 
@@ -80,16 +83,10 @@ extern void Disable(void);
 extern bool Active(void);
 } /* namespace output */
 
-/**
- * Set the normalized duty cycles for each phase
- * @param dutys -1 = LOW, 0 = 50%, 1=HIGH
- */
-extern void Dutys(const std::array<systems::abc, INJECTION_CYCLES> dutys);
-
 } /* namespace pwm */
 
 ///< Control cycle time
-constexpr float Tc = ((float)(pwm::PERIOD + 1) / (float)pwm::TIMER_CLOCK)*pwm::INJECTION_CYCLES;
+constexpr float Tc = ((float)(pwm::PERIOD + 1) / (float)pwm::TIMER_CLOCK);
 
 ///< Control cycle frequency
 constexpr float Fc = 1.0f/Tc;
@@ -116,54 +113,22 @@ extern void PrepareSamples(void);
 namespace current {
 
 /**
- * Get current means of the current in the last control
+ * Get current in the last control
  * cycles
- * @param currents references to the current mean samples
+ * @param currents
  */
-extern void Mean(systems::abc& currents);
+extern void Value(systems::abc& currents);
+
 
 /**
- * Get current injection samples in the last control cycle
- * @param currents points to the current injection samples
+ * set current offsets
+ * @param offset in A
  */
-extern void Injection(std::array<systems::abc, pwm::INJECTION_CYCLES>& currents);
+extern void SetOffset(void);
 
-/**
- * calculate the mean of a hole injection cycle of adc measurements
- * @param currents referes to the samples of one hole injection cycle
- * @return the mean per phase of the injection cycle
- */
-extern systems::abc InjectionMean(const std::array<systems::abc, pwm::INJECTION_CYCLES>& currents);
+///< absolute maximum current
+extern const float MAX;
 
-
-namespace offset {
-
-	/**
-	 * set dc current offsets
-	 * @param offset in A
-	 */
-	extern void DC(systems::abc& offset);
-
-	/**
-	 * set AC current offsetsS
-	 * @param offset in A
-	 */
-	extern void AC(systems::abc& offset);
-} /* namespace offset */
-
-namespace gain {
-
-	/**
-	 * set dc current gains
-	 * @param gain in A/A
-	 */
-	extern void DC(systems::abc& gain);
-	/**
-	 * set ac current gains
-	 * @param gain in A/A
-	 */
-	extern void AC(systems::abc& gain);
-} /* namespace gain */
 } /* namespace current*/
 
 namespace voltage {

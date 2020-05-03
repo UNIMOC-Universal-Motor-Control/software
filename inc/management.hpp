@@ -40,12 +40,6 @@ namespace management
 	 */
 	namespace observer
 	{
-		///< release admittance observer
-		extern bool admittance;
-
-		///< release injection signal for observer
-		extern bool injection;
-
 		///< release flux observer
 		extern bool flux;
 
