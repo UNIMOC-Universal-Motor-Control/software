@@ -3,7 +3,6 @@ BASEDIR := ../../
 
 # included modules
 include ${BASEDIR}/modules/freemaster/freemaster.mk
-include ${BASEDIR}/modules/libcanard/libcanard.mk  
 
 # List of all the Project related hardware independent files.
 # C code
@@ -18,12 +17,11 @@ UNIMOCCPPSRC := ${FREEMASTERCPPSRC} \
                 ${BASEDIR}/src/settings.cpp \
                 ${BASEDIR}/src/systems.cpp \
                 ${BASEDIR}/src/values.cpp \
-                ${BASEDIR}/src/uavcan.cpp \
                 ${BASEDIR}/src/management.cpp \
+                ${BASEDIR}/src/pas.cpp \
 
 # Required include directories
 UNIMOCINC := ${FREEMASTERINC} \
-             ${LIBCANARDINC} \
              ${BASEDIR}/inc \
              ${BASEDIR}/hardware/interface \
 

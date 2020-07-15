@@ -21,8 +21,6 @@
 
 #include <cstdint>
 #include "systems.hpp"
-#include "uavcan.hpp"
-
 
 /**
  * system global values
@@ -124,19 +122,21 @@ typedef struct values_s
 	} converter;
 
 	/**
-	 * CAN interface
+	 * pedal assist system values
 	 */
-	struct uavcan_s
+	struct pas_s
 	{
-		///< Health status of the node
-		uavcan::health_e health;
+		///< pedal cadence in rad/s
+		float cadence;
 
-		///< Operation mode of the node
-		uavcan::mode_e mode;
-	} uavcan;
+		///< pedal torque in Nm
+		float torque;
+
+		///< pedal power in W
+		float power;
+	} pas;
 } values_ts;
 
 extern values_ts values;
-
 #endif /* INC_VALUES_HPP_ */
 

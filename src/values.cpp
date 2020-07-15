@@ -104,15 +104,18 @@ values_ts values =
 		.throttle = 0.0f,
 	},
 	/**
-	 * CAN interface
+	 * pedal assist system values
 	 */
-	.uavcan =
+	.pas =
 	{
-		///< Health status of the node
-		.health = uavcan::health_e::UAVCAN_NODE_HEALTH_OK,
+		///< pedal cadence in rad/s
+		.cadence = 0.0f,
 
-		///< Operation mode of the node
-		.mode = uavcan::mode_e::UAVCAN_NODE_MODE_INITIALIZATION,
+		///< pedal torque in Nm
+		.torque = 0.0f,
+
+		///< pedal power in W
+		.power = 0.0f,
 	},
 };
 
