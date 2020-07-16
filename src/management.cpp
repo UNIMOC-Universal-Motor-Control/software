@@ -94,8 +94,6 @@ namespace management
 
 			values.converter.temp = hardware::adc::temperature::Bridge();
 			values.motor.temp = hardware::adc::temperature::Motor();
-			values.converter.throttle = hardware::adc::Throttle();
-
 
 			if(save) settings.Save();
 			save = false;

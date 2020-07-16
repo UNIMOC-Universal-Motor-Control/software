@@ -126,7 +126,7 @@ CSRC = $(ALLCSRC) \
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
-CPPSRC = $(ALLCPPSRC) pwm.cpp adc.cpp eeprom.cpp
+CPPSRC = $(ALLCPPSRC) pwm.cpp adc.cpp eeprom.cpp serial.cpp
 
 # List ASM source files here.
 ASMSRC = $(ALLASMSRC)

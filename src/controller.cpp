@@ -260,8 +260,6 @@ namespace control
 			/* Checks if an IRQ happened else wait.*/
 			chEvtWaitAny((eventmask_t)1);
 
-			hardware::adc::PrepareSamples();
-
 			values.battery.u = hardware::adc::voltage::DCBus();
 
 			hardware::adc::current::Value(values.motor.i);

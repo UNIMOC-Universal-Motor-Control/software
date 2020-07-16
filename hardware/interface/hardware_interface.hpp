@@ -26,183 +26,218 @@
 
 
 namespace hardware {
-///< Motor Phases. Normally fixed to 3
-constexpr uint8_t PHASES = 3;
+	///< Motor Phases. Normally fixed to 3
+	constexpr uint8_t PHASES = 3;
 
-///< reference to thread to be woken up in the hardware control cycle.
-extern chibios_rt::ThreadReference  control_thread;
+	///< reference to thread to be woken up in the hardware control cycle.
+	extern chibios_rt::ThreadReference  control_thread;
 
-namespace pwm {
-/*
- * This interface defines the functions for pwm handling
- * which all hardware variants need to implement.
- */
+	namespace pwm {
+		/*
+		 * This interface defines the functions for pwm handling
+		 * which all hardware variants need to implement.
+		 */
 
-///< PWM Timer clock in Hz
-constexpr uint32_t TIMER_CLOCK = STM32_TIMCLK2;
-
-
-///< deadtime in nano seconds
-constexpr uint32_t DEADTIME = 300;
-
-/**
- * PWM frequency in Hz
- *
- * With center aligned PWM this is the period of PWM half period.
- */
-constexpr uint32_t PERIOD = 6749;
-
-/**
- * Initialize PWM hardware with outputs disabled!
- */
-extern void Init();
-
-/**
- * Set the normalized duty cycles for each phase
- * @param dutys -1 = LOW, 0 = 50%, 1=HIGH
- */
-extern void Dutys(const systems::abc& dutys);
-
-namespace output {
-
-/**
- * Enable PWM Outputs.
- * @note Power output is active after this call
- */
-extern void Enable(void);
-
-/**
- * Disable PWM Outputs.
- */
-extern void Disable(void);
-
-/**
- * Get pwm output state
- * @return pwm output state, true = pwm active
- */
-extern bool Active(void);
-} /* namespace output */
-
-} /* namespace pwm */
-
-///< Control cycle time
-constexpr float Tc = ((float)(pwm::PERIOD + 1) / (float)pwm::TIMER_CLOCK);
-
-///< Control cycle frequency
-constexpr float Fc = 1.0f/Tc;
-
-namespace adc
-{
-/*
- * This interface defines the functions for adc handling
- * which all hardware variants need to implement.
- */
-
-/**
- * Initialize ADC hardware with outputs disabled!
- */
-extern void Init();
-
-/**
- * prepare samples for evaluation
- *
- * @note on a cache MCU this invalidates cache for samples
- */
-extern void PrepareSamples(void);
-
-namespace current {
-
-/**
- * Get current in the last control
- * cycles
- * @param currents
- */
-extern void Value(systems::abc& currents);
+		///< PWM Timer clock in Hz
+		constexpr uint32_t TIMER_CLOCK = STM32_TIMCLK2;
 
 
-/**
- * set current offsets
- * @param offset in A
- */
-extern void SetOffset(void);
+		///< deadtime in nano seconds
+		constexpr uint32_t DEADTIME = 300;
 
-///< absolute maximum current
-extern const float MAX;
+		/**
+		 * PWM frequency in Hz
+		 *
+		 * With center aligned PWM this is the period of PWM half period.
+		 */
+		constexpr uint32_t PERIOD = 6749;
 
-} /* namespace current*/
+		/**
+		 * Initialize PWM hardware with outputs disabled!
+		 */
+		extern void Init();
 
-namespace voltage {
-/**
- * Read the DC Bus voltage
- * @return DC Bus voltage in Volts
- */
-extern float DCBus(void);
-} /* namespace voltage */
+		/**
+		 * Set the normalized duty cycles for each phase
+		 * @param dutys -1 = LOW, 0 = 50%, 1=HIGH
+		 */
+		extern void Dutys(const systems::abc& dutys);
 
-namespace temperature {
-/**
- * Get the temperature of the power electronics
- * @return Temperature of the power electronics in °C
- */
-extern float Bridge(void);
+		namespace output {
+			/**
+			 * Enable PWM Outputs.
+			 * @note Power output is active after this call
+			 */
+			extern void Enable(void);
 
-/**
- * Get the temperature of the motor
- * @return Temperature of the Motor in °C
- */
-extern float Motor(void);
-} /* namespace temperature */
+			/**
+			 * Disable PWM Outputs.
+			 */
+			extern void Disable(void);
 
-/**
- * Get the external throttle command value
- * @return Throttle in a range of -1 to 1
- */
-extern float Throttle(void);
+			/**
+			 * Get pwm output state
+			 * @return pwm output state, true = pwm active
+			 */
+			extern bool Active(void);
+		} /* namespace output */
 
-} /* namespace adc */
+	} /* namespace pwm */
 
-namespace memory
-{
-/**
- * initialize non volatile memory
- */
-extern void Init(void);
+	///< Control cycle time
+	constexpr float Tc = ((float)(pwm::PERIOD + 1) / (float)pwm::TIMER_CLOCK);
 
-/**
- * Read buffer from non-volatile memory
- * @param address Start address of the read in non-volatile memory, addressing starts with 0
- * @param buffer Pointer to the buffer to read data to
- * @param length Length of the buffer to read to
- * @return 0 = success
- */
-extern uint8_t Read(const uint32_t address, const void* const buffer, const uint32_t length);
+	///< Control cycle frequency
+	constexpr float Fc = 1.0f/Tc;
 
-/**
- * Write buffer to non-volatile memory
- *
- * @note EEPROM may need 5ms to write a page
- *
- * @param address Start address of the read in non-volatile memory, addressing starts with 0
- * @param buffer Pointer to the buffer to write to
- * @param length Length of the buffer to write to
- * @return 0 = success
- */
-extern uint8_t Write(const uint32_t address, void const * buffer, const uint32_t length);
+	namespace adc
+	{
+		/*
+		 * This interface defines the functions for adc handling
+		 * which all hardware variants need to implement.
+		 */
 
-/**
- * Get the size of the non-volatile memory
- * @return size of non-volatile memory in bytes
- */
-extern uint32_t Size(void);
+		/**
+		 * Initialize ADC hardware with outputs disabled!
+		 */
+		extern void Init();
 
-/**
- * Calculate CRC32 checksum of a buffer.
- * @param buffer Pointer to the buffer to calculate the CRC of, bytes 0 to 3 are for CRC32
- * @param length Length of the buffer to calculate the CRC of
- * @return return CRC32 value
- */
-extern uint32_t Crc32(const void* const buffer, const uint32_t length);
-} /* namespace memory*/
+		namespace current {
+
+			/**
+			 * Get current in the last control
+			 * cycles
+			 * @param currents
+			 */
+			extern void Value(systems::abc& currents);
+
+			/**
+			 * Get current means of the current
+			 *
+			 * @param currents references to the current samples
+			 */
+			extern void Mean(systems::abc& currents);
+
+			/**
+			 * set current offsets
+			 * @param offset in A
+			 */
+			extern void SetOffset(void);
+
+			///< absolute maximum current
+			extern const float MAX;
+
+		} /* namespace current*/
+
+		namespace voltage {
+			/**
+			 * Read the DC Bus voltage
+			 * @return DC Bus voltage in Volts
+			 */
+			extern float DCBus(void);
+
+			/**
+			 * Read the DC Bus voltage mean
+			 * @return DC Bus voltage mean in Volts
+			 */
+			float DCBusMean(void);
+
+		} /* namespace voltage */
+
+		namespace temperature {
+			/**
+			 * Get the temperature of the power electronics
+			 * @return Temperature of the power electronics in °C
+			 */
+			extern float Bridge(void);
+
+			/**
+			 * Get the temperature of the motor
+			 * @return Temperature of the Motor in °C
+			 */
+			extern float Motor(void);
+		} /* namespace temperature */
+	} /* namespace adc */
+
+	namespace crank {
+
+		/**
+		 * Torque on the crank arm
+		 *
+		 * @param offset in Volts
+		 * @param gain in Nm/V
+		 * @return Torque in Nm
+		 */
+		extern float Torque(const float offset, const float gain);
+
+		/**
+		 * Angle of the crank arm
+		 *
+		 * @param edge_max Number of edges per revolution
+		 * @return Angle in rads, range 0 - 2*PI
+		 */
+		extern float Angle(uint32_t edge_max);
+
+	} /* namespace crank */
+
+	namespace memory
+	{
+		/**
+		 * initialize non volatile memory
+		 */
+		extern void Init(void);
+
+		/**
+		 * Read buffer from non-volatile memory
+		 * @param address Start address of the read in non-volatile memory, addressing starts with 0
+		 * @param buffer Pointer to the buffer to read data to
+		 * @param length Length of the buffer to read to
+		 * @return 0 = success
+		 */
+		extern uint8_t Read(const uint32_t address, const void* const buffer, const uint32_t length);
+
+		/**
+		 * Write buffer to non-volatile memory
+		 *
+		 * @note EEPROM may need 5ms to write a page
+		 *
+		 * @param address Start address of the read in non-volatile memory, addressing starts with 0
+		 * @param buffer Pointer to the buffer to write to
+		 * @param length Length of the buffer to write to
+		 * @return 0 = success
+		 */
+		extern uint8_t Write(const uint32_t address, void const * buffer, const uint32_t length);
+
+		/**
+		 * Get the size of the non-volatile memory
+		 * @return size of non-volatile memory in bytes
+		 */
+		extern uint32_t Size(void);
+
+		/**
+		 * Calculate CRC32 checksum of a buffer.
+		 * @param buffer Pointer to the buffer to calculate the CRC of, bytes 0 to 3 are for CRC32
+		 * @param length Length of the buffer to calculate the CRC of
+		 * @return return CRC32 value
+		 */
+		extern uint32_t Crc32(const void* const buffer, const uint32_t length);
+	} /* namespace memory*/
+
+	namespace serial {
+		/**
+		 * Send the buffer via Serial to the Display
+		 * @param buffer pointer to the send buffer
+		 * @param length of the send buffer in bytes
+		 */
+		extern void Send(char* buffer, uint32_t length);
+
+		/**
+		 * Receive data from the Display
+		 * @param buffer pointer to the receive buffer
+		 * @param length of the receive buffer.
+		 */
+		extern void Receive(char* buffer, uint32_t length);
+	} /* namespace serial */
 } /* namespace hardware */
 
 

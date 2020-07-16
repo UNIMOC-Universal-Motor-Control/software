@@ -47,23 +47,6 @@ constexpr uint16_t DTG(const uint32_t deadtime)
 	return (uint16_t)((fdeadtime * clock) -1);
 }
 
-/**
- * callback sets the pwm duty and triggers the control task
- * @param pwmp
- */
-static inline void control_callback(PWMDriver *pwmp)
-{
-	(void)pwmp;
-
-	if(!hardware::control_thread.isNull() )
-	{
-		/* Wakes up the thread.*/
-		osalSysLockFromISR();
-		chEvtSignalI(hardware::control_thread.getInner(), (eventmask_t)1);
-		osalSysUnlockFromISR();
-	}
-}
-
 
 /**
  * basic PWM configuration
@@ -72,7 +55,7 @@ const PWMConfig pwmcfg =
 {
 		TIMER_CLOCK,
 		PERIOD,
-		control_callback,
+		nullptr,
 		{ /*  */
 				{PWM_OUTPUT_ACTIVE_HIGH | PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH, nullptr},
 				{PWM_OUTPUT_ACTIVE_HIGH | PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH, nullptr},
@@ -158,8 +141,6 @@ void hardware::pwm::Init(void)
 	pwmEnableChannel(PWMP, 0, PERIOD/2);
 	pwmEnableChannel(PWMP, 1, PERIOD/2);
 	pwmEnableChannel(PWMP, 2, PERIOD/2);
-
-	pwmEnablePeriodicNotification(PWMP);
 }
 
 /**

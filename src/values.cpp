@@ -99,15 +99,15 @@ values_ts values =
 	{
 		///< power stage temperature
 		.temp = 0.0f,
-
-		///< throttle input
-		.throttle = 0.0f,
 	},
 	/**
 	 * pedal assist system values
 	 */
-	.pas =
+	.crank =
 	{
+		///< crank angle in rad
+		.angle = 0.0f,
+
 		///< pedal cadence in rad/s
 		.cadence = 0.0f,
 

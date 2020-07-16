@@ -116,16 +116,16 @@ typedef struct values_s
 	{
 		///< powerstage temperature
 		float temp;
-
-		///< throttle input
-		float throttle;
 	} converter;
 
 	/**
 	 * pedal assist system values
 	 */
-	struct pas_s
+	struct crank_s
 	{
+		///< crank angle in rad
+		float angle;
+
 		///< pedal cadence in rad/s
 		float cadence;
 
@@ -134,7 +134,7 @@ typedef struct values_s
 
 		///< pedal power in W
 		float power;
-	} pas;
+	} crank;
 } values_ts;
 
 extern values_ts values;

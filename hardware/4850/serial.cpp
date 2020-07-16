@@ -16,50 +16,11 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <cstring>
-#include <stdint.h>
-#include <array>
-#include "ch.hpp"
-#include "hal.h"
+#include <cstdint>
 #include "hardware_interface.hpp"
-#include "values.hpp"
-#include "pas.hpp"
+#include "systems.hpp"
 
-using namespace chibios_rt;
+using namespace hardware;
 
-/**
- * @namespace pedal assist system classes
- */
-namespace pas
-{
 
-	/**
-	 * generic constructor
-	 */
-	thread::thread(): deadline(0)
-	{};
-
-	/**
-	 * @brief Thread main function
-	 */
-	void thread::main(void)
-	{
-		setName("PAS");
-
-		deadline = chibios_rt::System::getTime();
-		/*
-		 * Normal main() thread activity
-		 */
-		while (TRUE)
-		{
-			deadline = chibios_rt::System::getTime();
-
-			values.crank.angle = hardware::crank::Angle(32);
-			values.crank.torque = hardware::crank::Torque(1.55f, 40.0f*9.81f*0.17f);
-
-			sleepUntilWindowed(deadline, deadline + CYCLE_TIME);
-		}
-	}
-
-} /* namespace pas */
 
