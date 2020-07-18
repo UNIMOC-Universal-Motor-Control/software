@@ -298,6 +298,11 @@ namespace control
 				// calculate the field orientated controllers
 				foc.Calculate();
 			}
+			else
+			{
+				values.motor.rotor.u.d = 0.0f;
+				values.motor.rotor.u.q = 0.0f;
+			}
 
 			// transform the voltages to stator frame
 			u_ab = systems::transform::InversePark(values.motor.rotor.u, sin_cos);

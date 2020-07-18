@@ -139,7 +139,14 @@ namespace management
 				palSetLine(LINE_LED_RUN);
 
 				// activate control and observers
-				control::current = settings.control.current.active;
+				if(hardware::pwm::output::Active())
+				{
+					control::current = settings.control.current.active;
+				}
+				else
+				{
+					control::current = false;
+				}
 				observer::flux = settings.observer.flux;
 
 				break;

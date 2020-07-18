@@ -150,7 +150,7 @@ std::array<std::array<std::array<adcsample_t, LENGTH_ADC_SEQ>, ADC_SEQ_BUFFERED>
 chibios_rt::ThreadReference hardware::control_thread = nullptr;
 
 ///< current offsets
-std::uint32_t current_offset[hardware::PHASES];
+std::int32_t current_offset[hardware::PHASES];
 
 ///< samples index in the adc buffer.
 std::uint_fast32_t sample_index = ADC_SEQ_BUFFERED - 1;
@@ -268,9 +268,9 @@ void hardware::adc::current::Value(systems::abc& currents)
 {
 	for(std::uint_fast8_t i = 0; i < PHASES; i++)
 	{
-		std::uint32_t tmp = samples[i][sample_index][1];
+		std::int32_t tmp = samples[i][sample_index][1];
 
-		currents.array[i] = ADC2CURRENT * (float)(tmp - current_offset[i]);
+		currents.array[i] = ADC2CURRENT * (float)(current_offset[i] - tmp);
 	}
 }
 
@@ -283,14 +283,14 @@ void hardware::adc::current::Mean(systems::abc& currents)
 {
 	for(std::uint_fast8_t i = 0; i < PHASES; i++)
 	{
-		std::uint32_t tmp = 0.0f;
+		std::int32_t tmp = 0.0f;
 
 		for (std::uint_fast32_t s = 0; s < ADC_SEQ_BUFFERED; s++)
 		{
 			tmp += samples[i][sample_index][1];
 		}
 		tmp = (float)tmp / (float)ADC_SEQ_BUFFERED;
-		currents.array[i] = ADC2CURRENT * (float)(tmp - current_offset[i]);
+		currents.array[i] = ADC2CURRENT * (float)(current_offset[i] - tmp);
 	}
 }
 
@@ -302,7 +302,7 @@ void hardware::adc::current::SetOffset(void)
 {
 	for(std::uint_fast8_t i = 0; i < PHASES; i++)
 	{
-		std::uint32_t sum = 0;
+		std::int32_t sum = 0;
 		for (std::uint_fast32_t s = 0; s < ADC_SEQ_BUFFERED; s++)
 		{
 			sum += samples[i][s][1];
