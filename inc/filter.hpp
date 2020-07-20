@@ -21,6 +21,8 @@
 
 #include <cstdint>
 #include <cmath>
+#include <array>
+#include <numeric>
 #include <climits>
 #include "systems.hpp"
 
@@ -50,6 +52,38 @@ public:
 	low_pass(const float new_ts, const float new_k, const float new_t);
 
 	float Calculate(const float uk, const float yk_1);
+};
+
+/**
+ * moving average filter
+ */
+template <std::uint32_t N>
+class moving_average
+{
+
+private:
+	///< data storage for input values
+	std::array<float, N> buffer;
+
+	///< index for next input
+	std::uint32_t index;
+public:
+	moving_average<N>(void): buffer{0.0f}, index(0) {};
+
+	/**
+	 * @brief insert uk to the buffer and calculate the average of all buffered uk's
+	 * @param uk new input value
+	 * @return mean of all buffered input values.
+	 */
+	float Calculate(const float uk)
+	{
+		buffer[index] = uk;
+		index++;
+
+		if(index >= N) index = 0;
+
+		return (std::accumulate(buffer.begin(), buffer.end(), 0.0f) / (float)N);
+	};
 };
 
 

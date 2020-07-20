@@ -92,6 +92,15 @@ values_ts values =
 
 		///< Battery current
 		.i = 0.0f,
+
+		/**
+		 * battery values filtered
+		 */
+		.filtered =
+		{
+			///< Battery voltage
+			.u = 10.0f,
+		},
 	},
 
 	///< converter values

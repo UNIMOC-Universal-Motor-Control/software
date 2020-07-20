@@ -154,13 +154,9 @@ namespace control
 	 * @param new_l            		series inductance of the winding
 	 * @param new_psi              	rotor flux constant
 	 * @param new_limit   			output limit.
-	 * @param hwf					coefficients for hardware filter model
-	 * @param swf					coefficients for software filter and its model
 	 */
 	smith_predictor_current::smith_predictor_current(const float new_rs, const systems::dq new_l, const float new_psi,
-			const float new_limit, const filter::biquad_coefficients_ts hwf, const filter::biquad_coefficients_ts swf):
-			rs(new_rs), l(new_l), psi(new_psi), hwf(hwf), swf(swf), ctrl(rs, l , psi, new_limit),
-			fd(swf), fq(swf), fomega(swf), hwd(hwf), hwq(hwf), sd(swf), sq(swf)
+			const float new_limit): rs(new_rs), l(new_l), psi(new_psi), ctrl(rs, l , psi, new_limit), fomega(), fid(), fiq(), fmid(), fmiq()
 	{}
 
 	/**
@@ -173,28 +169,29 @@ namespace control
 	 */
 	systems::dq smith_predictor_current::Calculate(const systems::dq setpoint, const systems::dq act, const float omega, const float gain)
 	{
-		values.motor.rotor.filtered.omega = fomega.Process(omega);
-		values.motor.rotor.filtered.i.d = fd.Process(act.d);
-		values.motor.rotor.filtered.i.q = fq.Process(act.q);
+		values.motor.rotor.filtered.omega = fomega.Calculate(omega);
+		values.motor.rotor.filtered.i.d = fid.Calculate(act.d);
+		values.motor.rotor.filtered.i.q = fid.Calculate(act.q);
 
 		// calculate the model output delayed to the filtered current.
 		// using the old i values to take the deadtime of one controlcycle into account!
-		i_filtered.d = sd.Process(hwd.Process(i.d));
-		i_filtered.q = sq.Process(hwq.Process(i.q));
+		i_delayed.d = fmid.Calculate(i_predict.d);
+		i_delayed.q = fmiq.Calculate(i_predict.q);
 
 		// current prediction model
-		i.d += (u.d - rs*i.d - l.q*values.motor.rotor.filtered.omega*i.q)*ts;
-		i.q += (u.q - rs*i.q - l.d*values.motor.rotor.filtered.omega*i.d - psi*values.motor.rotor.filtered.omega)*ts;
+		i_predict.d += (u.d - rs*i_predict.d - l.q*values.motor.rotor.filtered.omega*i_predict.q)*ts;
+		i_predict.q += (u.q - rs*i_predict.q - l.d*values.motor.rotor.filtered.omega*i_predict.d - psi*values.motor.rotor.filtered.omega)*ts;
 
 		// correct the current prediction with the error of the filtered
 		systems::dq i_feedback =
 		{
-				i.d + values.motor.rotor.filtered.i.d - i_filtered.d,
-				i.q + values.motor.rotor.filtered.i.q - i_filtered.q
+				i_predict.d + values.motor.rotor.filtered.i.d - i_delayed.d,
+				i_predict.q + values.motor.rotor.filtered.i.q - i_delayed.q
 		};
 
 		// update the limit for the controller
 		ctrl.limit = limit;
+
 		u = ctrl.Calculate(setpoint, i_feedback , values.motor.rotor.filtered.omega, gain);
 
 		return u;
@@ -207,8 +204,8 @@ namespace control
 	 * @param swf					coefficients for software filter and its model
 	 *
 	 */
-	foc::foc(const filter::biquad_coefficients_ts hwf, const filter::biquad_coefficients_ts swf):
-			ctrl(settings.motor.rs, settings.motor.l, settings.motor.psi, 0.0f,	hwf, swf)
+	foc::foc():
+			ctrl(settings.motor.rs, settings.motor.l, settings.motor.psi, 0.0f)
 	{}
 
 
@@ -229,16 +226,9 @@ namespace control
 	}
 
 	/**
-	 * R1 = 4k7, R2 = 47k, R3 = 4k7, C1 = 10n, C2 = 1n
-	 * Q = 0.47619047619048, Fc = 3386.2753849339
-	 */
-	constexpr filter::biquad_coefficients_ts hw_coeff = filter::BiquadCalc(filter::biquad_type_et::lowpass, 0.47619047619048f, 3386.2753849339f/hardware::Fc, 0.0f);
-	constexpr filter::biquad_coefficients_ts sw_coeff = filter::BiquadCalc(filter::biquad_type_et::lowpass, 0.5f, 0.01f, 0.0f);
-
-	/**
 	 * generic constructor
 	 */
-	thread::thread():flux(), mech(settings.observer.Q, settings.observer.R), foc(hw_coeff, sw_coeff)
+	thread::thread():flux(), mech(settings.observer.Q, settings.observer.R)
 	{}
 
 	/**

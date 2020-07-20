@@ -107,6 +107,15 @@ typedef struct values_s
 
 		///< Battery current
 		float i;
+
+		/**
+		 * battery values filtered
+		 */
+		struct filtered_s
+		{
+			///< Battery voltage
+			float u;
+		} filtered;
 	} battery;
 
 	/**

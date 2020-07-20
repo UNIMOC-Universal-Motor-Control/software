@@ -189,44 +189,28 @@ namespace control
 		///< rotor flux constant
 		float psi;
 
-		///< coefficients for hardware filter model
-		const filter::biquad_coefficients_ts hwf;
-
-		///< coefficients for software filter and its model
-		const filter::biquad_coefficients_ts swf;
-
 		///< current-controller
 		complex_current ctrl;
 
-		///< current filter d-axis
-		filter::biquad fd;
+		///< rotational velocity filter
+		filter::moving_average<32> fomega;
 
-		///< current filter q-axis
-		filter::biquad fq;
+		///< filters for the current
+		filter::moving_average<32> fid;
+		filter::moving_average<32> fiq;
 
-		///< omega filter for feed forward
-		filter::biquad fomega;
-
-		///< hardware current filter d-axis
-		filter::biquad hwd;
-
-		///< hardware current filter q-axis
-		filter::biquad hwq;
-
-		///< smith predictor model of the current filter d-axis
-		filter::biquad sd;
-
-		///< smith predictor model of the current filter q-axis
-		filter::biquad sq;
+		///< filters for modeling the current filters
+		filter::moving_average<33> fmid;
+		filter::moving_average<33> fmiq;
 
 		///< output voltage vector
 		systems::dq u;
 
 		///< current estimate of the smith predictor model
-		systems::dq i;
+		systems::dq i_predict;
 
 		///< current estimate of the smith predictor model after the filter
-		systems::dq i_filtered;
+		systems::dq i_delayed;
 
 	public:
 		///< output limit
@@ -251,7 +235,7 @@ namespace control
 		 *
 		 */
 		smith_predictor_current(const float new_rs, const systems::dq new_l, const float new_psi,
-				const float new_limit, const filter::biquad_coefficients_ts hwf, const filter::biquad_coefficients_ts swf);
+				const float new_limit);
 
 		/**
 		 * @brief calculate regulator equation with feed forward and anti windup.
@@ -300,11 +284,8 @@ namespace control
 		/**
 		 * @brief constructor of the foc with all essential parameters.
 		 *
-		 * @param hwf					coefficients for hardware filter model
-		 * @param swf					coefficients for software filter and its model
-		 *
 		 */
-		foc(const filter::biquad_coefficients_ts hwf, const filter::biquad_coefficients_ts swf);
+		foc(void);
 		/**
 		 * @brief calculate foc current controller
 		 */
