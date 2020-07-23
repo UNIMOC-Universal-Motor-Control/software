@@ -77,12 +77,21 @@ public:
 	 */
 	float Calculate(const float uk)
 	{
+		float mean = 0.0f;
+
 		buffer[index] = uk;
 		index++;
 
 		if(index >= N) index = 0;
 
-		return (std::accumulate(buffer.begin(), buffer.end(), 0.0f) / (float)N);
+		for(std::uint32_t i = 0; i < N; i++)
+		{
+			mean += buffer[i];
+		}
+
+		mean /= N;
+
+		return mean;
 	};
 };
 

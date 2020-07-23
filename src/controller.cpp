@@ -135,8 +135,8 @@ namespace control
 				|| ((error.d * output_unlimited.d) <= 0.0f) || ((error.q * output_unlimited.q) <= 0.0f))
 		{
 			// (K_p * j w + K_i)/s
-			error_sum.d += (error.d * ki - error.q * omega * kp.d) * ts;
-			error_sum.q += (error.q * ki + error.d * omega * kp.q) * ts;
+			error_sum.d += (error.d * ki - error.q * omega * kp.q) * ts;
+			error_sum.q += (error.q * ki + error.d * omega * kp.d) * ts;
 		}
 		return output;
 	}
@@ -171,10 +171,10 @@ namespace control
 	{
 		values.motor.rotor.filtered.omega = fomega.Calculate(omega);
 		values.motor.rotor.filtered.i.d = fid.Calculate(act.d);
-		values.motor.rotor.filtered.i.q = fid.Calculate(act.q);
+		values.motor.rotor.filtered.i.q = fiq.Calculate(act.q);
 
 		// calculate the model output delayed to the filtered current.
-		// using the old i values to take the deadtime of one controlcycle into account!
+		// using the old i values to take the deadtime of one control cycle into account!
 		i_delayed.d = fmid.Calculate(i_predict.d);
 		i_delayed.q = fmiq.Calculate(i_predict.q);
 
@@ -192,7 +192,7 @@ namespace control
 		// update the limit for the controller
 		ctrl.limit = limit;
 
-		u = ctrl.Calculate(setpoint, i_feedback , values.motor.rotor.filtered.omega, gain);
+		u = ctrl.Calculate(setpoint, i_feedback, 0.0f, gain);
 
 		return u;
 	}
