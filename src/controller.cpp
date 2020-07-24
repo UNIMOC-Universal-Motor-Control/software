@@ -135,8 +135,8 @@ namespace control
 				|| ((error.d * output_unlimited.d) <= 0.0f) || ((error.q * output_unlimited.q) <= 0.0f))
 		{
 			// (K_p * j w + K_i)/s
-			error_sum.d += (error.d * ki.d /*- error.q * omega * kp.q*/) * ts;
-			error_sum.q += (error.q * ki.q /*+ error.d * omega * kp.d*/) * ts;
+			error_sum.d += (error.d * ki.d - error.q * omega * kp.q) * ts;
+			error_sum.q += (error.q * ki.q + error.d * omega * kp.d) * ts;
 		}
 		return output;
 	}
@@ -317,11 +317,6 @@ namespace control
 			{
 				// calculate the field orientated controllers
 				foc.Calculate();
-			}
-			else
-			{
-				values.motor.rotor.u.d = 0.0f;
-				values.motor.rotor.u.q = 0.0f;
 			}
 
 			// transform the voltages to stator frame

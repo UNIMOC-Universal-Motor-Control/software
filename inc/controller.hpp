@@ -201,8 +201,8 @@ namespace control
 		filter::moving_average<32> fiq;
 
 		///< filters for modeling the current filters
-		filter::moving_average<33> fmid;
-		filter::moving_average<33> fmiq;
+		filter::moving_average<32> fmid;
+		filter::moving_average<32> fmiq;
 
 		///< output voltage vector
 		systems::dq u;

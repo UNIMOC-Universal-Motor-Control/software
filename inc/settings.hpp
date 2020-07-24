@@ -107,6 +107,12 @@ typedef struct settings_s
 
 			///< gain of the current controller
 			float gain;
+
+			///< release smith predictor
+			bool smith;
+
+			///< feedforward omega
+			bool feedforward;
 		}current;
 	} control;
 
@@ -126,6 +132,9 @@ typedef struct settings_s
 
 		///< flux observer feedback gains
 		systems::dq C;
+
+		///< hall observer switch
+		bool hall;
 	} observer;
 
 	/**

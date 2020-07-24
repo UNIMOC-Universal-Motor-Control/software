@@ -652,9 +652,9 @@
                                      PIN_PUPDR_FLOATING(GPIOC_DISP_TX) | \
                                      PIN_PUPDR_PULLUP(GPIOC_DISP_RX) | \
                                      PIN_PUPDR_PULLUP(GPIOC_12) | \
-                                     PIN_PUPDR_PULLDOWN(GPIOC_HALL_A) | \
-                                     PIN_PUPDR_PULLDOWN(GPIOC_HALL_B) | \
-                                     PIN_PUPDR_PULLDOWN(GPIOC_HALL_C))
+                                     PIN_PUPDR_PULLUP(GPIOC_HALL_A) | \
+                                     PIN_PUPDR_PULLUP(GPIOC_HALL_B) | \
+                                     PIN_PUPDR_PULLUP(GPIOC_HALL_C))
 #define VAL_GPIOC_ODR               (PIN_ODR_HIGH(GPIOC_CADENCE) | \
                                      PIN_ODR_HIGH(GPIOC_AIN_TORQUE) | \
                                      PIN_ODR_HIGH(GPIOC_AIN_CUR_C_DC) | \

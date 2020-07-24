@@ -104,7 +104,13 @@ settings_ts settings =
 			.active = false,
 
 			///< gain of the current controller
-			.gain = 1.0f,
+			.gain = 0.01f,
+
+			///< release smith predictor
+			.smith = false,
+
+			///< feedforward omega
+			.feedforward = false,
 		},
 	},
 
@@ -125,6 +131,9 @@ settings_ts settings =
 
 		///< flux observer feedback gains
 		.C = {50.0f, 1.0f},
+
+		///< hall observer switch
+		.hall = false,
 	},
 
 	/**

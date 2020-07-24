@@ -415,33 +415,33 @@ bool hardware::adc::hall::Angle(systems::sin_cos& sincos)
 	{
 	case 5:
 		// 30°
-		sincos.cos = 0.5f;
-		sincos.sin = half_sqrt3;
+		sincos.sin = 0.5f;
+		sincos.cos = half_sqrt3;
 		break;
-	case 1:
+	case 4:
 		// 90°
-		sincos.cos = 1.0f;
-		sincos.sin = 0.0f;
+		sincos.sin = 1.0f;
+		sincos.cos = 0.0f;
 		break;
-	case 3:
+	case 6:
 		// 150°
-		sincos.cos = 0.5f;
-		sincos.sin = -half_sqrt3;
+		sincos.sin = 0.5f;
+		sincos.cos = -half_sqrt3;
 		break;
 	case 2:
 		// 210°
-		sincos.cos = -0.5f;
-		sincos.sin = -half_sqrt3;
+		sincos.sin = -0.5f;
+		sincos.cos = -half_sqrt3;
 		break;
-	case 6:
+	case 3:
 		// 270°
-		sincos.cos = -1.0f;
-		sincos.sin = 0.0f;
+		sincos.sin = -1.0f;
+		sincos.cos = 0.0f;
 		break;
-	case 4:
+	case 1:
 		// 330°
-		sincos.cos = -0.5f;
-		sincos.sin = half_sqrt3;
+		sincos.sin = -0.5f;
+		sincos.cos = half_sqrt3;
 		break;
 	default:
 		// some thing is wrong

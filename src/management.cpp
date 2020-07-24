@@ -144,6 +144,11 @@ namespace management
 				// activate control and observers
 				if(hardware::pwm::output::Active())
 				{
+					if(control::current != settings.control.current.active && control::current)
+					{
+						values.motor.rotor.u.d = 0.0f;
+						values.motor.rotor.u.q = 0.0f;
+					}
 					control::current = settings.control.current.active;
 				}
 				else
@@ -151,6 +156,9 @@ namespace management
 					control::current = false;
 				}
 				observer::flux = settings.observer.flux;
+				observer::hall = settings.observer.hall;
+				control::feedforward = settings.control.current.feedforward;
+				control::smith = settings.control.current.smith;
 
 				break;
 			}
@@ -160,4 +168,5 @@ namespace management
 	}
 
 } /* namespace management */
+
 
