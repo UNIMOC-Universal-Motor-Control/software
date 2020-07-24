@@ -40,11 +40,8 @@ namespace management
 	 */
 	namespace observer
 	{
-		///< release admittance observer
-		bool admittance = false;
-
-		///< release injection signal for observer
-		bool injection = false;
+		///< release hall observer
+		bool hall = false;
 
 		///< release flux observer
 		bool flux = false;

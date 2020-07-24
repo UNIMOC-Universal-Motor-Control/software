@@ -43,6 +43,9 @@ namespace management
 		///< release flux observer
 		extern bool flux;
 
+		///< release hall observer
+		extern bool hall;
+
 		///< release mechanic observer
 		extern bool mechanic;
 	}

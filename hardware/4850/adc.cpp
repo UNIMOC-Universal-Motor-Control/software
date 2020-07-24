@@ -400,6 +400,59 @@ float hardware::crank::Angle(uint32_t edge_max)
 	return angle;
 }
 
+/**
+ * get the angle which is represented by the hall sensors
+ * @param[out] sincos angle of the halls represented as sin/cos values
+ * @return true on hall signal error
+ */
+bool hardware::adc::hall::Angle(systems::sin_cos& sincos)
+{
+	const float half_sqrt3 = 0.5f * std::sqrt(3.0f);
+	uint32_t halls = palReadGroup(GPIOC, 0x0007, 13);
+	bool err = false;
+
+	switch(halls)
+	{
+	case 5:
+		// 30°
+		sincos.cos = 0.5f;
+		sincos.sin = half_sqrt3;
+		break;
+	case 1:
+		// 90°
+		sincos.cos = 1.0f;
+		sincos.sin = 0.0f;
+		break;
+	case 3:
+		// 150°
+		sincos.cos = 0.5f;
+		sincos.sin = -half_sqrt3;
+		break;
+	case 2:
+		// 210°
+		sincos.cos = -0.5f;
+		sincos.sin = -half_sqrt3;
+		break;
+	case 6:
+		// 270°
+		sincos.cos = -1.0f;
+		sincos.sin = 0.0f;
+		break;
+	case 4:
+		// 330°
+		sincos.cos = -0.5f;
+		sincos.sin = half_sqrt3;
+		break;
+	default:
+		// some thing is wrong
+		err = true;
+		break;
+
+	}
+
+	return err;
+}
+
 
 /**
  * \brief    interpolate temperature via a LUT in the range of -10°C to 150°C with an error of 0.393°C

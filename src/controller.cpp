@@ -271,13 +271,32 @@ namespace control
 			if(management::observer::flux)
 			{
 				// calculate the flux observer
-				float flux_error = flux.Calculate(sin_cos);
-				mech.Update(flux_error, correction);
+				float error = flux.Calculate(sin_cos);
+				mech.Update(error, correction);
 
 				// predict motor behavior
 				observer::mechanic::Predict();
 				// correct the prediction
 				observer::mechanic::Correct(correction);
+			}
+			else if(management::observer::hall)
+			{
+				systems::sin_cos hall;
+				if(!hardware::adc::hall::Angle(hall))
+				{
+					float error = hall.sin*sin_cos.cos - hall.cos*sin_cos.sin;
+					mech.Update(error, correction);
+
+					// predict motor behavior
+					observer::mechanic::Predict();
+					// correct the prediction
+					observer::mechanic::Correct(correction);
+				}
+				else
+				{
+					// predict motor behavior
+					observer::mechanic::Predict();
+				}
 			}
 			else
 			{

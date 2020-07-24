@@ -144,6 +144,15 @@ namespace hardware {
 			 */
 			extern float Motor(void);
 		} /* namespace temperature */
+
+		namespace hall {
+			/**
+			 * get the angle which is represented by the hall sensors
+			 * @param[out] sincos angle of the halls represented as sin/cos values
+			 * @return true on hall signal error
+			 */
+			bool Angle(systems::sin_cos& sincos);
+		} /* namespace angle */
 	} /* namespace adc */
 
 	namespace crank {
