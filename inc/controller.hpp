@@ -246,7 +246,7 @@ namespace control
 		 * @param gain					controller gain factor
 		 * @return						controllers output voltage vector
 		 */
-		systems::dq Calculate(const systems::dq setpoint, const systems::dq act, const float omega, const float gain);
+		systems::dq& Calculate(const systems::dq setpoint, const systems::dq act, const float omega, const float gain);
 
 		/**
 		 * @brief set controller dynamic parameters.

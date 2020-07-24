@@ -168,32 +168,42 @@ namespace control
 	 * @param gain					controller gain factor
 	 * @return						controllers output voltage vector
 	 */
-	systems::dq smith_predictor_current::Calculate(const systems::dq setpoint, const systems::dq act, const float omega, const float gain)
+	systems::dq& smith_predictor_current::Calculate(const systems::dq setpoint, const systems::dq act, const float omega, const float gain)
 	{
+		systems::dq i_feedback;
+		float feedforward = 0.0f;
+
 		values.motor.rotor.filtered.omega = fomega.Calculate(omega);
 		values.motor.rotor.filtered.i.d = fid.Calculate(act.d);
 		values.motor.rotor.filtered.i.q = fiq.Calculate(act.q);
 
-//		// calculate the model output delayed to the filtered current.
-//		// using the old i values to take the deadtime of one control cycle into account!
-//		i_delayed.d = fmid.Calculate(i_predict.d);
-//		i_delayed.q = fmiq.Calculate(i_predict.q);
-//
-//		// current prediction model
-//		i_predict.d += (u.d - rs*i_predict.d - l.q*values.motor.rotor.filtered.omega*i_predict.q)*ts;
-//		i_predict.q += (u.q - rs*i_predict.q - l.d*values.motor.rotor.filtered.omega*i_predict.d - psi*values.motor.rotor.filtered.omega)*ts;
-//
-//		// correct the current prediction with the error of the filtered
-//		systems::dq i_feedback =
-//		{
-//				i_predict.d + values.motor.rotor.filtered.i.d - i_delayed.d,
-//				i_predict.q + values.motor.rotor.filtered.i.q - i_delayed.q
-//		};
+		if(management::control::smith)
+		{
+			// calculate the model output delayed to the filtered current.
+			// using the old i values to take the deadtime of one control cycle into account!
+			i_delayed.d = fmid.Calculate(i_predict.d);
+			i_delayed.q = fmiq.Calculate(i_predict.q);
+
+			// current prediction model
+			i_predict.d += (u.d - rs*i_predict.d - l.q*values.motor.rotor.filtered.omega*i_predict.q)*ts;
+			i_predict.q += (u.q - rs*i_predict.q - l.d*values.motor.rotor.filtered.omega*i_predict.d - psi*values.motor.rotor.filtered.omega)*ts;
+
+			// correct the current prediction with the error of the filtered
+			i_feedback.d = i_predict.d + values.motor.rotor.filtered.i.d - i_delayed.d;
+			i_feedback.q = i_predict.q + values.motor.rotor.filtered.i.q - i_delayed.q;
+		}
+		else
+		{
+			i_feedback.d = act.d;
+			i_feedback.q = act.q;
+		}
 
 		// update the limit for the controller
 		ctrl.limit = limit;
 
-		u = ctrl.Calculate(setpoint, act, 0.0f, gain);
+		if(management::control::feedforward) feedforward = values.motor.rotor.filtered.omega;
+
+		u = ctrl.Calculate(setpoint, i_feedback, feedforward, gain);
 
 		return u;
 	}

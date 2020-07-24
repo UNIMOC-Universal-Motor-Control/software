@@ -58,6 +58,12 @@ namespace management
 		///< release current control
 		bool current = false;
 
+		///< release smith predictor
+		bool smith = false;
+
+		///< feedforward omega
+		bool feedforward = false;
+
 		///< release speed control
 		bool speed = false;
 
