@@ -45,7 +45,7 @@ namespace control
 	{
 	private:
 		///< sample time (call timing of controller )
-		static constexpr float ts = hardware::Tc;
+		const float ts;
 		///< integral error sum
 		float 			error_sum;
 		///< unlimited controller output
@@ -59,7 +59,7 @@ namespace control
 
 		///< internal equation for ki based on kp and tn (already takes sample time into account)
 		constexpr static inline
-		float SetKi(float kp, float ts, float new_tn) { return kp*ts/new_tn; };
+		float SetKi(const float kp, const float ts, const float new_tn) { return kp*ts/new_tn; };
 	public:
 		///< positive output limit (not necessarily positive)
 		float			positive_limit;
@@ -75,7 +75,7 @@ namespace control
 		 * @param new_negative_limit    negative output limit.
 		 */
 		pi(const float kp, const float tn,
-				const float positive_limit, const float negative_limit);
+				const float positive_limit, const float negative_limit, const float ts);
 		/**
 		 * @brief calculate regulator equation with feed forward and anti windup.
 		 *
@@ -110,7 +110,7 @@ namespace control
 	{
 	private:
 		///< sample time (call timing of controller )
-		static constexpr float ts = hardware::Tc;
+		const float ts;
 		///< integral error sum
 		systems::dq		error_sum;
 		///< unlimited controller output
@@ -120,7 +120,7 @@ namespace control
 		///< proportional controller gain
 		systems::dq		kp;
 		///< integral action time  (compensated time constant)
-		float			ki;			// integral gain
+		systems::dq		ki;			// integral gain
 		///< rotor flux constant for feed forward
 		float 			psi;
 	public:
@@ -141,7 +141,7 @@ namespace control
 		 * @param psi                	rotor flux constant
 		 * @param new_limit   			output limit.
 		 */
-		complex_current(const float rs, const systems::dq l, const float new_psi, const float new_limit);
+		complex_current(const float rs, const systems::dq l, const float new_psi, const float new_limit, const float ts);
 
 		/**
 		 * @brief calculate regulator equation with feed forward and anti windup.
@@ -165,7 +165,8 @@ namespace control
 		 * @param l                		series inductance of the winding
 		 * @param psi                	rotor flux constant
 		 */
-		constexpr inline void SetParameters(const float rs, const systems::dq l, const float new_psi) { kp.d = l.d; kp.q = l.q; ki = rs; psi = new_psi;};
+		constexpr inline void SetParameters(const float rs, const systems::dq l, const float new_psi) { kp.d = l.d/ts; kp.q = l.q/ts;
+			ki.d = kp.d/(l.d/rs); ki.q = kp.q/(l.q/rs); psi = new_psi;};
 
 		///< @brief Reset controller and integral part to 0
 		constexpr inline void Reset(void) {error_sum = {0.0f, 0.0f};  output_unlimited = {0.0f, 0.0f}; output = {0.0f, 0.0f};};
@@ -178,7 +179,7 @@ namespace control
 	{
 	private:
 		///< sample time (call timing of controller )
-		static constexpr float ts = hardware::Tc;
+		const float ts;
 
 		///< series resistance of the winding
 		float rs;
@@ -235,7 +236,7 @@ namespace control
 		 *
 		 */
 		smith_predictor_current(const float new_rs, const systems::dq new_l, const float new_psi,
-				const float new_limit);
+				const float new_limit, const float ts);
 
 		/**
 		 * @brief calculate regulator equation with feed forward and anti windup.

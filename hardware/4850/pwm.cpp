@@ -33,6 +33,26 @@ PWMDriver* ADC_TRIGP = &PWMD4;
 systems::abc duty_counts = {0};
 
 
+///< PWM Timer clock in Hz
+const uint32_t hardware::pwm::TIMER_CLOCK = STM32_TIMCLK2;
+
+
+///< deadtime in nano seconds
+const uint32_t hardware::pwm::DEADTIME = 300;
+
+/**
+ * PWM frequency in Hz
+ *
+ * With center aligned PWM this is the period of PWM half period.
+ */
+const uint32_t hardware::pwm::PERIOD = 6749;
+
+///< Control cycle time
+const float hardware::Tc = ((float)(hardware::pwm::PERIOD + 1) / (float)hardware::pwm::TIMER_CLOCK);
+
+///< Control cycle frequency
+const float hardware::Fc = 1.0f/hardware::Tc;
+
 /**
  * macro to calculate DTG value for BDTR
  * @param deadtime in ns

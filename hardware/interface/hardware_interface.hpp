@@ -27,7 +27,7 @@
 
 namespace hardware {
 	///< Motor Phases. Normally fixed to 3
-	constexpr uint8_t PHASES = 3;
+	const uint8_t PHASES = 3;
 
 	///< reference to thread to be woken up in the hardware control cycle.
 	extern chibios_rt::ThreadReference  control_thread;
@@ -39,18 +39,18 @@ namespace hardware {
 		 */
 
 		///< PWM Timer clock in Hz
-		constexpr uint32_t TIMER_CLOCK = STM32_TIMCLK2;
+		extern const uint32_t TIMER_CLOCK;
 
 
 		///< deadtime in nano seconds
-		constexpr uint32_t DEADTIME = 300;
+		extern const uint32_t DEADTIME;
 
 		/**
 		 * PWM frequency in Hz
 		 *
 		 * With center aligned PWM this is the period of PWM half period.
 		 */
-		constexpr uint32_t PERIOD = 6749;
+		extern const uint32_t PERIOD;
 
 		/**
 		 * Initialize PWM hardware with outputs disabled!
@@ -85,10 +85,10 @@ namespace hardware {
 	} /* namespace pwm */
 
 	///< Control cycle time
-	constexpr float Tc = ((float)(pwm::PERIOD + 1) / (float)pwm::TIMER_CLOCK);
+	extern const float Tc;
 
 	///< Control cycle frequency
-	constexpr float Fc = 1.0f/Tc;
+	extern const float Fc;
 
 	namespace adc
 	{
@@ -112,13 +112,6 @@ namespace hardware {
 			extern void Value(systems::abc& currents);
 
 			/**
-			 * Get current means of the current
-			 *
-			 * @param currents references to the current samples
-			 */
-			extern void Mean(systems::abc& currents);
-
-			/**
 			 * set current offsets
 			 * @param offset in A
 			 */
@@ -135,12 +128,6 @@ namespace hardware {
 			 * @return DC Bus voltage in Volts
 			 */
 			extern float DCBus(void);
-
-			/**
-			 * Read the DC Bus voltage mean
-			 * @return DC Bus voltage mean in Volts
-			 */
-			float DCBusMean(void);
 
 		} /* namespace voltage */
 

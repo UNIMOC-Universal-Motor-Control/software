@@ -44,7 +44,7 @@ namespace observer
     void mechanic::Predict(void)
     {
         // update constants
-        constexpr float ts = hardware::Tc;
+        const float ts = hardware::Tc;
         const float tsj = ts/settings.mechanics.J;
 
         // electric torque
@@ -94,7 +94,7 @@ namespace observer
      */
     void mechanic::Update(const float angle_error, std::array<float, 3>& out_error)
     {
-        constexpr float ts = hardware::Tc;
+        const float ts = hardware::Tc;
         const float tsj = ts/settings.mechanics.J;
 
         /// kalman filter for flux error

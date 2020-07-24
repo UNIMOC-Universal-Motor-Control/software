@@ -39,8 +39,8 @@ namespace control
 	 * @param new_negative_limit	negative output limit.
 	 */
 	pi::pi(const float new_kp, const float new_tn,
-			const float new_positive_limit, const float new_negative_limit):
-			error_sum(0.0f), output_unlimited(0.0f), output(0.0f), kp(new_kp),
+			const float new_positive_limit, const float new_negative_limit, const float ts):
+			ts(ts), error_sum(0.0f), output_unlimited(0.0f), output(0.0f), kp(new_kp),
 			ki(SetKi(kp, ts, new_tn)), positive_limit(new_positive_limit), negative_limit(new_negative_limit)
 	{}
 
@@ -95,9 +95,9 @@ namespace control
 	 * @param psi                	rotor flux constant
 	 * @param new_limit   			output limit.
 	 */
-	complex_current::complex_current(const float rs, const systems::dq l, const float new_psi, const float new_limit):
-						error_sum{0.0f, 0.0f}, output_unlimited{0.0f, 0.0f}, output{0.0f, 0.0f}, kp{l.d, l.q},
-						ki(rs), psi(new_psi), limit(new_limit)
+	complex_current::complex_current(const float rs, const systems::dq l, const float new_psi, const float new_limit, const float new_ts):
+						ts(new_ts), error_sum{0.0f, 0.0f}, output_unlimited{0.0f, 0.0f}, output{0.0f, 0.0f}, kp{l.d/new_ts, l.q/new_ts},
+						ki{kp.d/(l.d/rs), kp.q/(l.q/rs)}, psi(new_psi), limit(new_limit)
 	{}
 
 	/**
@@ -135,8 +135,8 @@ namespace control
 				|| ((error.d * output_unlimited.d) <= 0.0f) || ((error.q * output_unlimited.q) <= 0.0f))
 		{
 			// (K_p * j w + K_i)/s
-			error_sum.d += (error.d * ki - error.q * omega * kp.q) * ts;
-			error_sum.q += (error.q * ki + error.d * omega * kp.d) * ts;
+			error_sum.d += (error.d * ki.d /*- error.q * omega * kp.q*/) * ts;
+			error_sum.q += (error.q * ki.q /*+ error.d * omega * kp.d*/) * ts;
 		}
 		return output;
 	}
@@ -156,7 +156,8 @@ namespace control
 	 * @param new_limit   			output limit.
 	 */
 	smith_predictor_current::smith_predictor_current(const float new_rs, const systems::dq new_l, const float new_psi,
-			const float new_limit): rs(new_rs), l(new_l), psi(new_psi), ctrl(rs, l , psi, new_limit), fomega(), fid(), fiq(), fmid(), fmiq()
+			const float new_limit, const float new_ts): ts(new_ts), rs(new_rs), l(new_l), psi(new_psi), ctrl(rs, l , psi, new_limit, new_ts),
+					fomega(), fid(), fiq(), fmid(), fmiq()
 	{}
 
 	/**
@@ -173,26 +174,26 @@ namespace control
 		values.motor.rotor.filtered.i.d = fid.Calculate(act.d);
 		values.motor.rotor.filtered.i.q = fiq.Calculate(act.q);
 
-		// calculate the model output delayed to the filtered current.
-		// using the old i values to take the deadtime of one control cycle into account!
-		i_delayed.d = fmid.Calculate(i_predict.d);
-		i_delayed.q = fmiq.Calculate(i_predict.q);
-
-		// current prediction model
-		i_predict.d += (u.d - rs*i_predict.d - l.q*values.motor.rotor.filtered.omega*i_predict.q)*ts;
-		i_predict.q += (u.q - rs*i_predict.q - l.d*values.motor.rotor.filtered.omega*i_predict.d - psi*values.motor.rotor.filtered.omega)*ts;
-
-		// correct the current prediction with the error of the filtered
-		systems::dq i_feedback =
-		{
-				i_predict.d + values.motor.rotor.filtered.i.d - i_delayed.d,
-				i_predict.q + values.motor.rotor.filtered.i.q - i_delayed.q
-		};
+//		// calculate the model output delayed to the filtered current.
+//		// using the old i values to take the deadtime of one control cycle into account!
+//		i_delayed.d = fmid.Calculate(i_predict.d);
+//		i_delayed.q = fmiq.Calculate(i_predict.q);
+//
+//		// current prediction model
+//		i_predict.d += (u.d - rs*i_predict.d - l.q*values.motor.rotor.filtered.omega*i_predict.q)*ts;
+//		i_predict.q += (u.q - rs*i_predict.q - l.d*values.motor.rotor.filtered.omega*i_predict.d - psi*values.motor.rotor.filtered.omega)*ts;
+//
+//		// correct the current prediction with the error of the filtered
+//		systems::dq i_feedback =
+//		{
+//				i_predict.d + values.motor.rotor.filtered.i.d - i_delayed.d,
+//				i_predict.q + values.motor.rotor.filtered.i.q - i_delayed.q
+//		};
 
 		// update the limit for the controller
 		ctrl.limit = limit;
 
-		u = ctrl.Calculate(setpoint, i_feedback, 0.0f, gain);
+		u = ctrl.Calculate(setpoint, act, 0.0f, gain);
 
 		return u;
 	}
@@ -205,7 +206,7 @@ namespace control
 	 *
 	 */
 	foc::foc():
-			ctrl(settings.motor.rs, settings.motor.l, settings.motor.psi, 0.0f)
+			ctrl(settings.motor.rs, settings.motor.l, settings.motor.psi, 0.0f, hardware::Tc)
 	{}
 
 
