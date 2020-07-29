@@ -96,8 +96,8 @@ namespace control
 	 * @param new_limit   			output limit.
 	 */
 	complex_current::complex_current(const float rs, const systems::dq l, const float new_psi, const float new_limit, const float new_ts):
-						ts(new_ts), error_sum{0.0f, 0.0f}, output_unlimited{0.0f, 0.0f}, output{0.0f, 0.0f}, kp{l.d/new_ts, l.q/new_ts},
-						ki{kp.d/(l.d/rs), kp.q/(l.q/rs)}, psi(new_psi), limit(new_limit)
+						ts(new_ts), error_sum{0.0f, 0.0f}, output_unlimited{0.0f, 0.0f}, output{0.0f, 0.0f}, kp{(l.d/rs)/(2.0f/rs*new_ts*17), (l.d/rs)/(2.0f/rs*new_ts*17)},
+						ki{l.d/rs, l.q/rs}, psi(new_psi), limit(new_limit)
 	{}
 
 	/**
@@ -194,8 +194,8 @@ namespace control
 		}
 		else
 		{
-			i_feedback.d = act.d;
-			i_feedback.q = act.q;
+			i_feedback.d = values.motor.rotor.filtered.i.d;
+			i_feedback.q = values.motor.rotor.filtered.i.q;
 		}
 
 		// update the limit for the controller

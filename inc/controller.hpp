@@ -197,12 +197,12 @@ namespace control
 		filter::moving_average<32> fomega;
 
 		///< filters for the current
-		filter::moving_average<32> fid;
-		filter::moving_average<32> fiq;
+		filter::moving_average<16> fid;
+		filter::moving_average<16> fiq;
 
 		///< filters for modeling the current filters
-		filter::moving_average<32> fmid;
-		filter::moving_average<32> fmiq;
+		filter::moving_average<16> fmid;
+		filter::moving_average<16> fmiq;
 
 		///< output voltage vector
 		systems::dq u;
