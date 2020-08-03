@@ -71,6 +71,33 @@ namespace management
 		bool position = false;
 	}
 
+	/**
+	 * @namespace measurement flags
+	 */
+	namespace measure
+	{
+		///< measure all parameters
+		bool all = false;
+
+		///< measure resistance
+		bool resistance = false;
+
+		///< measure inductance
+		bool inductance = false;
+
+		///< measure flux
+		bool flux = false;
+
+		///< measured resistance
+		float Rs = 0.0f;
+
+		///< measured inductance
+		systems::dq Ls = {0.0f, 0.0f};
+
+		///< measured flux
+		float PsiM = 0.0f;
+	}
+
 
 	/**
 	 * generic constructor
@@ -93,7 +120,6 @@ namespace management
 		while (TRUE)
 		{
 			deadline = chibios_rt::System::getTime();
-
 
 			values.converter.temp = hardware::adc::temperature::Bridge();
 			values.motor.temp = hardware::adc::temperature::Motor();
@@ -160,7 +186,85 @@ namespace management
 				control::feedforward = settings.control.current.feedforward;
 				control::smith = settings.control.current.smith;
 
+				// Handling of measurement flags
+				if(measure::all)
+				{
+					measure::resistance = true;
+					measure::inductance = true;
+					measure::flux = true;
+				}
+
+				if(measure::resistance) sequencer = MEASURE_RS_INIT;
+				else if(measure::inductance) sequencer = MEASURE_LS;
+				else if(measure::flux) sequencer = MEASURE_FLUX;
+
 				break;
+
+			case MEASURE_RS_INIT:
+				measure::Rs = 0.0f;
+				values.motor.rotor.u.d = 0.0f;
+				values.motor.rotor.u.q = 0.0f;
+				values.motor.rotor.phi = 0.0f;
+				values.motor.rotor.omega = 0.0f;
+				sequencer = MEASURE_RS_FIND;
+
+				// handle PWM led to show PWM status
+				if(hardware::pwm::output::Active()) palSetLine(LINE_LED_PWM);
+				else
+				{
+					// wait for PWM release
+					sequencer = MEASURE_RS_INIT;
+
+					palClearLine(LINE_LED_PWM);
+				}
+				// set Run Mode LED
+				palClearLine(LINE_LED_RUN);
+				break;
+			case MEASURE_RS_FIND: // Find the general range of the stator resistance
+				constexpr float _1bysqrt3 = 1.0f / std::sqrt(3.0f);
+				constexpr float target_current = 30.0f; // 30A target. But expected to be 50A when settled
+
+				values.motor.rotor.u.d += 10e-3f; // 10mv increase leads to 2.5s max time to reach 24V on the output
+
+				if(values.motor.rotor.u.d >  _1bysqrt3 * values.battery.u * 0.95
+						|| values.motor.i.a < -target_current		// inverse current measurement
+						|| std::fabsf(values.motor.i.b) > target_current
+						|| std::fabsf(values.motor.i.c) > target_current
+						|| !hardware::pwm::output::Active())
+				{
+					// error target current not reached within voltage limits
+					// or the other currents reached target current but not the main current
+					// there exists a connection problem
+					sequencer = RUN;
+					measure::Rs = 0.0f;
+					values.motor.rotor.u.d = 0.0f;
+					values.motor.rotor.u.q = 0.0f;
+					values.motor.rotor.phi = 0.0f;
+					values.motor.rotor.omega = 0.0f;
+				}
+				else if(values.motor.i.a > target_current)
+				{
+					// the in phase current reached target current within voltage range!
+					values.motor.rotor.u.d = 0.0f;
+					values.motor.rotor.u.q = 0.0f;
+					values.motor.rotor.phi = 0.0f;
+					values.motor.rotor.omega = 0.0f;
+
+				}
+				break;
+			case MEASURE_RS_VOLT:
+				measure::Rs = 0.0f;
+				break;
+
+			case MEASURE_LS:
+				measure::Ls = {0.0f, 0.0f};
+				break;
+
+
+			case MEASURE_FLUX:
+				measure::PsiM = 0.0f;
+				break;
+
 			}
 
 			sleepUntilWindowed(deadline, deadline + CYCLE_TIME);

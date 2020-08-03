@@ -86,6 +86,14 @@ namespace management
 			STARTUP,
 			CURRENT_OFFSETS,
 			RUN,
+			MEASURE_RS_INIT,
+			MEASURE_RS_FIND,
+			MEASURE_RS_VOLT,
+			MEASURE_RS_WAIT,
+			MEASURE_RS_READ,
+			MEASURE_RS_EVAL,
+			MEASURE_LS,
+			MEASURE_FLUX,
 		} sequencer;
 
 

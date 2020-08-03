@@ -90,6 +90,9 @@ namespace hardware {
 	///< Control cycle frequency
 	extern const float Fc;
 
+	///< Filter Group delay
+	extern const float Tf;
+
 	namespace adc
 	{
 		/*

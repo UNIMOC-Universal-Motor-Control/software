@@ -123,10 +123,13 @@ constexpr uint32_t LENGTH_ADC_SEQ = 3;
 ///< ADC sequences in buffer.
 /// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
 ///          so even length of sequence is best choice.
-constexpr uint32_t ADC_SEQ_BUFFERED = 32;
+constexpr uint32_t ADC_SEQ_BUFFERED = 8;
 
 ///< # of ADCs
 constexpr uint32_t NUM_OF_ADC = 3;
+
+///< Filter Group delay
+const float hardware::Tf = hardware::Tc*(ADC_SEQ_BUFFERED/2) + 1e-6;
 
 ///< absolute maximum current
 constexpr float hardware::adc::current::MAX = 1.65f/(20.0f*(0.002f/3.0f));
@@ -154,7 +157,6 @@ std::int32_t current_offset[hardware::PHASES];
 
 ///< samples index in the adc buffer.
 std::uint32_t sample_index = ADC_SEQ_BUFFERED - 1;
-std::uint32_t prev_index = ADC_SEQ_BUFFERED - 2;
 
 ///< cadence signal counter
 std::uint32_t cadence_counter = 0;
@@ -269,9 +271,14 @@ void hardware::adc::current::Value(systems::abc& currents)
 {
 	for(std::uint_fast8_t i = 0; i < PHASES; i++)
 	{
-		std::int32_t tmp = 2.0f * samples[i][sample_index][1] - samples[i][prev_index][1];
+		std::int32_t sum = 0;
+		for (std::uint_fast32_t s = 0; s < ADC_SEQ_BUFFERED; s++)
+		{
+			sum += samples[i][s][1];
+		}
+		sum = (float)sum / (float)ADC_SEQ_BUFFERED;
 
-		currents.array[i] = ADC2CURRENT * (float)(current_offset[i] - tmp);
+		currents.array[i] = ADC2CURRENT * (float)(current_offset[i] - sum);
 	}
 }
 
@@ -304,11 +311,12 @@ float hardware::adc::voltage::DCBus(void)
 	/*
 	 * VDC is sampled by ADC1 2 times as a non current sample
 	 */
-	sum += samples[0][sample_index][0];
-	sum += samples[0][sample_index][2];
-	sum *= 2.0f;
-	sum -= samples[0][prev_index][0];
-	sum -= samples[0][prev_index][2];
+	for(std::uint_fast32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
+	{
+		sum += samples[0][i][0];
+		sum += samples[0][i][2];
+	}
+	sum = (float)sum / (float)(ADC_SEQ_BUFFERED * 2);
 
 	// Filter inverts the values
 	vdc = (float)sum * ADC2VDC;
@@ -508,18 +516,12 @@ static void adccallback(ADCDriver *adcp)
 	(void)adcp;
 
 	sample_index++;
-	prev_index++;
 	if(sample_index >= ADC_SEQ_BUFFERED) sample_index = 0;
-	if(prev_index >= ADC_SEQ_BUFFERED) prev_index = 0;
 
 	/* DMA buffer invalidation because data cache, only invalidating the
      * buffer just filled.
      */
-	for(std::uint_fast8_t i = 0; i < hardware::PHASES; i++)
-	{
-		cacheBufferInvalidate(&samples[i][prev_index][0], sizeof(adcsample_t)*LENGTH_ADC_SEQ);
-		cacheBufferInvalidate(&samples[i][sample_index][0], sizeof(adcsample_t)*LENGTH_ADC_SEQ);
-	}
+	cacheBufferInvalidate(&samples[0][0][0], sizeof(adcsample_t)*LENGTH_ADC_SEQ*ADC_SEQ_BUFFERED*NUM_OF_ADC);
 
 	// only every second cycle because of current zero delay sample estimation
 	if(!hardware::control_thread.isNull())
