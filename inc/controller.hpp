@@ -99,194 +99,33 @@ namespace control
 	};
 
 	/**
-	 * complex current controller for rotor frame
-	 *
-	 * The motor in rotor frame is G_m = 1/(L_s (s + j w) + R_s)
-	 * The controller in rotor frame is G_c = (K_p (s + j w) + K_i)/s
-	 *
-	 * so to get G_o = 1/s for the open loop, K_p = L_s and K_i = R_s
-	 */
-	class complex_current
-	{
-	private:
-		///< sample time (call timing of controller )
-		const float ts;
-		///< integral error sum
-		systems::dq		error_sum;
-		///< unlimited controller output
-		systems::dq		output_unlimited;
-		///< limited controller output
-		systems::dq		output;
-		///< proportional controller gain
-		systems::dq		kp;
-		///< integral action time  (compensated time constant)
-		systems::dq		ki;			// integral gain
-		///< rotor flux constant for feed forward
-		float 			psi;
-	public:
-		///< output limit
-		float			limit;
-
-
-		/**
-		 * @brief complex current controller constructor with all essential parameters.
-		 *
-		 * The motor in rotor frame is G_m = 1/(L_s (s + j w) + R_s)
-		 * The controller in rotor frame is G_c = (K_p (s + j w) + K_i)/s
-		 *
-		 * so to get G_o = 1/s for the open loop, K_p = L_s and K_i = R_s
-		 *
-		 * @param rs	                series resistance of the winding
-		 * @param l                		series inductance of the winding
-		 * @param psi                	rotor flux constant
-		 * @param new_limit   			output limit.
-		 */
-		complex_current(const float rs, const systems::dq l, const float new_psi, const float new_limit, const float ts);
-
-		/**
-		 * @brief calculate regulator equation with feed forward and anti windup.
-		 * @param setpoint				setpoint vector
-		 * @param act					actual current vector
-		 * @param omega					angular velocity in rad/s of the motor
-		 * @param gain					controller gain factor
-		 * @return						controllers output voltage vector
-		 */
-		systems::dq Calculate(const systems::dq setpoint, const systems::dq act, const float omega, const float gain);
-
-		/**
-		 * @brief set controller dynamic parameters.
-		 *
-		 * The motor in rotor frame is G_m = 1/(L_s (s + j w) + R_s)
-		 * The controller in rotor frame is G_c = (K_p (s + j w) + K_i)/s
-		 *
-		 * so to get G_o = 1/s for the open loop, K_p = L_s and K_i = R_s
-		 *
-		 * @param rs	                series resistance of the winding
-		 * @param l                		series inductance of the winding
-		 * @param psi                	rotor flux constant
-		 */
-		constexpr inline void SetParameters(const float rs, const systems::dq l, const float new_psi) { kp.d = l.d/ts; kp.q = l.q/ts;
-			ki.d = kp.d/(l.d/rs); ki.q = kp.q/(l.q/rs); psi = new_psi;};
-
-		///< @brief Reset controller and integral part to 0
-		constexpr inline void Reset(void) {error_sum = {0.0f, 0.0f};  output_unlimited = {0.0f, 0.0f}; output = {0.0f, 0.0f};};
-	};
-
-	/**
-	 * smith predictor with pi controller and anti windup
-	 */
-	class smith_predictor_current
-	{
-	private:
-		///< sample time (call timing of controller )
-		const float ts;
-
-		///< series resistance of the winding
-		float rs;
-
-		///< series inductance of the winding
-		systems::dq l;
-
-		///< rotor flux constant
-		float psi;
-
-		///< current-controller
-		complex_current ctrl;
-
-		///< rotational velocity filter
-		filter::moving_average<32> fomega;
-
-		///< filters for the current
-		filter::moving_average<16> fid;
-		filter::moving_average<16> fiq;
-
-		///< filters for modeling the current filters
-		filter::moving_average<16> fmid;
-		filter::moving_average<16> fmiq;
-
-		///< output voltage vector
-		systems::dq u;
-
-		///< current estimate of the smith predictor model
-		systems::dq i_predict;
-
-		///< current estimate of the smith predictor model after the filter
-		systems::dq i_delayed;
-
-	public:
-		///< output limit
-		float			limit;
-
-		/**
-		 * @brief smith predictor with complex current controller
-		 * 		  constructor with all essential parameters.
-		 *
-		 * The motor in rotor frame is G_m = 1/(L_s (s + j w) + R_s)
-		 * The controller in rotor frame is G_c = (K_p (s + j w) + K_i)/s
-		 *
-		 * so to get G_o = 1/s for the open loop, K_p = L_s and K_i = R_s
-		 *
-		 * @param new_ts                set sample time.
-		 * @param rs	                series resistance of the winding
-		 * @param l                		series inductance of the winding
-		 * @param psi                	rotor flux constant
-		 * @param new_limit   			output limit.
-		 * @param hwf					coefficients for hardware filter model
-		 * @param swf					coefficients for software filter and its model
-		 *
-		 */
-		smith_predictor_current(const float new_rs, const systems::dq new_l, const float new_psi,
-				const float new_limit, const float ts);
-
-		/**
-		 * @brief calculate regulator equation with feed forward and anti windup.
-		 * @param setpoint				setpoint vector
-		 * @param act					actual current vector
-		 * @param omega					angular velocity in rad/s of the motor
-		 * @param gain					controller gain factor
-		 * @return						controllers output voltage vector
-		 */
-		systems::dq& Calculate(const systems::dq setpoint, const systems::dq act, const float omega, const float gain);
-
-		/**
-		 * @brief set controller dynamic parameters.
-		 *
-		 * The motor in rotor frame is G_m = 1/(L_s (s + j w) + R_s)
-		 * The controller in rotor frame is G_c = (K_p (s + j w) + K_i)/s
-		 *
-		 * so to get G_o = 1/s for the open loop, K_p = L_s and K_i = R_s
-		 *
-		 * @param rs	                series resistance of the winding
-		 * @param l                		series inductance of the winding
-		 * @param psi                	rotor flux constant
-		 */
-		constexpr inline void SetParameters(const float new_rs, const systems::dq new_l, const float new_psi)
-		{
-			rs = new_rs;
-			l = new_l;
-			psi = new_psi;
-			ctrl.SetParameters(rs, l, psi);
-		};
-
-		///< @brief Reset controller and integral part to 0
-		constexpr inline void Reset(void) { ctrl.Reset(); };
-
-	};
-
-	/**
 	 * field orientated current controller
 	 */
 	class foc
 	{
 	private:
-		///< current controller with complex pole and smith predictor
-		smith_predictor_current ctrl;
+		///< stator resistance
+		float Rs;
+
+		///< stator inductance
+		systems::dq Ls;
+
+		///< Rotor Flux Constant
+		float PsiM;
+
+		///< d axis current controller
+		pi ctrl_d;
+
+		///< q axis current controller
+		pi ctrl_q;
+
+		static constexpr float _1bysqrt3 = 1.0f / std::sqrt(3.0f);
 	public:
 		/**
 		 * @brief constructor of the foc with all essential parameters.
 		 *
 		 */
-		foc(void);
+		foc(const float rs, const systems::dq l, const float psi);
 		/**
 		 * @brief calculate foc current controller
 		 */
@@ -300,10 +139,17 @@ namespace control
 		 * @param l                		series inductance of the winding
 		 * @param psi                	rotor flux constant
 		 */
-		constexpr inline void SetParameters(const float rs, const systems::dq l, const float psi) 	{	ctrl.SetParameters(rs, l, psi);		};
+		constexpr inline void SetParameters(const float rs, const systems::dq l, const float psi, const float tf)
+		{
+			Rs = rs;
+			Ls = {l.d, l.q};
+			PsiM = psi;
+			ctrl_d.SetParameters((l.d/rs)/(2.0f/rs*tf), l.d/rs);
+			ctrl_q.SetParameters((l.d/rs)/(2.0f/rs*tf), l.d/rs);
+		};
 
 		///< @brief Reset controller and integral part to 0
-		inline void Reset(void) { ctrl.Reset(); };
+		inline void Reset(void) { ctrl_d.Reset(); ctrl_q.Reset();};
 	};
 
 	/**

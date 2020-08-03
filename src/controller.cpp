@@ -83,140 +83,17 @@ namespace control
 	}
 
 	/**
-	 * @brief Pi controller constructor with all essential parameters.
-	 *
-	 * The motor in rotor frame is G_m = 1/(L_s (s + j w) + R_s)
-	 * The controller in rotor frame is G_c = (K_p (s + j w) + K_i)/s
-	 *
-	 * so to get G_o = 1/s for the open loop, K_p = L_s and K_i = R_s
-	 *
-	 * @param rs	                series resistance of the winding
-	 * @param l                		series inductance of the winding
-	 * @param psi                	rotor flux constant
-	 * @param new_limit   			output limit.
-	 */
-	complex_current::complex_current(const float rs, const systems::dq l, const float new_psi, const float new_limit, const float new_ts):
-						ts(new_ts), error_sum{0.0f, 0.0f}, output_unlimited{0.0f, 0.0f}, output{0.0f, 0.0f}, kp{(l.d/rs)/(2.0f/rs*new_ts*17), (l.d/rs)/(2.0f/rs*new_ts*17)},
-						ki{l.d/rs, l.q/rs}, psi(new_psi), limit(new_limit)
-	{}
-
-	/**
-	 * @brief calculate regulator equation with feed forward and anti windup.
-	 * @param setpoint				setpoint vector
-	 * @param act					actual current vector
-	 * @param omega					angular velocity in rad/s of the motor
-	 * @param gain					controller gain factor
-	 * @return						controllers output voltage vector
-	 */
-	systems::dq complex_current::Calculate(const systems::dq setpoint, const systems::dq act, const float omega, const float gain)
-	{
-		systems::dq error = {gain * (setpoint.d - act.d), gain * (setpoint.q -act.q)};
-
-		output_unlimited.d = error_sum.d + error.d * kp.d;  				// regulator equation
-		output_unlimited.q = error_sum.q + error.q * kp.q + omega * psi;	// with feed forward
-
-		float length = systems::Length(output_unlimited);
-
-		if(length > limit)													// saturation
-		{
-			output.d = limit/length * output_unlimited.d;					// scale to fit the limit
-			output.q = limit/length * output_unlimited.q;
-		}
-		else																// normal operation
-		{
-			std::memcpy(&output, &output_unlimited, sizeof(systems::dq));
-		}
-
-		// anti windup strategy is only to limit if
-		// integration of the error takes the output
-		// more over the limit.
-		// if not we are free to integrate
-		if(0 == std::memcmp(&output, &output_unlimited, sizeof(systems::dq))
-				|| ((error.d * output_unlimited.d) <= 0.0f) || ((error.q * output_unlimited.q) <= 0.0f))
-		{
-			// (K_p * j w + K_i)/s
-			error_sum.d += (error.d * ki.d - error.q * omega * kp.q) * ts;
-			error_sum.q += (error.q * ki.q + error.d * omega * kp.d) * ts;
-		}
-		return output;
-	}
-
-	/**
-	 * @brief smith predictor with complex current controller
-	 * 		  constructor with all essential parameters.
-	 *
-	 * The motor in rotor frame is G_m = 1/(L_s (s + j w) + R_s)
-	 * The controller in rotor frame is G_c = (K_p (s + j w) + K_i)/s
-	 *
-	 * so to get G_o = 1/s for the open loop, K_p = L_s and K_i = R_s
+	 * @brief constructor of the foc with all essential parameters.
 	 *
 	 * @param new_rs                series resistance of the winding
 	 * @param new_l            		series inductance of the winding
 	 * @param new_psi              	rotor flux constant
-	 * @param new_limit   			output limit.
-	 */
-	smith_predictor_current::smith_predictor_current(const float new_rs, const systems::dq new_l, const float new_psi,
-			const float new_limit, const float new_ts): ts(new_ts), rs(new_rs), l(new_l), psi(new_psi), ctrl(rs, l , psi, new_limit, new_ts),
-					fomega(), fid(), fiq(), fmid(), fmiq()
-	{}
-
-	/**
-	 * @brief calculate regulator equation with feed forward and anti windup.
-	 * @param setpoint				setpoint vector
-	 * @param act					actual current vector
-	 * @param omega					angular velocity in rad/s of the motor
-	 * @param gain					controller gain factor
-	 * @return						controllers output voltage vector
-	 */
-	systems::dq& smith_predictor_current::Calculate(const systems::dq setpoint, const systems::dq act, const float omega, const float gain)
-	{
-		systems::dq i_feedback;
-		float feedforward = 0.0f;
-
-		values.motor.rotor.filtered.omega = fomega.Calculate(omega);
-		values.motor.rotor.filtered.i.d = fid.Calculate(act.d);
-		values.motor.rotor.filtered.i.q = fiq.Calculate(act.q);
-
-		if(management::control::smith)
-		{
-			// calculate the model output delayed to the filtered current.
-			// using the old i values to take the deadtime of one control cycle into account!
-			i_delayed.d = fmid.Calculate(i_predict.d);
-			i_delayed.q = fmiq.Calculate(i_predict.q);
-
-			// current prediction model
-			i_predict.d += (u.d - rs*i_predict.d - l.q*values.motor.rotor.filtered.omega*i_predict.q)*ts;
-			i_predict.q += (u.q - rs*i_predict.q - l.d*values.motor.rotor.filtered.omega*i_predict.d - psi*values.motor.rotor.filtered.omega)*ts;
-
-			// correct the current prediction with the error of the filtered
-			i_feedback.d = i_predict.d + values.motor.rotor.filtered.i.d - i_delayed.d;
-			i_feedback.q = i_predict.q + values.motor.rotor.filtered.i.q - i_delayed.q;
-		}
-		else
-		{
-			i_feedback.d = values.motor.rotor.filtered.i.d;
-			i_feedback.q = values.motor.rotor.filtered.i.q;
-		}
-
-		// update the limit for the controller
-		ctrl.limit = limit;
-
-		if(management::control::feedforward) feedforward = values.motor.rotor.filtered.omega;
-
-		u = ctrl.Calculate(setpoint, i_feedback, feedforward, gain);
-
-		return u;
-	}
-
-	/**
-	 * @brief constructor of the foc with all essential parameters.
-	 *
-	 * @param hwf					coefficients for hardware filter model
-	 * @param swf					coefficients for software filter and its model
 	 *
 	 */
-	foc::foc():
-			ctrl(settings.motor.rs, settings.motor.l, settings.motor.psi, 0.0f, hardware::Tc)
+	foc::foc(const float rs, const systems::dq l, const float psi):
+			Rs(rs), Ls(l), PsiM(psi),
+			ctrl_d((l.d/Rs)/(2.0f/rs*hardware::Tf), l.d/rs, 0.0f, 0.0f, hardware::Tc),
+			ctrl_q((l.d/Rs)/(2.0f/rs*hardware::Tf), l.d/rs, 0.0f, 0.0f, hardware::Tc)
 	{}
 
 
@@ -228,18 +105,51 @@ namespace control
 		// only set voltages with active current control
 		if(settings.control.current.active)
 		{
-			constexpr float _1bysqrt3 = 1.0f / std::sqrt(3.0f);
+			float limit = _1bysqrt3 * values.battery.u*0.95f;
 			// Current controller is limited to 1/sqrt(3)*DC Bus Voltage due to SVM
-			ctrl.limit = _1bysqrt3 * values.battery.u;
+			// d current controller is master for voltage limit
+			ctrl_d.positive_limit = limit;
+			ctrl_d.negative_limit = -limit;
 
-			values.motor.rotor.u = ctrl.Calculate(values.motor.rotor.setpoint.i, values.motor.rotor.i, values.motor.rotor.omega, settings.control.current.gain);
+			float length = systems::Length(values.motor.rotor.u);
+
+			if(length > ctrl_d.positive_limit)									// saturation
+			{
+				float rest = std::sqrt(length*length - values.motor.rotor.u.d * values.motor.rotor.u.d);
+				// q current controller is only fully free if we are not in voltage limit
+				ctrl_q.positive_limit = rest;
+				ctrl_q.negative_limit = rest;
+			}
+			else																// normal operation
+			{
+				// q current controller is only fully free if we are not in voltage limit
+				ctrl_q.positive_limit = limit;
+				ctrl_q.negative_limit = -limit;
+			}
+
+			systems::dq feedforward = {0.0f, 0.0f};
+
+			if(settings.control.current.feedforward)
+			{
+				feedforward.d = Rs*values.motor.rotor.setpoint.i.d - values.motor.rotor.omega * values.motor.rotor.setpoint.i.q * Ls.q;
+				feedforward.q = Rs*values.motor.rotor.setpoint.i.q + values.motor.rotor.omega * values.motor.rotor.setpoint.i.d * Ls.d
+						+ values.motor.rotor.omega*PsiM;
+			}
+
+			values.motor.rotor.u.d = ctrl_d.Calculate(values.motor.rotor.setpoint.i.d, values.motor.rotor.i.d, feedforward.d);
+			values.motor.rotor.u.q = ctrl_q.Calculate(values.motor.rotor.setpoint.i.q, values.motor.rotor.i.q, feedforward.q);
+		}
+		else
+		{
+			ctrl_d.Reset();
+			ctrl_q.Reset();
 		}
 	}
 
 	/**
 	 * generic constructor
 	 */
-	thread::thread():flux(), mech(settings.observer.Q, settings.observer.R)
+	thread::thread():flux(), mech(settings.observer.Q, settings.observer.R), foc(settings.motor.rs, settings.motor.l, settings.motor.psi)
 	{}
 
 	/**
@@ -267,7 +177,7 @@ namespace control
 
 			// calculate the sine and cosine of the new angle
 			angle = values.motor.rotor.phi
-					+ values.motor.rotor.omega * hardware::Tc;
+					+ values.motor.rotor.omega * hardware::Tf;
 
 			// calculate new
 			systems::SinCos(angle, sin_cos);
@@ -311,6 +221,18 @@ namespace control
 			else
 			{
 				values.motor.rotor.phi += values.motor.rotor.omega * hardware::Tc;
+
+				// limit phi to 2 * pi and count rotations
+				if(values.motor.rotor.phi > math::_2PI)
+				{
+					values.motor.rotor.phi -= math::_2PI;
+					values.motor.rotor.rotation++;
+				}
+				else if(values.motor.rotor.phi < 0.0)
+				{
+					values.motor.rotor.phi += math::_2PI;
+					values.motor.rotor.rotation--;
+				}
 			}
 
 			if(management::control::current)

@@ -123,7 +123,7 @@ constexpr uint32_t LENGTH_ADC_SEQ = 3;
 ///< ADC sequences in buffer.
 /// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
 ///          so even length of sequence is best choice.
-constexpr uint32_t ADC_SEQ_BUFFERED = 8;
+constexpr uint32_t ADC_SEQ_BUFFERED = 16;
 
 ///< # of ADCs
 constexpr uint32_t NUM_OF_ADC = 3;
@@ -276,9 +276,8 @@ void hardware::adc::current::Value(systems::abc& currents)
 		{
 			sum += samples[i][s][1];
 		}
-		sum = (float)sum / (float)ADC_SEQ_BUFFERED;
 
-		currents.array[i] = ADC2CURRENT * (float)(current_offset[i] - sum);
+		currents.array[i] = ADC2CURRENT * (float)(current_offset[i] - sum) / (float)ADC_SEQ_BUFFERED;
 	}
 }
 
@@ -294,7 +293,6 @@ void hardware::adc::current::SetOffset(void)
 		{
 			sum += samples[i][s][1];
 		}
-		sum = (float)sum / (float)ADC_SEQ_BUFFERED;
 		current_offset[i] = sum;
 	}
 }
@@ -316,10 +314,9 @@ float hardware::adc::voltage::DCBus(void)
 		sum += samples[0][i][0];
 		sum += samples[0][i][2];
 	}
-	sum = (float)sum / (float)(ADC_SEQ_BUFFERED * 2);
 
 	// Filter inverts the values
-	vdc = (float)sum * ADC2VDC;
+	vdc = (float)sum * ADC2VDC / (float)ADC_SEQ_BUFFERED;
 
 	return vdc;
 }

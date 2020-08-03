@@ -42,16 +42,16 @@ settings_ts settings =
 	.motor =
 	{
 		///< Stator resistance
-		.rs = 250e-3f,
+		.rs = 230e-3f,
 
 		///< anisotropic inductance vector
-		.l = {400e-6f, 450e-6f},
+		.l = {450e-6f, 650e-6f},
 
 		///< magnetic flux inducted voltage in rotor
-		.psi = unit::RpmV2VsRad(75.0f) / (20.0f / 2.0f),
+		.psi = unit::RpmV2VsRad(75.0f) / (30.0f / 2.0f),
 
 		///< number of pole pairs
-		.P = 20 / 2,
+		.P = 30 / 2,
 
 		/**
 		 * motor limit settings
@@ -86,7 +86,7 @@ settings_ts settings =
 			.drive_current = 30.0f,
 
 			///< maximum charge current
-			.charge_current = 10.0f,
+			.charge_current = 0.0f,
 		},
 	},
 
@@ -104,7 +104,7 @@ settings_ts settings =
 			.active = false,
 
 			///< gain of the current controller
-			.gain = 0.01f,
+			.gain = 1.0f,
 
 			///< release smith predictor
 			.smith = false,
@@ -124,10 +124,10 @@ settings_ts settings =
 		.flux = false,
 
 		///< modell variance
-		.Q = 1e-5f,
+		.Q = 1e-2f,
 
 		///< measurement variance
-		.R = 1e-4f,
+		.R = 10.0f,
 
 		///< flux observer feedback gains
 		.C = {50.0f, 1.0f},

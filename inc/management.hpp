@@ -81,6 +81,9 @@ namespace management
 		systime_t deadline;
 		std::uint32_t delay;
 
+		static constexpr float _1bysqrt3 = 1.0f / std::sqrt(3.0f);
+		static constexpr float TARGET_CURRENT = 30.0f; // 30A target. But expected to be 50A when settled
+
 		enum state_e
 		{
 			STARTUP,

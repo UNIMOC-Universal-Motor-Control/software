@@ -221,15 +221,13 @@ namespace management
 				palClearLine(LINE_LED_RUN);
 				break;
 			case MEASURE_RS_FIND: // Find the general range of the stator resistance
-				constexpr float _1bysqrt3 = 1.0f / std::sqrt(3.0f);
-				constexpr float target_current = 30.0f; // 30A target. But expected to be 50A when settled
 
 				values.motor.rotor.u.d += 10e-3f; // 10mv increase leads to 2.5s max time to reach 24V on the output
 
 				if(values.motor.rotor.u.d >  _1bysqrt3 * values.battery.u * 0.95
-						|| values.motor.i.a < -target_current		// inverse current measurement
-						|| std::fabsf(values.motor.i.b) > target_current
-						|| std::fabsf(values.motor.i.c) > target_current
+						|| values.motor.i.a < -TARGET_CURRENT		// inverse current measurement
+						|| std::fabs(values.motor.i.b) > TARGET_CURRENT
+						|| std::fabs(values.motor.i.c) > TARGET_CURRENT
 						|| !hardware::pwm::output::Active())
 				{
 					// error target current not reached within voltage limits
@@ -242,7 +240,7 @@ namespace management
 					values.motor.rotor.phi = 0.0f;
 					values.motor.rotor.omega = 0.0f;
 				}
-				else if(values.motor.i.a > target_current)
+				else if(values.motor.i.a > TARGET_CURRENT)
 				{
 					// the in phase current reached target current within voltage range!
 					values.motor.rotor.u.d = 0.0f;
