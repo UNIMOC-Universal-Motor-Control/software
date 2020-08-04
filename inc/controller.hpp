@@ -159,7 +159,7 @@ namespace control
 	{
 	private:
 		observer::flux       	flux;
-		observer::mechanic   	mech;
+		observer::hfi			hfi;
 		control::foc      		foc;
 		systems::alpha_beta  	u_ab;
 		systems::alpha_beta 	i_ab;

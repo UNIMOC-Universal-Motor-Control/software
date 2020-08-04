@@ -105,12 +105,6 @@ typedef struct settings_s
 			///< current control switch
 			bool active;
 
-			///< gain of the current controller
-			float gain;
-
-			///< release smith predictor
-			bool smith;
-
 			///< feedforward omega
 			bool feedforward;
 		}current;
@@ -121,20 +115,50 @@ typedef struct settings_s
 	 */
 	struct observer_s
 	{
-		///< flux observer switch
-		bool flux;
+		/**
+		 * rotor flux observer settings
+		 */
+		struct flux_s
+		{
+			///< enable observer switch
+			bool enable;
 
-		///< modell variance
-		float Q;
+			///< modell variance
+			float Q;
 
-		///< measurement variance
-		float R;
+			///< measurement variance
+			float R;
 
-		///< flux observer feedback gains
-		systems::dq C;
+			///< flux observer feedback gains
+			systems::dq C;
+		} flux;
 
-		///< hall observer switch
-		bool hall;
+		/**
+		 * high frequency injection observer settings
+		 */
+		struct hfi_s
+		{
+			///< enable observer switch
+			bool enable;
+
+			///< modell variance
+			float Q;
+
+			///< measurement variance
+			float R;
+
+			///< injection frequency in rad/s
+			float frequency;
+		} hfi;
+
+		/**
+		 * mechanic observer settings
+		 */
+		struct mech_s
+		{
+			///< electrical torque minimal current
+			float i_min;
+		} mech;
 	} observer;
 
 	/**

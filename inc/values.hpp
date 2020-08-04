@@ -64,6 +64,9 @@ typedef struct values_s
 			///< rotor angle
 			float phi;
 
+			///< angle error against hall sensors
+			float hall_err;
+
 			///< rotor full rotation from start
 			std::int32_t rotation;
 

@@ -35,8 +35,7 @@ namespace observer
      * @param q model uncertainty
      * @param r measurement uncertainty
      */
-    mechanic::mechanic(const float q, const float r): Q(q), R(r)
-    {}
+    mechanic::mechanic(void) {}
 
     /**
      * @brief calculate the mechanic model to estimate rotor angle.
@@ -47,10 +46,18 @@ namespace observer
         const float ts = hardware::Tc;
         const float tsj = ts/settings.mechanics.J;
 
-        // electric torque
-        values.motor.m_el = _3by2 * settings.motor.psi * values.motor.rotor.i.q +
-                (settings.motor.l.d - settings.motor.l.q) * values.motor.rotor.i.d *
-                values.motor.rotor.i.q;
+        // take only reasonable currents into account
+        if(std::fabs(values.motor.rotor.i.q) > settings.observer.mech.i_min)
+        {
+        	// electric torque
+        	values.motor.m_el = _3by2 * settings.motor.psi * values.motor.rotor.i.q +
+        			(settings.motor.l.d - settings.motor.l.q) * values.motor.rotor.i.d *
+					values.motor.rotor.i.q;
+        }
+        else
+        {
+        	values.motor.m_el = 0.0f;
+        }
 
         // omega
         values.motor.rotor.omega += tsj * (values.motor.m_el - values.motor.m_l);
@@ -86,13 +93,14 @@ namespace observer
         values.motor.m_l += error[2];
     }
 
-    /**
-     * @brief calculate the kalman correction.
-     *
-     * @param   angle error signal
-     * @retval  model error correction
-     */
-    void mechanic::Update(const float angle_error, std::array<float, 3>& out_error)
+	/**
+	 * @brief calculate the kalman correction.
+	 * @param q model uncertainty
+	 * @param r measurement uncertainty
+	 * @param   angle error signal
+	 * @retval  model error correction
+	 */
+	void mechanic::Update(const float Q, const float R, const float angle_error, std::array<float, 3>& out_error)
     {
         const float ts = hardware::Tc;
         const float tsj = ts/settings.mechanics.J;
@@ -142,35 +150,54 @@ namespace observer
 
     /**
      * @brief Get angular error from flux estimation.
-     *
-     * @retval angle error
+     * @param sin_cos sine and cosine of the actual rotor angle
+     * @retval kalman correction vector
      */
-    float flux::Calculate(const systems::sin_cos& sin_cos )
+    void flux::Calculate(const systems::sin_cos& sin_cos, std::array<float, 3>& correction)
     {
-        // BEMF voltage and feedback
-        rotor.bemf.d = values.motor.rotor.u.d - settings.motor.rs * values.motor.rotor.i.d + rotor.feedback.d;
-        rotor.bemf.q = values.motor.rotor.u.q - settings.motor.rs * values.motor.rotor.i.q + rotor.feedback.q;
+    	// BEMF voltage and feedback
+    	rotor.bemf.d = values.motor.rotor.u.d - settings.motor.rs * values.motor.rotor.i.d + rotor.feedback.d;
+    	rotor.bemf.q = values.motor.rotor.u.q - settings.motor.rs * values.motor.rotor.i.q + rotor.feedback.q;
 
-        // rotate the bemf to stator system
-        stator.bemf = systems::transform::InversePark(rotor.bemf, sin_cos);
+    	// rotate the bemf to stator system
+    	stator.bemf = systems::transform::InversePark(rotor.bemf, sin_cos);
 
-        // integrate bemf to flux
-        stator.flux.alpha +=  stator.bemf.alpha * hardware::Tc;
-        stator.flux.beta  +=  stator.bemf.beta  * hardware::Tc;
+    	// integrate bemf to flux
+    	stator.flux.alpha +=  stator.bemf.alpha * hardware::Tc;
+    	stator.flux.beta  +=  stator.bemf.beta  * hardware::Tc;
 
-        // transform flux to rotor system
-        rotor.flux = systems::transform::Park(stator.flux, sin_cos);
+    	// transform flux to rotor system
+    	rotor.flux = systems::transform::Park(stator.flux, sin_cos);
 
-        // sub the voltage inducted in the inductors of the stator
-        rotor.flux.d -= values.motor.rotor.i.d * settings.motor.l.d;
-        rotor.flux.q -= values.motor.rotor.i.q * settings.motor.l.q;
+    	// sub the voltage inducted in the inductors of the stator
+    	rotor.flux.d -= values.motor.rotor.i.d * settings.motor.l.d;
+    	rotor.flux.q -= values.motor.rotor.i.q * settings.motor.l.q;
 
-        // compare actual flux with flux parameter
-        rotor.feedback.d = settings.observer.C.d * (settings.motor.psi - rotor.flux.d);
-        rotor.feedback.q = settings.observer.C.q * (0.0f - rotor.flux.q);
+    	// compare actual flux with flux parameter
+    	rotor.feedback.d = settings.observer.flux.C.d * (settings.motor.psi - rotor.flux.d);
+    	rotor.feedback.q = settings.observer.flux.C.q * (0.0f - rotor.flux.q);
 
-        return rotor.flux.q / settings.motor.psi;
+    	float error = rotor.flux.q / settings.motor.psi;
+
+    	// Kalman filter on angular error
+    	mech.Update(settings.observer.flux.Q, settings.observer.flux.R, error, correction);
     }
+
+    /**
+     * @brief hfi observers trivial constructor
+     */
+    hfi::hfi(void)    {}
+
+    /**
+     * @brief Get angular error from hfi estimation.
+     * @param sin_cos sine and cosine of the actual rotor angle
+     * @retval kalman correction vector
+     */
+    void hfi::Calculate(const systems::sin_cos& sin_cos, std::array<float, 3>& correction)
+    {
+
+    }
+
 
 }/* namespace observer */
 

@@ -103,12 +103,6 @@ settings_ts settings =
 			///< current control switch
 			.active = false,
 
-			///< gain of the current controller
-			.gain = 1.0f,
-
-			///< release smith predictor
-			.smith = false,
-
 			///< feedforward omega
 			.feedforward = false,
 		},
@@ -120,20 +114,50 @@ settings_ts settings =
 	 */
 	.observer =
 	{
-		///< flux observer switch
-		.flux = false,
+		/**
+		 * rotor flux observer settings
+		 */
+		.flux =
+		{
+			///< enable observer switch
+			.enable = false,
 
-		///< modell variance
-		.Q = 1e-2f,
+			///< modell variance
+			.Q = 1e-2f,
 
-		///< measurement variance
-		.R = 10.0f,
+			///< measurement variance
+			.R = 10.0f,
 
-		///< flux observer feedback gains
-		.C = {50.0f, 1.0f},
+			///< flux observer feedback gains
+			.C = {50.0f, 1.0f},
+		},
 
-		///< hall observer switch
-		.hall = false,
+		/**
+		 * high frequency injection observer settings
+		 */
+		.hfi =
+		{
+			///< enable observer switch
+			.enable = false,
+
+			///< modell variance
+			.Q = 1e-2f,
+
+			///< measurement variance
+			.R = 10.0f,
+
+			///< injection frequency in rad/s
+			.frequency = 800.0f,
+		},
+
+		/**
+		 * mechanic observer settings
+		 */
+		.mech =
+		{
+			///< electrical torque minimal current
+			.i_min = 0.2f,
+		},
 	},
 
 	/**

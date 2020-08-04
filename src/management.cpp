@@ -40,8 +40,8 @@ namespace management
 	 */
 	namespace observer
 	{
-		///< release hall observer
-		bool hall = false;
+		///< release high frequency injection observer
+		bool hfi = false;
 
 		///< release flux observer
 		bool flux = false;
@@ -57,9 +57,6 @@ namespace management
 	{
 		///< release current control
 		bool current = false;
-
-		///< release smith predictor
-		bool smith = false;
 
 		///< feedforward omega
 		bool feedforward = false;
@@ -181,10 +178,9 @@ namespace management
 				{
 					control::current = false;
 				}
-				observer::flux = settings.observer.flux;
-				observer::hall = settings.observer.hall;
+				observer::flux = settings.observer.flux.enable;
+				observer::hfi = settings.observer.hfi.enable;
 				control::feedforward = settings.control.current.feedforward;
-				control::smith = settings.control.current.smith;
 
 				// Handling of measurement flags
 				if(measure::all)
@@ -249,9 +245,6 @@ namespace management
 					values.motor.rotor.omega = 0.0f;
 
 				}
-				break;
-			case MEASURE_RS_VOLT:
-				measure::Rs = 0.0f;
 				break;
 
 			case MEASURE_LS:

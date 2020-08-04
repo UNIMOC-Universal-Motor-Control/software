@@ -54,6 +54,9 @@ values_ts values =
 			///< rotor angle
 			.phi = 0.0f,
 
+			///< angle error against hall sensors
+			.hall_err = 0.0f,
+
 			///< rotor full rotation from start
 			.rotation = 0,
 

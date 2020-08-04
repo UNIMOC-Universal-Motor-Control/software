@@ -43,8 +43,8 @@ namespace management
 		///< release flux observer
 		extern bool flux;
 
-		///< release hall observer
-		extern bool hall;
+		///< release high frequency injection observer
+		extern bool hfi;
 
 		///< release mechanic observer
 		extern bool mechanic;
@@ -57,9 +57,6 @@ namespace management
 	{
 		///< release current control
 		extern bool current;
-
-		///< release smith predictor
-		extern bool smith;
 
 		///< feedforward omega
 		extern bool feedforward;
@@ -91,10 +88,6 @@ namespace management
 			RUN,
 			MEASURE_RS_INIT,
 			MEASURE_RS_FIND,
-			MEASURE_RS_VOLT,
-			MEASURE_RS_WAIT,
-			MEASURE_RS_READ,
-			MEASURE_RS_EVAL,
 			MEASURE_LS,
 			MEASURE_FLUX,
 		} sequencer;

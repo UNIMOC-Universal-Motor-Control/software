@@ -37,11 +37,6 @@ namespace observer
 		///< 1.5
 		static constexpr float _3by2 = 3.0f/2.0f;
 
-		///< model uncertainty
-		const float Q;
-		///< measurement uncertainty
-		const float R;
-
 		///< new covariance matrix
 		float p[3][3];
 		///< current covariance matrix
@@ -56,11 +51,8 @@ namespace observer
 	public:
 		/**
 		 * @brief minimal constructor
-		 *
-		 * @param q model uncertainty
-		 * @param r measurement uncertainty
 		 */
-		mechanic(const float q, const float r);
+		mechanic(void);
 
 		/**
 		 * @brief calculate the mechanic model to estimate rotor angle.
@@ -78,11 +70,12 @@ namespace observer
 
 		/**
 		 * @brief calculate the kalman correction.
-		 *
+		 * @param q model uncertainty
+		 * @param r measurement uncertainty
 		 * @param   angle error signal
 		 * @retval  model error correction
 		 */
-		void Update(const float angle_error, std::array<float, 3>& out_error);
+		void Update(const float Q, const float R, const float angle_error, std::array<float, 3>& out_error);
 	};
 
 	/**
@@ -112,6 +105,9 @@ namespace observer
 
 		///< stationary frame values
 		stator_s stator;
+
+		///< kalman filter for flux error signal
+		observer::mechanic mech;
 	public:
 		/**
 		 * @brief flux observers trivial constructor
@@ -121,10 +117,30 @@ namespace observer
 		/**
 		 * @brief Get angular error from flux estimation.
 		 * @param sin_cos sine and cosine of the actual rotor angle
-		 * @retval angle error
+		 * @retval kalman correction vector
 		 */
-		float Calculate( const systems::sin_cos& sin_cos  );
+		void Calculate(const systems::sin_cos& sin_cos, std::array<float, 3>& correction);
+	};
 
+	/**
+	 * high frequency injection based observer
+	 */
+	class hfi
+	{
+	private:
+
+	public:
+		/**
+		 * @brief high frequency injection observers trivial constructor
+		 */
+		hfi(void);
+
+		/**
+		 * @brief Get angular error from hfi estimation.
+		 * @param sin_cos sine and cosine of the actual rotor angle
+		 * @retval kalman correction vector
+		 */
+		void Calculate(const systems::sin_cos& sin_cos, std::array<float, 3>& correction);
 	};
 
 } /* namespace observer */

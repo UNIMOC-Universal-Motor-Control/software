@@ -118,7 +118,7 @@ namespace control
 				float rest = std::sqrt(length*length - values.motor.rotor.u.d * values.motor.rotor.u.d);
 				// q current controller is only fully free if we are not in voltage limit
 				ctrl_q.positive_limit = rest;
-				ctrl_q.negative_limit = rest;
+				ctrl_q.negative_limit = -rest;
 			}
 			else																// normal operation
 			{
@@ -149,7 +149,8 @@ namespace control
 	/**
 	 * generic constructor
 	 */
-	thread::thread():flux(), mech(settings.observer.Q, settings.observer.R), foc(settings.motor.rs, settings.motor.l, settings.motor.psi)
+	thread::thread():flux(), hfi(),
+			foc(settings.motor.rs, settings.motor.l, settings.motor.psi)
 	{}
 
 	/**
@@ -187,52 +188,29 @@ namespace control
 			// convert current samples from clark to rotor frame;
 			values.motor.rotor.i = systems::transform::Park(i_ab, sin_cos);
 
+			systems::sin_cos hall;
+			hardware::adc::hall::Angle(hall);
+			values.motor.rotor.hall_err = hall.sin*sin_cos.cos - hall.cos*sin_cos.sin;
+
+			// predict motor behavior
+			observer::mechanic::Predict();
 
 			if(management::observer::flux)
 			{
 				// calculate the flux observer
-				float error = flux.Calculate(sin_cos);
-				mech.Update(error, correction);
+				flux.Calculate(sin_cos, correction);
 
-				// predict motor behavior
-				observer::mechanic::Predict();
 				// correct the prediction
 				observer::mechanic::Correct(correction);
 			}
-			else if(management::observer::hall)
-			{
-				systems::sin_cos hall;
-				if(!hardware::adc::hall::Angle(hall))
-				{
-					float error = hall.sin*sin_cos.cos - hall.cos*sin_cos.sin;
-					mech.Update(error, correction);
 
-					// predict motor behavior
-					observer::mechanic::Predict();
-					// correct the prediction
-					observer::mechanic::Correct(correction);
-				}
-				else
-				{
-					// predict motor behavior
-					observer::mechanic::Predict();
-				}
-			}
-			else
+			if(management::observer::hfi)
 			{
-				values.motor.rotor.phi += values.motor.rotor.omega * hardware::Tc;
+				// calculate the flux observer
+				hfi.Calculate(sin_cos, correction);
 
-				// limit phi to 2 * pi and count rotations
-				if(values.motor.rotor.phi > math::_2PI)
-				{
-					values.motor.rotor.phi -= math::_2PI;
-					values.motor.rotor.rotation++;
-				}
-				else if(values.motor.rotor.phi < 0.0)
-				{
-					values.motor.rotor.phi += math::_2PI;
-					values.motor.rotor.rotation--;
-				}
+				// correct the prediction
+				observer::mechanic::Correct(correction);
 			}
 
 			if(management::control::current)
