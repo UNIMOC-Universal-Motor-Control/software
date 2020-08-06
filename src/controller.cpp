@@ -166,7 +166,8 @@ namespace control
 		 */
 		while (TRUE)
 		{
-			systems::sin_cos sin_cos;
+			systems::sin_cos phi_sc;
+			systems::sin_cos cur_sc;
 			float angle;
 
 			/* Checks if an IRQ happened else wait.*/
@@ -180,17 +181,20 @@ namespace control
 			angle = values.motor.rotor.phi
 					+ values.motor.rotor.omega * hardware::Tf;
 
-			// calculate new
-			systems::SinCos(angle, sin_cos);
+			// calculate new sine and cosine for the reference system
+			systems::SinCos(values.motor.rotor.phi, phi_sc);
+
+			// calculate new sine and cosine for the current system delayed be filters
+			systems::SinCos(angle, cur_sc);
 
 			// convert 3 phase system to ortogonal
 			i_ab = systems::transform::Clark(values.motor.i);
 			// convert current samples from clark to rotor frame;
-			values.motor.rotor.i = systems::transform::Park(i_ab, sin_cos);
+			values.motor.rotor.i = systems::transform::Park(i_ab, cur_sc);
 
 			systems::sin_cos hall;
 			hardware::adc::hall::Angle(hall);
-			values.motor.rotor.hall_err = hall.sin*sin_cos.cos - hall.cos*sin_cos.sin;
+			values.motor.rotor.hall_err = hall.sin*phi_sc.cos - hall.cos*phi_sc.sin;
 
 			// predict motor behavior
 			observer::mechanic::Predict();
@@ -198,7 +202,7 @@ namespace control
 			if(management::observer::flux)
 			{
 				// calculate the flux observer
-				flux.Calculate(sin_cos, correction);
+				flux.Calculate(phi_sc, correction);
 
 				// correct the prediction
 				observer::mechanic::Correct(correction);
@@ -207,7 +211,7 @@ namespace control
 			if(management::observer::hfi)
 			{
 				// calculate the flux observer
-				hfi.Calculate(sin_cos, correction);
+				hfi.Calculate(i_ab, correction);
 
 				// correct the prediction
 				observer::mechanic::Correct(correction);
@@ -220,7 +224,12 @@ namespace control
 			}
 
 			// transform the voltages to stator frame
-			u_ab = systems::transform::InversePark(values.motor.rotor.u, sin_cos);
+			u_ab = systems::transform::InversePark(values.motor.rotor.u, phi_sc);
+
+			if(management::observer::hfi)
+			{
+				hfi.Injection(u_ab);
+			}
 
 			// transform to ab system
 			values.motor.u = systems::transform::InverseClark(u_ab);

@@ -20,6 +20,7 @@
 #define INC_OBSERVER_HPP_
 
 #include "systems.hpp"
+#include "filter.hpp"
 #include "hardware_interface.hpp"
 
 /**
@@ -128,19 +129,42 @@ namespace observer
 	class hfi
 	{
 	private:
+		///< injection voltage vector
+		systems::alpha_beta  	ui_ab;
 
+		///< angular velocity of injection signal
+		float w;
+
+		///< angle of injection signal
+		float phi;
+
+		///< injection voltage amplitude
+		float ui;
+
+		///< low pass filter for the hfi currents
+		filter::low_pass d;
+		filter::low_pass q;
+
+		///< kalman filter for hfi error signal
+		observer::mechanic mech;
 	public:
 		/**
 		 * @brief high frequency injection observers trivial constructor
 		 */
 		hfi(void);
 
+	    /**
+	     * @brief Get angular error from hfi estimation.
+	     * @param i_ab stationary current vector
+	     * @retval kalman correction vector
+	     */
+	    void Calculate(const systems::alpha_beta& i_ab, std::array<float, 3>& correction);
+
 		/**
-		 * @brief Get angular error from hfi estimation.
-		 * @param sin_cos sine and cosine of the actual rotor angle
-		 * @retval kalman correction vector
+		 * @brief add injection voltage
+		 * @param u_ab with added injection signal
 		 */
-		void Calculate(const systems::sin_cos& sin_cos, std::array<float, 3>& correction);
+		void Injection(systems::alpha_beta& u_ab);
 	};
 
 } /* namespace observer */

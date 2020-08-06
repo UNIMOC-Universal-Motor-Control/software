@@ -148,6 +148,9 @@ settings_ts settings =
 
 			///< injection frequency in rad/s
 			.frequency = 800.0f,
+
+			///< injection current in A
+			.current = 1.0f,
 		},
 
 		/**

@@ -70,6 +70,9 @@ typedef struct values_s
 			///< rotor full rotation from start
 			std::int32_t rotation;
 
+			///< hfi currents
+			systems::dq i_hfi;
+
 			/**
 			 * motor rotor system setpoints
 			 */

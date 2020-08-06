@@ -60,6 +60,9 @@ values_ts values =
 			///< rotor full rotation from start
 			.rotation = 0,
 
+			///< hfi currents
+			.i_hfi = {0.0f, 0.0f},
+
 			///< motor rotor system setpoints
 			.setpoint =
 			{

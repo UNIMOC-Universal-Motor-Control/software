@@ -186,17 +186,63 @@ namespace observer
     /**
      * @brief hfi observers trivial constructor
      */
-    hfi::hfi(void)    {}
+    hfi::hfi(void):d(hardware::Tc, 1.0f, math::_2PI * 5.0f/settings.observer.hfi.frequency),
+    		q(hardware::Tc, 1.0f, math::_2PI * 5.0f/settings.observer.hfi.frequency) {}
 
     /**
      * @brief Get angular error from hfi estimation.
-     * @param sin_cos sine and cosine of the actual rotor angle
+     * @param i_ab stationary current vector
      * @retval kalman correction vector
      */
-    void hfi::Calculate(const systems::sin_cos& sin_cos, std::array<float, 3>& correction)
+    void hfi::Calculate(const systems::alpha_beta& i_ab, std::array<float, 3>& correction)
     {
+    	systems::sin_cos sc;
+    	// compensate for current filters
+    	systems::SinCos(phi + w*hardware::Tc - 2.0f * values.motor.rotor.phi, sc);
 
+    	// convert current samples from clark to rotor frame;
+    	systems::dq idemod = systems::transform::Park(i_ab, sc);
+
+    	// filter the currents
+    	values.motor.rotor.i_hfi.d = d.Calculate(idemod.d, values.motor.rotor.i_hfi.d);
+    	values.motor.rotor.i_hfi.q = q.Calculate(idemod.q, values.motor.rotor.i_hfi.q);
+
+    	float length = systems::Length(values.motor.rotor.i_hfi);
+
+    	mech.Update(settings.observer.flux.Q, settings.observer.flux.R, 0.5f * values.motor.rotor.i_hfi.q/length, correction);
     }
+
+	/**
+	 * @brief add injection voltage
+	 * @param u_ab with added injection signal
+	 */
+	void hfi::Injection(systems::alpha_beta& u_ab)
+	{
+		systems::sin_cos sc;
+		w = settings.observer.hfi.frequency;
+		phi += w * hardware::Tc;
+
+		// calculate voltage amplitude from inductive resistance at injection frequency
+		ui = (settings.motor.l.d + settings.motor.l.d)*0.5*w * settings.observer.hfi.current;
+
+
+		// limit phii to 2 * pi
+		if(phi > math::_2PI)
+		{
+			phi -= math::_2PI;
+		}
+		else if(phi < 0.0)
+		{
+			values.motor.rotor.phi += math::_2PI;
+		}
+
+		// calculate sine and cosine
+		systems::SinCos(phi, sc);
+
+		// add injection signal
+		u_ab.alpha = -ui*sc.sin;
+		u_ab.beta = ui*sc.cos;
+	}
 
 
 }/* namespace observer */

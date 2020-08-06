@@ -149,6 +149,9 @@ typedef struct settings_s
 
 			///< injection frequency in rad/s
 			float frequency;
+
+			///< injection current in A
+			float current;
 		} hfi;
 
 		/**
