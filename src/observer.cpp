@@ -200,12 +200,13 @@ namespace observer
     	// compensate for current filters
     	systems::SinCos(phi + w*hardware::Tc - 2.0f * values.motor.rotor.phi, sc);
 
+    	systems::dq tmp = {i_ab.alpha, i_ab.beta};
     	// convert current samples from clark to rotor frame;
-    	systems::dq idemod = systems::transform::Park(i_ab, sc);
+    	systems::alpha_beta idemod = systems::transform::InversePark(tmp, sc);
 
     	// filter the currents
-    	values.motor.rotor.i_hfi.d = d.Calculate(idemod.d, values.motor.rotor.i_hfi.d);
-    	values.motor.rotor.i_hfi.q = q.Calculate(idemod.q, values.motor.rotor.i_hfi.q);
+    	values.motor.rotor.i_hfi.d = d.Calculate(idemod.alpha, values.motor.rotor.i_hfi.d);
+    	values.motor.rotor.i_hfi.q = q.Calculate(idemod.beta, values.motor.rotor.i_hfi.q);
 
     	float length = systems::Length(values.motor.rotor.i_hfi);
 

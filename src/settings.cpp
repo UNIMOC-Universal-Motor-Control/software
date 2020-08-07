@@ -33,7 +33,7 @@ settings_ts settings =
 	.mechanics =
 	{
 		///< inertia of of rotor and connected known mechanics
-		.J = 1e-4f,
+		.J = 1e-2f,
 	},
 
 	/**
@@ -144,7 +144,7 @@ settings_ts settings =
 			.Q = 1e-2f,
 
 			///< measurement variance
-			.R = 10.0f,
+			.R = 100.0f,
 
 			///< injection frequency in rad/s
 			.frequency = 800.0f,
@@ -159,7 +159,7 @@ settings_ts settings =
 		.mech =
 		{
 			///< electrical torque minimal current
-			.i_min = 0.2f,
+			.i_min = 2.0f,
 		},
 	},
 
