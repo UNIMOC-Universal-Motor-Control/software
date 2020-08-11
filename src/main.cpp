@@ -90,5 +90,13 @@ int main(void)
 	while (true)
 	{
 		chThdSleepSeconds(10);
+		if(settings.battery.limits.i.charge > settings.converter.limits.current)
+			settings.battery.limits.i.charge = settings.converter.limits.current;
+
+		if(settings.battery.limits.i.drive > settings.converter.limits.current)
+					settings.battery.limits.i.drive = settings.converter.limits.current;
+
+		if(settings.motor.limits.i > settings.converter.limits.current)
+			settings.motor.limits.i = settings.converter.limits.current;
 	}
 }

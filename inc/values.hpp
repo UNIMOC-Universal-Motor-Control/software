@@ -81,25 +81,16 @@ typedef struct values_s
 				///< Current setpoint in rotor frame
 				systems::dq i;
 
-				///< angular velocity setpoint in rotor frame
+				///< electrical angular velocity setpoint in rotor frame
 				float omega;
 
 				///< rotor angle setpoint
 				float phi;
 
+				///< motor electrical torque in Nm
+				float torque;
+
 			} setpoint;
-
-			/**
-			 * motor rotor values filtered
-			 */
-			struct filtered_s
-			{
-				///< Current in rotor frame
-				systems::dq i;
-
-				///< Filtered angular velocity in rotor frame
-				float omega;
-			} filtered;
 		} rotor;
 	} motor;
 
@@ -113,15 +104,6 @@ typedef struct values_s
 
 		///< Battery current
 		float i;
-
-		/**
-		 * battery values filtered
-		 */
-		struct filtered_s
-		{
-			///< Battery voltage
-			float u;
-		} filtered;
 	} battery;
 
 	/**

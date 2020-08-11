@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <cstring>
 #include <cmath>
+#include <algorithm>
 #include "controller.hpp"
 #include "filter.hpp"
 #include "values.hpp"
@@ -30,6 +31,27 @@
  */
 namespace control
 {
+
+	/**
+	 * derate control input envelope
+	 * @param limit	value to end derating
+	 * @param envelope positive value sets the envelope below the limit, negative above the limit
+	 * @param actual actual value
+	 * @return 1 when no derating active and 1 to 0 when in envelope and 0 when above limit
+	 */
+	float Derate(const float limit, const float envelope, const float actual)
+	{
+		const float start = limit - envelope;
+
+		float derating = (actual - start)/envelope;
+
+		if(derating < 0.0f) derating = 0.0f;
+		if(derating > 1.0f) derating = 1.0f;
+
+		// cut off the derating value from the maximum
+		return (1.0f - derating);
+	}
+
 	/**
 	 * @brief Pi controller constructor with all essential parameters.
 	 *
@@ -150,6 +172,8 @@ namespace control
 	 * generic constructor
 	 */
 	thread::thread():flux(), hfi(),
+			i_drive(5.0f, 5.0f, 0.0f, 0.0f, hardware::Tc),
+			i_charge(5.0f, 5.0f, 0.0f, 0.0f, hardware::Tc),
 			foc(settings.motor.rs, settings.motor.l, settings.motor.psi)
 	{}
 
@@ -192,6 +216,10 @@ namespace control
 			// convert current samples from clark to rotor frame;
 			values.motor.rotor.i = systems::transform::Park(i_ab, cur_sc);
 
+			// calculate battery current from power equality
+			values.battery.i = (values.motor.rotor.u.d * values.motor.rotor.i.d
+					+ values.motor.rotor.u.q * values.motor.rotor.i.q)/values.battery.u;
+
 			systems::sin_cos hall;
 			hardware::adc::hall::Angle(hall);
 			values.motor.rotor.hall_err = hall.sin*phi_sc.cos - hall.cos*phi_sc.sin;
@@ -219,6 +247,57 @@ namespace control
 
 			if(management::control::current)
 			{
+				float torque_factor = _3by2 * settings.motor.psi;
+
+				i_drive.positive_limit = torque_factor * settings.motor.limits.i;
+				i_drive.negative_limit = 0.0f;
+
+				i_charge.positive_limit = 0.0f;
+				i_charge.negative_limit = -torque_factor * settings.motor.limits.i;
+
+				float torque_limit = torque_factor * i_drive.Calculate(settings.battery.limits.i.drive, values.battery.i, 0.0f);
+				float brake_limit = torque_factor * i_charge.Calculate(-settings.battery.limits.i.charge, values.battery.i, 0.0f);
+
+				if(std::fabs(values.motor.rotor.omega) < 100.0f)
+				{
+					torque_limit = i_drive.positive_limit;
+					brake_limit = i_charge.negative_limit;
+				}
+				else if(values.motor.rotor.omega <= -100.0f)
+				{
+					float tmp = torque_limit;
+					torque_limit = brake_limit;
+					brake_limit = tmp;
+				}
+
+				std::array<float, 3> derate;
+				derate[0] = Derate(settings.converter.limits.temperature,
+						settings.converter.derating.temprature, values.converter.temp);
+				derate[1] = Derate(settings.motor.limits.temperature,
+						settings.converter.derating.temprature, values.motor.temp);
+				derate[2] = Derate(settings.battery.limits.voltage,
+						-settings.converter.derating.voltage, values.battery.u);
+
+				// always use the minimal derating possible
+				float derating = *std::min_element(derate.begin(), derate.end());
+
+				// derate the limits
+				torque_limit *= derating;
+				brake_limit *= derating;
+
+				if(values.motor.rotor.setpoint.torque > torque_limit)
+				{
+					values.motor.rotor.setpoint.torque = torque_limit;
+				}
+				else if(values.motor.rotor.setpoint.torque < brake_limit)
+				{
+					values.motor.rotor.setpoint.torque = brake_limit;
+				}
+
+				values.motor.rotor.setpoint.i.d = 0.0f;
+				values.motor.rotor.setpoint.i.q =
+						values.motor.rotor.setpoint.torque/(torque_factor);
+
 				// calculate the field orientated controllers
 				foc.Calculate();
 			}

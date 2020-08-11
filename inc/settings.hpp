@@ -61,7 +61,7 @@ typedef struct settings_s
 		struct limits_s
 		{
 			///< maximum coil current
-			float current;
+			float i;
 
 			///< maximum angular velocity
 			float w;
@@ -84,11 +84,19 @@ typedef struct settings_s
 		 */
 		struct limits_s
 		{
-			///< maximum drive current
-			float drive_current;
+			///< low voltage battery limit
+			float voltage;
+			/**
+			 * current limits
+			 */
+			struct i_s
+			{
+				///< maximum drive current
+				float drive;
 
-			///< maximum charge current
-			float charge_current;
+				///< maximum charge current
+				float charge;
+			}i;
 		} limits;
 	} battery;
 
@@ -165,10 +173,46 @@ typedef struct settings_s
 	} observer;
 
 	/**
+	 * crank settings
+	 */
+	struct crank_s
+	{
+		///< crank torque sensor gain in Nm/Volts
+		float gain;
+
+		///< crank torque sensor offset in Volts
+		float offset;
+
+		///< torque sensor command enable
+		bool enable;
+
+		struct pas_s
+		{
+			///< pas counts per revolution both edges
+			std::uint32_t counts;
+
+			///< pas mode enable
+			bool enable;
+		} pas;
+	} crank;
+
+	/**
 	 * converter settings
 	 */
 	struct converter_s
 	{
+		/**
+		 * converter derating settings
+		 */
+		struct derating_s
+		{
+			///< temperature derating starts x °C before temp limit.
+			float temprature;
+
+			///< voltage derating starts x Volts before Voltage limit.
+			float voltage;
+		} derating;
+
 		/**
 		 * converter limits
 		 */
@@ -181,18 +225,6 @@ typedef struct settings_s
 			float temperature;
 		} limits;
 	}  converter;
-
-	/**
-	 * uavcan settings
-	 */
-	struct uavcan_s
-	{
-		///< node id
-		std::uint8_t node_id;
-
-		///< drive id for commands 0 to 3
-		std::uint8_t drive_id;
-	}  uavcan;
 
 	///< crc32 value for the hole settings
 	uint32_t crc;

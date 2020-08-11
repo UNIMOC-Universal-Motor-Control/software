@@ -177,6 +177,12 @@ namespace hardware {
 		 */
 		extern float Angle(uint32_t edge_max);
 
+		/**
+		 * get cadence pin level
+		 * @return true when cadence pin is high
+		 */
+		extern bool Cadence(void);
+
 	} /* namespace crank */
 
 	namespace memory

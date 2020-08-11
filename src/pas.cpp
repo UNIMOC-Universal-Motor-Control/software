@@ -54,8 +54,36 @@ namespace pas
 		{
 			deadline = chibios_rt::System::getTime();
 
-			values.crank.angle = hardware::crank::Angle(32);
-			values.crank.torque = hardware::crank::Torque(1.55f, 40.0f*9.81f*0.17f);
+			values.crank.angle = hardware::crank::Angle(settings.crank.pas.counts);
+			values.crank.torque = hardware::crank::Torque(settings.crank.offset, settings.crank.gain);
+
+			if(settings.crank.enable)
+			{
+				// pas mode releases torque only on pedal movement
+				if(settings.crank.pas.enable)
+				{
+					if(std::fabs(values.crank.cadence) > 1.0f)
+					{
+						values.motor.rotor.setpoint.torque = (values.crank.power / values.motor.rotor.omega);
+					}
+					else
+					{
+						values.motor.rotor.setpoint.torque = 0.0f;
+					}
+				}
+				else
+				{
+					// reverse on Cadence input
+					if(hardware::crank::Cadence())
+					{
+						values.motor.rotor.setpoint.torque = -values.crank.torque;
+					}
+					else
+					{
+						values.motor.rotor.setpoint.torque = -values.crank.torque;
+					}
+				}
+			}
 
 			sleepUntilWindowed(deadline, deadline + CYCLE_TIME);
 		}

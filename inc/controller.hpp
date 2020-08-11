@@ -38,6 +38,16 @@
 namespace control
 {
 
+
+	/**
+	 * derate control input envelope
+	 * @param limit	value to end derating
+	 * @param envelope derating envelope
+	 * @param actual actual value
+	 * @return 1 when no derating active and 1 to 0 when in envelope and 0 when above limit
+	 */
+	float Derate(const float limit, const float envelope, const float actual);
+
 	/**
 	 * pi controller with anti windup
 	 */
@@ -158,13 +168,15 @@ namespace control
 	class thread : public chibios_rt::BaseStaticThread<256>
 	{
 	private:
+		static constexpr float _3by2 = 3.0f/2.0f;
 		observer::flux       	flux;
 		observer::hfi			hfi;
+		pi 						i_drive;
+		pi 						i_charge;
 		control::foc      		foc;
 		systems::alpha_beta  	u_ab;
 		systems::alpha_beta 	i_ab;
 		std::array<float, 3>   	correction;
-
 	protected:
 		/**
 		 * Thread function

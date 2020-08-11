@@ -59,7 +59,7 @@ settings_ts settings =
 		.limits =
 		{
 			///< maximum coil current
-			.current = 100.0f,
+			.i = 100.0f,
 
 			///< maximum angular velocity
 			.w = unit::RadS(15000.0f),
@@ -82,11 +82,17 @@ settings_ts settings =
 		 */
 		.limits =
 		{
-			///< maximum drive current
-			.drive_current = 30.0f,
+			///< low voltage battery limit
+			.voltage = 30.0f,
 
-			///< maximum charge current
-			.charge_current = 0.0f,
+			.i =
+			{
+				///< maximum drive current
+				.drive = 30.0f,
+
+				///< maximum charge current
+				.charge = 0.0f,
+			}
 		},
 	},
 
@@ -164,10 +170,46 @@ settings_ts settings =
 	},
 
 	/**
+	 * crank settings
+	 */
+	.crank =
+	{
+		///< crank torque sensor gain
+		.gain = 0.0f,
+
+		///< crank torque sensor offset
+		.offset = 0.0f,
+
+		///< torque sensor command enable
+		.enable = false,
+
+		.pas =
+		{
+			///< pas counts per revolution both edges
+			.counts = 32,
+
+			///< pas mode enable
+			.enable = false,
+		},
+	},
+
+	/**
 	 * converter settings
 	 */
 	.converter =
 	{
+		/**
+		 * converter derating settings
+		 */
+		.derating =
+		{
+			///< temperature derating starts x °C before temp limit.
+			.temprature = 10.0f,
+
+			///< voltage derating starts x Volts before Voltage limit.
+			.voltage = 3.0f,
+		},
+
 		/**
 		 * converter limits
 		 */
@@ -180,20 +222,6 @@ settings_ts settings =
 			.temperature = 90.0f,
 		},
 	},
-
-
-	/**
-	 * uavcan settings
-	 */
-	.uavcan =
-	{
-		///< node id
-		.node_id = 2,
-
-		///< drive id for commands 0 to 3
-		.drive_id = 0,
-	},
-
 
 	///< crc32 value for the hole settings
 	.crc = 0,

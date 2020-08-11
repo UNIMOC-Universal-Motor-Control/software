@@ -405,6 +405,16 @@ float hardware::crank::Angle(uint32_t edge_max)
 	return angle;
 }
 
+
+/**
+ * get cadence pin level
+ * @return true when cadence pin is high
+ */
+bool hardware::crank::Cadence(void)
+{
+	return palReadLine(LINE_CADENCE);
+}
+
 /**
  * get the angle which is represented by the hall sensors
  * @param[out] sincos angle of the halls represented as sin/cos values
