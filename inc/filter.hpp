@@ -97,205 +97,110 @@ public:
 
 
 /**
- * Created by Nigel Redmon on 11/24/12
- * EarLevel Engineering: earlevel.com
- * Copyright 2012 Nigel Redmon
+ * FIR Filter
  *
- * For a complete explanation of the Biquad code:
- * http://www.earlevel.com/main/2012/11/26/biquad-c-source-code/
- *
- * License:
- *
- * This source code is provided as is, without warranty.
- * You may copy and distribute verbatim copies of this document.
- * You may modify and use this source code to create binary code
- * for your own purposes, free or commercial.
- *
+ * @param N number of tabs of the fir filter
  */
-
-///< Filter types for the biquad class
-typedef enum biquad_type_e
+template <std::uint32_t N>
+class fir
 {
-    lowpass = 0,//!< lowpass
-    highpass,   //!< highpass
-    bandpass,   //!< bandpass
-    notch,      //!< notch
-    peak,       //!< peak
-    lowshelf,   //!< lowshelf
-    highshelf   //!< highshelf
-} biquad_type_et;
 
-///< internal coefficient structure
-typedef struct biquad_coefficients_s
-{
-	float a0, a1, a2, b1, b2;
-} biquad_coefficients_ts;
+private:
+	///< data storage for input values
+	std::array<float, N> buffer;
 
-/**
- * @brief calculate biquad coefficients
- *
- * This function shall only be used at compile time
- * otherwise it pulls a lot of bloat
- *
- * @param type	type of filter
- * @param fc	corner frequency normed to 1/(sampling frequency)
- * @param q		quality factor of the filter response
- * @param peak_gain gain of the filter.
- */
-constexpr biquad_coefficients_ts BiquadCalc(const biquad_type_et type, const float fc, const float q, const float peak_gain)
-{
-	biquad_coefficients_ts __coeff = {.a0 = 0.0f, .a1 = 0.0f, .a2 = 0.0f, .b1 = 0.0f, .b2 = 0.0f};
-	float norm = 0.0f;
-	float V = std::pow(10.0f, std::fabs(peak_gain) / 20.0f);
-	float K = std::tan(math::PI * fc);
+	///< filter coefficients
+	const std::array<float, N>& coeffs;
 
-	switch (type)
-	{
-	case biquad_type_et::lowpass:
+	///< index for next input
+	std::uint32_t index;
 
-		norm = 1.0f / (1.0f + K / q + K * K);
-		__coeff.a0 = K * K * norm;
-		__coeff.a1 = 2.0f * __coeff.a0;
-		__coeff.a2 = __coeff.a0;
-		__coeff.b1 = 2.0f * (K * K - 1.0f) * norm;
-		__coeff.b2 = (1.0f - K / q + K * K) * norm;
-		break;
 
-	case biquad_type_et::highpass:
-
-		norm = 1.0f / (1.0f + K / q + K * K);
-		__coeff.a0 = 1.0f * norm;
-		__coeff.a1 = -2.0f * __coeff.a0;
-		__coeff.a2 = __coeff.a0;
-		__coeff.b1 = 2.0f * (K * K - 1.0f) * norm;
-		__coeff.b2 = (1.0f - K / q + K * K) * norm;
-		break;
-
-	case biquad_type_et::bandpass:
-
-		norm = 1.0f / (1.0f + K / q + K * K);
-		__coeff.a0 = K / q * norm;
-		__coeff.a1 = 0.0f;
-		__coeff.a2 = -__coeff.a0;
-		__coeff.b1 = 2.0f * (K * K - 1.0f) * norm;
-		__coeff.b2 = (1.0f - K / q + K * K) * norm;
-		break;
-
-	case biquad_type_et::notch:
-
-		norm = 1.0f / (1.0f + K / q + K * K);
-		__coeff.a0 = (1.0f + K * K) * norm;
-		__coeff.a1 = 2.0f * (K * K - 1) * norm;
-		__coeff.a2 = __coeff.a0;
-		__coeff.b1 = __coeff.a1;
-		__coeff.b2 = (1.0f - K / q + K * K) * norm;
-		break;
-
-	case biquad_type_et::peak:
-
-		if (peak_gain >= 0.0f)
-		{    // boost
-			norm = 1.0f / (1.0f + 1.0f/q * K + K * K);
-			__coeff.a0 = (1.0f + V/q * K + K * K) * norm;
-			__coeff.a1 = 2.0f * (K * K - 1.0f) * norm;
-			__coeff.a2 = (1.0f - V/q * K + K * K) * norm;
-			__coeff.b1 = __coeff.a1;
-			__coeff.b2 = (1.0f - 1.0f/q * K + K * K) * norm;
-		}
-		else
-		{    // cut
-			norm = 1 / (1 + V/q * K + K * K);
-			__coeff.a0 = (1 + 1/q * K + K * K) * norm;
-			__coeff.a1 = 2 * (K * K - 1) * norm;
-			__coeff.a2 = (1 - 1/q * K + K * K) * norm;
-			__coeff.b1 = __coeff.a1;
-			__coeff.b2 = (1 - V/q * K + K * K) * norm;
-		}
-		break;
-	case biquad_type_et::lowshelf:
-		if (peak_gain >= 0)
-		{    // boost
-			norm = 1.0f / (1 + math::SQRT2 * K + K * K);
-			__coeff.a1 = 2.0f * (V * K * K - 1.0f) * norm;
-			__coeff.a2 = (1.0f - std::sqrt(2.0f*V) * K + V * K * K) * norm;
-			__coeff.b1 = 2.0f * (K * K - 1.0f) * norm;
-			__coeff.b2 = (1.0f - math::SQRT2 * K + K * K) * norm;
-		}
-		else
-		{    // cut
-			norm = 1.0f / (1.0f + std::sqrt(2.0f*V) * K + V * K * K);
-			__coeff.a0 = (1.0f + math::SQRT2 * K + K * K) * norm;
-			__coeff.a1 = 2.0f * (K * K - 1.0f) * norm;
-			__coeff.a2 = (1.0f - math::SQRT2 * K + K * K) * norm;
-			__coeff.b1 = 2.0f * (V * K * K - 1.0f) * norm;
-			__coeff.b2 = (1.0f - std::sqrt(2.0f*V) * K + V * K * K) * norm;
-		}
-		break;
-	case biquad_type_et::highshelf:
-		if (peak_gain >= 0)
-		{    // boost
-			norm = 1.0f / (1.0f + math::SQRT2 * K + K * K);
-			__coeff.a0 = (V + std::sqrt(2.0f*V) * K + K * K) * norm;
-			__coeff.a1 = 2.0f * (K * K - V) * norm;
-			__coeff.a2 = (V - std::sqrt(2.0f*V) * K + K * K) * norm;
-			__coeff.b1 = 2.0f * (K * K - 1.0f) * norm;
-			__coeff.b2 = (1.0f - math::SQRT2 * K + K * K) * norm;
-		}
-		else
-		{    // cut
-			norm = 1.0f / (V + std::sqrt(2.0f*V) * K + K * K);
-			__coeff.a0 = (1.0f + math::SQRT2 * K + K * K) * norm;
-			__coeff.a1 = 2.0f * (K * K - 1.0f) * norm;
-			__coeff.a2 = (1.0f - math::SQRT2 * K + K * K) * norm;
-			__coeff.b1 = 2.0f * (K * K - V) * norm;
-			__coeff.b2 = (V - std::sqrt(2.0f*V) * K + K * K) * norm;
-		}
-		break;
-	}
-	return __coeff;
-}
-
-/**
- * Class for second order IIR filter in direct transposed form II
- */
-class biquad
-{
 public:
-
+	/**
+	 * FIR filter constructor
+	 * @param new_coeffs
+	 */
+	fir<N>(const std::array<float, N>& new_coeffs): buffer{0.0f}, index(0), coeffs(new_coeffs) {};
 
 	/**
-	 * Constructor of biquad second order IIR filterj
-	 * @param coeff  Coefficients pre calculated
+	 * @brief insert uk to the buffer and calculate the new filtered output
+	 * @param uk new input value
+	 * @return filtered output
 	 */
-    biquad(const biquad_coefficients_ts coeff);
+	float Calculate(const float uk)
+	{
+		float output = 0.0f;
 
-    /**
-     * calculate the filter
-     * @param in new input to the filter
-     * @return output of the filter
-     */
-    float Process(const float in);
+		buffer[index] = uk;
+		index++;
 
-protected:
-    ///< internal coefficients
-    biquad_coefficients_ts coeff;
+		if(index >= N) index = 0;
 
-    ///< internal unit delay states
-    float z1, z2;
+		for(std::uint32_t i = 0; i < N; i++)
+		{
+			output += buffer[(index + i)%N]*coeffs[i];
+		}
+
+		return output;
+	};
 };
 
 /**
- * calculate the filter
- * @param in new input to the filter
- * @return output of the filter
+ * FIR Filter with down sampling
+ *
+ * @param N number of tabs of the fir filter
+ * @param S downsampling factor
  */
-inline float biquad::Process(const float in)
+template <std::uint32_t N, std::uint32_t S>
+class fir_downsampled : private fir<N>
 {
-    float out = in * coeff.a0 + z1;
-    z1 = in * coeff.a1 + z2 - coeff.b1 * out;
-    z2 = in * coeff.a2 - coeff.b2 * out;
-    return out;
-}
+
+private:
+	///< data storage for downsampling
+	std::array<float, S> buffer;
+
+	///< index for next input
+	std::uint32_t index;
+
+	///< last output value
+	float output;
+public:
+	/**
+	 * downsampled FIR filter constructor
+	 * @param new_coeffs
+	 */
+	fir_downsampled<N, S>(const std::array<float, N>& new_coeffs): fir<N>(new_coeffs), buffer(0.0f), index(0), output(0.0f) {};
+
+	/**
+	 * @brief insert uk to the buffer and calculate the new filtered output
+	 * @param uk new input value
+	 * @return filtered output
+	 */
+	float Calculate(const float uk)
+	{
+		buffer[index] = uk;
+		index++;
+
+		if(index >= S)
+		{
+			float mean = 0.0f;
+
+			index = 0;
+
+			for(std::uint32_t i = 0; i < S; i++)
+			{
+				mean += buffer[i];
+			}
+
+			mean /= S;
+
+			output = fir<N>::Calculate(mean);
+		}
+
+		return output;
+	};
+};
 
 } /* namespace filter */
 

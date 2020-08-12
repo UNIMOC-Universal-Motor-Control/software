@@ -135,7 +135,7 @@ namespace control
 		 * @brief constructor of the foc with all essential parameters.
 		 *
 		 */
-		foc(const float rs, const systems::dq l, const float psi);
+		foc(void);
 		/**
 		 * @brief calculate foc current controller
 		 */
@@ -171,8 +171,6 @@ namespace control
 		static constexpr float _3by2 = 3.0f/2.0f;
 		observer::flux       	flux;
 		observer::hfi			hfi;
-		pi 						i_drive;
-		pi 						i_charge;
 		control::foc      		foc;
 		systems::alpha_beta  	u_ab;
 		systems::alpha_beta 	i_ab;

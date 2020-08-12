@@ -36,8 +36,7 @@ namespace pas
 	/**
 	 * generic constructor
 	 */
-	thread::thread(): deadline(0)
-	{};
+	thread::thread(): deadline(0) {};
 
 	/**
 	 * @brief Thread main function

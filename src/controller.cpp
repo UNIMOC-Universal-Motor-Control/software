@@ -106,16 +106,10 @@ namespace control
 
 	/**
 	 * @brief constructor of the foc with all essential parameters.
-	 *
-	 * @param new_rs                series resistance of the winding
-	 * @param new_l            		series inductance of the winding
-	 * @param new_psi              	rotor flux constant
-	 *
 	 */
-	foc::foc(const float rs, const systems::dq l, const float psi):
-			Rs(rs), Ls(l), PsiM(psi),
-			ctrl_d((l.d/Rs)/(2.0f/rs*hardware::Tf), l.d/rs, 0.0f, 0.0f, hardware::Tc),
-			ctrl_q((l.d/Rs)/(2.0f/rs*hardware::Tf), l.d/rs, 0.0f, 0.0f, hardware::Tc)
+	foc::foc(void):Rs(settings.motor.rs), Ls{settings.motor.l.d, settings.motor.l.q}, PsiM(settings.motor.psi),
+			ctrl_d(0.0f, 0.0f, 0.0f, 0.0f, hardware::Tc),
+			ctrl_q(0.0f, 0.0f, 0.0f, 0.0f, hardware::Tc)
 	{}
 
 
@@ -124,10 +118,15 @@ namespace control
 	 */
 	void foc::Calculate(void)
 	{
+		SetParameters(settings.motor.rs, settings.motor.l, settings.motor.psi, hardware::Tf);
+
 		// only set voltages with active current control
 		if(settings.control.current.active)
 		{
 			float limit = _1bysqrt3 * values.battery.u*0.95f;
+			float w_limit = settings.motor.limits.w * PsiM + Rs*values.motor.rotor.setpoint.i.q;
+			if(w_limit < limit) limit = w_limit;
+
 			// Current controller is limited to 1/sqrt(3)*DC Bus Voltage due to SVM
 			// d current controller is master for voltage limit
 			ctrl_d.positive_limit = limit;
@@ -163,18 +162,14 @@ namespace control
 		}
 		else
 		{
-			ctrl_d.Reset();
-			ctrl_q.Reset();
+			Reset();
 		}
 	}
 
 	/**
 	 * generic constructor
 	 */
-	thread::thread():flux(), hfi(),
-			i_drive(5.0f, 5.0f, 0.0f, 0.0f, hardware::Tc),
-			i_charge(5.0f, 5.0f, 0.0f, 0.0f, hardware::Tc),
-			foc(settings.motor.rs, settings.motor.l, settings.motor.psi)
+	thread::thread():flux(), hfi(),foc()
 	{}
 
 	/**
@@ -248,26 +243,17 @@ namespace control
 			if(management::control::current)
 			{
 				float torque_factor = _3by2 * settings.motor.psi;
+				float torque_limit = std::copysign(settings.motor.limits.i, values.motor.rotor.omega);
+				float brake_limit = -std::copysign(settings.motor.limits.i, values.motor.rotor.omega);
 
-				i_drive.positive_limit = torque_factor * settings.motor.limits.i;
-				i_drive.negative_limit = 0.0f;
-
-				i_charge.positive_limit = 0.0f;
-				i_charge.negative_limit = -torque_factor * settings.motor.limits.i;
-
-				float torque_limit = torque_factor * i_drive.Calculate(settings.battery.limits.i.drive, values.battery.i, 0.0f);
-				float brake_limit = torque_factor * i_charge.Calculate(-settings.battery.limits.i.charge, values.battery.i, 0.0f);
-
-				if(std::fabs(values.motor.rotor.omega) < 100.0f)
+				if(std::fabs(values.motor.rotor.omega) > 100.0f)
 				{
-					torque_limit = i_drive.positive_limit;
-					brake_limit = i_charge.negative_limit;
-				}
-				else if(values.motor.rotor.omega <= -100.0f)
-				{
-					float tmp = torque_limit;
-					torque_limit = brake_limit;
-					brake_limit = tmp;
+					torque_limit = std::copysign(
+							(settings.battery.limits.i.drive*values.battery.u)/values.motor.rotor.omega,
+							values.motor.rotor.omega);
+					brake_limit = -std::copysign(
+							(settings.battery.limits.i.charge*values.battery.u)/values.motor.rotor.omega,
+							values.motor.rotor.omega);
 				}
 
 				std::array<float, 3> derate;

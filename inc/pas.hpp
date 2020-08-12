@@ -26,6 +26,7 @@
 #include <array>
 #include "ch.hpp"
 #include "systems.hpp"
+#include "controller.hpp"
 #include "values.hpp"
 #include "settings.hpp"
 
@@ -41,8 +42,8 @@ namespace pas
 	class thread : public chibios_rt::BaseStaticThread<128>
 	{
 	private:
-		static constexpr systime_t CYCLE_TIME = TIME_MS2I(1);
-		systime_t deadline;
+		static constexpr systime_t 	CYCLE_TIME = TIME_MS2I(1);
+		systime_t 					deadline;
 
 	protected:
 		/**

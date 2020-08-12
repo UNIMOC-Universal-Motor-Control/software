@@ -194,38 +194,24 @@ namespace observer
      * @param i_ab stationary current vector
      * @retval kalman correction vector
      */
-    void hfi::Calculate(const systems::alpha_beta& i_ab, std::array<float, 3>& correction)
+    void hfi::Calculate(const systems::dq& i_dq, std::array<float, 3>& correction)
     {
-    	systems::sin_cos sc;
-    	// compensate for current filters
-    	systems::SinCos(phi + w*hardware::Tc - 2.0f * values.motor.rotor.phi, sc);
 
-    	systems::dq tmp = {i_ab.alpha, i_ab.beta};
-    	// convert current samples from clark to rotor frame;
-    	systems::alpha_beta idemod = systems::transform::InversePark(tmp, sc);
 
-    	// filter the currents
-    	values.motor.rotor.i_hfi.d = d.Calculate(idemod.alpha, values.motor.rotor.i_hfi.d);
-    	values.motor.rotor.i_hfi.q = q.Calculate(idemod.beta, values.motor.rotor.i_hfi.q);
-
-    	float length = systems::Length(values.motor.rotor.i_hfi);
-
-    	mech.Update(settings.observer.flux.Q, settings.observer.flux.R, 0.5f * values.motor.rotor.i_hfi.q/length, correction);
+//    	mech.Update(settings.observer.flux.Q, settings.observer.flux.R, 0.5f * values.motor.rotor.i_hfi.q/length, correction);
     }
 
 	/**
 	 * @brief add injection voltage
-	 * @param u_ab with added injection signal
+	 * @return d-Voltage Injection
 	 */
-	void hfi::Injection(systems::alpha_beta& u_ab)
+	float hfi::Injection(void)
 	{
-		systems::sin_cos sc;
 		w = settings.observer.hfi.frequency;
 		phi += w * hardware::Tc;
 
 		// calculate voltage amplitude from inductive resistance at injection frequency
-		ui = (settings.motor.l.d + settings.motor.l.d)*0.5*w * settings.observer.hfi.current;
-
+		ui = settings.motor.l.d * w * settings.observer.hfi.current;
 
 		// limit phii to 2 * pi
 		if(phi > math::_2PI)
@@ -241,8 +227,7 @@ namespace observer
 		systems::SinCos(phi, sc);
 
 		// add injection signal
-		u_ab.alpha = -ui*sc.sin;
-		u_ab.beta = ui*sc.cos;
+		return ui*sc.sin;
 	}
 
 
