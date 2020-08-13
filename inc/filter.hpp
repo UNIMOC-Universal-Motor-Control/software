@@ -109,12 +109,12 @@ private:
 	///< data storage for input values
 	std::array<float, N> buffer;
 
-	///< filter coefficients
-	const std::array<float, N>& coeffs;
-
 	///< index for next input
 	std::uint32_t index;
 
+
+	///< filter coefficients
+	const std::array<float, N>& coeffs;
 
 public:
 	/**
@@ -170,7 +170,7 @@ public:
 	 * downsampled FIR filter constructor
 	 * @param new_coeffs
 	 */
-	fir_downsampled<N, S>(const std::array<float, N>& new_coeffs): fir<N>(new_coeffs), buffer(0.0f), index(0), output(0.0f) {};
+	fir_downsampled<N, S>(const std::array<float, N>& new_coeffs): fir<N>(new_coeffs), buffer{0.0f}, index(0), output(0.0f) {};
 
 	/**
 	 * @brief insert uk to the buffer and calculate the new filtered output

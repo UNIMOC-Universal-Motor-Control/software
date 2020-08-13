@@ -234,7 +234,7 @@ namespace control
 			if(management::observer::hfi)
 			{
 				// calculate the flux observer
-				hfi.Calculate(i_ab, correction);
+				hfi.Calculate(values.motor.rotor.i, correction);
 
 				// correct the prediction
 				observer::mechanic::Correct(correction);
@@ -288,13 +288,13 @@ namespace control
 				foc.Calculate();
 			}
 
-			// transform the voltages to stator frame
-			u_ab = systems::transform::InversePark(values.motor.rotor.u, phi_sc);
-
 			if(management::observer::hfi)
 			{
-				hfi.Injection(u_ab);
+				values.motor.rotor.u.d += hfi.Injection();
 			}
+
+			// transform the voltages to stator frame
+			u_ab = systems::transform::InversePark(values.motor.rotor.u, phi_sc);
 
 			// transform to ab system
 			values.motor.u = systems::transform::InverseClark(u_ab);
