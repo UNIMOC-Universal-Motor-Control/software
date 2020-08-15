@@ -155,7 +155,7 @@ namespace control
 			Ls = {l.d, l.q};
 			PsiM = psi;
 			ctrl_d.SetParameters((l.d/rs)/(2.0f/rs*tf), l.d/rs);
-			ctrl_q.SetParameters((l.d/rs)/(2.0f/rs*tf), l.d/rs);
+			ctrl_q.SetParameters((l.q/rs)/(2.0f/rs*tf), l.q/rs);
 		};
 
 		///< @brief Reset controller and integral part to 0

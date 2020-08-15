@@ -72,10 +72,11 @@ namespace pas
 				}
 				else
 				{
+					palSetLineMode(LINE_AIN_MOT_TEMP, PAL_MODE_INPUT_PULLUP);
 					// reverse on Cadence input
-					if(hardware::crank::Cadence())
+					if(palReadLine(LINE_AIN_MOT_TEMP))
 					{
-						values.motor.rotor.setpoint.torque = -values.crank.torque;
+						values.motor.rotor.setpoint.torque = values.crank.torque;
 					}
 					else
 					{

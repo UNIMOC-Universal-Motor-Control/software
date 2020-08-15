@@ -118,52 +118,43 @@ namespace control
 	 */
 	void foc::Calculate(void)
 	{
-		SetParameters(settings.motor.rs, settings.motor.l, settings.motor.psi, hardware::Tf);
+		float limit = _1bysqrt3 * values.battery.u*0.95f;
+//		float w_limit = settings.motor.limits.w * PsiM + Rs*values.motor.rotor.setpoint.i.q;
+//
+//		if(w_limit < limit) limit = w_limit;
 
-		// only set voltages with active current control
-		if(settings.control.current.active)
+		// Current controller is limited to 1/sqrt(3)*DC Bus Voltage due to SVM
+		// d current controller is master for voltage limit
+		ctrl_d.positive_limit = limit;
+		ctrl_d.negative_limit = -limit;
+
+		float length = systems::Length(values.motor.rotor.u);
+
+		if(length > ctrl_d.positive_limit)									// saturation
 		{
-			float limit = _1bysqrt3 * values.battery.u*0.95f;
-			float w_limit = settings.motor.limits.w * PsiM + Rs*values.motor.rotor.setpoint.i.q;
-			if(w_limit < limit) limit = w_limit;
-
-			// Current controller is limited to 1/sqrt(3)*DC Bus Voltage due to SVM
-			// d current controller is master for voltage limit
-			ctrl_d.positive_limit = limit;
-			ctrl_d.negative_limit = -limit;
-
-			float length = systems::Length(values.motor.rotor.u);
-
-			if(length > ctrl_d.positive_limit)									// saturation
-			{
-				float rest = std::sqrt(length*length - values.motor.rotor.u.d * values.motor.rotor.u.d);
-				// q current controller is only fully free if we are not in voltage limit
-				ctrl_q.positive_limit = rest;
-				ctrl_q.negative_limit = -rest;
-			}
-			else																// normal operation
-			{
-				// q current controller is only fully free if we are not in voltage limit
-				ctrl_q.positive_limit = limit;
-				ctrl_q.negative_limit = -limit;
-			}
-
-			systems::dq feedforward = {0.0f, 0.0f};
-
-			if(settings.control.current.feedforward)
-			{
-				feedforward.d = Rs*values.motor.rotor.setpoint.i.d - values.motor.rotor.omega * values.motor.rotor.setpoint.i.q * Ls.q;
-				feedforward.q = Rs*values.motor.rotor.setpoint.i.q + values.motor.rotor.omega * values.motor.rotor.setpoint.i.d * Ls.d
-						+ values.motor.rotor.omega*PsiM;
-			}
-
-			values.motor.rotor.u.d = ctrl_d.Calculate(values.motor.rotor.setpoint.i.d, values.motor.rotor.i.d, feedforward.d);
-			values.motor.rotor.u.q = ctrl_q.Calculate(values.motor.rotor.setpoint.i.q, values.motor.rotor.i.q, feedforward.q);
+			float rest = std::sqrt(length*length - values.motor.rotor.u.d * values.motor.rotor.u.d);
+			// q current controller is only fully free if we are not in voltage limit
+			ctrl_q.positive_limit = rest;
+			ctrl_q.negative_limit = -rest;
 		}
-		else
+		else																// normal operation
 		{
-			Reset();
+			// q current controller is only fully free if we are not in voltage limit
+			ctrl_q.positive_limit = limit;
+			ctrl_q.negative_limit = -limit;
 		}
+
+		systems::dq feedforward = {0.0f, 0.0f};
+
+		if(settings.control.current.feedforward)
+		{
+			feedforward.d = Rs*values.motor.rotor.setpoint.i.d - values.motor.rotor.omega * values.motor.rotor.setpoint.i.q * Ls.q;
+			feedforward.q = Rs*values.motor.rotor.setpoint.i.q + values.motor.rotor.omega * values.motor.rotor.setpoint.i.d * Ls.d
+					+ values.motor.rotor.omega*PsiM;
+		}
+
+		values.motor.rotor.u.d = ctrl_d.Calculate(values.motor.rotor.setpoint.i.d, values.motor.rotor.i.d, feedforward.d);
+		values.motor.rotor.u.q = ctrl_q.Calculate(values.motor.rotor.setpoint.i.q, values.motor.rotor.i.q, feedforward.q);
 	}
 
 	/**
@@ -243,42 +234,42 @@ namespace control
 			if(management::control::current)
 			{
 				float torque_factor = _3by2 * settings.motor.psi;
-				float torque_limit = std::copysign(settings.motor.limits.i, values.motor.rotor.omega);
-				float brake_limit = -std::copysign(settings.motor.limits.i, values.motor.rotor.omega);
-
-				if(std::fabs(values.motor.rotor.omega) > 100.0f)
-				{
-					torque_limit = std::copysign(
-							(settings.battery.limits.i.drive*values.battery.u)/values.motor.rotor.omega,
-							values.motor.rotor.omega);
-					brake_limit = -std::copysign(
-							(settings.battery.limits.i.charge*values.battery.u)/values.motor.rotor.omega,
-							values.motor.rotor.omega);
-				}
-
-				std::array<float, 3> derate;
-				derate[0] = Derate(settings.converter.limits.temperature,
-						settings.converter.derating.temprature, values.converter.temp);
-				derate[1] = Derate(settings.motor.limits.temperature,
-						settings.converter.derating.temprature, values.motor.temp);
-				derate[2] = Derate(settings.battery.limits.voltage,
-						-settings.converter.derating.voltage, values.battery.u);
-
-				// always use the minimal derating possible
-				float derating = *std::min_element(derate.begin(), derate.end());
-
-				// derate the limits
-				torque_limit *= derating;
-				brake_limit *= derating;
-
-				if(values.motor.rotor.setpoint.torque > torque_limit)
-				{
-					values.motor.rotor.setpoint.torque = torque_limit;
-				}
-				else if(values.motor.rotor.setpoint.torque < brake_limit)
-				{
-					values.motor.rotor.setpoint.torque = brake_limit;
-				}
+//				float torque_limit = std::copysign(settings.motor.limits.i, values.motor.rotor.omega);
+//				float brake_limit = -std::copysign(settings.motor.limits.i, values.motor.rotor.omega);
+//
+//				if(std::fabs(values.motor.rotor.omega) > 100.0f)
+//				{
+//					torque_limit = std::copysign(
+//							(settings.battery.limits.i.drive*values.battery.u)/values.motor.rotor.omega,
+//							values.motor.rotor.omega);
+//					brake_limit = -std::copysign(
+//							(settings.battery.limits.i.charge*values.battery.u)/values.motor.rotor.omega,
+//							values.motor.rotor.omega);
+//				}
+//
+//				std::array<float, 3> derate;
+//				derate[0] = Derate(settings.converter.limits.temperature,
+//						settings.converter.derating.temprature, values.converter.temp);
+//				derate[1] = Derate(settings.motor.limits.temperature,
+//						settings.converter.derating.temprature, values.motor.temp);
+//				derate[2] = Derate(settings.battery.limits.voltage,
+//						-settings.converter.derating.voltage, values.battery.u);
+//
+//				// always use the minimal derating possible
+//				float derating = *std::min_element(derate.begin(), derate.end());
+//
+//				// derate the limits
+//				torque_limit *= derating;
+//				brake_limit *= derating;
+//
+//				if(values.motor.rotor.setpoint.torque > torque_limit)
+//				{
+//					values.motor.rotor.setpoint.torque = torque_limit;
+//				}
+//				else if(values.motor.rotor.setpoint.torque < brake_limit)
+//				{
+//					values.motor.rotor.setpoint.torque = brake_limit;
+//				}
 
 				values.motor.rotor.setpoint.i.d = 0.0f;
 				values.motor.rotor.setpoint.i.q =
@@ -286,6 +277,11 @@ namespace control
 
 				// calculate the field orientated controllers
 				foc.Calculate();
+			}
+			else
+			{
+				foc.Reset();
+				foc.SetParameters(settings.motor.rs, settings.motor.l, settings.motor.psi, hardware::Tf);
 			}
 
 			if(management::observer::hfi)
