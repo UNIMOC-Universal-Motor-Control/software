@@ -33,7 +33,7 @@ settings_ts settings =
 	.mechanics =
 	{
 		///< inertia of of rotor and connected known mechanics
-		.J = 1e-2f,
+		.J = 1e-4f,
 	},
 
 	/**
@@ -59,10 +59,10 @@ settings_ts settings =
 		.limits =
 		{
 			///< maximum coil current
-			.i = 100.0f,
+			.i = 10.0f,
 
 			///< maximum angular velocity
-			.w = unit::RadS(15000.0f),
+			.omega = unit::RadS(15000.0f),
 
 			///< maximum motor temperature
 			.temperature = 80.0f,
@@ -83,12 +83,12 @@ settings_ts settings =
 		.limits =
 		{
 			///< low voltage battery limit
-			.voltage = 30.0f,
+			.voltage = 29.0f,
 
 			.i =
 			{
 				///< maximum drive current
-				.drive = 30.0f,
+				.drive = 1.7f,
 
 				///< maximum charge current
 				.charge = 0.0f,
@@ -110,7 +110,7 @@ settings_ts settings =
 			.active = false,
 
 			///< feedforward omega
-			.feedforward = false,
+			.feedforward = true,
 		},
 	},
 
@@ -129,10 +129,10 @@ settings_ts settings =
 			.enable = false,
 
 			///< modell variance
-			.Q = 1e-2f,
+			.Q = 1e-5f,
 
 			///< measurement variance
-			.R = 10.0f,
+			.R = 1e-4f,
 
 			///< flux observer feedback gains
 			.C = {50.0f, 1.0f},
@@ -175,10 +175,10 @@ settings_ts settings =
 	.crank =
 	{
 		///< crank torque sensor gain
-		.gain = 0.0f,
+		.gain = 0.3f,
 
 		///< crank torque sensor offset
-		.offset = 0.0f,
+		.offset = 0.84f,
 
 		///< torque sensor command enable
 		.enable = false,
@@ -208,6 +208,9 @@ settings_ts settings =
 
 			///< voltage derating starts x Volts before Voltage limit.
 			.voltage = 3.0f,
+
+			///< omega derating starts x rad/s before omega limit.
+			.omega = 50.0f,
 		},
 
 		/**

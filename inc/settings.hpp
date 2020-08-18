@@ -64,7 +64,7 @@ typedef struct settings_s
 			float i;
 
 			///< maximum angular velocity
-			float w;
+			float omega;
 
 			///< maximum motor temperature
 			float temperature;
@@ -211,6 +211,9 @@ typedef struct settings_s
 
 			///< voltage derating starts x Volts before Voltage limit.
 			float voltage;
+
+			///< omega derating starts x rad/s before omega limit.
+			float omega;
 		} derating;
 
 		/**

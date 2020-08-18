@@ -53,6 +53,32 @@ namespace control
 	}
 
 	/**
+	 * limit the input value
+	 * @param[in/out] in input value
+	 * @param min minimal value
+	 * @param max maximal value
+	 * @return true when value is out of limits
+	 */
+	bool Limit(float& in, const float min, const float max)
+	{
+		bool did_trunc = false;
+
+		if (in > max)
+		{
+			in = max;
+			did_trunc = true;
+
+		}
+		else if (in < min)
+		{
+			in = min;
+			did_trunc = true;
+		}
+
+		return did_trunc;
+	}
+
+	/**
 	 * @brief Pi controller constructor with all essential parameters.
 	 *
 	 * @param new_kp				proportional gain.
@@ -107,7 +133,7 @@ namespace control
 	/**
 	 * @brief constructor of the foc with all essential parameters.
 	 */
-	foc::foc(void):Rs(settings.motor.rs), Ls{settings.motor.l.d, settings.motor.l.q}, PsiM(settings.motor.psi),
+	foc::foc(void):Rs(settings.motor.rs), Ls((settings.motor.l.d + settings.motor.l.q) * 0.5f), PsiM(settings.motor.psi),
 			ctrl_d(0.0f, 0.0f, 0.0f, 0.0f, hardware::Tc),
 			ctrl_q(0.0f, 0.0f, 0.0f, 0.0f, hardware::Tc)
 	{}
@@ -119,9 +145,6 @@ namespace control
 	void foc::Calculate(void)
 	{
 		float limit = _1bysqrt3 * values.battery.u*0.95f;
-//		float w_limit = settings.motor.limits.w * PsiM + Rs*values.motor.rotor.setpoint.i.q;
-//
-//		if(w_limit < limit) limit = w_limit;
 
 		// Current controller is limited to 1/sqrt(3)*DC Bus Voltage due to SVM
 		// d current controller is master for voltage limit
@@ -148,8 +171,8 @@ namespace control
 
 		if(settings.control.current.feedforward)
 		{
-			feedforward.d = Rs*values.motor.rotor.setpoint.i.d - values.motor.rotor.omega * values.motor.rotor.setpoint.i.q * Ls.q;
-			feedforward.q = Rs*values.motor.rotor.setpoint.i.q + values.motor.rotor.omega * values.motor.rotor.setpoint.i.d * Ls.d
+			feedforward.d = Rs*values.motor.rotor.setpoint.i.d - values.motor.rotor.omega * values.motor.rotor.setpoint.i.q * Ls;
+			feedforward.q = Rs*values.motor.rotor.setpoint.i.q + values.motor.rotor.omega * values.motor.rotor.setpoint.i.d * Ls
 					+ values.motor.rotor.omega*PsiM;
 		}
 
@@ -234,46 +257,57 @@ namespace control
 			if(management::control::current)
 			{
 				float torque_factor = _3by2 * settings.motor.psi;
-//				float torque_limit = std::copysign(settings.motor.limits.i, values.motor.rotor.omega);
-//				float brake_limit = -std::copysign(settings.motor.limits.i, values.motor.rotor.omega);
-//
-//				if(std::fabs(values.motor.rotor.omega) > 100.0f)
-//				{
-//					torque_limit = std::copysign(
-//							(settings.battery.limits.i.drive*values.battery.u)/values.motor.rotor.omega,
-//							values.motor.rotor.omega);
-//					brake_limit = -std::copysign(
-//							(settings.battery.limits.i.charge*values.battery.u)/values.motor.rotor.omega,
-//							values.motor.rotor.omega);
-//				}
-//
-//				std::array<float, 3> derate;
-//				derate[0] = Derate(settings.converter.limits.temperature,
-//						settings.converter.derating.temprature, values.converter.temp);
-//				derate[1] = Derate(settings.motor.limits.temperature,
-//						settings.converter.derating.temprature, values.motor.temp);
-//				derate[2] = Derate(settings.battery.limits.voltage,
-//						-settings.converter.derating.voltage, values.battery.u);
-//
-//				// always use the minimal derating possible
-//				float derating = *std::min_element(derate.begin(), derate.end());
-//
-//				// derate the limits
-//				torque_limit *= derating;
-//				brake_limit *= derating;
-//
-//				if(values.motor.rotor.setpoint.torque > torque_limit)
-//				{
-//					values.motor.rotor.setpoint.torque = torque_limit;
-//				}
-//				else if(values.motor.rotor.setpoint.torque < brake_limit)
-//				{
-//					values.motor.rotor.setpoint.torque = brake_limit;
-//				}
 
 				values.motor.rotor.setpoint.i.d = 0.0f;
 				values.motor.rotor.setpoint.i.q =
 						values.motor.rotor.setpoint.torque/(torque_factor);
+
+				float ratio = values.battery.u / uq.Calculate(values.motor.rotor.u.q);
+				float min = -settings.motor.limits.i;
+				float max =  settings.motor.limits.i;
+
+				// deadzone for battery current limiter of 1W
+				if(std::fabs(values.motor.rotor.u.q * values.motor.rotor.setpoint.i.q) > 1.0f)
+				{
+					if(ratio > 1e-3f)
+					{
+						min = ratio * -settings.battery.limits.i.charge;
+						max = ratio * settings.battery.limits.i.drive;
+					}
+					else if(ratio < -1e-3f)
+					{
+						min = ratio * settings.battery.limits.i.drive;
+						max = ratio * -settings.battery.limits.i.charge;
+					}
+
+					if(min < -settings.motor.limits.i) min = -settings.motor.limits.i;
+					if(max > settings.motor.limits.i) max =  settings.motor.limits.i;
+				}
+
+
+				std::array<float, 3> derate;
+				derate[0] = Derate(settings.converter.limits.temperature,
+						settings.converter.derating.temprature, values.converter.temp);
+				derate[1] = Derate(settings.motor.limits.temperature,
+						settings.converter.derating.temprature, values.motor.temp);
+				derate[2] = Derate(settings.battery.limits.voltage,
+						-settings.converter.derating.voltage, values.battery.u);
+
+				//		float w_limit = settings.motor.limits.w * PsiM + Rs*values.motor.rotor.setpoint.i.q;
+				//
+				//		if(w_limit < limit) limit = w_limit;
+
+				// always use the minimal derating possible
+				float derating = *std::min_element(derate.begin(), derate.end());
+
+				// derate the limits
+				min *= derating;
+				max *= derating;
+
+				values.motor.rotor.setpoint.limit.i.min = min;
+				values.motor.rotor.setpoint.limit.i.max = max;
+
+				Limit(values.motor.rotor.setpoint.i.q, min, max);
 
 				// calculate the field orientated controllers
 				foc.Calculate();

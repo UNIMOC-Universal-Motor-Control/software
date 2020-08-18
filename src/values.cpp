@@ -77,6 +77,24 @@ values_ts values =
 
 				///< motor electrical torque in Nm
 				.torque = 0.0f,
+
+				/**
+				 * motor rotor system setpoint limits
+				 */
+				.limit =
+				{
+					/**
+					 * motor rotor system setpoint limits current
+					 */
+					.i =
+					{
+						///< minimum current limit
+						.min = 0.0f,
+
+						///< maxium current limit
+						.max = 0.0f,
+					},
+				},
 			},
 		},
 	},

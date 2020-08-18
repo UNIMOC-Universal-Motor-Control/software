@@ -90,6 +90,20 @@ typedef struct values_s
 				///< motor electrical torque in Nm
 				float torque;
 
+				/**
+				 * motor rotor system setpoint limits
+				 */
+				struct limit_s
+				{
+					/**
+					 * motor rotor system setpoint limits current
+					 */
+					struct i_s
+					{
+						float min;
+						float max;
+					}i;
+				} limit;
 			} setpoint;
 		} rotor;
 	} motor;

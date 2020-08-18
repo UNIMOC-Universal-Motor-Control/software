@@ -49,6 +49,15 @@ namespace control
 	float Derate(const float limit, const float envelope, const float actual);
 
 	/**
+	 * limit the input value
+	 * @param in input value
+	 * @param min minimal value
+	 * @param max maximal value
+	 * @return true when value is out of limits
+	 */
+	bool Limit(float& in, const float min, const float max);
+
+	/**
 	 * pi controller with anti windup
 	 */
 	class pi
@@ -118,7 +127,7 @@ namespace control
 		float Rs;
 
 		///< stator inductance
-		systems::dq Ls;
+		float Ls;
 
 		///< Rotor Flux Constant
 		float PsiM;
@@ -152,10 +161,10 @@ namespace control
 		constexpr inline void SetParameters(const float rs, const systems::dq l, const float psi, const float tf)
 		{
 			Rs = rs;
-			Ls = {l.d, l.q};
+			Ls = (l.d + l.q) * 0.5f;
 			PsiM = psi;
-			ctrl_d.SetParameters((l.d/rs)/(2.0f/rs*tf), l.d/rs);
-			ctrl_q.SetParameters((l.q/rs)/(2.0f/rs*tf), l.q/rs);
+			ctrl_d.SetParameters((Ls/Rs)/(2.0f/Rs*tf), Ls/Rs);
+			ctrl_q.SetParameters((Ls/Rs)/(2.0f/Rs*tf), Ls/Rs);
 		};
 
 		///< @brief Reset controller and integral part to 0
@@ -175,6 +184,7 @@ namespace control
 		systems::alpha_beta  	u_ab;
 		systems::alpha_beta 	i_ab;
 		std::array<float, 3>   	correction;
+		filter::moving_average<64> uq;
 	protected:
 		/**
 		 * Thread function
