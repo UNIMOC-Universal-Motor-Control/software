@@ -183,7 +183,9 @@ namespace control
 	/**
 	 * generic constructor
 	 */
-	thread::thread():flux(), hfi(),foc()
+	thread::thread():flux(), hfi(),foc(),
+			omega_max(0.01f, 1.0f, 0.0f, 0.0f, hardware::Tc),
+			omega_min(0.01f, 1.0f, 0.0f, 0.0f, hardware::Tc)
 	{}
 
 	/**
@@ -285,17 +287,14 @@ namespace control
 				}
 
 
-				std::array<float, 3> derate;
+				// derate by temperature and voltage
+				std::array<float, 2> derate;
 				derate[0] = Derate(settings.converter.limits.temperature,
 						settings.converter.derating.temprature, values.converter.temp);
-				derate[1] = Derate(settings.motor.limits.temperature,
-						settings.converter.derating.temprature, values.motor.temp);
-				derate[2] = Derate(settings.battery.limits.voltage,
+				derate[1] = Derate(settings.battery.limits.voltage,
 						-settings.converter.derating.voltage, values.battery.u);
-
-				//		float w_limit = settings.motor.limits.w * PsiM + Rs*values.motor.rotor.setpoint.i.q;
-				//
-				//		if(w_limit < limit) limit = w_limit;
+				//				derate[1] = Derate(settings.motor.limits.temperature,
+				//						settings.converter.derating.temprature, values.motor.temp);
 
 				// always use the minimal derating possible
 				float derating = *std::min_element(derate.begin(), derate.end());
@@ -304,10 +303,16 @@ namespace control
 				min *= derating;
 				max *= derating;
 
-				values.motor.rotor.setpoint.limit.i.min = min;
-				values.motor.rotor.setpoint.limit.i.max = max;
+				// omega limiter
+				omega_min.negative_limit = min;
+				omega_min.positive_limit = 0.0f;
+				values.motor.rotor.setpoint.limit.i.min = omega_min.Calculate(-settings.motor.limits.omega, values.motor.rotor.omega, min);
 
-				Limit(values.motor.rotor.setpoint.i.q, min, max);
+				omega_max.negative_limit = 0.0f;
+				omega_max.positive_limit = max;
+				values.motor.rotor.setpoint.limit.i.max = omega_max.Calculate(settings.motor.limits.omega, values.motor.rotor.omega, max);
+
+				Limit(values.motor.rotor.setpoint.i.q, values.motor.rotor.setpoint.limit.i.min, values.motor.rotor.setpoint.limit.i.max);
 
 				// calculate the field orientated controllers
 				foc.Calculate();
