@@ -76,11 +76,11 @@ namespace pas
 					// reverse on Cadence input
 					if(palReadLine(LINE_AIN_MOT_TEMP))
 					{
-						values.motor.rotor.setpoint.torque = values.crank.torque;
+						values.motor.rotor.setpoint.torque = -values.crank.torque;
 					}
 					else
 					{
-						values.motor.rotor.setpoint.torque = -values.crank.torque;
+						values.motor.rotor.setpoint.torque = values.crank.torque;
 					}
 				}
 			}

@@ -55,6 +55,9 @@ typedef struct settings_s
 		///< number of pole pairs
 		uint32_t P;
 
+		///< starting direct current
+		float i_start;
+
 		/**
 		 * motor limits
 		 */

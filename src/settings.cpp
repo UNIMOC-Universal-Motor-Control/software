@@ -42,16 +42,19 @@ settings_ts settings =
 	.motor =
 	{
 		///< Stator resistance
-		.rs = 230e-3f,
+		.rs = 160e-3f,
 
 		///< anisotropic inductance vector
-		.l = {450e-6f, 650e-6f},
+		.l = {230e-6f, 260e-6f},
 
 		///< magnetic flux inducted voltage in rotor
-		.psi = unit::RpmV2VsRad(75.0f) / (30.0f / 2.0f),
+		.psi = 0.0147f,
 
 		///< number of pole pairs
-		.P = 30 / 2,
+		.P = 8 / 2,
+
+		///< starting direct current
+		.i_start = 10.0f,
 
 		/**
 		 * motor limit settings
@@ -59,10 +62,10 @@ settings_ts settings =
 		.limits =
 		{
 			///< maximum coil current
-			.i = 10.0f,
+			.i = 70.0f,
 
 			///< maximum angular velocity
-			.omega = unit::RadS(15000.0f),
+			.omega = 1000.0f,
 
 			///< maximum motor temperature
 			.temperature = 80.0f,
@@ -88,7 +91,7 @@ settings_ts settings =
 			.i =
 			{
 				///< maximum drive current
-				.drive = 1.7f,
+				.drive = 20.0f,
 
 				///< maximum charge current
 				.charge = 0.0f,
@@ -126,7 +129,7 @@ settings_ts settings =
 		.flux =
 		{
 			///< enable observer switch
-			.enable = false,
+			.enable = true,
 
 			///< modell variance
 			.Q = 1e-5f,
@@ -175,7 +178,7 @@ settings_ts settings =
 	.crank =
 	{
 		///< crank torque sensor gain
-		.gain = 0.3f,
+		.gain = 1.0f,
 
 		///< crank torque sensor offset
 		.offset = 0.84f,

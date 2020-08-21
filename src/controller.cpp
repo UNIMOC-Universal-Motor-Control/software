@@ -264,6 +264,14 @@ namespace control
 				values.motor.rotor.setpoint.i.q =
 						values.motor.rotor.setpoint.torque/(torque_factor);
 
+				// starting help for traction drives
+				if(std::fabs(values.motor.rotor.setpoint.i.q) > settings.observer.mech.i_min
+						&& settings.motor.i_start > 0.1f)
+				{
+					values.motor.rotor.setpoint.i.d +=
+							settings.motor.i_start * std::exp(- std::fabs(values.motor.rotor.omega/200.0f));
+				}
+
 				float ratio = values.battery.u / uq.Calculate(values.motor.rotor.u.q);
 				float min = -settings.motor.limits.i;
 				float max =  settings.motor.limits.i;
