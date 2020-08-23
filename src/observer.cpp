@@ -271,11 +271,11 @@ namespace observer
     	i_dq.q -= values.motor.rotor.i_hfi.q;
 
     	// make response correctly signed.
-    	values.motor.rotor.i_hfi.q *= sc.sin;
+    	values.motor.rotor.i_hfi.q = lpf.Calculate(values.motor.rotor.i_hfi.q * sc.sin);
 
-    	float scaling = std::fabs((w*settings.motor.l.d*settings.motor.l.q)/(settings.motor.l.q - settings.motor.l.d)*0.5f*ui);
+    	values.motor.rotor.i_hfi.q *= std::fabs((w*settings.motor.l.d*settings.motor.l.q)/((settings.motor.l.q - settings.motor.l.d)*0.5f*ui));
 
-    	mech.Update(settings.observer.flux.Q, settings.observer.flux.R, values.motor.rotor.i_hfi.q * scaling, correction);
+//    	mech.Update(settings.observer.flux.Q, settings.observer.flux.R, values.motor.rotor.i_hfi.q, correction);
     }
 
 	/**
@@ -297,7 +297,7 @@ namespace observer
 		}
 		else if(phi < 0.0)
 		{
-			values.motor.rotor.phi += math::_2PI;
+			phi += math::_2PI;
 		}
 
 		// calculate sine and cosine

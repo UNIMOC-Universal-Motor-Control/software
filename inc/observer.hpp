@@ -148,6 +148,9 @@ namespace observer
 		filter::fir_downsampled<64, 8> hpf_d;
 		filter::fir_downsampled<64, 8> hpf_q;
 
+		///< low pass filter for error signal
+		filter::moving_average<2048> lpf;
+
 		///< high pass FIR filter coefficients
 		static const std::array<float, 64> hpf_c;
 	public:

@@ -24,6 +24,7 @@
 #include "filter.hpp"
 #include "values.hpp"
 #include "settings.hpp"
+#include "freemaster_wrapper.hpp"
 #include "hardware_interface.hpp"
 
 /**
@@ -331,13 +332,15 @@ namespace control
 				foc.SetParameters(settings.motor.rs, settings.motor.l, settings.motor.psi, hardware::Tf);
 			}
 
+			systems::dq u = values.motor.rotor.u;
+
 			if(management::observer::hfi)
 			{
-				values.motor.rotor.u.d += hfi.Injection();
+				u.d += hfi.Injection();
 			}
 
 			// transform the voltages to stator frame
-			u_ab = systems::transform::InversePark(values.motor.rotor.u, phi_sc);
+			u_ab = systems::transform::InversePark(u, phi_sc);
 
 			// transform to ab system
 			values.motor.u = systems::transform::InverseClark(u_ab);
@@ -355,6 +358,10 @@ namespace control
 			}
 
 			hardware::pwm::Dutys(values.motor.u);
+
+			values.motor.rotor.u.d = 0.0;
+
+			modules::freemaster::Recorder();
 		}
 
 	}
