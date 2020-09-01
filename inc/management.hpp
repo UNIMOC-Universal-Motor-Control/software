@@ -74,7 +74,7 @@ namespace management
 	namespace measure
 	{
 		///< measure all parameters
-		bool all = false;
+		extern bool all;
 
 		/**
 		 * @namespace resistance measurement values
@@ -108,6 +108,9 @@ namespace management
 
 			///< current phi step
 			extern std::uint8_t phi_step;
+
+			///< cycle counter
+			extern std::uint32_t cycle;
 		}
 	}
 
@@ -128,7 +131,6 @@ namespace management
 			STARTUP,
 			CURRENT_OFFSETS,
 			RUN,
-			MEASURE_RS_INIT,
 			MEASURE_RS,
 		} sequencer;
 

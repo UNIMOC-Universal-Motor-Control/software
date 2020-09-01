@@ -95,6 +95,9 @@ namespace management
 
 			///< current phi step
 			std::uint8_t phi_step = 0;
+
+			///< cycle counter
+			std::uint32_t cycle = 0;
 		}
 	}
 
@@ -189,100 +192,71 @@ namespace management
 				// Handling of measurement flags
 				if(measure::all)
 				{
-					measure::resistance = true;
-					measure::inductance = true;
-					measure::flux = true;
+					measure::r::enable = true;
+//					measure::inductance = true;
+//					measure::flux = true;
 				}
 
-				if(measure::resistance) sequencer = MEASURE_RS_INIT;
-				else if(measure::inductance) sequencer = MEASURE_LS;
-				else if(measure::flux) sequencer = MEASURE_FLUX;
+				if(measure::r::enable) sequencer = MEASURE_RS;
+//				else if(measure::inductance) sequencer = MEASURE_LS;
+//				else if(measure::flux) sequencer = MEASURE_FLUX;
 
 				break;
 
-			case MEASURE_RS_INIT:
-				measure::Rs = 0.0f;
-				measure::u = 0.0f;
-				values.motor.rotor.u.d = 0.0f;
-				values.motor.rotor.u.q = 0.0f;
-				values.motor.rotor.phi = 0.0f;
-				values.motor.rotor.omega = 0.0f;
-				sequencer = MEASURE_RS_A;
+			case MEASURE_RS:
 
 				// handle PWM led to show PWM status
 				if(hardware::pwm::output::Active()) palSetLine(LINE_LED_PWM);
 				else
 				{
 					// wait for PWM release
-					sequencer = MEASURE_RS_INIT;
+					sequencer = RUN;
 
 					palClearLine(LINE_LED_PWM);
 				}
 				// set Run Mode LED
 				palClearLine(LINE_LED_RUN);
-				palSetLine(LINE_LED_MODE);
-				break;
-			case MEASURE_RS_A: // Find the general range of the stator resistance
-				static std::uint8_t cycle = 0;
 
-				cycle++;
-				if(cycle > 25)
+				measure::r::cycle++;
+				if((measure::r::cycle % 25) == 0)
 				{
-					cycle = 0;
-					measure::u += 100e-3f; // 10mv increase leads to 2.5s max time to reach 24V on the output
+					measure::r::u += 100e-3f; // 100mv increase every 25ms
 				}
-				values.motor.rotor.u.d = measure::u;
+				values.motor.rotor.u.d = measure::r::u;
 
 				if(values.motor.rotor.u.d > values.battery.u * 0.45
-						|| values.motor.i.a < -TARGET_CURRENT		// inverse current measurement
-						|| std::fabs(values.motor.i.b) > TARGET_CURRENT
-						|| std::fabs(values.motor.i.c) > TARGET_CURRENT
+						|| values.motor.i.a < -measure::r::CUR_STEPS.back()		// inverse current measurement
+						|| std::fabs(values.motor.i.b) > measure::r::CUR_STEPS.back()
+						|| std::fabs(values.motor.i.c) > measure::r::CUR_STEPS.back()
 						|| !hardware::pwm::output::Active())
 				{
 					// error target current not reached within voltage limits
 					// or the other currents reached target current but not the main current
 					// there exists a connection problem
 					sequencer = RUN;
-					measure::Rs = 0.0f;
-					measure::u = 0.0f;
-					measure::resistance = false;
+					measure::r::u = 0.0f;
+					measure::r::enable = false;
+					measure::r::cycle = 0;
 					values.motor.rotor.u.d = 0.0f;
 					values.motor.rotor.u.q = 0.0f;
 					values.motor.rotor.phi = 0.0f;
 					values.motor.rotor.omega = 0.0f;
 				}
-				else if(values.motor.i.a > TARGET_CURRENT)
+				else if(values.motor.i.a > measure::r::CUR_STEPS.back()	)
 				{
-					measure::resistance = false;
 					// error target current not reached within voltage limits
 					// or the other currents reached target current but not the main current
 					// there exists a connection problem
 					sequencer = RUN;
-					measure::Rs = 0.0f;
-					measure::u = 0.0f;
+					measure::r::u = 0.0f;
+					measure::r::enable = false;
+					measure::r::cycle = 0;
 					values.motor.rotor.u.d = 0.0f;
 					values.motor.rotor.u.q = 0.0f;
 					values.motor.rotor.phi = 0.0f;
 					values.motor.rotor.omega = 0.0f;
-
 				}
 				break;
-
-			case MEASURE_LS:
-				measure::Ls = {0.0f, 0.0f};
-				// set Run Mode LED
-				palClearLine(LINE_LED_RUN);
-				palSetLine(LINE_LED_MODE);
-				break;
-
-
-			case MEASURE_FLUX:
-				measure::PsiM = 0.0f;
-				// set Run Mode LED
-				palClearLine(LINE_LED_RUN);
-				palSetLine(LINE_LED_MODE);
-				break;
-
 			}
 
 			sleepUntilWindowed(deadline, deadline + CYCLE_TIME);
