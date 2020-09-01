@@ -204,6 +204,19 @@ namespace management
 				break;
 
 			case MEASURE_RS:
+				// init the measurement
+				if(measure::r::cycle == 0)
+				{
+					measure::r::cur_step = 0;
+					measure::r::u = 0.0f;
+					measure::r::enable = false;
+					measure::r::cur_step = 0;
+					measure::r::phi_step = 0;
+					values.motor.rotor.u.d = 0.0f;
+					values.motor.rotor.u.q = 0.0f;
+					values.motor.rotor.phi = 0.0f;
+					values.motor.rotor.omega = 0.0f;
+				}
 
 				// handle PWM led to show PWM status
 				if(hardware::pwm::output::Active()) palSetLine(LINE_LED_PWM);
@@ -217,17 +230,10 @@ namespace management
 				// set Run Mode LED
 				palClearLine(LINE_LED_RUN);
 
-				measure::r::cycle++;
-				if((measure::r::cycle % 25) == 0)
-				{
-					measure::r::u += 100e-3f; // 100mv increase every 25ms
-				}
-				values.motor.rotor.u.d = measure::r::u;
 
 				if(values.motor.rotor.u.d > values.battery.u * 0.45
-						|| values.motor.i.a < -measure::r::CUR_STEPS.back()		// inverse current measurement
-						|| std::fabs(values.motor.i.b) > measure::r::CUR_STEPS.back()
-						|| std::fabs(values.motor.i.c) > measure::r::CUR_STEPS.back()
+						|| values.motor.rotor.i.d < -measure::r::CUR_STEPS.back()		// inverse current measurement
+						|| std::fabs(values.motor.rotor.i.q) > measure::r::CUR_STEPS.back()
 						|| !hardware::pwm::output::Active())
 				{
 					// error target current not reached within voltage limits
@@ -237,25 +243,59 @@ namespace management
 					measure::r::u = 0.0f;
 					measure::r::enable = false;
 					measure::r::cycle = 0;
+					measure::r::cur_step = 0;
+					measure::r::phi_step = 0;
 					values.motor.rotor.u.d = 0.0f;
 					values.motor.rotor.u.q = 0.0f;
 					values.motor.rotor.phi = 0.0f;
 					values.motor.rotor.omega = 0.0f;
 				}
-				else if(values.motor.i.a > measure::r::CUR_STEPS.back()	)
+
+				// reached current steps current target
+				if(values.motor.rotor.i.d > measure::r::CUR_STEPS[measure::r::cur_step])
 				{
-					// error target current not reached within voltage limits
-					// or the other currents reached target current but not the main current
-					// there exists a connection problem
-					sequencer = RUN;
-					measure::r::u = 0.0f;
-					measure::r::enable = false;
-					measure::r::cycle = 0;
-					values.motor.rotor.u.d = 0.0f;
-					values.motor.rotor.u.q = 0.0f;
-					values.motor.rotor.phi = 0.0f;
-					values.motor.rotor.omega = 0.0f;
+					// sample the point
+					measure::r::table[measure::r::phi_step][measure::r::cur_step].u = measure::r::u;
+					measure::r::table[measure::r::phi_step][measure::r::cur_step].i = values.motor.i;
+
+					measure::r::cur_step++;
+
+					if(measure::r::cur_step >= measure::r::CUR_STEPS.size())
+					{
+						// reached the last step for this phase
+						measure::r::cur_step = 0;
+						measure::r::phi_step++;
+						measure::r::u = 0.0f;
+						values.motor.rotor.u.d = 0.0f;
+						values.motor.rotor.u.q = 0.0f;
+
+						if(measure::r::phi_step >= measure::r::PHI_STEPS.size())
+						{
+							// finished with all phases
+							sequencer = RUN;
+							measure::r::u = 0.0f;
+							measure::r::enable = false;
+							measure::r::cycle = 0;
+							measure::r::cur_step = 0;
+							measure::r::phi_step = 0;
+							values.motor.rotor.u.d = 0.0f;
+							values.motor.rotor.u.q = 0.0f;
+							values.motor.rotor.phi = 0.0f;
+							values.motor.rotor.omega = 0.0f;
+						}
+						else
+						{
+							values.motor.rotor.phi = measure::r::PHI_STEPS[measure::r::phi_step];
+						}
+					}
 				}
+
+				measure::r::cycle++;
+				if((measure::r::cycle % 25) == 0)
+				{
+					measure::r::u += 100e-3f; // 100mv increase every 25ms
+				}
+				values.motor.rotor.u.d = measure::r::u;
 				break;
 			}
 
