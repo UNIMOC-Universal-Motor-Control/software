@@ -61,7 +61,7 @@ namespace hardware {
 		 * Set the normalized duty cycles for each phase
 		 * @param dutys -1 = LOW, 0 = 50%, 1=HIGH
 		 */
-		extern void Dutys(const systems::abc& dutys);
+		extern void Duty(const systems::abc& dutys);
 
 		namespace output {
 			/**

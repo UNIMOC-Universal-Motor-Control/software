@@ -62,6 +62,9 @@ namespace observer
         // omega
         values.motor.rotor.omega += tsj * (values.motor.m_el - values.motor.m_l);
 
+        if(std::fabs(values.motor.rotor.omega) > 2.0f * settings.motor.limits.omega)
+        	values.motor.rotor.omega = std::copysign(2.0f * settings.motor.limits.omega, values.motor.rotor.omega);
+
         // integrate omega for phi
         values.motor.rotor.phi += values.motor.rotor.omega * ts;
 
@@ -270,12 +273,12 @@ namespace observer
     	i_dq.d -= values.motor.rotor.i_hfi.d;
     	i_dq.q -= values.motor.rotor.i_hfi.q;
 
+    	values.motor.rotor.i_hfi.q *= std::fabs((w*settings.motor.l.d*settings.motor.l.q)/((settings.motor.l.q - settings.motor.l.d)*0.5f*ui));
+
     	// make response correctly signed.
     	values.motor.rotor.i_hfi.q = lpf.Calculate(values.motor.rotor.i_hfi.q * sc.sin);
 
-    	values.motor.rotor.i_hfi.q *= std::fabs((w*settings.motor.l.d*settings.motor.l.q)/((settings.motor.l.q - settings.motor.l.d)*0.5f*ui));
-
-//    	mech.Update(settings.observer.flux.Q, settings.observer.flux.R, values.motor.rotor.i_hfi.q, correction);
+    	mech.Update(settings.observer.hfi.Q, settings.observer.hfi.R, values.motor.rotor.i_hfi.q, correction);
     }
 
 	/**
@@ -286,9 +289,6 @@ namespace observer
 	{
 		w = settings.observer.hfi.frequency;
 		phi += w * hardware::Tc;
-
-		// calculate voltage amplitude from inductive resistance at injection frequency
-		ui = settings.motor.l.d * w * settings.observer.hfi.current;
 
 		// limit phii to 2 * pi
 		if(phi > math::_2PI)
@@ -302,6 +302,9 @@ namespace observer
 
 		// calculate sine and cosine
 		systems::SinCos(phi, sc);
+
+		// calculate voltage amplitude from inductive resistance at injection frequency
+		ui = settings.motor.l.d * w * settings.observer.hfi.current;
 
 		// add injection signal
 		return ui*sc.sin;

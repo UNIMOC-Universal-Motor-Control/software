@@ -150,10 +150,10 @@ settings_ts settings =
 			.enable = false,
 
 			///< modell variance
-			.Q = 1e-4f,
+			.Q = 1e-2f,
 
 			///< measurement variance
-			.R = 0.4f,
+			.R = 100.0f,
 
 			///< injection frequency in rad/s
 			.frequency = 5050.0f,

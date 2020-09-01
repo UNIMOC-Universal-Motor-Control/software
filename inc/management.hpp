@@ -69,6 +69,49 @@ namespace management
 	}
 
 	/**
+	 * @namespace measurement data
+	 */
+	namespace measure
+	{
+		///< measure all parameters
+		bool all = false;
+
+		/**
+		 * @namespace resistance measurement values
+		 */
+		namespace r
+		{
+			///< measurement point structure
+			typedef struct point_s
+			{
+				float u;
+				systems::abc i;
+			} point;
+
+			///< currents thresholds used to sample the phase currents
+			constexpr std::array<float, 10> CUR_STEPS = {3.0f, 5.0f, 10.0f, 15.0f, 20.0f, 25.0f, 30.0f, 35.0f, 40.0f, 45.0f};
+
+			///< currents and voltages at each sample point
+			extern std::array<std::array<point, hardware::PHASES>, 10> table;
+
+			///< enable flag
+			extern bool enable;
+
+			///< current measurement voltage
+			extern float u;
+
+			///< measure all the phases.
+			constexpr std::array<float, 3> PHI_STEPS = {0.0f, 120.0f, 240.0f};
+
+			///< current current step
+			extern std::uint8_t cur_step;
+
+			///< current phi step
+			extern std::uint8_t phi_step;
+		}
+	}
+
+	/**
 	 * controller management thread
 	 */
 	class thread : public chibios_rt::BaseStaticThread<350>
@@ -78,8 +121,7 @@ namespace management
 		systime_t deadline;
 		std::uint32_t delay;
 
-		static constexpr float _1bysqrt3 = 1.0f / std::sqrt(3.0f);
-		static constexpr float TARGET_CURRENT = 30.0f; // 30A target. But expected to be 50A when settled
+
 
 		enum state_e
 		{
@@ -87,9 +129,7 @@ namespace management
 			CURRENT_OFFSETS,
 			RUN,
 			MEASURE_RS_INIT,
-			MEASURE_RS_FIND,
-			MEASURE_LS,
-			MEASURE_FLUX,
+			MEASURE_RS,
 		} sequencer;
 
 

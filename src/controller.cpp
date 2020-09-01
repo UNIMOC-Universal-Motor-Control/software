@@ -345,21 +345,20 @@ namespace control
 			// transform to ab system
 			values.motor.u = systems::transform::InverseClark(u_ab);
 
+			systems::abc duty = {0.0f, 0.0f, 0.0f};
 			//scale the voltages
 			if(values.battery.u > 10.0f)
 			{
-				values.motor.u.a /= values.battery.u;
-				values.motor.u.b /= values.battery.u;
-				values.motor.u.c /= values.battery.u;
-			}
-			else
-			{
-				std::memset(&values.motor.u, 0, sizeof(systems::abc));
+				// scale voltage to -1 to 1
+				float scale = 2.0f / values.battery.u;
+				for (std::uint8_t i = 0; i < hardware::PHASES; ++i)
+				{
+					duty.array[i] = values.motor.u.array[i] * scale;
+				}
 			}
 
-			hardware::pwm::Dutys(values.motor.u);
+			hardware::pwm::Duty(duty);
 
-			values.motor.rotor.u.d = 0.0;
 
 			modules::freemaster::Recorder();
 		}
