@@ -92,7 +92,7 @@ namespace management
 			constexpr std::array<float, 10> CUR_STEPS = {3.0f, 5.0f, 10.0f, 15.0f, 20.0f, 25.0f, 30.0f, 35.0f, 40.0f, 45.0f};
 
 			///< currents and voltages at each sample point
-			extern std::array<std::array<point, hardware::PHASES>, 10> table;
+			extern std::array<std::array<point, 10>, hardware::PHASES> table;
 
 			///< enable flag
 			extern bool enable;

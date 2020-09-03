@@ -82,7 +82,7 @@ namespace management
 		namespace r
 		{
 			///< currents and voltages at each sample point
-			std::array<std::array<point, hardware::PHASES>, 10> table;
+			std::array<std::array<point, 10>, hardware::PHASES> table;
 
 			///< enable flag
 			bool enable = false;
