@@ -57,10 +57,9 @@ namespace observer
 
 		/**
 		 * @brief calculate the mechanic model to estimate rotor angle.
-		 *
-		 * @retval current rotor angle.
+		 * @param i rotor currents
 		 */
-		static void Predict(void);
+		static void Predict(const systems::dq& i);
 
 		/**
 		 * @brief correct the mechanic model to estimate rotor angle.

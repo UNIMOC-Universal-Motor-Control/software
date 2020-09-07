@@ -232,12 +232,20 @@ namespace control
 			values.battery.i = (values.motor.rotor.u.d * values.motor.rotor.i.d
 					+ values.motor.rotor.u.q * values.motor.rotor.i.q)/values.battery.u;
 
-			systems::sin_cos hall;
-			hardware::adc::hall::Angle(hall);
-			values.motor.rotor.hall_err = hall.sin*phi_sc.cos - hall.cos*phi_sc.sin;
+//			systems::sin_cos hall;
+//			hardware::adc::hall::Angle(hall);
+//			values.motor.rotor.hall_err = hall.sin*phi_sc.cos - hall.cos*phi_sc.sin;
 
-			// predict motor behavior
-			observer::mechanic::Predict();
+			if(			management::observer::mechanic
+					&& 	std::fabs(values.motor.rotor.i.q) > settings.observer.mech.i_min)
+			{
+				observer::mechanic::Predict(values.motor.rotor.i);
+			}
+			else
+			{
+				systems::dq i = {0.0f, 0.0f};
+				observer::mechanic::Predict(i);
+			}
 
 			if(management::observer::flux)
 			{

@@ -39,25 +39,17 @@ namespace observer
 
     /**
      * @brief calculate the mechanic model to estimate rotor angle.
+     * @param i rotor currents
      */
-    void mechanic::Predict(void)
+    void mechanic::Predict(const systems::dq& i)
     {
         // update constants
         const float ts = hardware::Tc;
         const float tsj = ts/settings.mechanics.J;
 
-        // take only reasonable currents into account
-        if(std::fabs(values.motor.rotor.i.q) > settings.observer.mech.i_min)
-        {
-        	// electric torque
-        	values.motor.m_el = _3by2 * settings.motor.psi * values.motor.rotor.i.q +
-        			(settings.motor.l.d - settings.motor.l.q) * values.motor.rotor.i.d *
-					values.motor.rotor.i.q;
-        }
-        else
-        {
-        	values.motor.m_el = 0.0f;
-        }
+        // electric torque
+        values.motor.m_el = _3by2 * (settings.motor.psi * i.q +
+        		(settings.motor.l.d - settings.motor.l.q) * i.d * i.q);
 
         // omega
         values.motor.rotor.omega += tsj * (values.motor.m_el - values.motor.m_l);

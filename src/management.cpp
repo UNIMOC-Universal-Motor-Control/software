@@ -192,6 +192,10 @@ namespace management
 				}
 				observer::flux = settings.observer.flux.enable;
 				observer::hfi = settings.observer.hfi.enable;
+
+				if(observer::flux || observer::hfi) observer::mechanic = true;
+				else	observer::mechanic = false;
+
 				control::feedforward = settings.control.current.feedforward;
 
 				// Handling of measurement flags
@@ -221,6 +225,9 @@ namespace management
 					values.motor.rotor.u.q = 0.0f;
 					values.motor.rotor.phi = 0.0f;
 					values.motor.rotor.omega = 0.0f;
+					observer::mechanic = false;
+					observer::flux = false;
+					observer::hfi = false;
 				}
 
 				// handle PWM led to show PWM status
