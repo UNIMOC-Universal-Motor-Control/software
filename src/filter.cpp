@@ -51,6 +51,35 @@ namespace filter
 		return yk;
 	}
 
+	/**
+	 * compute the linear regression y = a + b*x out of an x and y array
+	 * @param x array
+	 * @param y array
+	 * @param length length of both x and y arrays
+	 * @param gain b
+	 * @param offset a
+	 */
+	void LinReg(const float* const x, const float* const y, const std::uint32_t length, float& gain, float& offset)
+	{
+		float x_mean = 0.0f, y_mean = 0.0f, num = 0.0f, den = 0.0f;
+
+		for(std::uint32_t i = 0; i < length; ++i)
+		{
+			x_mean += x[i];
+			y_mean += y[i];
+		}
+		x_mean /= (float)length;
+		y_mean /= (float)length;
+
+		for (std::uint32_t i = 0; i < length; ++i)
+		{
+			num += (x[i] - x_mean) * (y[i] - y_mean);
+			den += (x[i] - x_mean) * (x[i] - x_mean);
+		}
+
+		gain = num/den;
+		offset = y_mean - x_mean * gain;
+	}
 
 }/* namespace filter */
 

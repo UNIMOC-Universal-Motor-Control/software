@@ -14,11 +14,13 @@ num = 0;
 den = 0;
 
 for i = 1:size(x,1)
-  num = num + ((x(i,1) - x_mean(1))*(x(i,2) - x_mean(2)));
-  den = den + ((x(i,1) - x_mean(1))^2);
+  num = num + ((x(i,2) - x_mean(2))*(x(i,1) - x_mean(1)));
+  den = den + ((x(i,2) - x_mean(2))^2);
 endfor
 
 b = num/den;
-a = x_mean(2) - b*x_mean(1);
+a = x_mean(1) - b*x_mean(2);
 
-dt = -a/16*1/16000*1e6;
+dt = 2*a/32;
+
+duty = dt * 1/16000 *2;

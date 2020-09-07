@@ -202,6 +202,17 @@ public:
 	};
 };
 
+/**
+ * compute the linear regression y = a + b*x out of an x and y array
+ * @param x array
+ * @param y array
+ * @param length length of both x and y arrays
+ * @param gain b
+ * @param offset a
+ */
+void LinReg(const float* const x, const float* const y, const std::uint32_t length, float& gain, float& offset);
+
+
 } /* namespace filter */
 
 #endif /* INC_FILTER_HPP_ */

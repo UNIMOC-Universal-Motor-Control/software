@@ -81,18 +81,8 @@ namespace management
 		 */
 		namespace r
 		{
-			///< measurement point structure
-			typedef struct point_s
-			{
-				float u;
-				systems::abc i;
-			} point;
-
 			///< currents thresholds used to sample the phase currents
 			constexpr std::array<float, 10> CUR_STEPS = {3.0f, 5.0f, 10.0f, 15.0f, 20.0f, 25.0f, 30.0f, 35.0f, 40.0f, 45.0f};
-
-			///< currents and voltages at each sample point
-			extern std::array<std::array<point, 10>, hardware::PHASES> table;
 
 			///< enable flag
 			extern bool enable;
@@ -111,6 +101,13 @@ namespace management
 
 			///< cycle counter
 			extern std::uint32_t cycle;
+
+			///< currents (x) and voltages (y) at each sample point
+			extern std::array<float, CUR_STEPS.size() * PHI_STEPS.size()> x;
+			extern std::array<float, CUR_STEPS.size() * PHI_STEPS.size()> y;
+
+			///< current measurement point
+			extern std::uint8_t point;
 		}
 	}
 
@@ -132,6 +129,7 @@ namespace management
 			CURRENT_OFFSETS,
 			RUN,
 			MEASURE_RS,
+			CALCULATE_RS,
 		} sequencer;
 
 

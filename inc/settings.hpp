@@ -204,6 +204,12 @@ typedef struct settings_s
 	 */
 	struct converter_s
 	{
+		///< compensated dead time in PWM switching -1 represents 0 and 1 represents 1
+		float dt;
+
+		///< minimal current for full dead time compensation
+		float dt_i_min;
+
 		/**
 		 * converter derating settings
 		 */

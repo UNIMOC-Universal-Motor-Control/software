@@ -201,6 +201,12 @@ settings_ts settings =
 	 */
 	.converter =
 	{
+		///< compensated dead time in PWM switching -1 represents 0 and 1 represents 1
+		.dt = 0.0f,
+
+		///< minimal current for full dead time compensation
+		.dt_i_min = 1.0f,
+
 		/**
 		 * converter derating settings
 		 */

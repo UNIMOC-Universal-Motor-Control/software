@@ -353,7 +353,15 @@ namespace control
 				float scale = 2.0f / values.battery.u;
 				for (std::uint8_t i = 0; i < hardware::PHASES; ++i)
 				{
-					duty.array[i] = values.motor.u.array[i] * scale;
+					float dt = std::copysign(settings.converter.dt, values.motor.i.array[i]);
+
+					// linear zone around zero to accomodate low currents and current noise
+					if(std::fabs(values.motor.i.array[i]) < settings.converter.dt_i_min)
+					{
+						dt *= std::fabs(values.motor.i.array[i]) / settings.converter.dt_i_min;
+					}
+
+					duty.array[i] = values.motor.u.array[i] * scale + dt;
 				}
 			}
 

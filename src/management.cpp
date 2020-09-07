@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <array>
 #include "ch.hpp"
+#include "filter.hpp"
 #include "hal.h"
 #include "hardware_interface.hpp"
 #include "management.hpp"
@@ -81,8 +82,9 @@ namespace management
 		 */
 		namespace r
 		{
-			///< currents and voltages at each sample point
-			std::array<std::array<point, 10>, hardware::PHASES> table;
+			///< currents (x) and voltages (y) at each sample point
+			std::array<float, CUR_STEPS.size() * PHI_STEPS.size()> x;
+			std::array<float, CUR_STEPS.size() * PHI_STEPS.size()> y;
 
 			///< enable flag
 			bool enable = false;
@@ -95,6 +97,9 @@ namespace management
 
 			///< current phi step
 			std::uint8_t phi_step = 0;
+
+			///< current measurement point
+			std::uint8_t point = 0;
 
 			///< cycle counter
 			std::uint32_t cycle = 0;
@@ -230,64 +235,44 @@ namespace management
 				// set Run Mode LED
 				palClearLine(LINE_LED_RUN);
 
-
-				if(values.motor.rotor.u.d > values.battery.u * 0.45
-						|| values.motor.rotor.i.d < -measure::r::CUR_STEPS.back()		// inverse current measurement
-						|| std::fabs(values.motor.rotor.i.q) > measure::r::CUR_STEPS.back()
-						|| !hardware::pwm::output::Active())
-				{
-					// error target current not reached within voltage limits
-					// or the other currents reached target current but not the main current
-					// there exists a connection problem
-					sequencer = RUN;
-					measure::r::u = 0.0f;
-					measure::r::enable = false;
-					measure::r::cycle = 0;
-					measure::r::cur_step = 0;
-					measure::r::phi_step = 0;
-					values.motor.rotor.u.d = 0.0f;
-					values.motor.rotor.u.q = 0.0f;
-					values.motor.rotor.phi = 0.0f;
-					values.motor.rotor.omega = 0.0f;
-				}
-
 				// reached current steps current target
 				if(values.motor.rotor.i.d > measure::r::CUR_STEPS[measure::r::cur_step])
 				{
 					// sample the point
-					measure::r::table[measure::r::phi_step][measure::r::cur_step].u = measure::r::u;
-					measure::r::table[measure::r::phi_step][measure::r::cur_step].i = values.motor.i;
-
+					measure::r::x[measure::r::point] = values.motor.rotor.i.d;
+					measure::r::y[measure::r::point] = measure::r::u;
+					measure::r::point++;
 					measure::r::cur_step++;
+				}
 
-					if(measure::r::cur_step >= measure::r::CUR_STEPS.size())
+				if(		measure::r::cur_step >= measure::r::CUR_STEPS.size()
+					||	values.motor.rotor.u.d > values.battery.u * 0.50) // Voltage limit
+				{
+					measure::r::cur_step = 0;
+					measure::r::phi_step++;
+					measure::r::u = 0.0f;
+					values.motor.rotor.u.d = 0.0f;
+					values.motor.rotor.u.q = 0.0f;
+
+					if(measure::r::phi_step >= measure::r::PHI_STEPS.size())
 					{
-						// reached the last step for this phase
-						measure::r::cur_step = 0;
-						measure::r::phi_step++;
-						measure::r::u = 0.0f;
-						values.motor.rotor.u.d = 0.0f;
-						values.motor.rotor.u.q = 0.0f;
-
-						if(measure::r::phi_step >= measure::r::PHI_STEPS.size())
-						{
-							// finished with all phases
-							sequencer = RUN;
-							measure::r::u = 0.0f;
-							measure::r::enable = false;
-							measure::r::cycle = 0;
-							measure::r::cur_step = 0;
-							measure::r::phi_step = 0;
-							values.motor.rotor.u.d = 0.0f;
-							values.motor.rotor.u.q = 0.0f;
-							values.motor.rotor.phi = 0.0f;
-							values.motor.rotor.omega = 0.0f;
-						}
-						else
-						{
-							values.motor.rotor.phi = measure::r::PHI_STEPS[measure::r::phi_step];
-						}
+						// finished with all phases
+						sequencer = CALCULATE_RS;
 					}
+					else
+					{
+						values.motor.rotor.phi = measure::r::PHI_STEPS[measure::r::phi_step];
+					}
+				}
+
+				if(	   std::fabs(values.motor.rotor.i.d) > measure::r::CUR_STEPS.back()
+					|| std::fabs(values.motor.rotor.i.q) > measure::r::CUR_STEPS.back()
+					|| !hardware::pwm::output::Active())
+				{
+					// error target current not reached within voltage limits
+					// or the other currents reached target current but not the main current
+					// there exists a connection problem
+					sequencer = CALCULATE_RS;
 				}
 
 				measure::r::cycle++;
@@ -296,6 +281,33 @@ namespace management
 					measure::r::u += 100e-3f; // 100mv increase every 25ms
 				}
 				values.motor.rotor.u.d = measure::r::u;
+				break;
+
+			case CALCULATE_RS:
+				values.motor.rotor.u.d = 0.0f;
+				values.motor.rotor.u.q = 0.0f;
+				values.motor.rotor.phi = 0.0f;
+				values.motor.rotor.omega = 0.0f;
+
+				// at least 3 measurement points on all phases are there.
+				if(			measure::r::cur_step > 2
+					||		measure::r::phi_step >= measure::r::PHI_STEPS.size())
+				{
+					float gain, offset;
+					filter::LinReg(measure::r::x.begin(), measure::r::y.begin(), measure::r::point, gain, offset);
+
+					settings.motor.rs = gain;
+
+					// calculate effective deadtime equivalent voltage error.
+					settings.converter.dt = 2.0f * offset / values.battery.u;
+				}
+				measure::r::point = 0;
+				measure::r::u = 0.0f;
+				measure::r::enable = false;
+				measure::r::cycle = 0;
+				measure::r::cur_step = 0;
+				measure::r::phi_step = 0;
+
 				break;
 			}
 
