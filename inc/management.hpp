@@ -109,6 +109,27 @@ namespace management
 			///< current measurement point
 			extern std::uint8_t point;
 		}
+
+		/**
+		 * @namespace inductance measurement values
+		 */
+		namespace l
+		{
+		///< measurement current.
+		constexpr float CUR = 3.0f;
+
+		///< measurement frequency
+		constexpr float OMEGA = math::PIby2 * 1000.0f;
+
+		///< enable flag
+		extern bool enable;
+
+		///< current measurement voltage
+		extern float u;
+
+		///< cycle counter
+		extern std::uint32_t cycle;
+		}
 	}
 
 	/**
@@ -130,6 +151,8 @@ namespace management
 			RUN,
 			MEASURE_RS,
 			CALCULATE_RS,
+			MEASURE_LS,
+			CALCULATE_LS,
 		} sequencer;
 
 

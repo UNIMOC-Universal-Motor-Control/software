@@ -104,6 +104,21 @@ namespace management
 			///< cycle counter
 			std::uint32_t cycle = 0;
 		}
+
+		/**
+		 * @namespace inductance measurement values
+		 */
+		namespace l
+		{
+		///< enable flag
+		bool enable = false;
+
+		///< current measurement voltage
+		float u = 0.0f;
+
+		///< cycle counter
+		std::uint32_t cycle = 0;
+		}
 	}
 
 
@@ -202,12 +217,12 @@ namespace management
 				if(measure::all)
 				{
 					measure::r::enable = true;
-//					measure::inductance = true;
+					measure::l::enable = true;
 //					measure::flux = true;
 				}
 
 				if(measure::r::enable) sequencer = MEASURE_RS;
-//				else if(measure::inductance) sequencer = MEASURE_LS;
+				else if(measure::l::enable) sequencer = MEASURE_LS;
 //				else if(measure::flux) sequencer = MEASURE_FLUX;
 
 				break;
@@ -315,6 +330,64 @@ namespace management
 				measure::r::cur_step = 0;
 				measure::r::phi_step = 0;
 
+				sequencer = RUN;
+
+				break;
+
+			case MEASURE_LS:
+				// init the measurement
+				if(measure::l::cycle == 0)
+				{
+					measure::r::cur_step = 0;
+					measure::r::u = 0.0f;
+					measure::r::enable = false;
+					measure::r::cur_step = 0;
+					measure::r::phi_step = 0;
+					values.motor.rotor.u.d = 0.0f;
+					values.motor.rotor.u.q = 0.0f;
+					values.motor.rotor.phi = 0.0f;
+					values.motor.rotor.omega = measure::l::OMEGA;
+					observer::mechanic = false;
+					observer::flux = false;
+					observer::hfi = false;
+				}
+
+				// handle PWM led to show PWM status
+				if(hardware::pwm::output::Active()) palSetLine(LINE_LED_PWM);
+				else
+				{
+					// wait for PWM release
+					sequencer = RUN;
+
+					palClearLine(LINE_LED_PWM);
+				}
+				// set Run Mode LED
+				palClearLine(LINE_LED_RUN);
+
+				if(	   std::fabs(values.motor.rotor.i.d) > measure::l::CUR
+					|| std::fabs(values.motor.rotor.i.q) > measure::l::CUR)
+				{
+					sequencer = CALCULATE_LS;
+				}
+
+				measure::l::cycle++;
+				if((measure::l::cycle % 25) == 0)
+				{
+					measure::l::u += 100e-3f; // 100mv increase every 25ms
+				}
+				values.motor.rotor.u.d = measure::l::u;
+				break;
+
+			case CALCULATE_LS:
+				values.motor.rotor.u.d = 0.0f;
+				values.motor.rotor.u.q = 0.0f;
+				values.motor.rotor.phi = 0.0f;
+				values.motor.rotor.omega = 0.0f;
+
+				measure::l::enable = false;
+				measure::l::cycle = 0;
+
+				sequencer = CALCULATE_LS;
 				break;
 			}
 
