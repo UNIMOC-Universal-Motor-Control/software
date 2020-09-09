@@ -316,7 +316,7 @@ namespace management
 					||		measure::r::phi_step >= measure::r::PHI_STEPS.size())
 				{
 					float gain, offset;
-					filter::LinReg(measure::r::x.begin(), measure::r::y.begin(), measure::r::point, gain, offset);
+					filter::LinearRegression(measure::r::x.begin(), measure::r::y.begin(), measure::r::point, gain, offset);
 
 					settings.motor.rs = gain;
 

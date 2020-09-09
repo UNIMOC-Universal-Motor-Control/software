@@ -24,6 +24,7 @@
 #include <array>
 #include <numeric>
 #include <climits>
+#include <complex>
 #include "systems.hpp"
 
 
@@ -210,8 +211,16 @@ public:
  * @param gain b
  * @param offset a
  */
-void LinReg(const float* const x, const float* const y, const std::uint32_t length, float& gain, float& offset);
+void LinearRegression(const float* const x, const float* const y, const std::uint32_t length, float& gain, float& offset);
 
+/**
+ * Calculate the complex signal amplitude of a specific frequency
+ * @param x array of n signal values
+ * @param n length of signal values array
+ * @param k wave index of the frequency of interest k = freq/(sampling_freq)
+ * @return complex amplitude of the signal
+ */
+std::complex<float> Goertzel(const float* const x, const std::uint32_t n, const std::uint32_t k);
 
 } /* namespace filter */
 

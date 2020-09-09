@@ -15,13 +15,9 @@ function [r, i] = goertzel(x,n,freq, sample_freq)
     s(3) = s(2);
     s(2) = s(1);
   endfor
-    % run N+1
-    s(1) = 0 + coeff * s(2) - s(3);
-    s(3) = s(2);
-    s(2) = s(1);
   
-  r = s(2) - cr*s(3);
-  i = ci * s(3);
+  r = 2*(s(1) - cr*s(2))/n;
+  i = 2*(ci * s(2))/n;
 endfunction
 
 f = 16000;
@@ -47,7 +43,7 @@ w = 2*pi*1000;
 u = (la+lb)/2*w*is;
 ud = u*sin(w.*t);
 
-phi = 30*pi/180;
+phi = -1e-5*pi/180;
 ia_int = 0;
 ib_int = 0;
 
@@ -77,3 +73,5 @@ s = sqrt(realq^2+imagq^2);
 if reald*realq > 0 || imagd*imagq > 0
   s = -s;
 endif
+
+perr = s/(((lb-la)/2*u)/(w*la*lb));

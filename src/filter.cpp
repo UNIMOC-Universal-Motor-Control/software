@@ -59,7 +59,7 @@ namespace filter
 	 * @param gain b
 	 * @param offset a
 	 */
-	void LinReg(const float* const x, const float* const y, const std::uint32_t length, float& gain, float& offset)
+	void LinearRegression(const float* const x, const float* const y, const std::uint32_t length, float& gain, float& offset)
 	{
 		float x_mean = 0.0f, y_mean = 0.0f, num = 0.0f, den = 0.0f;
 
@@ -79,6 +79,32 @@ namespace filter
 
 		gain = num/den;
 		offset = y_mean - x_mean * gain;
+	}
+
+	/**
+	 * Calculate the complex signal amplitude of a specific frequency
+	 * @param x array of n signal values
+	 * @param n length of signal values array
+	 * @param k wave index of the frequency of interest k = freq/(sampling_freq)
+	 * @return complex amplitude of the signal
+	 */
+	std::complex<float> Goertzel(const float* const x, const std::uint32_t n, const std::uint32_t k)
+	{
+		std::array<float, 3> s = {0.0f, 0.0f, 0.0f};
+		float w = math::_2PI * k;
+		systems::sin_cos sc;
+
+		systems::SinCos(w, sc);
+		float coeff = 2.0f*sc.cos;
+
+		for (std::uint32_t i = 0; i < n; ++i)
+		{
+			s[0] = x[i] + s[1]*coeff - s[2];
+			s[2] = s[1];
+			s[1] = s[0];
+		}
+
+		return (s[0] - sc.cos*s[1] + 1i*sc.sin*s[1]);
 	}
 
 }/* namespace filter */
