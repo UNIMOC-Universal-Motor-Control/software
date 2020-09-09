@@ -1,6 +1,6 @@
 clear;
 
-function [amp, phase] = goertzel(x,n,freq, sample_freq)
+function [r, i] = goertzel(x,n,freq, sample_freq)
   w = 2*pi*freq/sample_freq;
   
   cr = cos(w);
@@ -20,16 +20,8 @@ function [amp, phase] = goertzel(x,n,freq, sample_freq)
     s(3) = s(2);
     s(2) = s(1);
   
-  r = s(2) - cr*s(3)
-  i = ci * s(3)
-  
-  amp = sqrt(r^2 + i^2)/n;
-  % freq 0 has no complex conjugate
-  if freq/sample_freq >= 1/n
-    amp = 2*amp;
-  endif
-  
-  phase = atan2(i,r)*180/pi;
+  r = s(2) - cr*s(3);
+  i = ci * s(3);
 endfunction
 
 f = 16000;
@@ -37,7 +29,7 @@ la = 450e-6;
 lb = 500e-6;
 lambda = 2e-4;
 rs = 240e-3;
-N = 5100;
+N = 5000;
 is = 2;
 
 t = (1:f)/f;
@@ -55,7 +47,7 @@ w = 2*pi*1000;
 u = (la+lb)/2*w*is;
 ud = u*sin(w.*t);
 
-phi = -15*pi/180;
+phi = 30*pi/180;
 ia_int = 0;
 ib_int = 0;
 
@@ -78,8 +70,10 @@ for i = 1:N
 endfor
 
 n = 32;
-[ampd, phased] = goertzel(id(end - (n-1):end),n, 1000, 16000);
-[ampq, phaseq] = goertzel(iq(end - (n-1):end),n, 1000, 16000);
-phase = phased-phaseq;
+[reald, imagd] = goertzel(id(end - (n-1):end),n, 1000, 16000);
+[realq, imagq] = goertzel(iq(end - (n-1):end),n, 1000, 16000);
 
-plot(t(end - (n-1):end), ud(end - (n-1):end), t(end - (n-1):end), iq(end - (n-1):end)*100);
+s = sqrt(realq^2+imagq^2);
+if reald*realq > 0 || imagd*imagq > 0
+  s = -s;
+endif
