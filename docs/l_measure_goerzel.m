@@ -32,7 +32,7 @@ function [amp, phase] = goertzel(x,n,freq, sample_freq)
   phase = atan2(i,r)*180/pi;
 endfunction
 
-f = 16000;
+f = 32000;
 la = 450e-6;
 lb = 500e-6;
 lambda = 2e-4;

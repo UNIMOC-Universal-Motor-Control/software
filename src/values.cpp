@@ -45,6 +45,21 @@ values_ts values =
 			///< Current in rotor frame
 			.i = {0.0f, 0.0f},
 
+			/**
+			 * motor rotor current samples buffered for frequency analysis
+			 */
+			.i_samples =
+			{
+				///< d-current samples data
+				.data_d = {0.0f},
+
+				///< q-current samples data
+				.data_q = {0.0f},
+
+				///< current samples index
+				.index = 0,
+			},
+
 			///< Voltage in rotor frame
 			.u = {0.0f, 0.0f},
 
@@ -53,9 +68,6 @@ values_ts values =
 
 			///< rotor angle
 			.phi = 0.0f,
-
-			///< angle error against hall sensors
-			.hall_err = 0.0f,
 
 			///< rotor full rotation from start
 			.rotation = 0,
