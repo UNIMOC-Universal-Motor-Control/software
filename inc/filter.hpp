@@ -216,11 +216,12 @@ void LinearRegression(const float* const x, const float* const y, const std::uin
 /**
  * Calculate the complex signal amplitude of a specific frequency
  * @param x array of n signal values
+ * @param i index of the most recent sample in the buffer
  * @param n length of signal values array
  * @param k wave index of the frequency of interest k = freq/(sampling_freq)
  * @return complex amplitude of the signal
  */
-std::complex<float> Goertzel(const float* const x, const std::uint32_t n, const std::uint32_t k);
+std::complex<float> Goertzel(const float* const x, const std::uint32_t i, const std::uint32_t n, const std::uint32_t k);
 
 } /* namespace filter */
 

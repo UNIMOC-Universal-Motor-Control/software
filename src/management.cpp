@@ -346,7 +346,7 @@ namespace management
 					values.motor.rotor.u.d = 0.0f;
 					values.motor.rotor.u.q = 0.0f;
 					values.motor.rotor.phi = 0.0f;
-					values.motor.rotor.omega = measure::l::OMEGA;
+					values.motor.rotor.omega = math::_2PI * measure::l::FREQ;
 					observer::mechanic = false;
 					observer::flux = false;
 					observer::hfi = false;
@@ -375,10 +375,27 @@ namespace management
 				{
 					measure::l::u += 100e-3f; // 100mv increase every 25ms
 				}
-				values.motor.rotor.u.d = measure::l::u;
+				values.motor.rotor.u.q = measure::l::u;
 				break;
 
 			case CALCULATE_LS:
+				std::complex<float> id = filter::Goertzel(
+						values.motor.rotor.i_samples.data_d.data(),
+						values.motor.rotor.i_samples.index,
+						values.motor.rotor.i_samples.data_d.size(), 0);
+				std::complex<float> iq = filter::Goertzel(
+						values.motor.rotor.i_samples.data_q.data(),
+						values.motor.rotor.i_samples.index,
+						values.motor.rotor.i_samples.data_q.size(), 0);
+
+				std::complex<float> i_ac = filter::Goertzel(
+						values.motor.rotor.i_samples.data_d.data(),
+						values.motor.rotor.i_samples.index,
+						values.motor.rotor.i_samples.data_d.size(), measure::l::FREQ/hardware::Fc);
+
+				settings.motor.l.d = measure::l::u/(values.motor.rotor.omega * (std::abs(std::abs(id) + 1i*std::abs(iq)) + std::abs(i_ac)));
+				settings.motor.l.d = measure::l::u/(values.motor.rotor.omega * (std::abs(std::abs(id) + 1i*std::abs(iq)) - std::abs(i_ac)));
+
 				values.motor.rotor.u.d = 0.0f;
 				values.motor.rotor.u.q = 0.0f;
 				values.motor.rotor.phi = 0.0f;

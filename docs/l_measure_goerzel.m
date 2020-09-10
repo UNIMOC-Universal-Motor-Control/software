@@ -77,9 +77,9 @@ for i = 1:N
 endfor
 
 n = 16;
-[amp1, ~] = goertzel(id(end - (n-1):end),n, 0, 16000);
-[amp2, ~] = goertzel(iq(end - (n-1):end),n, 0, 16000);
-[amp3, ~] = goertzel(id(end - (n-1):end),n, 2000, 16000);
+[amp1, ~] = goertzel(id(end - (n-1):end),n, 0, f);
+[amp2, ~] = goertzel(iq(end - (n-1):end),n, 0, f);
+[amp3, ~] = goertzel(id(end - (n-1):end),n, 2000, f);
 
 ld = uq(1)/(w*(sqrt(amp1^2 + amp2^2)+amp3));
 lq = uq(1)/(w*(sqrt(amp1^2 + amp2^2)-amp3));
