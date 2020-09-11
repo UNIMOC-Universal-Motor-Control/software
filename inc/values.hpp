@@ -21,6 +21,7 @@
 
 #include <cstdint>
 #include "systems.hpp"
+#include "filter.hpp"
 
 /**
  * system global values
@@ -55,20 +56,11 @@ typedef struct values_s
 			///< Current in rotor frame
 			systems::dq i;
 
-			/**
-			 * motor rotor current samples buffered for frequency analysis
-			 */
-			struct i_samples_s
-			{
-				///< d-current samples data
-				std::array<float, 32> data_d;
+			///< Goertzel Frequency analysis instance for direct current
+			filter::goertzel<32> gid;
 
-				///< q-current samples data
-				std::array<float, 32> data_q;
-
-				///< current samples index
-				std::uint32_t index;
-			}i_samples;
+			///< Goertzel Frequency analysis instance for quadrature current
+			filter::goertzel<32> giq;
 
 			///< Voltage in rotor frame
 			systems::dq u;

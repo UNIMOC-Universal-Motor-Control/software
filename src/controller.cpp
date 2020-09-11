@@ -228,23 +228,13 @@ namespace control
 			// convert current samples from clark to rotor frame;
 			values.motor.rotor.i = systems::transform::Park(i_ab, cur_sc);
 
-			// save current samples in buffer for frequency analysis for HFI and inductance measurement
-			values.motor.rotor.i_samples.data_d[values.motor.rotor.i_samples.index] = values.motor.rotor.i.d;
-			values.motor.rotor.i_samples.data_q[values.motor.rotor.i_samples.index] = values.motor.rotor.i.q;
-			values.motor.rotor.i_samples.index++;
-
-			if(values.motor.rotor.i_samples.index >= values.motor.rotor.i_samples.data_d.size())
-			{
-				values.motor.rotor.i_samples.index = 0;
-			}
+			//sample currents for frequency analysis
+			values.motor.rotor.gid = values.motor.rotor.i.d;
+			values.motor.rotor.giq = values.motor.rotor.i.q;
 
 			// calculate battery current from power equality
 			values.battery.i = (values.motor.rotor.u.d * values.motor.rotor.i.d
 					+ values.motor.rotor.u.q * values.motor.rotor.i.q)/values.battery.u;
-
-//			systems::sin_cos hall;
-//			hardware::adc::hall::Angle(hall);
-//			values.motor.rotor.hall_err = hall.sin*phi_sc.cos - hall.cos*phi_sc.sin;
 
 			if(			management::observer::mechanic
 					&& 	std::fabs(values.motor.rotor.i.q) > settings.observer.mech.i_min)

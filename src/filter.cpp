@@ -81,36 +81,6 @@ namespace filter
 		offset = y_mean - x_mean * gain;
 	}
 
-
-	/**
-	 * Calculate the complex signal amplitude of a specific frequency
-	 * @param x array of n signal values
-	 * @param i index of the oldest sample in the buffer
-	 * @param n length of signal values array
-	 * @param k wave index of the frequency of interest k = freq/(sampling_freq)
-	 * @return complex amplitude of the signal
-	 */
-	std::complex<float> Goertzel(const float* const x, const std::uint32_t i, const std::uint32_t n, const std::uint32_t k)
-	{
-		std::array<float, 3> s = {0.0f, 0.0f, 0.0f};
-		float w = math::_2PI * k;
-		systems::sin_cos sc;
-
-		systems::SinCos(w, sc);
-		float coeff = 2.0f*sc.cos;
-
-		for (std::uint32_t j = 0; j < n; ++j)
-		{
-			s[0] = x[(i + j)%n] + s[1]*coeff - s[2];
-			s[2] = s[1];
-			s[1] = s[0];
-		}
-
-		std::complex<float> out = (s[0] - sc.cos*s[1])/(float)n + 1i*(sc.sin*s[1])/(float)n;
-		if(k != 0) out *= 2.0f;
-		return (s[0] - sc.cos*s[1] + 1i*sc.sin*s[1]);
-	}
-
 }/* namespace filter */
 
 

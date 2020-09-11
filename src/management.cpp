@@ -379,22 +379,24 @@ namespace management
 				break;
 
 			case CALCULATE_LS:
-				std::complex<float> id = filter::Goertzel(
-						values.motor.rotor.i_samples.data_d.data(),
-						values.motor.rotor.i_samples.index,
-						values.motor.rotor.i_samples.data_d.size(), 0);
-				std::complex<float> iq = filter::Goertzel(
-						values.motor.rotor.i_samples.data_q.data(),
-						values.motor.rotor.i_samples.index,
-						values.motor.rotor.i_samples.data_q.size(), 0);
+				// calculate the dc levels
+				values.motor.rotor.gid.SetFrequency(0.0f);
+				values.motor.rotor.giq.SetFrequency(0.0f);
 
-				std::complex<float> i_ac = filter::Goertzel(
-						values.motor.rotor.i_samples.data_d.data(),
-						values.motor.rotor.i_samples.index,
-						values.motor.rotor.i_samples.data_d.size(), measure::l::FREQ/hardware::Fc);
+				values.motor.rotor.gid.Calculate();
+				values.motor.rotor.giq.Calculate();
 
-				settings.motor.l.d = measure::l::u/(values.motor.rotor.omega * (std::abs(std::abs(id) + 1i*std::abs(iq)) + std::abs(i_ac)));
-				settings.motor.l.d = measure::l::u/(values.motor.rotor.omega * (std::abs(std::abs(id) + 1i*std::abs(iq)) - std::abs(i_ac)));
+				systems::dq i = {values.motor.rotor.gid.Magnitude(), values.motor.rotor.giq.Magnitude()};
+				float i_len = systems::Length(i);
+
+				// get the Ld - Lq current at twice the injection frequency
+				values.motor.rotor.gid.SetFrequency(2.0f * measure::l::FREQ);
+				values.motor.rotor.gid.Calculate();
+				float iac = values.motor.rotor.gid.Magnitude();
+
+				// assume that Ld is always lower than Lq due to Saturation
+				settings.motor.l.d = measure::l::u/(values.motor.rotor.omega * (i_len + iac));
+				settings.motor.l.q = measure::l::u/(values.motor.rotor.omega * (i_len - iac));
 
 				values.motor.rotor.u.d = 0.0f;
 				values.motor.rotor.u.q = 0.0f;
@@ -404,7 +406,7 @@ namespace management
 				measure::l::enable = false;
 				measure::l::cycle = 0;
 
-				sequencer = CALCULATE_LS;
+				sequencer = RUN;
 				break;
 			}
 

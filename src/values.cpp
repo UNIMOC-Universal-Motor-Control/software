@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "values.hpp"
-
+#include "hardware_interface.hpp"
 
 
 values_ts values =
@@ -45,20 +45,11 @@ values_ts values =
 			///< Current in rotor frame
 			.i = {0.0f, 0.0f},
 
-			/**
-			 * motor rotor current samples buffered for frequency analysis
-			 */
-			.i_samples =
-			{
-				///< d-current samples data
-				.data_d = {0.0f},
+			///< Goertzel Frequency analysis instance for direct current
+			.gid = filter::goertzel<32>(hardware::Fc),
 
-				///< q-current samples data
-				.data_q = {0.0f},
-
-				///< current samples index
-				.index = 0,
-			},
+			///< Goertzel Frequency analysis instance for quadrature current
+			.giq = filter::goertzel<32>(hardware::Fc),
 
 			///< Voltage in rotor frame
 			.u = {0.0f, 0.0f},

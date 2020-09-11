@@ -223,6 +223,121 @@ void LinearRegression(const float* const x, const float* const y, const std::uin
  */
 std::complex<float> Goertzel(const float* const x, const std::uint32_t i, const std::uint32_t n, const std::uint32_t k);
 
+/**
+ * Goertzel algorithm to determine amplitude and phase of a specific frequency in the source signal
+ *
+ * @param N number of samples
+ */
+template <std::uint32_t N>
+class goertzel
+{
+
+private:
+	///< data storage for input values
+	std::array<float, N> buffer;
+
+	///< index for latest sample in buffer.
+	std::uint32_t index;
+
+	///< sampling frequency of the source signal
+	const float Fs;
+
+	///< wave number of interest
+	std::uint32_t k;
+
+	///< coefficients for real and imaginary part of the algorithm
+	systems::sin_cos sc;
+
+	///< coefficient for the algorithm loop
+	float coeff;
+
+	///< real part of the output signal
+	float real;
+
+	///< imaginary part of the output signal
+	float imag;
+
+public:
+	/**
+	 * Goertzel algorithm container constructor
+	 * @param Fs sampling frequency
+	 */
+	goertzel<N>(const float Fs): buffer{0.0f}, index(0), Fs(Fs), k(0),
+		sc{0.0f, 1.0f}, coeff(2.0f), real(0.0f), imag(0.0f) {};
+
+	/**
+	 * set the frequency of interest.
+	 * @note frequency resolution is max Fs/N
+	 * @param F frequency to be selected
+	 */
+	void SetFrequency(const float F)
+	{
+		k = F/Fs;
+		systems::SinCos(math::_2PI * (float)k, sc);
+		coeff = 2.0f*sc.cos;
+	}
+
+	/**
+	 * sample the signal
+	 * @param u actual signal value
+	 */
+	void Sample(const float u)
+	{
+		buffer[index] = u;
+		index++;
+
+		if(index >= N)
+		{
+			index = 0;
+		}
+	}
+
+	/**
+	 * assignment operator for new samples
+	 * @param u new sample
+	 * @return input
+	 */
+	float operator=(const float u)
+	{
+		Sample(u);
+		return u;
+	}
+
+	/**
+	 * calculate the goertzel algorithm for the selected frequency
+	 */
+	void Calculate(void)
+	{
+		std::array<float, 3> s = {0.0f, 0.0f, 0.0f};
+		// thread safety
+		std::uint32_t idx = index;
+
+		for (std::uint32_t i = 0; i < N; ++i)
+		{
+			s[0] = buffer[(idx + i)%N] + s[1]*coeff - s[2];
+			s[2] = s[1];
+			s[1] = s[0];
+		}
+
+		real = (s[0] - sc.cos*s[1])/(float)N;
+		imag = (sc.sin*s[1])/(float)N;
+
+		// except for k == 0 there are always a positive and a negative frequency amplitude part of the output
+		if(k != 0)
+		{
+			real *= 2.0f;
+			imag *= 2.0f;
+		}
+	};
+
+	float Real(void) { return real;};
+	float Imag(void) { return imag;};
+
+	float Magnitude(void) { return std::sqrt(real*real + imag*imag);};
+	float Phase(void) { return std::atan2(imag, real); };
+};
+
+
 } /* namespace filter */
 
 #endif /* INC_FILTER_HPP_ */
