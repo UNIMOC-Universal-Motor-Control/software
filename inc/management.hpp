@@ -82,7 +82,7 @@ namespace management
 		namespace r
 		{
 			///< currents thresholds used to sample the phase currents
-			constexpr std::array<float, 10> CUR_STEPS = {3.0f, 5.0f, 10.0f, 15.0f, 20.0f, 25.0f, 30.0f, 35.0f, 40.0f, 45.0f};
+			constexpr std::array<float, 6> CUR_STEPS = {5.0f, 10.0f, 15.0f, 20.0f, 25.0f, 30.0f};
 
 			///< enable flag
 			extern bool enable;

@@ -229,13 +229,9 @@ namespace management
 
 			case MEASURE_RS:
 				// init the measurement
-				if(measure::r::cycle == 0)
+				if(measure::r::cycle == 0 && measure::r::phi_step == 0 && 	measure::r::cur_step == 0)
 				{
-					measure::r::cur_step = 0;
 					measure::r::u = 0.0f;
-					measure::r::enable = false;
-					measure::r::cur_step = 0;
-					measure::r::phi_step = 0;
 					values.motor.rotor.u.d = 0.0f;
 					values.motor.rotor.u.q = 0.0f;
 					values.motor.rotor.phi = 0.0f;
@@ -258,7 +254,7 @@ namespace management
 				palClearLine(LINE_LED_RUN);
 
 				// reached current steps current target
-				if(values.motor.rotor.i.d > measure::r::CUR_STEPS[measure::r::cur_step])
+				if(values.motor.rotor.i.d > measure::r::CUR_STEPS[measure::r::cur_step] && measure::r::cycle > 100)
 				{
 					// sample the point
 					measure::r::x[measure::r::point] = values.motor.rotor.i.d;
@@ -273,6 +269,7 @@ namespace management
 					measure::r::cur_step = 0;
 					measure::r::phi_step++;
 					measure::r::u = 0.0f;
+					measure::r::cycle = 0;
 					values.motor.rotor.u.d = 0.0f;
 					values.motor.rotor.u.q = 0.0f;
 
@@ -285,9 +282,8 @@ namespace management
 					{
 						values.motor.rotor.phi = measure::r::PHI_STEPS[measure::r::phi_step];
 					}
-				}
 
-				if(	   std::fabs(values.motor.rotor.i.d) > measure::r::CUR_STEPS.back()
+				}	else if(std::fabs(values.motor.rotor.i.d) > measure::r::CUR_STEPS.back()
 					|| std::fabs(values.motor.rotor.i.q) > measure::r::CUR_STEPS.back()
 					|| !hardware::pwm::output::Active())
 				{
@@ -298,7 +294,7 @@ namespace management
 				}
 
 				measure::r::cycle++;
-				if((measure::r::cycle % 25) == 0)
+				if((measure::r::cycle % 25) == 0 && measure::r::cycle > 100)
 				{
 					measure::r::u += 100e-3f; // 100mv increase every 25ms
 				}
@@ -318,10 +314,13 @@ namespace management
 					float gain, offset;
 					filter::LinearRegression(measure::r::x.begin(), measure::r::y.begin(), measure::r::point, gain, offset);
 
-					settings.motor.rs = gain;
+					if(!std::isnan(gain) && !std::isnan(offset))
+					{
+						settings.motor.rs = gain;
 
-					// calculate effective deadtime equivalent voltage error.
-					settings.converter.dt = 2.0f * offset / values.battery.u;
+						// calculate effective deadtime equivalent voltage error.
+						settings.converter.dt = hardware::Tc * offset / values.battery.u;
+					}
 				}
 				measure::r::point = 0;
 				measure::r::u = 0.0f;
@@ -338,11 +337,7 @@ namespace management
 				// init the measurement
 				if(measure::l::cycle == 0)
 				{
-					measure::r::cur_step = 0;
-					measure::r::u = 0.0f;
-					measure::r::enable = false;
-					measure::r::cur_step = 0;
-					measure::r::phi_step = 0;
+					measure::l::u = 0.0f;
 					values.motor.rotor.u.d = 0.0f;
 					values.motor.rotor.u.q = 0.0f;
 					values.motor.rotor.phi = 0.0f;
@@ -364,21 +359,28 @@ namespace management
 				// set Run Mode LED
 				palClearLine(LINE_LED_RUN);
 
-				if(	   std::fabs(values.motor.rotor.i.d) > measure::l::CUR
-					|| std::fabs(values.motor.rotor.i.q) > measure::l::CUR)
-				{
-					sequencer = CALCULATE_LS;
-				}
-
 				measure::l::cycle++;
-				if((measure::l::cycle % 25) == 0)
+				if((measure::l::cycle % 50) == 0)
 				{
-					measure::l::u += 100e-3f; // 100mv increase every 25ms
+
+					if(	   std::fabs(values.motor.rotor.i.d) > measure::l::CUR
+						|| std::fabs(values.motor.rotor.i.q) > measure::l::CUR)
+					{
+						sequencer = CALCULATE_LS;
+					}
+					else
+					{
+						measure::l::u += 100e-3f; // 100mv increase every 25ms
+					}
 				}
 				values.motor.rotor.u.q = measure::l::u;
 				break;
 
 			case CALCULATE_LS:
+
+				values.motor.rotor.u.d = 0.0f;
+				values.motor.rotor.u.q = 0.0f;
+
 				// calculate the dc levels
 				values.motor.rotor.gid.SetFrequency(0.0f);
 				values.motor.rotor.giq.SetFrequency(0.0f);
@@ -389,17 +391,17 @@ namespace management
 				systems::dq i = {values.motor.rotor.gid.Magnitude(), values.motor.rotor.giq.Magnitude()};
 				float i_len = systems::Length(i);
 
-				// get the Ld - Lq current at twice the injection frequency
-				values.motor.rotor.gid.SetFrequency(2.0f * measure::l::FREQ);
-				values.motor.rotor.gid.Calculate();
-				float iac = values.motor.rotor.gid.Magnitude();
+				if(i_len > 0.0f)
+				{
+					// get the Ld - Lq current at twice the injection frequency
+					values.motor.rotor.gid.SetFrequency(2.0f * measure::l::FREQ);
+					values.motor.rotor.gid.Calculate();
+					float iac = values.motor.rotor.gid.Magnitude();
 
-				// assume that Ld is always lower than Lq due to Saturation
-				settings.motor.l.d = measure::l::u/(values.motor.rotor.omega * (i_len + iac));
-				settings.motor.l.q = measure::l::u/(values.motor.rotor.omega * (i_len - iac));
-
-				values.motor.rotor.u.d = 0.0f;
-				values.motor.rotor.u.q = 0.0f;
+					// assume that Ld is always lower than Lq due to Saturation
+					settings.motor.l.d = measure::l::u/(values.motor.rotor.omega * (i_len + iac));
+					settings.motor.l.q = measure::l::u/(values.motor.rotor.omega * (i_len - iac));
+				}
 				values.motor.rotor.phi = 0.0f;
 				values.motor.rotor.omega = 0.0f;
 

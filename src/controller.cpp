@@ -361,7 +361,12 @@ namespace control
 				float scale = 2.0f / values.battery.u;
 				for (std::uint8_t i = 0; i < hardware::PHASES; ++i)
 				{
-					float dt = std::copysign(settings.converter.dt, values.motor.i.array[i]);
+					float dt = 0.0f;
+
+//					if(settings.converter.dt > 0.0f)
+//					{
+//						dt = hardware::Fc / std::copysign(settings.converter.dt, values.motor.i.array[i]);
+//					}
 
 					// linear zone around zero to accomodate low currents and current noise
 					if(std::fabs(values.motor.i.array[i]) < settings.converter.dt_i_min)
