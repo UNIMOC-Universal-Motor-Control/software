@@ -46,10 +46,10 @@ values_ts values =
 			.i = {0.0f, 0.0f},
 
 			///< Goertzel Frequency analysis instance for direct current
-			.gid = filter::goertzel<32>(hardware::Fc),
+			.gid = filter::goertzel<128>(hardware::Fc),
 
 			///< Goertzel Frequency analysis instance for quadrature current
-			.giq = filter::goertzel<32>(hardware::Fc),
+			.giq = filter::goertzel<128>(hardware::Fc),
 
 			///< Voltage in rotor frame
 			.u = {0.0f, 0.0f},

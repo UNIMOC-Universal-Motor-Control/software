@@ -57,10 +57,10 @@ typedef struct values_s
 			systems::dq i;
 
 			///< Goertzel Frequency analysis instance for direct current
-			filter::goertzel<32> gid;
+			filter::goertzel<128> gid;
 
 			///< Goertzel Frequency analysis instance for quadrature current
-			filter::goertzel<32> giq;
+			filter::goertzel<128> giq;
 
 			///< Voltage in rotor frame
 			systems::dq u;

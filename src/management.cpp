@@ -137,6 +137,7 @@ namespace management
 
 
 		deadline = chibios_rt::System::getTime();
+
 		/*
 		 * Normal main() thread activity
 		 */

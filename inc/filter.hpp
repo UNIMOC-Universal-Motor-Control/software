@@ -257,13 +257,15 @@ private:
 	///< imaginary part of the output signal
 	float imag;
 
+	float ac, dc;
+
 public:
 	/**
 	 * Goertzel algorithm container constructor
 	 * @param Fs sampling frequency
 	 */
 	goertzel<N>(const float Fs): buffer{0.0f}, index(0), Fs(Fs), k(0),
-		sc{0.0f, 1.0f}, coeff(2.0f), real(0.0f), imag(0.0f) {};
+		sc{0.0f, 1.0f}, coeff(2.0f), real(0.0f), imag(0.0f), ac(0.0f), dc(0.0f) {};
 
 	/**
 	 * set the frequency of interest.
@@ -272,8 +274,8 @@ public:
 	 */
 	void SetFrequency(const float F)
 	{
-		k = F/Fs;
-		systems::SinCos(math::_2PI * (float)k, sc);
+		k = (uint32_t)(F/Fs*(float)N);
+		systems::SinCos(math::_2PI * (float)k/(float)N, sc);
 		coeff = 2.0f*sc.cos;
 	}
 
@@ -319,8 +321,8 @@ public:
 			s[1] = s[0];
 		}
 
-		real = (s[0] - sc.cos*s[1])/(float)N;
-		imag = (sc.sin*s[1])/(float)N;
+		real = (s[1] - sc.cos*s[2])/(float)N;
+		imag = (sc.sin*s[2])/(float)N;
 
 		// except for k == 0 there are always a positive and a negative frequency amplitude part of the output
 		if(k != 0)
@@ -335,6 +337,35 @@ public:
 
 	float Magnitude(void) { return std::sqrt(real*real + imag*imag);};
 	float Phase(void) { return std::atan2(imag, real); };
+
+	bool Test(void)
+	{
+		bool result = false;
+		const float limit = 1e-1f;
+		const float dc = 3.0f;
+		const float ac = 0.75f;
+		const float omega = 1000.0f*math::_2PI;
+		float phi = math::PIby2/3.0f;
+
+		for(uint32_t i = 0; i < N; i++)
+		{
+			float u = std::sin(phi)*ac + dc;
+			Sample(u);
+			phi += omega/Fs;
+			if(phi > math::_2PI) phi -= math::_2PI;
+		}
+
+		SetFrequency(0.0f);
+		Calculate();
+		this->dc = Magnitude();
+
+		SetFrequency(1000.0f);
+		Calculate();
+		this->ac = Magnitude();
+
+
+		return result;
+	}
 };
 
 

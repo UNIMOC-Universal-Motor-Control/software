@@ -229,8 +229,8 @@ namespace control
 			values.motor.rotor.i = systems::transform::Park(i_ab, cur_sc);
 
 			//sample currents for frequency analysis
-			values.motor.rotor.gid = values.motor.rotor.i.d;
-			values.motor.rotor.giq = values.motor.rotor.i.q;
+//			values.motor.rotor.gid = values.motor.rotor.i.d;
+//			values.motor.rotor.giq = values.motor.rotor.i.q;
 
 			// calculate battery current from power equality
 			values.battery.i = (values.motor.rotor.u.d * values.motor.rotor.i.d
