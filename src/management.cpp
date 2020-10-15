@@ -110,14 +110,17 @@ namespace management
 		 */
 		namespace l
 		{
-		///< enable flag
-		bool enable = false;
+			///< enable flag
+			bool enable = false;
 
-		///< current measurement voltage
-		float u = 0.0f;
+			///< current measurement voltage
+			float u = 0.0f;
 
-		///< cycle counter
-		std::uint32_t cycle = 0;
+			///< cycle counter
+			std::uint32_t cycle = 0;
+
+			///< old omega limit
+			float w_limit = 0.0f;
 		}
 	}
 
@@ -343,6 +346,8 @@ namespace management
 					values.motor.rotor.u.q = 0.0f;
 					values.motor.rotor.phi = 0.0f;
 					values.motor.rotor.omega = math::_2PI * measure::l::FREQ;
+					measure::l::w_limit = settings.motor.limits.omega;
+					settings.motor.limits.omega = values.motor.rotor.omega;
 					observer::mechanic = false;
 					observer::flux = false;
 					observer::hfi = false;
