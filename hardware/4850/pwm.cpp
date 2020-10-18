@@ -194,6 +194,7 @@ bool hardware::pwm::output::Active(void)
 
 /**
  * Set the normalized duty cycles for each phase
+ * @note with flat low svm
  * @param dutys -1 = LOW, 0 = 50%, 1=HIGH
  */
 void hardware::pwm::Duty(const systems::abc& dutys)

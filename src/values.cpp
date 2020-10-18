@@ -117,6 +117,9 @@ values_ts values =
 	{
 		///< power stage temperature
 		.temp = 0.0f,
+
+		///< phase dutys
+		.dutys = {0.0f, 0.0f, 0.0f},
 	},
 	/**
 	 * pedal assist system values

@@ -410,6 +410,8 @@ namespace management
 				}
 				values.motor.rotor.phi = 0.0f;
 				values.motor.rotor.omega = 0.0f;
+				settings.motor.limits.omega =  measure::l::w_limit;
+
 
 				measure::l::enable = false;
 				measure::l::cycle = 0;

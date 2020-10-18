@@ -57,6 +57,11 @@ namespace observer
         if(std::fabs(values.motor.rotor.omega) > 2.0f * settings.motor.limits.omega)
         	values.motor.rotor.omega = std::copysign(2.0f * settings.motor.limits.omega, values.motor.rotor.omega);
 
+        if(!std::isfinite(values.motor.rotor.omega))
+        {
+        	values.motor.rotor.omega = 0.0f;
+        }
+
         // integrate omega for phi
         values.motor.rotor.phi += values.motor.rotor.omega * ts;
 
@@ -73,6 +78,10 @@ namespace observer
         {
         	values.motor.rotor.phi += math::_2PI;
         	values.motor.rotor.rotation--;
+        }
+        else if(!std::isfinite(values.motor.rotor.phi))
+        {
+        	values.motor.rotor.phi = 0.0f;
         }
     }
 
@@ -258,19 +267,27 @@ namespace observer
      */
     void hfi::Calculate(systems::dq& i_dq, std::array<float, 3>& correction)
     {
-    	values.motor.rotor.i_hfi.d = hpf_d.Calculate(i_dq.d);
-    	values.motor.rotor.i_hfi.q = hpf_q.Calculate(i_dq.q);
+    	values.motor.rotor.giq.SetFrequency(settings.observer.hfi.frequency);
+    	values.motor.rotor.giq.SetFrequency(settings.observer.hfi.frequency);
+    	values.motor.rotor.giq.Calculate();
+    	values.motor.rotor.giq.Calculate();
+    	values.motor.rotor.i_hfi.d = values.motor.rotor.gid.Phase();
+    	values.motor.rotor.i_hfi.q = values.motor.rotor.giq.Phase();
 
-    	// remove hf part rom current response
-    	i_dq.d -= values.motor.rotor.i_hfi.d;
-    	i_dq.q -= values.motor.rotor.i_hfi.q;
+//    	double amplitude = values.motor.rotor.giq.Magnitude();
+//    	if(values.motor.rotor.gid.Real()*values.motor.rotor.giq.Real() > 0.0f
+//    		&& values.motor.rotor.gid.Imag()*values.motor.rotor.giq.Imag() > 0.0f)
+//    	{
+//    		amplitude = -amplitude;
+//    	}
+//
+//    	double K_inj = 1.0f/
+//    			(settings.observer.hfi.current*(settings.motor.rs + w*settings.motor.l.d)/w
+//    					*(settings.motor.l.q - settings.motor.l.d)/(settings.motor.l.d * settings.motor.l.q));
 
-    	values.motor.rotor.i_hfi.q *= std::fabs((w*settings.motor.l.d*settings.motor.l.q)/((settings.motor.l.q - settings.motor.l.d)*0.5f*ui));
+//    	values.motor.rotor.i_hfi.d = amplitude*K_inj;
 
-    	// make response correctly signed.
-    	values.motor.rotor.i_hfi.q = lpf.Calculate(values.motor.rotor.i_hfi.q * sc.sin);
-
-    	mech.Update(settings.observer.hfi.Q, settings.observer.hfi.R, values.motor.rotor.i_hfi.q, correction);
+    	//mech.Update(settings.observer.hfi.Q, settings.observer.hfi.R, amplitude*K_inj, correction);
     }
 
 	/**
@@ -279,7 +296,7 @@ namespace observer
 	 */
 	float hfi::Injection(void)
 	{
-		w = settings.observer.hfi.frequency;
+		w = math::_2PI * settings.observer.hfi.frequency;
 		phi += w * hardware::Tc;
 
 		// limit phii to 2 * pi
@@ -299,7 +316,7 @@ namespace observer
 		ui = settings.motor.l.d * w * settings.observer.hfi.current;
 
 		// add injection signal
-		return ui*sc.sin;
+		return ui*sc.cos;
 	}
 
 

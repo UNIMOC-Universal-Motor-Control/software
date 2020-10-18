@@ -42,10 +42,10 @@ settings_ts settings =
 	.motor =
 	{
 		///< Stator resistance
-		.rs = 230e-3f,
+		.rs = 0.243666f,
 
 		///< anisotropic inductance vector
-		.l = {450e-6f, 650e-6f},
+		.l = {0.000246604f, 0.000335957f},
 
 		///< magnetic flux inducted voltage in rotor
 		.psi = unit::RpmV2VsRad(75.0f) / (30.0f / 2.0f),
@@ -156,10 +156,10 @@ settings_ts settings =
 			.R = 100.0f,
 
 			///< injection frequency in rad/s
-			.frequency = 5050.0f,
+			.frequency = 1500.0f,
 
 			///< injection current in A
-			.current = 0.1f,
+			.current = 0.2f,
 		},
 
 		/**

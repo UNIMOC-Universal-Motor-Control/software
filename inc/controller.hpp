@@ -58,6 +58,14 @@ namespace control
 	bool Limit(float& in, const float min, const float max);
 
 	/**
+	 * SVPWM Overmodulation modified to flat bottom.
+	 * @param u phase voltages
+	 * @param ubat battery voltage
+	 * @return dutys in -1 to 1
+	 */
+	void Overmodulation(systems::abc& u, float ubat, systems::abc& dutys);
+
+	/**
 	 * pi controller with anti windup
 	 */
 	class pi

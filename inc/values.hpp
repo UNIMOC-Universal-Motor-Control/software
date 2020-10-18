@@ -131,6 +131,9 @@ typedef struct values_s
 	{
 		///< powerstage temperature
 		float temp;
+
+		///< phase dutys
+		systems::abc dutys;
 	} converter;
 
 	/**

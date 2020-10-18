@@ -80,6 +80,44 @@ namespace control
 	}
 
 	/**
+	 * SVPWM Overmodulation modified to flat bottom.
+	 * @param u phase voltages
+	 * @param ubat battery voltage
+	 * @return dutys in -1 to 1
+	 */
+	void Overmodulation(systems::abc& u, float ubat, systems::abc& dutys)
+	{
+		const float* min = std::min_element(u.array.begin(), u.array.end());
+
+		// prevent division by zero
+		if(ubat < 10.0f)
+		{
+			ubat = 10.0f;
+		}
+		// scale voltage to -1 to 1
+		float scale = 2.0f / ubat;
+
+		for (std::uint8_t i = 0; i < hardware::PHASES; ++i)
+		{
+			float dt = 0.0f;
+
+//			if(settings.converter.dt > 0.0f)
+//			{
+//				dt = hardware::Fc / std::copysign(settings.converter.dt, values.motor.i.array[i]);
+//			}
+
+			// linear zone around zero to accomodate low currents and current noise
+			if(std::fabs(values.motor.i.array[i]) < settings.converter.dt_i_min)
+			{
+				dt *= std::fabs(values.motor.i.array[i]) / settings.converter.dt_i_min;
+			}
+
+			// flat bottom
+			dutys.array[i] = (u.array[i] - *min) * scale + dt - 1.0f;
+		}
+	}
+
+	/**
 	 * @brief Pi controller constructor with all essential parameters.
 	 *
 	 * @param new_kp				proportional gain.
@@ -353,33 +391,10 @@ namespace control
 			// transform to ab system
 			values.motor.u = systems::transform::InverseClark(u_ab);
 
-			systems::abc duty = {0.0f, 0.0f, 0.0f};
-			//scale the voltages
-			if(values.battery.u > 10.0f)
-			{
-				// scale voltage to -1 to 1
-				float scale = 2.0f / values.battery.u;
-				for (std::uint8_t i = 0; i < hardware::PHASES; ++i)
-				{
-					float dt = 0.0f;
+			// set dutys with overmodulation
+			Overmodulation(values.motor.u, values.battery.u, values.converter.dutys);
 
-//					if(settings.converter.dt > 0.0f)
-//					{
-//						dt = hardware::Fc / std::copysign(settings.converter.dt, values.motor.i.array[i]);
-//					}
-
-					// linear zone around zero to accomodate low currents and current noise
-					if(std::fabs(values.motor.i.array[i]) < settings.converter.dt_i_min)
-					{
-						dt *= std::fabs(values.motor.i.array[i]) / settings.converter.dt_i_min;
-					}
-
-					duty.array[i] = values.motor.u.array[i] * scale + dt;
-				}
-			}
-
-			hardware::pwm::Duty(duty);
-
+			hardware::pwm::Duty(values.converter.dutys);
 
 			modules::freemaster::Recorder();
 		}

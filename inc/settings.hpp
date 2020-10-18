@@ -158,7 +158,7 @@ typedef struct settings_s
 			///< measurement variance
 			float R;
 
-			///< injection frequency in rad/s
+			///< injection frequency in Hz
 			float frequency;
 
 			///< injection current in A
