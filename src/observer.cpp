@@ -267,27 +267,21 @@ namespace observer
      */
     void hfi::Calculate(systems::dq& i_dq, std::array<float, 3>& correction)
     {
-    	values.motor.rotor.giq.SetFrequency(settings.observer.hfi.frequency);
-    	values.motor.rotor.giq.SetFrequency(settings.observer.hfi.frequency);
-    	values.motor.rotor.giq.Calculate();
-    	values.motor.rotor.giq.Calculate();
-    	values.motor.rotor.i_hfi.d = values.motor.rotor.gid.Phase();
-    	values.motor.rotor.i_hfi.q = values.motor.rotor.giq.Phase();
+    	systems::dq hpf_out = {hpf_d.Calculate(i_dq.d), hpf_q.Calculate(i_dq.q)};
 
-//    	double amplitude = values.motor.rotor.giq.Magnitude();
-//    	if(values.motor.rotor.gid.Real()*values.motor.rotor.giq.Real() > 0.0f
-//    		&& values.motor.rotor.gid.Imag()*values.motor.rotor.giq.Imag() > 0.0f)
-//    	{
-//    		amplitude = -amplitude;
-//    	}
-//
-//    	double K_inj = 1.0f/
-//    			(settings.observer.hfi.current*(settings.motor.rs + w*settings.motor.l.d)/w
-//    					*(settings.motor.l.q - settings.motor.l.d)/(settings.motor.l.d * settings.motor.l.q));
+    	// remove hf part rom current response
+    	i_dq.d -= hpf_out.d;
+    	i_dq.q -= hpf_out.q;
 
-//    	values.motor.rotor.i_hfi.d = amplitude*K_inj;
-
-    	//mech.Update(settings.observer.hfi.Q, settings.observer.hfi.R, amplitude*K_inj, correction);
+    	// sample response in sync, accept 0.5% amplitude error
+    	if (	std::fabs(phi - math::PIby2) 		<  0.1f
+    		||	std::fabs(phi - 3.0f*math::PIby2) 	<  0.1f)
+    	{
+    		values.motor.rotor.i_hfi.d = hpf_out.d;
+    		values.motor.rotor.i_hfi.q *= std::fabs((w*settings.motor.l.d*settings.motor.l.q)/((settings.motor.l.q - settings.motor.l.d)*0.5f*ui));
+    		values.motor.rotor.i_hfi.q = hpf_out.q * sc.sin;
+    		mech.Update(settings.observer.hfi.Q, settings.observer.hfi.R, values.motor.rotor.i_hfi.q, correction);
+    	}
     }
 
 	/**
