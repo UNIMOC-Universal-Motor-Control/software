@@ -277,10 +277,12 @@ namespace observer
     	if (	std::fabs(phi - math::PIby2) 		<  0.1f
     		||	std::fabs(phi - 3.0f*math::PIby2) 	<  0.1f)
     	{
-    		values.motor.rotor.i_hfi.d = hpf_out.d;
-    		values.motor.rotor.i_hfi.q *= std::fabs((w*settings.motor.l.d*settings.motor.l.q)/((settings.motor.l.q - settings.motor.l.d)*0.5f*ui));
+    		values.motor.rotor.i_hfi.d = std::fabs(sc.sin);
     		values.motor.rotor.i_hfi.q = hpf_out.q * sc.sin;
+    		values.motor.rotor.i_hfi.q *= (w*settings.motor.l.d*settings.motor.l.q)/((settings.motor.l.d - settings.motor.l.q)*0.5f*ui);
     		mech.Update(settings.observer.hfi.Q, settings.observer.hfi.R, values.motor.rotor.i_hfi.q, correction);
+    		correction[0] = 0.0f;
+    		correction[2] = 0.0f;
     	}
     }
 
