@@ -925,7 +925,7 @@
 			<member name="unit" type="string">A</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">save</member>
-			<member name="last_addr" type="uint32">0x20004EE8</member>
+			<member name="last_addr" type="uint32">0x20005320</member>
 			<member name="byte_size" type="sint32">1</member>
 			<member name="treat_as" type="sint32">2</member>
 			<member name="type_fmt" type="string">IEEE floating point</member>

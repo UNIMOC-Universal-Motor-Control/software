@@ -562,15 +562,16 @@
                                      PIN_AFIO_AF(GPIOB_5, 0) | \
                                      PIN_AFIO_AF(GPIOB_SCL, 4) | \
                                      PIN_AFIO_AF(GPIOB_SDA, 4))
-#define VAL_GPIOB_AFRH              (PIN_AFIO_AF(GPIOB_CAN_RX, 9) | \
-                                     PIN_AFIO_AF(GPIOB_CAN_TX, 9) | \
+#define VAL_GPIOB_AFRH              (PIN_AFIO_AF(GPIOB_CAN_RX, 2) | \
+                                     PIN_AFIO_AF(GPIOB_CAN_TX, 2) | \
                                      PIN_AFIO_AF(GPIOB_LED_RUN, 0) | \
                                      PIN_AFIO_AF(GPIOB_EN_PWM_OUT, 0) | \
                                      PIN_AFIO_AF(GPIOB_PWM_BREAK, 1) | \
                                      PIN_AFIO_AF(GPIOB_PWM_AL, 1) | \
                                      PIN_AFIO_AF(GPIOB_PWM_BL, 1) | \
                                      PIN_AFIO_AF(GPIOB_PWM_CL, 1))
-
+///FIXME PB8 goes to PWM4CH3 for debugging
+///FIXME PB9 goes to PWM4CH4 for debugging
 /*
  * GPIOC setup:
  *

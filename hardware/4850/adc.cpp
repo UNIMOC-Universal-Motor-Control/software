@@ -123,7 +123,7 @@ constexpr uint32_t LENGTH_ADC_SEQ = 3;
 ///< ADC sequences in buffer.
 /// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
 ///          so even length of sequence is best choice.
-constexpr uint32_t ADC_SEQ_BUFFERED = 4;
+constexpr uint32_t ADC_SEQ_BUFFERED = 64;
 
 ///< # of ADCs
 constexpr uint32_t NUM_OF_ADC = 3;
@@ -172,15 +172,15 @@ static ADCConversionGroup adcgrpcfg1 = {
 		adccallback,
 		adcerrorcallback,
 		0,                                                    /* CR1   */
-		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
+		ADC_CR2_EXTEN_0 | ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
 		ADC_SMPR1_SMP_AN12(ADC_SAMPLE_15),                    /* SMPR1 */
 		ADC_SMPR2_SMP_AN4(ADC_SAMPLE_15),                     /* SMPR2 */
 		0,                                                    /* HTR */
 		0,                                                    /* LTR */
 		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ),                      /* SQR1  */
 		0,                                                    /* SQR2  */
-		ADC_SQR3_SQ3_N(ADC_CH_VDC) |
-		ADC_SQR3_SQ2_N(ADC_CH_CUR_A) |
+		ADC_SQR3_SQ3_N(ADC_CH_CUR_A) |
+		ADC_SQR3_SQ2_N(ADC_CH_VDC) |
 		ADC_SQR3_SQ1_N(ADC_CH_VDC)                            /* SQR3  */
 };
 
@@ -195,7 +195,7 @@ static ADCConversionGroup adcgrpcfg2 = {
 		nullptr,
 		adcerrorcallback,
 		0,                                                    /* CR1   */
-		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
+		ADC_CR2_EXTEN_0 | ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
 		0,                                                    /* SMPR1 */
 		ADC_SMPR2_SMP_AN0(ADC_SAMPLE_15) |
 		ADC_SMPR2_SMP_AN5(ADC_SAMPLE_15) |
@@ -204,8 +204,8 @@ static ADCConversionGroup adcgrpcfg2 = {
 		0,                                                    /* LTR */
 		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ),                      /* SQR1  */
 		0,                                                    /* SQR2  */
-		ADC_SQR3_SQ3_N(ADC_CH_BRDG_TEMP) |
-		ADC_SQR3_SQ2_N(ADC_CH_CUR_B) |
+		ADC_SQR3_SQ3_N(ADC_CH_CUR_B) |
+		ADC_SQR3_SQ2_N(ADC_CH_BRDG_TEMP) |
 		ADC_SQR3_SQ1_N(ADC_CH_MOT_TEMP)                       /* SQR3  */
 };
 
@@ -220,18 +220,22 @@ static ADCConversionGroup adcgrpcfg3 = {
 		nullptr,
 		adcerrorcallback,
 		0,                                                    /* CR1   */
-		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
+		ADC_CR2_EXTEN_0 | ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
 		ADC_SMPR1_SMP_AN11(ADC_SAMPLE_15),                     /* SMPR1 */
 		ADC_SMPR2_SMP_AN2(ADC_SAMPLE_15),                      /* SMPR2 */
 		0,                                                    /* HTR */
 		0,                                                    /* LTR */
 		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ),                      /* SQR1  */
 		0,                                                    /* SQR2  */
-		ADC_SQR3_SQ3_N(ADC_CH_TORQUE) |
-		ADC_SQR3_SQ2_N(ADC_CH_CUR_C) |
+		ADC_SQR3_SQ3_N(ADC_CH_CUR_C) |
+		ADC_SQR3_SQ2_N(ADC_CH_TORQUE) |
 		ADC_SQR3_SQ1_N(ADC_CH_TORQUE)                       /* SQR3  */
 };
 
+
+volatile float i_sigma[hardware::PHASES];
+volatile float i_accent_mean[hardware::PHASES];
+volatile float i_mean_accent[hardware::PHASES];
 
 /**
  * Initialize ADC hardware
@@ -274,7 +278,7 @@ void hardware::adc::current::Value(systems::abc& currents)
 		std::int32_t sum = 0;
 		for (std::uint_fast32_t s = 0; s < ADC_SEQ_BUFFERED; s++)
 		{
-			sum += samples[i][s][1];
+			sum += samples[i][s][0];
 		}
 
 		currents.array[i] = ADC2CURRENT * (float)(current_offset[i] - sum) / (float)ADC_SEQ_BUFFERED;
@@ -291,7 +295,7 @@ void hardware::adc::current::SetOffset(void)
 		std::int32_t sum = 0;
 		for (std::uint_fast32_t s = 0; s < ADC_SEQ_BUFFERED; s++)
 		{
-			sum += samples[i][s][1];
+			sum += samples[i][s][0];
 		}
 		current_offset[i] = sum;
 	}
@@ -311,7 +315,7 @@ float hardware::adc::voltage::DCBus(void)
 	 */
 	for(std::uint_fast32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
 	{
-		sum += samples[0][i][0];
+		sum += samples[0][i][1];
 		sum += samples[0][i][2];
 	}
 
@@ -354,7 +358,7 @@ float hardware::adc::temperature::Motor(void)
 		/*
 		 * Motor temperature is sampled by ADC2 second non current sample
 		 */
-		sum += samples[1][i][0];
+		sum += samples[1][i][1];
 	}
 
 	// Filter inverts the values
@@ -376,7 +380,7 @@ float hardware::crank::Torque(const float offset, const float gain)
 
 	for(std::uint_fast32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
 	{
-		sum += samples[2][i][0];
+		sum += samples[2][i][1];
 		sum += samples[2][i][2];
 	}
 	torque = (((float)sum * ADC2VOLTAGE) - offset) * gain;
