@@ -155,6 +155,9 @@ chibios_rt::ThreadReference hardware::control_thread = nullptr;
 ///< current offsets
 std::int32_t current_offset[hardware::PHASES];
 
+///< samples index in the adc buffer.
+std::uint32_t sample_index = ADC_SEQ_BUFFERED - 1;
+
 ///< cadence signal counter
 std::uint32_t cadence_counter = 0;
 
@@ -169,15 +172,15 @@ static ADCConversionGroup adcgrpcfg1 = {
 		adccallback,
 		adcerrorcallback,
 		0,                                                    /* CR1   */
-		ADC_CR2_EXTEN_0 | ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
+		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
 		ADC_SMPR1_SMP_AN12(ADC_SAMPLE_15),                    /* SMPR1 */
 		ADC_SMPR2_SMP_AN4(ADC_SAMPLE_15),                     /* SMPR2 */
 		0,                                                    /* HTR */
 		0,                                                    /* LTR */
 		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ),                      /* SQR1  */
 		0,                                                    /* SQR2  */
-		ADC_SQR3_SQ3_N(ADC_CH_CUR_A) |
-		ADC_SQR3_SQ2_N(ADC_CH_VDC) |
+		ADC_SQR3_SQ3_N(ADC_CH_VDC) |
+		ADC_SQR3_SQ2_N(ADC_CH_CUR_A) |
 		ADC_SQR3_SQ1_N(ADC_CH_VDC)                            /* SQR3  */
 };
 
@@ -192,7 +195,7 @@ static ADCConversionGroup adcgrpcfg2 = {
 		nullptr,
 		adcerrorcallback,
 		0,                                                    /* CR1   */
-		ADC_CR2_EXTEN_0 | ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
+		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
 		0,                                                    /* SMPR1 */
 		ADC_SMPR2_SMP_AN0(ADC_SAMPLE_15) |
 		ADC_SMPR2_SMP_AN5(ADC_SAMPLE_15) |
@@ -201,8 +204,8 @@ static ADCConversionGroup adcgrpcfg2 = {
 		0,                                                    /* LTR */
 		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ),                      /* SQR1  */
 		0,                                                    /* SQR2  */
-		ADC_SQR3_SQ3_N(ADC_CH_CUR_B) |
-		ADC_SQR3_SQ2_N(ADC_CH_BRDG_TEMP) |
+		ADC_SQR3_SQ3_N(ADC_CH_BRDG_TEMP) |
+		ADC_SQR3_SQ2_N(ADC_CH_CUR_B) |
 		ADC_SQR3_SQ1_N(ADC_CH_MOT_TEMP)                       /* SQR3  */
 };
 
@@ -217,21 +220,18 @@ static ADCConversionGroup adcgrpcfg3 = {
 		nullptr,
 		adcerrorcallback,
 		0,                                                    /* CR1   */
-		ADC_CR2_EXTEN_0 | ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
+		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
 		ADC_SMPR1_SMP_AN11(ADC_SAMPLE_15),                     /* SMPR1 */
 		ADC_SMPR2_SMP_AN2(ADC_SAMPLE_15),                      /* SMPR2 */
 		0,                                                    /* HTR */
 		0,                                                    /* LTR */
 		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ),                      /* SQR1  */
 		0,                                                    /* SQR2  */
-		ADC_SQR3_SQ3_N(ADC_CH_CUR_C) |
-		ADC_SQR3_SQ2_N(ADC_CH_TORQUE) |
+		ADC_SQR3_SQ3_N(ADC_CH_TORQUE) |
+		ADC_SQR3_SQ2_N(ADC_CH_CUR_C) |
 		ADC_SQR3_SQ1_N(ADC_CH_TORQUE)                       /* SQR3  */
 };
 
-
-volatile float i_even[hardware::PHASES];
-volatile float i_odd[hardware::PHASES];
 
 /**
  * Initialize ADC hardware
@@ -272,18 +272,12 @@ void hardware::adc::current::Value(systems::abc& currents)
 	for(std::uint_fast8_t i = 0; i < PHASES; i++)
 	{
 		std::int32_t sum = 0;
-		std::int32_t even = 0;
-		std::int32_t odd = 0;
 		for (std::uint_fast32_t s = 0; s < ADC_SEQ_BUFFERED; s++)
 		{
-			sum += samples[i][s][0];
-			if(s%2) odd += samples[i][s][0];
-			else even += samples[i][s][0];
+			sum += samples[i][s][1];
 		}
 
 		currents.array[i] = ADC2CURRENT * (float)(current_offset[i] - sum) / (float)ADC_SEQ_BUFFERED;
-		i_even[i] = ADC2CURRENT * (float)(current_offset[i] - even*2) / (float)ADC_SEQ_BUFFERED;
-		i_odd[i] = ADC2CURRENT * (float)(current_offset[i] - odd*2) / (float)ADC_SEQ_BUFFERED;
 	}
 }
 
@@ -297,7 +291,7 @@ void hardware::adc::current::SetOffset(void)
 		std::int32_t sum = 0;
 		for (std::uint_fast32_t s = 0; s < ADC_SEQ_BUFFERED; s++)
 		{
-			sum += samples[i][s][0];
+			sum += samples[i][s][1];
 		}
 		current_offset[i] = sum;
 	}
@@ -317,7 +311,7 @@ float hardware::adc::voltage::DCBus(void)
 	 */
 	for(std::uint_fast32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
 	{
-		sum += samples[0][i][1];
+		sum += samples[0][i][0];
 		sum += samples[0][i][2];
 	}
 
@@ -360,7 +354,7 @@ float hardware::adc::temperature::Motor(void)
 		/*
 		 * Motor temperature is sampled by ADC2 second non current sample
 		 */
-		sum += samples[1][i][1];
+		sum += samples[1][i][0];
 	}
 
 	// Filter inverts the values
@@ -382,7 +376,7 @@ float hardware::crank::Torque(const float offset, const float gain)
 
 	for(std::uint_fast32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
 	{
-		sum += samples[2][i][1];
+		sum += samples[2][i][0];
 		sum += samples[2][i][2];
 	}
 	torque = (((float)sum * ADC2VOLTAGE) - offset) * gain;
@@ -527,6 +521,9 @@ static void adcerrorcallback(ADCDriver *adcp, adcerror_t err)
 static void adccallback(ADCDriver *adcp)
 {
 	(void)adcp;
+
+	sample_index++;
+	if(sample_index >= ADC_SEQ_BUFFERED) sample_index = 0;
 
 	/* DMA buffer invalidation because data cache, only invalidating the
      * buffer just filled.

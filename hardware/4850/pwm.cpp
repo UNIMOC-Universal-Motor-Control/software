@@ -47,11 +47,8 @@ const uint32_t hardware::pwm::DEADTIME = 300;
  */
 const uint32_t hardware::pwm::PERIOD = 6750;
 
-const uint32_t ADC_OFFSET = 500;
-const uint32_t PWM_PROP_DELAY = 100;
-
 ///< Control cycle time
-const float hardware::Tc = ((float)(hardware::pwm::PERIOD) / (float)hardware::pwm::TIMER_CLOCK);
+const float hardware::Tc = ((float)hardware::pwm::PERIOD / (float)hardware::pwm::TIMER_CLOCK);
 
 ///< Control cycle frequency
 const float hardware::Fc = 1.0f/hardware::Tc;
@@ -89,7 +86,7 @@ const PWMConfig pwmcfg =
 		 * CR2 Register
 		 * Master mode update event on TRGO
 		 */
-		STM32_TIM_CR2_MMS(7),
+		STM32_TIM_CR2_MMS(2),
 		/*
 		 * Break and Deadtime Register
 		 * Break input enabled with filter of 8 clock cycles
@@ -108,7 +105,7 @@ const PWMConfig pwmcfg =
 const PWMConfig adctriggercfg =
 {
 		STM32_TIMCLK1,
-		PERIOD/2,
+		0xFFFE,
 		nullptr,
 		{ /*  */
 				{PWM_OUTPUT_DISABLED, nullptr},
@@ -118,8 +115,9 @@ const PWMConfig adctriggercfg =
 		},
 		/*
 		 * CR2 Register
+		 * CH4 on TRGO
 		 */
-		0,
+		STM32_TIM_CR2_MMS(7),
 		/*
 		 * Break and Deadtime Register
 		 */
@@ -152,19 +150,17 @@ void hardware::pwm::Init(void)
 	pwmStart(ADC_TRIGP, &adctriggercfg);
 	ADC_TRIGP->tim->CR1 &=~ STM32_TIM_CR1_CEN; // timer stop
 	ADC_TRIGP->tim->SMCR |= STM32_TIM_SMCR_SMS(4) | STM32_TIM_SMCR_MSM;
-	ADC_TRIGP->tim->CR1 |= STM32_TIM_CR1_CMS(2); // center aligned mode
 	ADC_TRIGP->tim->CR1 |= STM32_TIM_CR1_CEN; // adc trigger timer start again
 
 	PWMP->tim->CR1 |= STM32_TIM_CR1_CEN; // pwm timer start again
 
 	/* set adc trigger offset = minimal */
-	pwmEnableChannel(ADC_TRIGP, 3, ADC_OFFSET);
+	pwmEnableChannel(ADC_TRIGP, 3, 1);
 
 	/* enable pwms */
-	pwmEnableChannel(PWMP, 0, 0);
-	pwmEnableChannel(PWMP, 1, 0);
-	pwmEnableChannel(PWMP, 2, 0);
-	pwmEnableChannel(PWMP, 3, PWM_PROP_DELAY);
+	pwmEnableChannel(PWMP, 0, PERIOD/2);
+	pwmEnableChannel(PWMP, 1, PERIOD/2);
+	pwmEnableChannel(PWMP, 2, PERIOD/2);
 }
 
 /**
@@ -204,7 +200,6 @@ bool hardware::pwm::output::Active(void)
 void hardware::pwm::Duty(const systems::abc& dutys)
 {
 	constexpr int16_t mid = PERIOD/2;
-	uint16_t max = 0;
 
 	for (uint16_t i = 0; i < PHASES; ++i)
 	{
@@ -214,21 +209,6 @@ void hardware::pwm::Duty(const systems::abc& dutys)
 		if(new_duty > (int16_t)PERIOD) new_duty = PERIOD;
 
 		pwmEnableChannel(PWMP, i, new_duty);
-
-		if(new_duty > max) max = new_duty;
-	}
-
-	if(max > mid)
-	{
-		/* set adc trigger offset so that we trigger before the edges */
-		pwmEnableChannel(ADC_TRIGP, 3, (max - ADC_OFFSET)/2);
-		PWMP->tim->CCER |= STM32_TIM_CCER_CC4P;
-	}
-	else
-	{
-		/* set adc trigger offset so that we trigger before the edges */
-		pwmEnableChannel(ADC_TRIGP, 3, (max + ADC_OFFSET)/2);
-		PWMP->tim->CCER &= ~STM32_TIM_CCER_CC4P;
 	}
 }
 

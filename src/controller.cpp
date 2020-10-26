@@ -88,6 +88,8 @@ namespace control
 	void Overmodulation(systems::abc& u, float ubat, systems::abc& dutys)
 	{
 		const float* min = std::min_element(u.array.begin(), u.array.end());
+		const float* max = std::max_element(u.array.begin(), u.array.end());
+		float mid = (*min + *max)/2.0f;
 
 		// prevent division by zero
 		if(ubat < 10.0f)
@@ -113,7 +115,7 @@ namespace control
 			}
 
 			// flat bottom
-			dutys.array[i] = (u.array[i] - *min) * scale + dt - 1.0f;
+			dutys.array[i] = (u.array[i] - mid) * scale + dt - 1.0f;
 		}
 	}
 
