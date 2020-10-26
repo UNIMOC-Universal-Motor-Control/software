@@ -123,7 +123,7 @@ constexpr uint32_t LENGTH_ADC_SEQ = 3;
 ///< ADC sequences in buffer.
 /// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
 ///          so even length of sequence is best choice.
-constexpr uint32_t ADC_SEQ_BUFFERED = 64;
+constexpr uint32_t ADC_SEQ_BUFFERED = 16;
 
 ///< # of ADCs
 constexpr uint32_t NUM_OF_ADC = 3;
@@ -154,9 +154,6 @@ chibios_rt::ThreadReference hardware::control_thread = nullptr;
 
 ///< current offsets
 std::int32_t current_offset[hardware::PHASES];
-
-///< samples index in the adc buffer.
-std::uint32_t sample_index = ADC_SEQ_BUFFERED - 1;
 
 ///< cadence signal counter
 std::uint32_t cadence_counter = 0;
@@ -233,9 +230,8 @@ static ADCConversionGroup adcgrpcfg3 = {
 };
 
 
-volatile float i_sigma[hardware::PHASES];
-volatile float i_accent_mean[hardware::PHASES];
-volatile float i_mean_accent[hardware::PHASES];
+volatile float i_even[hardware::PHASES];
+volatile float i_odd[hardware::PHASES];
 
 /**
  * Initialize ADC hardware
@@ -276,12 +272,18 @@ void hardware::adc::current::Value(systems::abc& currents)
 	for(std::uint_fast8_t i = 0; i < PHASES; i++)
 	{
 		std::int32_t sum = 0;
+		std::int32_t even = 0;
+		std::int32_t odd = 0;
 		for (std::uint_fast32_t s = 0; s < ADC_SEQ_BUFFERED; s++)
 		{
 			sum += samples[i][s][0];
+			if(s%2) odd += samples[i][s][0];
+			else even += samples[i][s][0];
 		}
 
 		currents.array[i] = ADC2CURRENT * (float)(current_offset[i] - sum) / (float)ADC_SEQ_BUFFERED;
+		i_even[i] = ADC2CURRENT * (float)(current_offset[i] - even*2) / (float)ADC_SEQ_BUFFERED;
+		i_odd[i] = ADC2CURRENT * (float)(current_offset[i] - odd*2) / (float)ADC_SEQ_BUFFERED;
 	}
 }
 
@@ -525,9 +527,6 @@ static void adcerrorcallback(ADCDriver *adcp, adcerror_t err)
 static void adccallback(ADCDriver *adcp)
 {
 	(void)adcp;
-
-	sample_index++;
-	if(sample_index >= ADC_SEQ_BUFFERED) sample_index = 0;
 
 	/* DMA buffer invalidation because data cache, only invalidating the
      * buffer just filled.
