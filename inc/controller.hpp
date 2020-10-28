@@ -169,7 +169,7 @@ namespace control
 		constexpr inline void SetParameters(const float rs, const systems::dq l, const float psi, const float tf)
 		{
 			Rs = rs;
-			Ls = (l.d + l.q) * 0.5f;
+			Ls = l.q;
 			PsiM = psi;
 			ctrl_d.SetParameters((Ls/Rs)/(2.0f/Rs*tf), Ls/Rs);
 			ctrl_q.SetParameters((Ls/Rs)/(2.0f/Rs*tf), Ls/Rs);

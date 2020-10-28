@@ -123,13 +123,13 @@ constexpr uint32_t LENGTH_ADC_SEQ = 3;
 ///< ADC sequences in buffer.
 /// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
 ///          so even length of sequence is best choice.
-constexpr uint32_t ADC_SEQ_BUFFERED = 16;
+constexpr uint32_t ADC_SEQ_BUFFERED = 4;
 
 ///< # of ADCs
 constexpr uint32_t NUM_OF_ADC = 3;
 
 ///< Filter Group delay
-const float hardware::Tf = hardware::Tc*(ADC_SEQ_BUFFERED/2) + 1e-6;
+const float hardware::Tf = hardware::Tc*(ADC_SEQ_BUFFERED/2 + 1);
 
 ///< absolute maximum current
 constexpr float hardware::adc::current::MAX = 1.65f/(20.0f*(0.002f/3.0f));

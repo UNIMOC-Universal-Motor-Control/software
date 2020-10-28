@@ -89,7 +89,7 @@ namespace control
 	{
 		const float* min = std::min_element(u.array.begin(), u.array.end());
 		const float* max = std::max_element(u.array.begin(), u.array.end());
-		float mid = (*min + *max)/2.0f;
+		float mid = (*min + *max)*0.5f;
 
 		// prevent division by zero
 		if(ubat < 10.0f)
@@ -108,14 +108,13 @@ namespace control
 //				dt = hardware::Fc / std::copysign(settings.converter.dt, values.motor.i.array[i]);
 //			}
 
-			// linear zone around zero to accomodate low currents and current noise
-			if(std::fabs(values.motor.i.array[i]) < settings.converter.dt_i_min)
-			{
-				dt *= std::fabs(values.motor.i.array[i]) / settings.converter.dt_i_min;
-			}
+//			// linear zone around zero to accomodate low currents and current noise
+//			if(std::fabs(values.motor.i.array[i]) < settings.converter.dt_i_min)
+//			{
+//				dt *= std::fabs(values.motor.i.array[i]) / settings.converter.dt_i_min;
+//			}
 
-			// flat bottom
-			dutys.array[i] = (u.array[i] - mid) * scale + dt - 1.0f;
+			dutys.array[i] = (u.array[i] - mid) * scale + dt;
 		}
 	}
 
@@ -308,10 +307,11 @@ namespace control
 			if(management::control::current)
 			{
 				float torque_factor = _3by2 * settings.motor.psi;
+				if(settings.motor.psi < 1e-6) torque_factor = 1.0f;
 
 				values.motor.rotor.setpoint.i.d = 0.0f;
 				values.motor.rotor.setpoint.i.q =
-						values.motor.rotor.setpoint.torque/(torque_factor);
+						values.motor.rotor.setpoint.torque/torque_factor;
 
 				// starting help for traction drives
 				if(std::fabs(values.motor.rotor.setpoint.i.q) > settings.observer.mech.i_min

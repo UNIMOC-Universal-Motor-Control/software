@@ -159,6 +159,8 @@ namespace observer
      */
     void flux::Calculate(const systems::sin_cos& sin_cos, std::array<float, 3>& correction)
     {
+    	float error = 0.0f;
+
     	// BEMF voltage and feedback
     	rotor.bemf.d = values.motor.rotor.u.d - settings.motor.rs * values.motor.rotor.i.d + rotor.feedback.d;
     	rotor.bemf.q = values.motor.rotor.u.q - settings.motor.rs * values.motor.rotor.i.q + rotor.feedback.q;
@@ -181,7 +183,14 @@ namespace observer
     	rotor.feedback.d = settings.observer.flux.C.d * (settings.motor.psi - rotor.flux.d);
     	rotor.feedback.q = settings.observer.flux.C.q * (0.0f - rotor.flux.q);
 
-    	float error = rotor.flux.q / settings.motor.psi;
+    	if(settings.motor.psi > 1e-6)
+    	{
+    		error = rotor.flux.q / settings.motor.psi;
+    	}
+    	else
+    	{
+    		error = rotor.flux.q;
+    	}
 
     	// Kalman filter on angular error
     	mech.Update(settings.observer.flux.Q, settings.observer.flux.R, error, correction);

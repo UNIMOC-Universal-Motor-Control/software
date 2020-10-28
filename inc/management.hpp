@@ -119,7 +119,7 @@ namespace management
 		constexpr float CUR = 2.0f;
 
 		///< measurement frequency
-		constexpr float FREQ = 1500.0f;
+		constexpr float FREQ = 1000.0f;
 
 		///< enable flag
 		extern bool enable;
@@ -153,6 +153,8 @@ namespace management
 			CALCULATE_RS,
 			MEASURE_LS,
 			CALCULATE_LS,
+			MEASURE_PSI,
+			CALCULATE_PSI,
 		} sequencer;
 
 

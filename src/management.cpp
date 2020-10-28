@@ -113,7 +113,7 @@ namespace management
 			///< enable flag
 			bool enable = false;
 
-			///< current measurement voltage
+			///< inductance measurement voltage
 			float u = 0.0f;
 
 			///< cycle counter
@@ -121,6 +121,18 @@ namespace management
 
 			///< old omega limit
 			float w_limit = 0.0f;
+		}
+
+		/**
+		 * @namespace flux measurement values
+		 */
+		namespace psi
+		{
+			///< enable flag
+			bool enable = false;
+
+			///< cycle counter
+			std::uint32_t cycle = 0;
 		}
 	}
 
@@ -179,6 +191,9 @@ namespace management
 				}
 				else
 				{
+					// software release for PWM
+					hardware::pwm::output::Enable();
+
 					hardware::adc::current::SetOffset();
 
 					sequencer = RUN;
@@ -222,12 +237,12 @@ namespace management
 				{
 					measure::r::enable = true;
 					measure::l::enable = true;
-//					measure::flux = true;
+					measure::psi::enable = true;
 				}
 
 				if(measure::r::enable) sequencer = MEASURE_RS;
 				else if(measure::l::enable) sequencer = MEASURE_LS;
-//				else if(measure::flux) sequencer = MEASURE_FLUX;
+				else if(measure::psi::enable) sequencer = MEASURE_PSI;
 
 				break;
 
@@ -384,9 +399,6 @@ namespace management
 
 			case CALCULATE_LS:
 
-				values.motor.rotor.u.d = 0.0f;
-				values.motor.rotor.u.q = 0.0f;
-
 				// calculate the dc levels
 				values.motor.rotor.gid.SetFrequency(0.0f);
 				values.motor.rotor.giq.SetFrequency(0.0f);
@@ -394,20 +406,25 @@ namespace management
 				values.motor.rotor.gid.Calculate();
 				values.motor.rotor.giq.Calculate();
 
-				systems::dq i = {values.motor.rotor.gid.Magnitude(), values.motor.rotor.giq.Magnitude()};
-				float i_len = systems::Length(i);
-
-				if(i_len > 0.0f)
 				{
-					// get the Ld - Lq current at twice the injection frequency
-					values.motor.rotor.gid.SetFrequency(2.0f * measure::l::FREQ);
-					values.motor.rotor.gid.Calculate();
-					float iac = values.motor.rotor.gid.Magnitude();
+					systems::dq i = {values.motor.rotor.gid.Magnitude(), values.motor.rotor.giq.Magnitude()};
+					float i_len = systems::Length(i);
 
-					// assume that Ld is always lower than Lq due to Saturation
-					settings.motor.l.d = measure::l::u/(values.motor.rotor.omega * (i_len + iac));
-					settings.motor.l.q = measure::l::u/(values.motor.rotor.omega * (i_len - iac));
+					if(i_len > 0.0f)
+					{
+						// get the Ld - Lq current at twice the injection frequency
+						values.motor.rotor.gid.SetFrequency(2.0f * measure::l::FREQ);
+						values.motor.rotor.gid.Calculate();
+						float iac = values.motor.rotor.gid.Magnitude();
+
+						// assume that Ld is always lower than Lq due to Saturation
+						settings.motor.l.d = measure::l::u/(values.motor.rotor.omega * (i_len + iac));
+						settings.motor.l.q = measure::l::u/(values.motor.rotor.omega * (i_len - iac));
+					}
 				}
+
+				values.motor.rotor.u.d = 0.0f;
+				values.motor.rotor.u.q = 0.0f;
 				values.motor.rotor.phi = 0.0f;
 				values.motor.rotor.omega = 0.0f;
 				settings.motor.limits.omega =  measure::l::w_limit;
@@ -416,6 +433,74 @@ namespace management
 				measure::l::enable = false;
 				measure::l::cycle = 0;
 
+				sequencer = RUN;
+				break;
+
+			case MEASURE_PSI:
+				// init the measurement
+				if(measure::psi::cycle == 0)
+				{
+					values.motor.rotor.u.d = 0.0f;
+					values.motor.rotor.u.q = 0.0f;
+					values.motor.rotor.phi = 0.0f;
+					values.motor.rotor.omega = 0.0f;
+
+					observer::mechanic = false;
+					observer::flux = false;
+					observer::hfi = false;
+
+					control::feedforward = false;
+					control::current = true;
+
+					settings.motor.psi = 0.0f;
+					values.motor.rotor.setpoint.torque = settings.motor.limits.i * 0.5f;
+				}
+
+				// handle PWM led to show PWM status
+				if(hardware::pwm::output::Active()) palSetLine(LINE_LED_PWM);
+				else
+				{
+					// wait for PWM release
+					sequencer = RUN;
+
+					palClearLine(LINE_LED_PWM);
+				}
+				// set Run Mode LED
+				palClearLine(LINE_LED_RUN);
+
+				if(	   std::fabs(values.motor.rotor.u.d) > values.battery.u * 0.125f
+						|| std::fabs(values.motor.rotor.u.q) > values.battery.u * 0.125f
+						|| values.motor.rotor.omega > 0.5f*settings.motor.limits.omega)
+				{
+					sequencer = CALCULATE_PSI;
+				}
+				else
+				{
+					values.motor.rotor.omega += 1.0f;
+				}
+				measure::psi::cycle++;
+				break;
+
+			case CALCULATE_PSI:
+				/// TODO add calculation of psi
+
+				values.motor.rotor.u.d = 0.0f;
+				values.motor.rotor.u.q = 0.0f;
+				values.motor.rotor.phi = 0.0f;
+				values.motor.rotor.omega = 0.0f;
+
+				observer::mechanic = false;
+				observer::flux = false;
+				observer::hfi = false;
+
+				control::feedforward = false;
+				control::current = false;
+
+				values.motor.rotor.setpoint.torque = 0.0f;
+
+
+				measure::psi::enable = false;
+				measure::psi::cycle = 0;
 				sequencer = RUN;
 				break;
 			}
