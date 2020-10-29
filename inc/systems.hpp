@@ -24,6 +24,7 @@
 #include <cstring>
 #include <climits>
 #include <array>
+#include <math.h>
 
 /**
  * @namespace math constants

@@ -257,43 +257,6 @@ typedef struct settings_s
 
 extern settings_ts settings;
 
-/**
- * parameter definition type for uavcan communication
- */
-typedef struct parameter_s
-{
-	///< max length of name string in frame
-	static constexpr std::size_t PARAM_MAX_NAME_LEN = 92;
-
-	///< uavcan parameter type
-	enum class type_e : std::uint_fast8_t
-	{
-		PARAM_TYPE_FLOAT,
-		PARAM_TYPE_INT,
-		PARAM_TYPE_BOOL
-	};
-
-	///< pointer to the setting value behind the parameter
-	void* setting;
-
-	///< name of the parameter
-	const char* name;
-
-	///< parameter default value
-	float default_val;
-
-	///< parameter min value
-	float min_val;
-
-	///< parameter max value
-	float max_val;
-
-	///< parameter type
-	type_e type;
-} parameter_ts;
-
-extern const parameter_ts parameters[];
-
 
 
 #endif /* INC_SETTINGS_HPP_ */

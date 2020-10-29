@@ -18,6 +18,7 @@
  */
 #include "settings.hpp"
 #include <cstring>
+#include <cstddef>
 #include "hardware_interface.hpp"
 
 /**
@@ -25,7 +26,7 @@
  *
  * @note aligned to 32bytes boundarys for better cache handling
  */
-settings_ts settings =
+__attribute__((aligned (32))) settings_ts settings =
 {
 	/**
 	 * mechanic system settings
@@ -245,7 +246,7 @@ settings_ts settings =
  */
 void settings_s::Save(void)
 {
-	settings.crc = hardware::memory::Crc32(&settings, sizeof(settings_ts) - sizeof(uint32_t));
+	settings.crc = hardware::memory::Crc32(&settings, offsetof(settings_ts, crc));
 
 	hardware::memory::Write(0, &settings, sizeof(settings_ts));
 }
@@ -262,16 +263,11 @@ bool settings_s::Load(void)
 
 	hardware::memory::Read(0, &tmp, sizeof(settings_ts));
 
-	if(tmp.crc == hardware::memory::Crc32(&tmp, sizeof(settings_ts) - sizeof(uint32_t)))
+	if(tmp.crc == hardware::memory::Crc32(&tmp, offsetof(settings_ts, crc)))
 	{
 		std::memcpy(&settings, &tmp, sizeof(settings_ts));
 		result = true;
 	}
 	return result;
 }
-
-const parameter_ts parameters[] =
-{
-	{.setting = (void*)&settings.motor.rs, .name = "motor.rs", .default_val = 0.2f, .min_val = 1e-3f, .max_val = 10.0f, .type = parameter_s::type_e::PARAM_TYPE_FLOAT},
-};
 

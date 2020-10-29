@@ -163,8 +163,11 @@ namespace management
 			values.converter.temp = hardware::adc::temperature::Bridge();
 			values.motor.temp = hardware::adc::temperature::Motor();
 
-			if(save) settings.Save();
-			save = false;
+			if(save)
+			{
+				settings.Save();
+				save = false;
+			}
 
 			switch(sequencer)
 			{
