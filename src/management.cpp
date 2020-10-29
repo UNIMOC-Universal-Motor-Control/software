@@ -468,21 +468,28 @@ namespace management
 				// set Run Mode LED
 				palClearLine(LINE_LED_RUN);
 
-				if(	   std::fabs(values.motor.rotor.u.d) > values.battery.u * 0.125f
-						|| std::fabs(values.motor.rotor.u.q) > values.battery.u * 0.125f
-						|| values.motor.rotor.omega > 0.5f*settings.motor.limits.omega)
-				{
-					sequencer = CALCULATE_PSI;
-				}
-				else
-				{
-					values.motor.rotor.omega += 1.0f;
-				}
 				measure::psi::cycle++;
+				if((measure::psi::cycle % 100) == 0)
+				{
+					if(	   std::fabs(values.motor.rotor.u.d) > values.battery.u * 0.125f
+							|| std::fabs(values.motor.rotor.u.q) > values.battery.u * 0.125f
+							|| values.motor.rotor.omega > 0.5f*settings.motor.limits.omega)
+					{
+						sequencer = CALCULATE_PSI;
+					}
+					else
+					{
+						values.motor.rotor.omega += 1.0f;
+					}
+				}
+
 				break;
 
 			case CALCULATE_PSI:
-				/// TODO add calculation of psi
+				float bemf_d = values.motor.rotor.u.d - values.motor.rotor.i.d*settings.motor.rs + values.motor.rotor.omega*settings.motor.l.q*values.motor.rotor.i.q;
+				float bemf_q = values.motor.rotor.u.q - values.motor.rotor.i.q*settings.motor.rs - values.motor.rotor.omega*settings.motor.l.d*values.motor.rotor.i.d;
+				systems::dq bemf = {bemf_d, bemf_q};
+				if(values.motor.rotor.omega > 1.0f) settings.motor.psi = systems::Length(bemf)/values.motor.rotor.omega;
 
 				values.motor.rotor.u.d = 0.0f;
 				values.motor.rotor.u.q = 0.0f;
