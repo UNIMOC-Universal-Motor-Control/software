@@ -1,147 +1,45 @@
 /*
-    ChibiOS - Copyright (C) 2006..2018 Giovanni Di Sirio
+    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
+	This file is part of UNIMOC.
 
-        http://www.apache.org/licenses/LICENSE-2.0
+	UNIMOC is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
+#include <cstring>
+#include <stdint.h>
 #include "ch.hpp"
 #include "hal.h"
 #include "usbcfg.h"
+#include "hardware_interface.hpp"
+#include "freemaster_wrapper.hpp"
+#include "management.hpp"
+#include "pas.hpp"
+#include "main.hpp"
 
 using namespace chibios_rt;
 
+static modules::freemaster::thread freemaster;
+static control::thread controller;
+static management::thread manager;
+static pas::thread pedal_assist;
 
-/* Reference to the server thread.*/
-static ThreadReference sref;
-
-/*
- * LED blink sequences.
- * NOTE: Sequences must always be terminated by a GOTO instruction.
- * NOTE: The sequencer language could be easily improved but this is outside
- *       the scope of this demo.
+/**
+ * Code entry point
+ * @return never
  */
-#define SLEEP           0
-#define GOTO            1
-#define STOP            2
-#define BITCLEAR        3
-#define BITSET          4
-#define MESSAGE         5
-
-typedef struct {
-	uint8_t       action;
-	union {
-		msg_t       msg;
-		uint32_t    value;
-		ioline_t    line;
-	};
-} seqop_t;
-
-// Flashing sequence for LED3.
-static const seqop_t LED3_sequence[] =
+int main(void)
 {
-		{BITSET,      LINE_LED_RUN},
-		{SLEEP,       800},
-		{BITCLEAR,    LINE_LED_RUN},
-		{SLEEP,       200},
-		{GOTO,        0}
-};
-
-// Flashing sequence for LED4.
-static const seqop_t LED4_sequence[] =
-{
-		{BITSET,      LINE_LED_MODE},
-		{SLEEP,       600},
-		{BITCLEAR,    LINE_LED_MODE},
-		{SLEEP,       400},
-		{GOTO,        0}
-};
-
-// Flashing sequence for LED5.
-static const seqop_t LED5_sequence[] =
-{
-		{BITSET,      LINE_LED_ERROR},
-		{SLEEP,       400},
-		{BITCLEAR,    LINE_LED_ERROR},
-		{SLEEP,       600},
-		{GOTO,        0}
-};
-
-// Flashing sequence for LED6.
-static const seqop_t LED6_sequence[] =
-{
-		{BITSET,      LINE_LED_PWM},
-		{SLEEP,       200},
-		{BITCLEAR,    LINE_LED_PWM},
-		{SLEEP,       800},
-		{GOTO,        0}
-};
-
-
-/*
- * Sequencer thread class. It can drive LEDs or other output pins.
- * Any sequencer is just an instance of this class, all the details are
- * totally encapsulated and hidden to the application level.
- */
-class SequencerThread : public BaseStaticThread<128> {
-private:
-	const seqop_t *base, *curr;                   // Thread local variables.
-
-protected:
-	void main(void) override {
-
-		setName("sequencer");
-
-		while (true) {
-			switch(curr->action) {
-			case SLEEP:
-				sleep(TIME_MS2I(curr->value));
-				break;
-			case GOTO:
-				curr = &base[curr->value];
-				continue;
-			case STOP:
-				return;
-			case BITCLEAR:
-				palClearLine(curr->line);
-				break;
-			case BITSET:
-				palSetLine(curr->line);
-				break;
-			}
-			curr++;
-		}
-	}
-
-public:
-	SequencerThread(const seqop_t *sequence) : BaseStaticThread<128>() {
-
-		base = curr = sequence;
-	}
-};
-
-
-
-/* Static threads instances.*/
-static SequencerThread blinker1(LED3_sequence);
-static SequencerThread blinker2(LED4_sequence);
-static SequencerThread blinker3(LED5_sequence);
-static SequencerThread blinker4(LED6_sequence);
-
-/*
- * Application entry point.
- */
-int main(void) {
-
 	/*
 	 * System initializations.
 	 * - HAL initialization, this also initializes the configured device drivers
@@ -153,43 +51,52 @@ int main(void) {
 	System::init();
 
 	/*
+	 * initialize hardware with no control thread
+	 */
+	hardware::memory::Init();
+	hardware::pwm::Init();
+	hardware::adc::Init();
+
+	/*
 	 * Initializes two serial-over-USB CDC drivers.
 	 */
 	sduObjectInit(&SDU1);
-	sduStart(&SDU1, &serusbcfg1);
-	sduObjectInit(&SDU2);
-	sduStart(&SDU2, &serusbcfg2);
+	sduStart(&SDU1, &serusbcfg);
 
 	/*
 	 * Activates the USB driver and then the USB bus pull-up on D+.
 	 * Note, a delay is inserted in order to not have to disconnect the cable
 	 * after a reset.
 	 */
-	usbDisconnectBus(serusbcfg1.usbp);
+	usbDisconnectBus(serusbcfg.usbp);
 	chThdSleepMilliseconds(1500);
-	usbStart(serusbcfg1.usbp, &usbcfg);
-	usbConnectBus(serusbcfg1.usbp);
+	usbStart(serusbcfg.usbp, &usbcfg);
+	usbConnectBus(serusbcfg.usbp);
+
+	chThdSetPriority(LOWPRIO);
 
 	/*
-	 * Starts several instances of the SequencerThread class, each one operating
-	 * on a different sequence.
+	 * start threads
 	 */
-	blinker1.start(NORMALPRIO + 10);
-	blinker2.start(NORMALPRIO + 10);
-	blinker3.start(NORMALPRIO + 10);
-	blinker4.start(NORMALPRIO + 10);
+	freemaster.start(NORMALPRIO);
+	hardware::control_thread = controller.start(HIGHPRIO);
+	manager.start(NORMALPRIO + 2);
+	pedal_assist.start(NORMALPRIO + 1);
 
 	/*
-	 * Serves timer events.
+	 * Normal main() thread activity, in this demo it does nothing except
+	 * sleeping in a loop and check the button state.
 	 */
-	while (true) {
-		BaseThread::sleep(TIME_MS2I(500));
+	while (true)
+	{
+		chThdSleepSeconds(10);
+		if(settings.battery.limits.i.charge > settings.converter.limits.current)
+			settings.battery.limits.i.charge = settings.converter.limits.current;
+
+		if(settings.battery.limits.i.drive > settings.converter.limits.current)
+					settings.battery.limits.i.drive = settings.converter.limits.current;
+
+		if(settings.motor.limits.i > settings.converter.limits.current)
+			settings.motor.limits.i = settings.converter.limits.current;
 	}
-
-	return 0;
 }
-
-
-
-
-

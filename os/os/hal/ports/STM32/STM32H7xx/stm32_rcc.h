@@ -589,6 +589,29 @@
  * @api
  */
 #define rccResetDMA2() rccResetAHB1(RCC_AHB1RSTR_DMA2RST)
+
+/**
+ * @brief   Enables the MDMA peripheral clock.
+ *
+ * @param[in] lp        low power enable flag
+ *
+ * @api
+ */
+#define rccEnableMDMA(lp) rccEnableAHB3(RCC_AHB3ENR_MDMAEN, lp)
+
+/**
+ * @brief   Disables the MDMA peripheral clock.
+ *
+ * @api
+ */
+#define rccDisableMDMA() rccDisableAHB3(RCC_AHB3ENR_MDMAEN)
+
+/**
+ * @brief   Resets the MDMA peripheral.
+ *
+ * @api
+ */
+#define rccResetMDMA() rccResetAHB3(RCC_AHB3ENR_MDMARST)
 /** @} */
 
 /**
@@ -898,6 +921,34 @@
  * @api
  */
 #define rccResetQUADSPI1() rccResetAHB3(RCC_AHB3RSTR_QSPIRST)
+/** @} */
+
+/**
+ * @name    RNG peripherals specific RCC operations
+ * @{
+ */
+/**
+ * @brief   Enables the RNG peripheral clock.
+ *
+ * @param[in] lp        low power enable flag
+ *
+ * @api
+ */
+#define rccEnableRNG(lp) rccEnableAHB2(RCC_AHB2ENR_RNGEN, lp)
+
+/**
+ * @brief   Disables the RNG peripheral clock.
+ *
+ * @api
+ */
+#define rccDisableRNG() rccDisableAHB2(RCC_AHB2ENR_RNGEN)
+
+/**
+ * @brief   Resets the RNG peripheral.
+ *
+ * @api
+ */
+#define rccResetRNG() rccResetAHB2(RCC_AHB2RSTR_RNGRST)
 /** @} */
 
 /**

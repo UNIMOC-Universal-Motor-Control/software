@@ -5,7 +5,8 @@
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -Ofast -ggdb -fomit-frame-pointer -falign-functions=16 -fsingle-precision-constant
+  USE_OPT = -Og -ggdb -fomit-frame-pointer -falign-functions=16 -fsingle-precision-constant -ffunction-sections -fdata-sections -Wdouble-promotion
+ #-ffast-math
 endif
 
 # C specific options here (added to USE_OPT).
@@ -15,7 +16,7 @@ endif
 
 # C++ specific options here (added to USE_OPT).
 ifeq ($(USE_CPPOPT),)
-  USE_CPPOPT = -fno-rtti -fno-exceptions -std=c++17
+  USE_CPPOPT = -fno-rtti -fno-exceptions
 endif
 
 # Enable this if you want the linker to remove unused code and data.
@@ -30,7 +31,7 @@ endif
 
 # Enable this if you want link time optimizations (LTO).
 ifeq ($(USE_LTO),)
-  USE_LTO = no
+  USE_LTO = yes
 endif
 
 # Enable this if you want to see the full log while compiling.
@@ -41,7 +42,7 @@ endif
 # If enabled, this option makes the build process faster by not compiling
 # modules not used in the current configuration.
 ifeq ($(USE_SMART_BUILD),)
-  USE_SMART_BUILD = yes
+  USE_SMART_BUILD = no
 endif
 
 #
@@ -101,8 +102,9 @@ include $(CHIBIOS)/os/license/license.mk
 include $(CHIBIOS)/os/common/startup/ARMCMx/compilers/GCC/mk/startup_stm32f7xx.mk
 # HAL-OSAL files (optional).
 include $(CHIBIOS)/os/hal/hal.mk
+include $(CHIBIOS)/os/hal/lib/streams/streams.mk
 include $(CHIBIOS)/os/hal/ports/STM32/STM32F7xx/platform.mk
-include $(CHIBIOS)/os/hal/osal/rt/osal.mk
+include $(CHIBIOS)/os/hal/osal/rt-nil/osal.mk
 include $(CHIBIOS)/os/various/cpp_wrappers/chcpp.mk
 # RTOS files (optional).
 include $(CHIBIOS)/os/rt/rt.mk
@@ -119,12 +121,13 @@ LDSCRIPT= $(STARTUPLD)/STM32F730x8.ld
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
-CSRC = $(ALLCSRC) usbcfg.c\
-
+CSRC = $(ALLCSRC) \
+       $(CHIBIOS)/os/various/syscalls.c \
+       usbcfg.c \
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
-CPPSRC = $(ALLCPPSRC)
+CPPSRC = $(ALLCPPSRC) pwm.cpp adc.cpp eeprom.cpp serial.cpp
 
 # List ASM source files here.
 ASMSRC = $(ALLASMSRC)
@@ -150,10 +153,7 @@ CPPWARN = -Wall -Wextra -Wundef
 #
 
 # List all user C define here, like -D_DEBUG=1
-UDEFS = -DUAVCAN_STM32_CHIBIOS=1      \
-        -DUAVCAN_STM32_TIMER_NUMBER=6 \
-        -DUAVCAN_STM32_NUM_IFACES=1   \
-        -DUAVCAN_CPP_VERSION=2017
+UDEFS =
 
 # Define ASM defines here
 UADEFS =
@@ -186,6 +186,7 @@ include $(RULESPATH)/rules.mk
 ##############################################################################
 # Custom rules
 #
+# This rule hook is defined in the ChibiOS build system
 
 #
 # Custom rules

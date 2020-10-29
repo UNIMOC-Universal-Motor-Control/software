@@ -170,6 +170,9 @@ void wspi_lld_start(WSPIDriver *wspip) {
                                    (void *)wspip);
       osalDbgAssert(wspip->dma != NULL, "unable to allocate stream");
       rccEnableQUADSPI1(true);
+#if STM32_DMA_SUPPORTS_DMAMUX
+      dmaSetRequestSource(wspip->dma, STM32_DMAMUX1_QUADSPI);
+#endif
     }
 #endif
 
@@ -330,6 +333,7 @@ void wspi_lld_map_flash(WSPIDriver *wspip,
   wspip->qspi->ABR = 0;
   wspip->qspi->AR  = 0;
   wspip->qspi->CCR = cmdp->cmd | cmdp->cfg |
+                     QUADSPI_CCR_DUMMY_CYCLES(cmdp->dummy) |
                      QUADSPI_CCR_FMODE_1 | QUADSPI_CCR_FMODE_0;
 
   /* Mapped flash absolute base address.*/

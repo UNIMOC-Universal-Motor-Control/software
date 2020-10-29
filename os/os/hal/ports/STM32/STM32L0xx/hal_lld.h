@@ -26,7 +26,7 @@
  *          - STM32_HSE_BYPASS (optionally).
  *          .
  *          One of the following macros must also be defined:
- *          - STM32L011xx, STM32L031xx, 
+ *          - STM32L011xx, STM32L031xx,
  *            STM32L051xx, STM32L052xx, STM32L053xx,
  *            STM32L061xx, STM32L062xx, STM32L063xx,
  *            STM32L071xx, STM32L072xx, STM32L073xx for ultra-low-power MCUs.
@@ -531,6 +531,20 @@
  */
 #if !defined(STM32L0xx_MCUCONF)
 #error "Using a wrong mcuconf.h file, STM32L0xx_MCUCONF not defined"
+#endif
+
+#if defined(STM32L052xx) && !defined(STM32L052_MCUCONF)
+#error "Using a wrong mcuconf.h file, STM32G052_MCUCONF not defined"
+
+#elif defined(STM32L053xx) && !defined(STM32L053_MCUCONF)
+#error "Using a wrong mcuconf.h file, STM32L053_MCUCONF not defined"
+
+#elif defined(STM32L072xx) && !defined(STM32L072_MCUCONF)
+#error "Using a wrong mcuconf.h file, STM32G072_MCUCONF not defined"
+
+#elif defined(STM32L073xx) && !defined(STM32L073_MCUCONF)
+#error "Using a wrong mcuconf.h file, STM32L073_MCUCONF not defined"
+
 #endif
 
 /*
@@ -1141,7 +1155,7 @@
 #endif
 
 /**
- * @brief   USB/RNG frequency.
+ * @brief   USB clock point.
  */
 #if (STM32_HSI48SEL == STM32_HSI48SEL_HSI48) || defined(__DOXYGEN__)
 #define STM32_USBCLK                STM32_HSI48CLK
@@ -1150,6 +1164,11 @@
 #else
 #error "invalid STM32_HSI48SEL value specified"
 #endif
+
+/**
+ * @brief   RNG clock point.
+ */
+#define STM32_RNGCLK                STM32_USBCLK
 
 /**
  * @brief   Timers LPTIM1, TIM2, TIM6 clock.
@@ -1199,6 +1218,7 @@
 #include "stm32_dma.h"
 #include "stm32_exti.h"
 #include "stm32_rcc.h"
+#include "stm32_tim.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -102,6 +102,7 @@ void chSysInit(void) {
   _scheduler_init();
   _vt_init();
   _trace_init();
+  _oslib_init();
 
 #if CH_DBG_SYSTEM_STATE_CHECK == TRUE
   ch.dbg.isr_cnt  = (cnt_t)0;
@@ -109,15 +110,6 @@ void chSysInit(void) {
 #endif
 #if CH_CFG_USE_TM == TRUE
   _tm_init();
-#endif
-#if CH_CFG_USE_MEMCORE == TRUE
-  _core_init();
-#endif
-#if CH_CFG_USE_HEAP == TRUE
-  _heap_init();
-#endif
-#if CH_CFG_USE_FACTORY == TRUE
-  _factory_init();
 #endif
 #if CH_DBG_STATISTICS == TRUE
   _stats_init();
@@ -411,8 +403,8 @@ void chSysRestoreStatusX(syssts_t sts) {
  * @details This function verifies if the current realtime counter value
  *          lies within the specified range or not. The test takes care
  *          of the realtime counter wrapping to zero on overflow.
- * @note    When start==end then the function returns always true because the
- *          whole time range is specified.
+ * @note    When start==end then the function returns always false because a
+ *          null time range is specified.
  * @note    This function is only available if the port layer supports the
  *          option @p PORT_SUPPORTS_RT.
  *
@@ -426,7 +418,8 @@ void chSysRestoreStatusX(syssts_t sts) {
  */
 bool chSysIsCounterWithinX(rtcnt_t cnt, rtcnt_t start, rtcnt_t end) {
 
-  return (bool)((cnt - start) < (end - start));
+  return (bool)(((rtcnt_t)cnt - (rtcnt_t)start) <
+                ((rtcnt_t)end - (rtcnt_t)start));
 }
 
 /**

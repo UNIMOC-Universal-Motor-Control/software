@@ -695,7 +695,7 @@ bool sdcConnect(SDCDriver *sdcp) {
         goto failed;
       }
 
-      if(sdc_lld_read_special(sdcp, ext_csd, 512, MMCSD_CMD_SEND_EXT_CSD, 0)) {
+      if (sdc_lld_read_special(sdcp, ext_csd, 512, MMCSD_CMD_SEND_EXT_CSD, 0)) {
         goto failed;
       }
 
@@ -989,7 +989,7 @@ bool sdcErase(SDCDriver *sdcp, uint32_t startblk, uint32_t endblk) {
   }
 
   /* Quick sleep to allow it to transition to programming or receiving state */
-  /* TODO: ??????????????????????????? */
+  /* CHTODO: ??????????????????????????? */
 
   /* Wait for it to return to transfer state to indicate it has finished erasing */
   if (_sdc_wait_for_transfer_state(sdcp)) {
