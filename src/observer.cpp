@@ -55,7 +55,9 @@ namespace observer
         values.motor.rotor.omega += tsj * (values.motor.m_el - values.motor.m_l);
 
         if(std::fabs(values.motor.rotor.omega) > 2.0f * settings.motor.limits.omega)
+        {
         	values.motor.rotor.omega = std::copysign(2.0f * settings.motor.limits.omega, values.motor.rotor.omega);
+        }
 
         if(!std::isfinite(values.motor.rotor.omega))
         {
