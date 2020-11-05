@@ -193,8 +193,6 @@ namespace control
 		systems::alpha_beta 	i_ab;
 		std::array<float, 3>   	correction;
 		filter::moving_average<64> uq;
-		pi 						omega_max;
-		pi 						omega_min;
 	protected:
 		/**
 		 * Thread function
