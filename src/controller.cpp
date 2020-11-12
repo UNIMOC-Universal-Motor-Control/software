@@ -101,20 +101,7 @@ namespace control
 
 		for (std::uint8_t i = 0; i < hardware::PHASES; ++i)
 		{
-			float dt = 0.0f;
-
-//			if(settings.converter.dt > 0.0f)
-//			{
-//				dt = hardware::Fc / std::copysign(settings.converter.dt, values.motor.i.array[i]);
-//			}
-
-//			// linear zone around zero to accomodate low currents and current noise
-//			if(std::fabs(values.motor.i.array[i]) < settings.converter.dt_i_min)
-//			{
-//				dt *= std::fabs(values.motor.i.array[i]) / settings.converter.dt_i_min;
-//			}
-
-			dutys.array[i] = (u.array[i] - mid) * scale + dt;
+			dutys.array[i] = (u.array[i] - mid) * scale;
 		}
 	}
 
@@ -181,8 +168,9 @@ namespace control
 
 	/**
 	 * @brief calculate FOC current controller
+	 * @param setpoint current vector
 	 */
-	void foc::Calculate(void)
+	void foc::Calculate(systems::dq& setpoint)
 	{
 		float limit = _1bysqrt3 * values.battery.u*0.95f;
 
@@ -211,13 +199,13 @@ namespace control
 
 		if(settings.control.current.feedforward)
 		{
-			feedforward.d = settings.motor.rs*values.motor.rotor.setpoint.i.d - values.motor.rotor.omega * values.motor.rotor.setpoint.i.q * settings.motor.l.q;
-			feedforward.q = settings.motor.rs*values.motor.rotor.setpoint.i.q + values.motor.rotor.omega * values.motor.rotor.setpoint.i.d * settings.motor.l.d
+			feedforward.d = settings.motor.rs*setpoint.d - values.motor.rotor.omega * setpoint.q * settings.motor.l.q;
+			feedforward.q = settings.motor.rs*setpoint.q + values.motor.rotor.omega * setpoint.d * settings.motor.l.d
 					+ values.motor.rotor.omega*settings.motor.psi;
 		}
 
-		values.motor.rotor.u.d = ctrl_d.Calculate(values.motor.rotor.setpoint.i.d, values.motor.rotor.i.d, feedforward.d);
-		values.motor.rotor.u.q = ctrl_q.Calculate(values.motor.rotor.setpoint.i.q, values.motor.rotor.i.q, feedforward.q);
+		values.motor.rotor.u.d = ctrl_d.Calculate(setpoint.d, values.motor.rotor.i.d, feedforward.d);
+		values.motor.rotor.u.q = ctrl_q.Calculate(setpoint.q, values.motor.rotor.i.q, feedforward.q);
 	}
 
 	/**
@@ -374,10 +362,11 @@ namespace control
 				values.motor.rotor.setpoint.limit.i.min = min;
 				values.motor.rotor.setpoint.limit.i.max = max;
 
-				Limit(values.motor.rotor.setpoint.i.q, values.motor.rotor.setpoint.limit.i.min, values.motor.rotor.setpoint.limit.i.max);
+				systems::dq setpoint = values.motor.rotor.setpoint.i;
+				Limit(setpoint.q, values.motor.rotor.setpoint.limit.i.min, values.motor.rotor.setpoint.limit.i.max);
 
 				// calculate the field orientated controllers
-				foc.Calculate();
+				foc.Calculate(setpoint);
 			}
 			else
 			{
@@ -386,6 +375,23 @@ namespace control
 			}
 
 			systems::dq u = values.motor.rotor.u;
+
+			// Deadtime Compensation
+			float k = 3.0f;
+			// get the sector of the voltage vector, 3 is above 11/6*pi and below 1/6*pi
+			if(values.motor.rotor.phi <  1.0f/6.0f*math::PI) k = math::PI;
+			else if(values.motor.rotor.phi <  3.0f/6.0f*math::PI) k = 4.0f/3.0f*math::PI;
+			else if(values.motor.rotor.phi <  5.0f/6.0f*math::PI) k = 5.0f/3.0f*math::PI;
+			else if(values.motor.rotor.phi <  7.0f/6.0f*math::PI) k = 0.0f;
+			else if(values.motor.rotor.phi <  9.0f/6.0f*math::PI) k = 1.0f/3.0f*math::PI;
+			else if(values.motor.rotor.phi < 11.0f/6.0f*math::PI) k = 2.0f/3.0f*math::PI;
+
+			systems::sin_cos tmp;
+
+			systems::SinCos(k - values.motor.rotor.phi, tmp);
+
+			u.d += 4.0f/3.0f*values.battery.u*settings.converter.dt/hardware::Tc*tmp.cos;
+			u.q += 4.0f/3.0f*values.battery.u*settings.converter.dt/hardware::Tc*tmp.sin;
 
 			if(management::observer::hfi)
 			{
@@ -408,6 +414,7 @@ namespace control
 
 	}
 }/* namespace control */
+
 
 
 

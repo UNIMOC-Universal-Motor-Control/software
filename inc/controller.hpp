@@ -147,7 +147,7 @@ namespace control
 		/**
 		 * @brief calculate foc current controller
 		 */
-		void Calculate(void);
+		void Calculate(systems::dq& setpoint);
 
 		/**
 		 * @brief set controller dynamic parameters.
