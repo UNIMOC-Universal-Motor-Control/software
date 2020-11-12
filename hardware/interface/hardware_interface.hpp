@@ -150,11 +150,10 @@ namespace hardware {
 
 		namespace hall {
 			/**
-			 * get the angle which is represented by the hall sensors
-			 * @param[out] sincos angle of the halls represented as sin/cos values
-			 * @return true on hall signal error
+			 * get the sector which is represented by the hall sensors
+			 * @return sector of the halls
 			 */
-			bool Angle(systems::sin_cos& sincos);
+			uint8_t State(void);
 		} /* namespace angle */
 	} /* namespace adc */
 

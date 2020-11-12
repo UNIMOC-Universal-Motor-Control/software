@@ -173,7 +173,7 @@ namespace control
 	/**
 	 * @brief constructor of the foc with all essential parameters.
 	 */
-	foc::foc(void):Rs(settings.motor.rs), Ls((settings.motor.l.d + settings.motor.l.q) * 0.5f), PsiM(settings.motor.psi),
+	foc::foc(void):
 			ctrl_d(0.0f, 0.0f, 0.0f, 0.0f, hardware::Tc),
 			ctrl_q(0.0f, 0.0f, 0.0f, 0.0f, hardware::Tc)
 	{}
@@ -211,9 +211,9 @@ namespace control
 
 		if(settings.control.current.feedforward)
 		{
-			feedforward.d = Rs*values.motor.rotor.setpoint.i.d - values.motor.rotor.omega * values.motor.rotor.setpoint.i.q * Ls;
-			feedforward.q = Rs*values.motor.rotor.setpoint.i.q + values.motor.rotor.omega * values.motor.rotor.setpoint.i.d * Ls
-					+ values.motor.rotor.omega*PsiM;
+			feedforward.d = settings.motor.rs*values.motor.rotor.setpoint.i.d - values.motor.rotor.omega * values.motor.rotor.setpoint.i.q * settings.motor.l.q;
+			feedforward.q = settings.motor.rs*values.motor.rotor.setpoint.i.q + values.motor.rotor.omega * values.motor.rotor.setpoint.i.d * settings.motor.l.d
+					+ values.motor.rotor.omega*settings.motor.psi;
 		}
 
 		values.motor.rotor.u.d = ctrl_d.Calculate(values.motor.rotor.setpoint.i.d, values.motor.rotor.i.d, feedforward.d);
@@ -260,6 +260,17 @@ namespace control
 			// calculate new sine and cosine for the current system delayed be filters
 			systems::SinCos(angle, cur_sc);
 
+			// get hall sensor angle error signal
+			{
+				static std::uint8_t old_state = 0;
+				values.motor.rotor.hall = hardware::adc::hall::State();
+				if(old_state != values.motor.rotor.hall)
+				{
+					old_state = values.motor.rotor.hall;
+					values.motor.rotor.phi_err = phi_sc.sin*settings.motor.hall_table[old_state].cos - phi_sc.cos*settings.motor.hall_table[old_state].sin;
+				}
+			}
+
 			// convert 3 phase system to ortogonal
 			i_ab = systems::transform::Clark(values.motor.i);
 			// convert current samples from clark to rotor frame;
@@ -304,12 +315,12 @@ namespace control
 
 			if(management::control::current)
 			{
-				float torque_factor = _3by2 * settings.motor.psi;
-				if(settings.motor.psi < 1e-6) torque_factor = 1.0f;
-
-				values.motor.rotor.setpoint.i.d = 0.0f;
-				values.motor.rotor.setpoint.i.q =
-						values.motor.rotor.setpoint.torque/torque_factor;
+//				float torque_factor = _3by2 * settings.motor.psi;
+//				if(settings.motor.psi < 1e-6) torque_factor = 1.0f;
+//
+//				values.motor.rotor.setpoint.i.d = 0.0f;
+//				values.motor.rotor.setpoint.i.q =
+//						values.motor.rotor.setpoint.torque/torque_factor;
 
 				// starting help for traction drives
 				if(std::fabs(values.motor.rotor.setpoint.i.q) > settings.observer.mech.i_min
@@ -371,7 +382,7 @@ namespace control
 			else
 			{
 				foc.Reset();
-				foc.SetParameters(settings.motor.rs, settings.motor.l, settings.motor.psi, hardware::Tf);
+				foc.SetParameters(settings.control.current.kp, settings.control.current.tn);
 			}
 
 			systems::dq u = values.motor.rotor.u;

@@ -116,7 +116,7 @@ namespace management
 		namespace l
 		{
 		///< measurement current.
-		constexpr float CUR = 2.0f;
+		constexpr float CUR = 3.0f;
 
 		///< measurement frequency
 		constexpr float FREQ = 1000.0f;
@@ -135,14 +135,12 @@ namespace management
 	/**
 	 * controller management thread
 	 */
-	class thread : public chibios_rt::BaseStaticThread<350>
+	class thread : public chibios_rt::BaseStaticThread<400>
 	{
 	private:
 		static constexpr systime_t CYCLE_TIME = TIME_MS2I(1);
 		systime_t deadline;
 		std::uint32_t delay;
-
-
 
 		enum state_e
 		{
@@ -155,6 +153,7 @@ namespace management
 			CALCULATE_LS,
 			MEASURE_PSI,
 			CALCULATE_PSI,
+			MEASURE_HALL,
 		} sequencer;
 
 

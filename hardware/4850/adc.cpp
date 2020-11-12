@@ -118,12 +118,12 @@ const NTC_LUT_ST NTC_TABLE;
 ///< Samples in ADC sequence.
 /// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
 ///          so even length of sequence is best choice.
-constexpr uint32_t LENGTH_ADC_SEQ = 3;
+constexpr uint32_t LENGTH_ADC_SEQ = 5;
 
 ///< ADC sequences in buffer.
 /// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
 ///          so even length of sequence is best choice.
-constexpr uint32_t ADC_SEQ_BUFFERED = 4;
+constexpr uint32_t ADC_SEQ_BUFFERED = 8;
 
 ///< # of ADCs
 constexpr uint32_t NUM_OF_ADC = 3;
@@ -138,7 +138,7 @@ constexpr float hardware::adc::current::MAX = 1.65f/(20.0f*(0.002f/3.0f));
 constexpr float ADC2CURRENT = hardware::adc::current::MAX /(2048.0f);
 
 ///< Voltage divider
-constexpr float ADC2VDC = (24e3f+1.2e3f)/1.2e3f * 3.3f/(4096.0f * 2.0f);
+constexpr float ADC2VDC = (24e3f+1.2e3f)/1.2e3f * 3.3f/(4096.0f);
 
 
 /* Note, the buffer is aligned to a 32 bytes boundary because limitations
@@ -155,9 +155,6 @@ chibios_rt::ThreadReference hardware::control_thread = nullptr;
 ///< current offsets
 std::int32_t current_offset[hardware::PHASES];
 
-///< samples index in the adc buffer.
-std::uint32_t sample_index = ADC_SEQ_BUFFERED - 1;
-
 ///< cadence signal counter
 std::uint32_t cadence_counter = 0;
 
@@ -173,13 +170,25 @@ static ADCConversionGroup adcgrpcfg1 = {
 		adcerrorcallback,
 		0,                                                    /* CR1   */
 		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
-		ADC_SMPR1_SMP_AN12(ADC_SAMPLE_15),                    /* SMPR1 */
-		ADC_SMPR2_SMP_AN4(ADC_SAMPLE_15),                     /* SMPR2 */
+		ADC_SMPR1_SMP_AN12(ADC_SAMPLE_3),                    /* SMPR1 */
+		ADC_SMPR2_SMP_AN4(ADC_SAMPLE_3),                     /* SMPR2 */
 		0,                                                    /* HTR */
 		0,                                                    /* LTR */
-		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ),                      /* SQR1  */
-		0,                                                    /* SQR2  */
-		ADC_SQR3_SQ3_N(ADC_CH_VDC) |
+		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) |
+		ADC_SQR1_SQ16_N(ADC_CH_CUR_A) |
+		ADC_SQR1_SQ15_N(ADC_CH_CUR_A) |
+		ADC_SQR1_SQ14_N(ADC_CH_CUR_A) |
+		ADC_SQR1_SQ13_N(ADC_CH_CUR_A),                      /* SQR1  */
+		ADC_SQR2_SQ12_N(ADC_CH_CUR_A) |
+		ADC_SQR2_SQ11_N(ADC_CH_CUR_A) |
+		ADC_SQR2_SQ10_N(ADC_CH_CUR_A) |
+		ADC_SQR2_SQ9_N(ADC_CH_CUR_A) |
+		ADC_SQR2_SQ8_N(ADC_CH_CUR_A) |
+		ADC_SQR2_SQ7_N(ADC_CH_CUR_A),                      /* SQR2  */
+		ADC_SQR3_SQ6_N(ADC_CH_CUR_A) |
+		ADC_SQR3_SQ5_N(ADC_CH_CUR_A) |
+		ADC_SQR3_SQ4_N(ADC_CH_CUR_A) |
+		ADC_SQR3_SQ3_N(ADC_CH_CUR_A) |
 		ADC_SQR3_SQ2_N(ADC_CH_CUR_A) |
 		ADC_SQR3_SQ1_N(ADC_CH_VDC)                            /* SQR3  */
 };
@@ -197,16 +206,28 @@ static ADCConversionGroup adcgrpcfg2 = {
 		0,                                                    /* CR1   */
 		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
 		0,                                                    /* SMPR1 */
-		ADC_SMPR2_SMP_AN0(ADC_SAMPLE_15) |
-		ADC_SMPR2_SMP_AN5(ADC_SAMPLE_15) |
-		ADC_SMPR2_SMP_AN6(ADC_SAMPLE_15),                     /* SMPR2 */
+		ADC_SMPR2_SMP_AN0(ADC_SAMPLE_3) |
+		ADC_SMPR2_SMP_AN5(ADC_SAMPLE_3) |
+		ADC_SMPR2_SMP_AN6(ADC_SAMPLE_3),                     /* SMPR2 */
 		0,                                                    /* HTR */
 		0,                                                    /* LTR */
-		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ),                      /* SQR1  */
-		0,                                                    /* SQR2  */
-		ADC_SQR3_SQ3_N(ADC_CH_BRDG_TEMP) |
+		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) |
+		ADC_SQR1_SQ16_N(ADC_CH_CUR_B) |
+		ADC_SQR1_SQ15_N(ADC_CH_CUR_B) |
+		ADC_SQR1_SQ14_N(ADC_CH_CUR_B) |
+		ADC_SQR1_SQ13_N(ADC_CH_CUR_B),                      /* SQR1  */
+		ADC_SQR2_SQ12_N(ADC_CH_CUR_B) |
+		ADC_SQR2_SQ11_N(ADC_CH_CUR_B) |
+		ADC_SQR2_SQ10_N(ADC_CH_CUR_B) |
+		ADC_SQR2_SQ9_N(ADC_CH_CUR_B) |
+		ADC_SQR2_SQ8_N(ADC_CH_CUR_B) |
+		ADC_SQR2_SQ7_N(ADC_CH_CUR_B),                      /* SQR2  */
+		ADC_SQR3_SQ6_N(ADC_CH_CUR_B) |
+		ADC_SQR3_SQ5_N(ADC_CH_CUR_B) |
+		ADC_SQR3_SQ4_N(ADC_CH_CUR_B) |
+		ADC_SQR3_SQ3_N(ADC_CH_CUR_B) |
 		ADC_SQR3_SQ2_N(ADC_CH_CUR_B) |
-		ADC_SQR3_SQ1_N(ADC_CH_MOT_TEMP)                       /* SQR3  */
+		ADC_SQR3_SQ1_N(ADC_CH_BRDG_TEMP)                   /* SQR3  */
 };
 
 /**
@@ -221,13 +242,25 @@ static ADCConversionGroup adcgrpcfg3 = {
 		adcerrorcallback,
 		0,                                                    /* CR1   */
 		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
-		ADC_SMPR1_SMP_AN11(ADC_SAMPLE_15),                     /* SMPR1 */
-		ADC_SMPR2_SMP_AN2(ADC_SAMPLE_15),                      /* SMPR2 */
+		ADC_SMPR1_SMP_AN11(ADC_SAMPLE_3),                     /* SMPR1 */
+		ADC_SMPR2_SMP_AN2(ADC_SAMPLE_3),                      /* SMPR2 */
 		0,                                                    /* HTR */
 		0,                                                    /* LTR */
-		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ),                      /* SQR1  */
-		0,                                                    /* SQR2  */
-		ADC_SQR3_SQ3_N(ADC_CH_TORQUE) |
+		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) |
+		ADC_SQR1_SQ16_N(ADC_CH_CUR_C) |
+		ADC_SQR1_SQ15_N(ADC_CH_CUR_C) |
+		ADC_SQR1_SQ14_N(ADC_CH_CUR_C) |
+		ADC_SQR1_SQ13_N(ADC_CH_CUR_C),                      /* SQR1  */
+		ADC_SQR2_SQ12_N(ADC_CH_CUR_C) |
+		ADC_SQR2_SQ11_N(ADC_CH_CUR_C) |
+		ADC_SQR2_SQ10_N(ADC_CH_CUR_C) |
+		ADC_SQR2_SQ9_N(ADC_CH_CUR_C) |
+		ADC_SQR2_SQ8_N(ADC_CH_CUR_C) |
+		ADC_SQR2_SQ7_N(ADC_CH_CUR_C),                      /* SQR2  */
+		ADC_SQR3_SQ6_N(ADC_CH_CUR_C) |
+		ADC_SQR3_SQ5_N(ADC_CH_CUR_C) |
+		ADC_SQR3_SQ4_N(ADC_CH_CUR_C) |
+		ADC_SQR3_SQ3_N(ADC_CH_CUR_C) |
 		ADC_SQR3_SQ2_N(ADC_CH_CUR_C) |
 		ADC_SQR3_SQ1_N(ADC_CH_TORQUE)                       /* SQR3  */
 };
@@ -272,12 +305,17 @@ void hardware::adc::current::Value(systems::abc& currents)
 	for(std::uint_fast8_t i = 0; i < PHASES; i++)
 	{
 		std::int32_t sum = 0;
+		std::int32_t cnt = 0;
 		for (std::uint_fast32_t s = 0; s < ADC_SEQ_BUFFERED; s++)
 		{
-			sum += samples[i][s][1];
+			for (std::uint_fast32_t a = 1; a < LENGTH_ADC_SEQ; a++)
+			{
+				sum += samples[i][s][a];
+				cnt++;
+			}
 		}
 
-		currents.array[i] = ADC2CURRENT * (float)(current_offset[i] - sum) / (float)ADC_SEQ_BUFFERED;
+		currents.array[i] = ADC2CURRENT * (float)(current_offset[i] - sum) / (float)cnt;
 	}
 }
 
@@ -291,7 +329,10 @@ void hardware::adc::current::SetOffset(void)
 		std::int32_t sum = 0;
 		for (std::uint_fast32_t s = 0; s < ADC_SEQ_BUFFERED; s++)
 		{
-			sum += samples[i][s][1];
+			for (std::uint_fast32_t a = 1; a < LENGTH_ADC_SEQ; a++)
+			{
+				sum += samples[i][s][a];
+			}
 		}
 		current_offset[i] = sum;
 	}
@@ -312,7 +353,6 @@ float hardware::adc::voltage::DCBus(void)
 	for(std::uint_fast32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
 	{
 		sum += samples[0][i][0];
-		sum += samples[0][i][2];
 	}
 
 	// Filter inverts the values
@@ -334,7 +374,7 @@ float hardware::adc::temperature::Bridge(void)
 		/*
 		 * Bridge temperature is sampled by ADC2 first non current sample
 		 */
-		sum += samples[1][i][2];
+		sum += samples[1][i][0];
 	}
 
 	// Filter inverts the values
@@ -420,52 +460,9 @@ bool hardware::crank::Cadence(void)
  * @param[out] sincos angle of the halls represented as sin/cos values
  * @return true on hall signal error
  */
-bool hardware::adc::hall::Angle(systems::sin_cos& sincos)
+uint8_t hardware::adc::hall::State(void)
 {
-	const float half_sqrt3 = 0.5f * std::sqrt(3.0f);
-	uint32_t halls = palReadGroup(GPIOC, 0x0007, 13);
-	bool err = false;
-
-	switch(halls)
-	{
-	case 5:
-		// 30°
-		sincos.sin = 0.5f;
-		sincos.cos = half_sqrt3;
-		break;
-	case 4:
-		// 90°
-		sincos.sin = 1.0f;
-		sincos.cos = 0.0f;
-		break;
-	case 6:
-		// 150°
-		sincos.sin = 0.5f;
-		sincos.cos = -half_sqrt3;
-		break;
-	case 2:
-		// 210°
-		sincos.sin = -0.5f;
-		sincos.cos = -half_sqrt3;
-		break;
-	case 3:
-		// 270°
-		sincos.sin = -1.0f;
-		sincos.cos = 0.0f;
-		break;
-	case 1:
-		// 330°
-		sincos.sin = -0.5f;
-		sincos.cos = half_sqrt3;
-		break;
-	default:
-		// some thing is wrong
-		err = true;
-		break;
-
-	}
-
-	return err;
+	return palReadGroup(GPIOC, 0x0007, 13);
 }
 
 
@@ -521,9 +518,6 @@ static void adcerrorcallback(ADCDriver *adcp, adcerror_t err)
 static void adccallback(ADCDriver *adcp)
 {
 	(void)adcp;
-
-	sample_index++;
-	if(sample_index >= ADC_SEQ_BUFFERED) sample_index = 0;
 
 	/* DMA buffer invalidation because data cache, only invalidating the
      * buffer just filled.

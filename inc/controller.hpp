@@ -131,15 +131,6 @@ namespace control
 	class foc
 	{
 	private:
-		///< stator resistance
-		float Rs;
-
-		///< stator inductance
-		float Ls;
-
-		///< Rotor Flux Constant
-		float PsiM;
-
 		///< d axis current controller
 		pi ctrl_d;
 
@@ -162,17 +153,13 @@ namespace control
 		 * @brief set controller dynamic parameters.
 		 *
 		 *
-		 * @param rs	                series resistance of the winding
-		 * @param l                		series inductance of the winding
-		 * @param psi                	rotor flux constant
+		 * @param kp	                Proportional gain of the PI controllers
+		 * @param tn                	zero crossing of the PI controller (Time constant)
 		 */
-		constexpr inline void SetParameters(const float rs, const systems::dq l, const float psi, const float tf)
+		constexpr inline void SetParameters(const float kp, const float tn)
 		{
-			Rs = rs;
-			Ls = l.q;
-			PsiM = psi;
-			ctrl_d.SetParameters((Ls/Rs)/(1.0f/Rs*tf), Ls/Rs);
-			ctrl_q.SetParameters((Ls/Rs)/(1.0f/Rs*tf), Ls/Rs);
+			ctrl_d.SetParameters(kp, tn);
+			ctrl_q.SetParameters(kp, tn);
 		};
 
 		///< @brief Reset controller and integral part to 0

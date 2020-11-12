@@ -58,6 +58,9 @@ typedef struct settings_s
 		///< starting direct current
 		float i_start;
 
+		///< hall sensor state change angles table
+		std::array<systems::sin_cos, 8> hall_table;
+
 		/**
 		 * motor limits
 		 */
@@ -118,6 +121,12 @@ typedef struct settings_s
 
 			///< feedforward omega
 			bool feedforward;
+
+			///< proportional gain
+			float kp;
+
+			///< controller time constant
+			float tn;
 		}current;
 	} control;
 
@@ -164,6 +173,21 @@ typedef struct settings_s
 			///< injection current in A
 			float current;
 		} hfi;
+
+		/**
+		 * hall observer settings
+		 */
+		struct hall_s
+		{
+			///< enable observer switch
+			bool enable;
+
+			///< modell variance
+			float Q;
+
+			///< measurement variance
+			float R;
+		} hall;
 
 		/**
 		 * mechanic observer settings

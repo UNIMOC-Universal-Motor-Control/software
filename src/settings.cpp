@@ -57,6 +57,9 @@ __attribute__((aligned (32))) settings_ts settings =
 		///< starting direct current
 		.i_start = 0.0f,
 
+		///< hall sensor state change angles table
+		.hall_table = {0.0f},
+
 		/**
 		 * motor limit settings
 		 */
@@ -115,6 +118,12 @@ __attribute__((aligned (32))) settings_ts settings =
 
 			///< feedforward omega
 			.feedforward = true,
+
+			///< proportional gain
+			.kp = 0.0f,
+
+			///< controller time constant
+			.tn = 1000.0f,
 		},
 	},
 
@@ -161,6 +170,21 @@ __attribute__((aligned (32))) settings_ts settings =
 
 			///< injection current in A
 			.current = 1.5f,
+		},
+
+		/**
+		 * hall observer settings
+		 */
+		.hall =
+		{
+			///< enable observer switch
+			.enable = false,
+
+			///< modell variance
+			.Q = 1e-5f,
+
+			///< measurement variance
+			.R = 1e5f,
 		},
 
 		/**

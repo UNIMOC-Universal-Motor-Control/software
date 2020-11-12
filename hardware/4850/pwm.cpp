@@ -115,9 +115,8 @@ const PWMConfig adctriggercfg =
 		},
 		/*
 		 * CR2 Register
-		 * CH4 on TRGO
 		 */
-		STM32_TIM_CR2_MMS(7),
+		0,
 		/*
 		 * Break and Deadtime Register
 		 */
