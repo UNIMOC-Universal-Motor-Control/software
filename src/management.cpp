@@ -386,88 +386,93 @@ namespace management
 				break;
 
 			case MEASURE_LS:
-				// init the measurement
-				if(measure::l::cycle == 0)
-				{
-					measure::l::u = 0.0f;
-					values.motor.rotor.u.d = 0.0f;
-					values.motor.rotor.u.q = 0.0f;
-					values.motor.rotor.phi = 0.0f;
-					values.motor.rotor.omega = math::_2PI * measure::l::FREQ;
-					measure::l::w_limit = settings.motor.limits.omega;
-					settings.motor.limits.omega = values.motor.rotor.omega;
-					observer::mechanic = false;
-					observer::flux = false;
-					observer::hfi = false;
-				}
-
-				// handle PWM led to show PWM status
-				if(hardware::pwm::output::Active()) palSetLine(LINE_LED_PWM);
-				else
-				{
-					// wait for PWM release
-					sequencer = RUN;
-
-					palClearLine(LINE_LED_PWM);
-				}
-				// set Run Mode LED
-				palClearLine(LINE_LED_RUN);
-
-				measure::l::cycle++;
-				if((measure::l::cycle % 50) == 0)
-				{
-
-					if(	   std::fabs(values.motor.rotor.i.d) > measure::l::CUR
-						|| std::fabs(values.motor.rotor.i.q) > measure::l::CUR)
-					{
-						sequencer = CALCULATE_LS;
-					}
-					else
-					{
-						measure::l::u += 100e-3f; // 100mv increase every 25ms
-					}
-				}
-				values.motor.rotor.u.q = measure::l::u;
+				System::lock();
+				measure::l::kill_count = 10;
+				values.motor.u = {0.4f*values.battery.u, 0.0f, 0.0f};
+				System::unlock();
+				sequencer = CALCULATE_LS;
+//				// init the measurement
+//				if(measure::l::cycle == 0)
+//				{
+//					measure::l::u = 0.0f;
+//					values.motor.rotor.u.d = 0.0f;
+//					values.motor.rotor.u.q = 0.0f;
+//					values.motor.rotor.phi = 0.0f;
+//					values.motor.rotor.omega = math::_2PI * measure::l::FREQ;
+//					measure::l::w_limit = settings.motor.limits.omega;
+//					settings.motor.limits.omega = values.motor.rotor.omega;
+//					observer::mechanic = false;
+//					observer::flux = false;
+//					observer::hfi = false;
+//				}
+//
+//				// handle PWM led to show PWM status
+//				if(hardware::pwm::output::Active()) palSetLine(LINE_LED_PWM);
+//				else
+//				{
+//					// wait for PWM release
+//					sequencer = RUN;
+//
+//					palClearLine(LINE_LED_PWM);
+//				}
+//				// set Run Mode LED
+//				palClearLine(LINE_LED_RUN);
+//
+//				measure::l::cycle++;
+//				if((measure::l::cycle % 50) == 0)
+//				{
+//
+//					if(	   std::fabs(values.motor.rotor.i.d) > measure::l::CUR
+//						|| std::fabs(values.motor.rotor.i.q) > measure::l::CUR)
+//					{
+//						sequencer = CALCULATE_LS;
+//					}
+//					else
+//					{
+//						measure::l::u += 100e-3f; // 100mv increase every 25ms
+//					}
+//				}
+//				values.motor.rotor.u.q = measure::l::u;
 				break;
 
 			case CALCULATE_LS:
 
-				// calculate the dc levels
-				values.motor.rotor.gid.SetFrequency(0.0f);
-				values.motor.rotor.giq.SetFrequency(0.0f);
-
-				values.motor.rotor.gid.Calculate();
-				values.motor.rotor.giq.Calculate();
-
-				{
-					systems::dq i = {values.motor.rotor.gid.Magnitude(), values.motor.rotor.giq.Magnitude()};
-					float i_len = systems::Length(i);
-
-					if(i_len > 0.0f)
-					{
-						// get the Ld - Lq current at twice the injection frequency
-						values.motor.rotor.gid.SetFrequency(2.0f * measure::l::FREQ);
-						values.motor.rotor.gid.Calculate();
-						float iac = values.motor.rotor.gid.Magnitude();
-
-						// assume that Ld is always lower than Lq due to Saturation
-						settings.motor.l.d = measure::l::u/(values.motor.rotor.omega * (i_len + iac));
-						settings.motor.l.q = measure::l::u/(values.motor.rotor.omega * (i_len - iac));
-
-						settings.control.current.kp = settings.motor.l.d/hardware::Tf;
-						settings.control.current.tn = settings.motor.l.d/settings.motor.rs;
-					}
-				}
-
-				values.motor.rotor.u.d = 0.0f;
-				values.motor.rotor.u.q = 0.0f;
-				values.motor.rotor.phi = 0.0f;
-				values.motor.rotor.omega = 0.0f;
-				settings.motor.limits.omega =  measure::l::w_limit;
-
-
-				measure::l::enable = false;
-				measure::l::cycle = 0;
+//				// calculate the dc levels
+//				values.motor.rotor.gid.SetFrequency(0.0f);
+//				values.motor.rotor.giq.SetFrequency(0.0f);
+//
+//				values.motor.rotor.gid.Calculate();
+//				values.motor.rotor.giq.Calculate();
+//
+//				{
+//					systems::dq i = {values.motor.rotor.gid.Magnitude(), values.motor.rotor.giq.Magnitude()};
+//					float i_len = systems::Length(i);
+//
+//					if(i_len > 0.0f)
+//					{
+//						// get the Ld - Lq current at twice the injection frequency
+//						values.motor.rotor.gid.SetFrequency(2.0f * measure::l::FREQ);
+//						values.motor.rotor.gid.Calculate();
+//						float iac = values.motor.rotor.gid.Magnitude();
+//
+//						// assume that Ld is always lower than Lq due to Saturation
+//						settings.motor.l.d = measure::l::u/(values.motor.rotor.omega * (i_len + iac));
+//						settings.motor.l.q = measure::l::u/(values.motor.rotor.omega * (i_len - iac));
+//
+//						settings.control.current.kp = settings.motor.l.d/hardware::Tf;
+//						settings.control.current.tn = settings.motor.l.d/settings.motor.rs;
+//					}
+//				}
+//
+//				values.motor.rotor.u.d = 0.0f;
+//				values.motor.rotor.u.q = 0.0f;
+//				values.motor.rotor.phi = 0.0f;
+//				values.motor.rotor.omega = 0.0f;
+//				settings.motor.limits.omega =  measure::l::w_limit;
+//
+//
+//				measure::l::enable = false;
+//				measure::l::cycle = 0;
 
 				sequencer = RUN;
 				break;

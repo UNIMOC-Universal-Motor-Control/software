@@ -239,8 +239,7 @@ namespace control
 			hardware::adc::current::Value(values.motor.i);
 
 			// calculate the sine and cosine of the new angle
-			angle = values.motor.rotor.phi
-					+ values.motor.rotor.omega * hardware::Tf;
+			angle = values.motor.rotor.phi + values.motor.rotor.omega * hardware::Tf;
 
 			// calculate new sine and cosine for the reference system
 			systems::SinCos(values.motor.rotor.phi, phi_sc);
@@ -303,13 +302,6 @@ namespace control
 
 			if(management::control::current)
 			{
-//				float torque_factor = _3by2 * settings.motor.psi;
-//				if(settings.motor.psi < 1e-6) torque_factor = 1.0f;
-//
-//				values.motor.rotor.setpoint.i.d = 0.0f;
-//				values.motor.rotor.setpoint.i.q =
-//						values.motor.rotor.setpoint.torque/torque_factor;
-
 				// starting help for traction drives
 				if(std::fabs(values.motor.rotor.setpoint.i.q) > settings.observer.mech.i_min
 						&& settings.motor.i_start > 0.1f)
@@ -367,6 +359,19 @@ namespace control
 
 				// calculate the field orientated controllers
 				foc.Calculate(setpoint);
+
+				// Deadtime Compensation
+				float k = 0.0f;
+				std::modf(values.motor.rotor.phi/math::_2PI*6.0f, &k);
+				k *= math::PI/3.0f;
+				k += math::PI/6.0f;
+
+				systems::sin_cos tmp;
+
+				systems::SinCos(k - values.motor.rotor.phi, tmp);
+
+				values.motor.rotor.u.d -= 4.0f/3.0f*values.battery.u*settings.converter.dt/hardware::Tc*tmp.cos;
+				values.motor.rotor.u.q -= 4.0f/3.0f*values.battery.u*settings.converter.dt/hardware::Tc*tmp.sin;
 			}
 			else
 			{
@@ -374,35 +379,27 @@ namespace control
 				foc.SetParameters(settings.control.current.kp, settings.control.current.tn);
 			}
 
-			systems::dq u = values.motor.rotor.u;
-
-			// Deadtime Compensation
-			float k = 3.0f;
-			// get the sector of the voltage vector, 3 is above 11/6*pi and below 1/6*pi
-			if(values.motor.rotor.phi <  1.0f/6.0f*math::PI) k = math::PI;
-			else if(values.motor.rotor.phi <  3.0f/6.0f*math::PI) k = 4.0f/3.0f*math::PI;
-			else if(values.motor.rotor.phi <  5.0f/6.0f*math::PI) k = 5.0f/3.0f*math::PI;
-			else if(values.motor.rotor.phi <  7.0f/6.0f*math::PI) k = 0.0f;
-			else if(values.motor.rotor.phi <  9.0f/6.0f*math::PI) k = 1.0f/3.0f*math::PI;
-			else if(values.motor.rotor.phi < 11.0f/6.0f*math::PI) k = 2.0f/3.0f*math::PI;
-
-			systems::sin_cos tmp;
-
-			systems::SinCos(k - values.motor.rotor.phi, tmp);
-
-			u.d += 4.0f/3.0f*values.battery.u*settings.converter.dt/hardware::Tc*tmp.cos;
-			u.q += 4.0f/3.0f*values.battery.u*settings.converter.dt/hardware::Tc*tmp.sin;
-
-			if(management::observer::hfi)
+			/* inductance measurement just sets phase voltages */
+			if(management::measure::l::enable)
 			{
-				u.d += hfi.Injection();
+				if(management::measure::l::kill_count) management::measure::l::kill_count--;
+				else std::memset(values.motor.u.array.data(), 0, sizeof(systems::abc));
 			}
+			else
+			{
+				systems::dq u = values.motor.rotor.u;
 
-			// transform the voltages to stator frame
-			u_ab = systems::transform::InversePark(u, phi_sc);
+				if(management::observer::hfi)
+				{
+					u.d += hfi.Injection();
+				}
 
-			// transform to ab system
-			values.motor.u = systems::transform::InverseClark(u_ab);
+				// transform the voltages to stator frame
+				u_ab = systems::transform::InversePark(u, phi_sc);
+
+				// transform to ab system
+				values.motor.u = systems::transform::InverseClark(u_ab);
+			}
 
 			// set dutys with overmodulation
 			Overmodulation(values.motor.u, values.battery.u, values.converter.dutys);
@@ -414,6 +411,7 @@ namespace control
 
 	}
 }/* namespace control */
+
 
 
 

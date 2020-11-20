@@ -5452,6 +5452,11 @@
 			<member name="item44" type="CObject_ptr">ObjId0924</member>
 			<member name="item45" type="CObject_ptr">ObjId1245</member>
 			<member name="item46" type="CObject_ptr">ObjId1184</member>
+			<member name="item47" type="CObject_ptr">ObjId0299</member>
+			<member name="item48" type="CObject_ptr">ObjId0302</member>
+			<member name="item49" type="CObject_ptr">ObjId0287</member>
+			<member name="item50" type="CObject_ptr">ObjId0290</member>
+			<member name="item51" type="CObject_ptr">ObjId0293</member>
 		</object>
 		<object name="ObjId0366" type="CObList"/>
 		<object name="ObjId0367" type="CObList">
@@ -5469,7 +5474,7 @@
 			<member name="tree_expand" type="sint32">1</member>
 			<member name="name" type="string">rotor current</member>
 			<member name="href" type="string"/>
-			<member name="graph_buffer" type="sint32">1000</member>
+			<member name="graph_buffer" type="sint32">10000</member>
 			<member name="graph_type" type="sint32">0</member>
 			<member name="graph_x_units" type="sint32">2</member>
 			<member name="graph_x_label" type="string">Time</member>
@@ -6783,27 +6788,27 @@
 			<member name="forecolor" type="uint32">0x0</member>
 		</object>
 		<object name="ObjId0369" type="CObArray" length="4">
-			<member name="index0" type="CObject_ptr">ObjId1250</member>
-			<member name="index1" type="CObject_ptr">ObjId1251</member>
-			<member name="index2" type="CObject_ptr">ObjId1252</member>
-			<member name="index3" type="CObject_ptr">ObjId1253</member>
+			<member name="index0" type="CObject_ptr">ObjId1283</member>
+			<member name="index1" type="CObject_ptr">ObjId1284</member>
+			<member name="index2" type="CObject_ptr">ObjId1285</member>
+			<member name="index3" type="CObject_ptr">ObjId1286</member>
 		</object>
-		<object name="ObjId1250" type="CPrjItemBlock_ColInfo">
+		<object name="ObjId1283" type="CPrjItemBlock_ColInfo">
 			<member name="column_visible" type="sint32">1</member>
 			<member name="column_width" type="sint32">202</member>
 			<member name="column_ix" type="sint32">0</member>
 		</object>
-		<object name="ObjId1251" type="CPrjItemBlock_ColInfo">
+		<object name="ObjId1284" type="CPrjItemBlock_ColInfo">
 			<member name="column_visible" type="sint32">1</member>
 			<member name="column_width" type="sint32">87</member>
 			<member name="column_ix" type="sint32">1</member>
 		</object>
-		<object name="ObjId1252" type="CPrjItemBlock_ColInfo">
+		<object name="ObjId1285" type="CPrjItemBlock_ColInfo">
 			<member name="column_visible" type="sint32">1</member>
 			<member name="column_width" type="sint32">120</member>
 			<member name="column_ix" type="sint32">2</member>
 		</object>
-		<object name="ObjId1253" type="CPrjItemBlock_ColInfo">
+		<object name="ObjId1286" type="CPrjItemBlock_ColInfo">
 			<member name="column_visible" type="sint32">1</member>
 			<member name="column_width" type="sint32">50</member>
 			<member name="column_ix" type="sint32">3</member>
@@ -6849,72 +6854,82 @@
 			<member name="value18" type="CObject_ptr">ObjId0778</member>
 			<member name="key19" type="CObject_ptr">ObjId0283</member>
 			<member name="value19" type="CObject_ptr">ObjId0780</member>
-			<member name="key20" type="CObject_ptr">ObjId0447</member>
-			<member name="value20" type="CObject_ptr">ObjId0460</member>
-			<member name="key21" type="CObject_ptr">ObjId0450</member>
-			<member name="value21" type="CObject_ptr">ObjId0462</member>
-			<member name="key22" type="CObject_ptr">ObjId0453</member>
-			<member name="value22" type="CObject_ptr">ObjId0464</member>
-			<member name="key23" type="CObject_ptr">ObjId0469</member>
-			<member name="value23" type="CObject_ptr">ObjId0593</member>
-			<member name="key24" type="CObject_ptr">ObjId0507</member>
-			<member name="value24" type="CObject_ptr">ObjId0782</member>
-			<member name="key25" type="CObject_ptr">ObjId0513</member>
-			<member name="value25" type="CObject_ptr">ObjId0840</member>
-			<member name="key26" type="CObject_ptr">ObjId0516</member>
-			<member name="value26" type="CObject_ptr">ObjId0707</member>
-			<member name="key27" type="CObject_ptr">ObjId0528</member>
-			<member name="value27" type="CObject_ptr">ObjId0842</member>
-			<member name="key28" type="CObject_ptr">ObjId0606</member>
-			<member name="value28" type="CObject_ptr">ObjId0634</member>
-			<member name="key29" type="CObject_ptr">ObjId0646</member>
-			<member name="value29" type="CObject_ptr">ObjId0709</member>
-			<member name="key30" type="CObject_ptr">ObjId0649</member>
-			<member name="value30" type="CObject_ptr">ObjId0711</member>
-			<member name="key31" type="CObject_ptr">ObjId0652</member>
-			<member name="value31" type="CObject_ptr">ObjId0713</member>
-			<member name="key32" type="CObject_ptr">ObjId0683</member>
-			<member name="value32" type="CObject_ptr">ObjId0715</member>
-			<member name="key33" type="CObject_ptr">ObjId0686</member>
-			<member name="value33" type="CObject_ptr">ObjId0717</member>
-			<member name="key34" type="CObject_ptr">ObjId0689</member>
-			<member name="value34" type="CObject_ptr">ObjId0719</member>
-			<member name="key35" type="CObject_ptr">ObjId0721</member>
-			<member name="value35" type="CObject_ptr">ObjId0728</member>
-			<member name="key36" type="CObject_ptr">ObjId0730</member>
-			<member name="value36" type="CObject_ptr">ObjId0784</member>
-			<member name="key37" type="CObject_ptr">ObjId0733</member>
-			<member name="value37" type="CObject_ptr">ObjId0786</member>
-			<member name="key38" type="CObject_ptr">ObjId0736</member>
-			<member name="value38" type="CObject_ptr">ObjId0788</member>
-			<member name="key39" type="CObject_ptr">ObjId0739</member>
-			<member name="value39" type="CObject_ptr">ObjId0790</member>
-			<member name="key40" type="CObject_ptr">ObjId0748</member>
-			<member name="value40" type="CObject_ptr">ObjId0792</member>
-			<member name="key41" type="CObject_ptr">ObjId0753</member>
-			<member name="value41" type="CObject_ptr">ObjId0794</member>
-			<member name="key42" type="CObject_ptr">ObjId0756</member>
-			<member name="value42" type="CObject_ptr">ObjId0796</member>
-			<member name="key43" type="CObject_ptr">ObjId0759</member>
-			<member name="value43" type="CObject_ptr">ObjId0798</member>
-			<member name="key44" type="CObject_ptr">ObjId0762</member>
-			<member name="value44" type="CObject_ptr">ObjId0800</member>
-			<member name="key45" type="CObject_ptr">ObjId0765</member>
-			<member name="value45" type="CObject_ptr">ObjId0802</member>
-			<member name="key46" type="CObject_ptr">ObjId0820</member>
-			<member name="value46" type="CObject_ptr">ObjId0830</member>
-			<member name="key47" type="CObject_ptr">ObjId0823</member>
-			<member name="value47" type="CObject_ptr">ObjId0832</member>
-			<member name="key48" type="CObject_ptr">ObjId0924</member>
-			<member name="value48" type="CObject_ptr">ObjId0931</member>
-			<member name="key49" type="CObject_ptr">ObjId1184</member>
-			<member name="value49" type="CObject_ptr">ObjId1254</member>
-			<member name="key50" type="CObject_ptr">ObjId1239</member>
-			<member name="value50" type="CObject_ptr">ObjId1256</member>
-			<member name="key51" type="CObject_ptr">ObjId1242</member>
-			<member name="value51" type="CObject_ptr">ObjId1258</member>
-			<member name="key52" type="CObject_ptr">ObjId1245</member>
-			<member name="value52" type="CObject_ptr">ObjId1260</member>
+			<member name="key20" type="CObject_ptr">ObjId0287</member>
+			<member name="value20" type="CObject_ptr">ObjId1287</member>
+			<member name="key21" type="CObject_ptr">ObjId0290</member>
+			<member name="value21" type="CObject_ptr">ObjId1289</member>
+			<member name="key22" type="CObject_ptr">ObjId0293</member>
+			<member name="value22" type="CObject_ptr">ObjId1291</member>
+			<member name="key23" type="CObject_ptr">ObjId0299</member>
+			<member name="value23" type="CObject_ptr">ObjId1293</member>
+			<member name="key24" type="CObject_ptr">ObjId0302</member>
+			<member name="value24" type="CObject_ptr">ObjId1295</member>
+			<member name="key25" type="CObject_ptr">ObjId0447</member>
+			<member name="value25" type="CObject_ptr">ObjId0460</member>
+			<member name="key26" type="CObject_ptr">ObjId0450</member>
+			<member name="value26" type="CObject_ptr">ObjId0462</member>
+			<member name="key27" type="CObject_ptr">ObjId0453</member>
+			<member name="value27" type="CObject_ptr">ObjId0464</member>
+			<member name="key28" type="CObject_ptr">ObjId0469</member>
+			<member name="value28" type="CObject_ptr">ObjId0593</member>
+			<member name="key29" type="CObject_ptr">ObjId0507</member>
+			<member name="value29" type="CObject_ptr">ObjId0782</member>
+			<member name="key30" type="CObject_ptr">ObjId0513</member>
+			<member name="value30" type="CObject_ptr">ObjId0840</member>
+			<member name="key31" type="CObject_ptr">ObjId0516</member>
+			<member name="value31" type="CObject_ptr">ObjId0707</member>
+			<member name="key32" type="CObject_ptr">ObjId0528</member>
+			<member name="value32" type="CObject_ptr">ObjId0842</member>
+			<member name="key33" type="CObject_ptr">ObjId0606</member>
+			<member name="value33" type="CObject_ptr">ObjId0634</member>
+			<member name="key34" type="CObject_ptr">ObjId0646</member>
+			<member name="value34" type="CObject_ptr">ObjId0709</member>
+			<member name="key35" type="CObject_ptr">ObjId0649</member>
+			<member name="value35" type="CObject_ptr">ObjId0711</member>
+			<member name="key36" type="CObject_ptr">ObjId0652</member>
+			<member name="value36" type="CObject_ptr">ObjId0713</member>
+			<member name="key37" type="CObject_ptr">ObjId0683</member>
+			<member name="value37" type="CObject_ptr">ObjId0715</member>
+			<member name="key38" type="CObject_ptr">ObjId0686</member>
+			<member name="value38" type="CObject_ptr">ObjId0717</member>
+			<member name="key39" type="CObject_ptr">ObjId0689</member>
+			<member name="value39" type="CObject_ptr">ObjId0719</member>
+			<member name="key40" type="CObject_ptr">ObjId0721</member>
+			<member name="value40" type="CObject_ptr">ObjId0728</member>
+			<member name="key41" type="CObject_ptr">ObjId0730</member>
+			<member name="value41" type="CObject_ptr">ObjId0784</member>
+			<member name="key42" type="CObject_ptr">ObjId0733</member>
+			<member name="value42" type="CObject_ptr">ObjId0786</member>
+			<member name="key43" type="CObject_ptr">ObjId0736</member>
+			<member name="value43" type="CObject_ptr">ObjId0788</member>
+			<member name="key44" type="CObject_ptr">ObjId0739</member>
+			<member name="value44" type="CObject_ptr">ObjId0790</member>
+			<member name="key45" type="CObject_ptr">ObjId0748</member>
+			<member name="value45" type="CObject_ptr">ObjId0792</member>
+			<member name="key46" type="CObject_ptr">ObjId0753</member>
+			<member name="value46" type="CObject_ptr">ObjId0794</member>
+			<member name="key47" type="CObject_ptr">ObjId0756</member>
+			<member name="value47" type="CObject_ptr">ObjId0796</member>
+			<member name="key48" type="CObject_ptr">ObjId0759</member>
+			<member name="value48" type="CObject_ptr">ObjId0798</member>
+			<member name="key49" type="CObject_ptr">ObjId0762</member>
+			<member name="value49" type="CObject_ptr">ObjId0800</member>
+			<member name="key50" type="CObject_ptr">ObjId0765</member>
+			<member name="value50" type="CObject_ptr">ObjId0802</member>
+			<member name="key51" type="CObject_ptr">ObjId0820</member>
+			<member name="value51" type="CObject_ptr">ObjId0830</member>
+			<member name="key52" type="CObject_ptr">ObjId0823</member>
+			<member name="value52" type="CObject_ptr">ObjId0832</member>
+			<member name="key53" type="CObject_ptr">ObjId0924</member>
+			<member name="value53" type="CObject_ptr">ObjId0931</member>
+			<member name="key54" type="CObject_ptr">ObjId1184</member>
+			<member name="value54" type="CObject_ptr">ObjId1254</member>
+			<member name="key55" type="CObject_ptr">ObjId1239</member>
+			<member name="value55" type="CObject_ptr">ObjId1256</member>
+			<member name="key56" type="CObject_ptr">ObjId1242</member>
+			<member name="value56" type="CObject_ptr">ObjId1258</member>
+			<member name="key57" type="CObject_ptr">ObjId1245</member>
+			<member name="value57" type="CObject_ptr">ObjId1260</member>
 		</object>
 		<object name="ObjId0375" type="CPrjItemBlock_VarInfo">
 			<member name="row_height" type="sint32">15</member>
@@ -7016,6 +7031,31 @@
 			<member name="row_cell_formats" type="CObArrayEx">ObjId0781</member>
 		</object>
 		<object name="ObjId0781" type="CObArray" length="0"/>
+		<object name="ObjId1287" type="CPrjItemBlock_VarInfo">
+			<member name="row_height" type="sint32">15</member>
+			<member name="row_cell_formats" type="CObArrayEx">ObjId1288</member>
+		</object>
+		<object name="ObjId1288" type="CObArray" length="0"/>
+		<object name="ObjId1289" type="CPrjItemBlock_VarInfo">
+			<member name="row_height" type="sint32">15</member>
+			<member name="row_cell_formats" type="CObArrayEx">ObjId1290</member>
+		</object>
+		<object name="ObjId1290" type="CObArray" length="0"/>
+		<object name="ObjId1291" type="CPrjItemBlock_VarInfo">
+			<member name="row_height" type="sint32">15</member>
+			<member name="row_cell_formats" type="CObArrayEx">ObjId1292</member>
+		</object>
+		<object name="ObjId1292" type="CObArray" length="0"/>
+		<object name="ObjId1293" type="CPrjItemBlock_VarInfo">
+			<member name="row_height" type="sint32">15</member>
+			<member name="row_cell_formats" type="CObArrayEx">ObjId1294</member>
+		</object>
+		<object name="ObjId1294" type="CObArray" length="0"/>
+		<object name="ObjId1295" type="CPrjItemBlock_VarInfo">
+			<member name="row_height" type="sint32">15</member>
+			<member name="row_cell_formats" type="CObArrayEx">ObjId1296</member>
+		</object>
+		<object name="ObjId1296" type="CObArray" length="0"/>
 		<object name="ObjId0460" type="CPrjItemBlock_VarInfo">
 			<member name="row_height" type="sint32">15</member>
 			<member name="row_cell_formats" type="CObArrayEx">ObjId0461</member>

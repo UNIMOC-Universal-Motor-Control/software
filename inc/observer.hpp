@@ -83,7 +83,8 @@ namespace observer
 	 */
 	class flux
 	{
-	private:
+	public:
+//	private:
 		typedef struct {
 			///< back emf vector
 			systems::dq bemf;
@@ -108,7 +109,7 @@ namespace observer
 
 		///< kalman filter for flux error signal
 		observer::mechanic mech;
-	public:
+//	public:
 		/**
 		 * @brief flux observers trivial constructor
 		 */

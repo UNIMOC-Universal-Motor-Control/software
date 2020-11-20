@@ -129,6 +129,12 @@ namespace management
 
 		///< cycle counter
 		extern std::uint32_t cycle;
+
+		///< countdown before control kills the voltage
+		extern std::uint32_t kill_count;
+
+		///< current samples after current rise
+		extern systems::abc i;
 		}
 	}
 
