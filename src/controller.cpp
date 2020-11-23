@@ -83,7 +83,7 @@ namespace control
 	 * SVPWM Overmodulation modified to flat bottom.
 	 * @param u phase voltages
 	 * @param ubat battery voltage
-	 * @return dutys in -1 to 1
+	 * @return dutys in 0 to 1
 	 */
 	void Overmodulation(systems::abc& u, float ubat, systems::abc& dutys)
 	{
@@ -97,11 +97,11 @@ namespace control
 			ubat = 10.0f;
 		}
 		// scale voltage to -1 to 1
-		float scale = 2.0f / ubat;
+		float scale = 1.0f / ubat;
 
 		for (std::uint8_t i = 0; i < hardware::PHASES; ++i)
 		{
-			dutys.array[i] = (u.array[i] - mid) * scale;
+			dutys.array[i] = (u.array[i] - mid) * scale + 0.5f;
 		}
 	}
 
@@ -379,27 +379,18 @@ namespace control
 				foc.SetParameters(settings.control.current.kp, settings.control.current.tn);
 			}
 
-			/* inductance measurement just sets phase voltages */
-			if(management::measure::l::enable)
+			systems::dq u = values.motor.rotor.u;
+
+			if(management::observer::hfi)
 			{
-				if(management::measure::l::kill_count) management::measure::l::kill_count--;
-				else std::memset(values.motor.u.array.data(), 0, sizeof(systems::abc));
+				u.d += hfi.Injection();
 			}
-			else
-			{
-				systems::dq u = values.motor.rotor.u;
 
-				if(management::observer::hfi)
-				{
-					u.d += hfi.Injection();
-				}
+			// transform the voltages to stator frame
+			u_ab = systems::transform::InversePark(u, phi_sc);
 
-				// transform the voltages to stator frame
-				u_ab = systems::transform::InversePark(u, phi_sc);
-
-				// transform to ab system
-				values.motor.u = systems::transform::InverseClark(u_ab);
-			}
+			// transform to ab system
+			values.motor.u = systems::transform::InverseClark(u_ab);
 
 			// set dutys with overmodulation
 			Overmodulation(values.motor.u, values.battery.u, values.converter.dutys);

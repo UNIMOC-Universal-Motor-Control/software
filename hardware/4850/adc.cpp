@@ -123,7 +123,7 @@ constexpr uint32_t LENGTH_ADC_SEQ = 5;
 ///< ADC sequences in buffer.
 /// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
 ///          so even length of sequence is best choice.
-constexpr uint32_t ADC_SEQ_BUFFERED = 8;
+constexpr uint32_t ADC_SEQ_BUFFERED = 4;
 
 ///< # of ADCs
 constexpr uint32_t NUM_OF_ADC = 3;

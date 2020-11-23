@@ -193,16 +193,14 @@ bool hardware::pwm::output::Active(void)
 
 /**
  * Set the normalized duty cycles for each phase
- * @note with flat low svm
- * @param dutys -1 = LOW, 0 = 50%, 1=HIGH
+ * @param dutys 0 = LOW, 1=HIGH
  */
 void hardware::pwm::Duty(const systems::abc& dutys)
 {
-	constexpr int16_t mid = PERIOD/2;
 
 	for (uint16_t i = 0; i < PHASES; ++i)
 	{
-		int16_t new_duty = mid + (int16_t)((float)mid * dutys.array[i]);
+		int16_t new_duty = (int16_t)((float)PERIOD * dutys.array[i]);
 
 		if(new_duty < 0) new_duty = 0;
 		if(new_duty > (int16_t)PERIOD) new_duty = PERIOD;

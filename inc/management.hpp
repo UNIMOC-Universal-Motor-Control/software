@@ -116,7 +116,7 @@ namespace management
 		namespace l
 		{
 		///< measurement current.
-		constexpr float CUR = 3.0f;
+		constexpr float CUR = 2.0f;
 
 		///< measurement frequency
 		constexpr float FREQ = 1000.0f;
@@ -129,19 +129,13 @@ namespace management
 
 		///< cycle counter
 		extern std::uint32_t cycle;
-
-		///< countdown before control kills the voltage
-		extern std::uint32_t kill_count;
-
-		///< current samples after current rise
-		extern systems::abc i;
 		}
 	}
 
 	/**
 	 * controller management thread
 	 */
-	class thread : public chibios_rt::BaseStaticThread<400>
+	class thread : public chibios_rt::BaseStaticThread<450>
 	{
 	private:
 		static constexpr systime_t CYCLE_TIME = TIME_MS2I(1);
