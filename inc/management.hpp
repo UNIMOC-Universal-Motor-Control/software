@@ -119,7 +119,7 @@ namespace management
 		constexpr float CUR = 2.0f;
 
 		///< measurement frequency
-		constexpr float FREQ = 1000.0f;
+		constexpr float FREQ = 1600.0f;
 
 		///< enable flag
 		extern bool enable;

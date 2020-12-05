@@ -291,7 +291,7 @@ namespace management
 				}
 
 				// handle PWM led to show PWM status
-				if(hardware::pwm::output::Active()) palSetLine(LINE_LED_PWM);
+				if(hardware::pwm::output::Active() && measure::r::enable) palSetLine(LINE_LED_PWM);
 				else
 				{
 					// wait for PWM release
@@ -313,7 +313,8 @@ namespace management
 				}
 
 				if(		measure::r::cur_step >= measure::r::CUR_STEPS.size()
-					||	values.motor.rotor.u.d > values.battery.u * 0.50) // Voltage limit
+					||	values.motor.rotor.u.d > values.battery.u * 0.50
+					||	measure::r::u > values.battery.u * 0.50) // Voltage limit
 				{
 					measure::r::cur_step = 0;
 					measure::r::phi_step++;
@@ -402,7 +403,7 @@ namespace management
 				}
 
 				// handle PWM led to show PWM status
-				if(hardware::pwm::output::Active()) palSetLine(LINE_LED_PWM);
+				if(hardware::pwm::output::Active() && measure::l::enable) palSetLine(LINE_LED_PWM);
 				else
 				{
 					// wait for PWM release
@@ -453,6 +454,9 @@ namespace management
 						// assume that Ld is always lower than Lq due to Saturation
 						settings.motor.l.d = measure::l::u/(values.motor.rotor.omega * (i_len + iac));
 						settings.motor.l.q = measure::l::u/(values.motor.rotor.omega * (i_len - iac));
+
+						settings.control.current.kp = settings.motor.l.d/hardware::Tf;
+						settings.control.current.tn = settings.motor.l.q/settings.motor.rs;
 					}
 				}
 
@@ -491,7 +495,7 @@ namespace management
 				}
 
 				// handle PWM led to show PWM status
-				if(hardware::pwm::output::Active()) palSetLine(LINE_LED_PWM);
+				if(hardware::pwm::output::Active() && measure::psi::enable) palSetLine(LINE_LED_PWM);
 				else
 				{
 					// wait for PWM release
@@ -570,7 +574,7 @@ namespace management
 				}
 
 				// handle PWM led to show PWM status
-				if(hardware::pwm::output::Active()) palSetLine(LINE_LED_PWM);
+				if(hardware::pwm::output::Active() && measure::hall::enable) palSetLine(LINE_LED_PWM);
 				else
 				{
 					// wait for PWM release
