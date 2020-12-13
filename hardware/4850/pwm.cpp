@@ -38,7 +38,7 @@ const uint32_t hardware::pwm::TIMER_CLOCK = STM32_TIMCLK2;
 
 
 ///< deadtime in nano seconds
-const uint32_t hardware::pwm::DEADTIME = 300;
+const uint32_t hardware::pwm::DEADTIME = 800;
 
 /**
  * PWM frequency in Hz
