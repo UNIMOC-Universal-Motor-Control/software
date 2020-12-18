@@ -386,6 +386,19 @@ namespace control
 				u.d += hfi.Injection();
 			}
 
+			if(management::measure::l::enable && management::measure::l::cycles)
+			{
+				u.d = management::measure::l::u;
+				u.q = 0.0f;
+				management::measure::l::cycles--;
+
+				if(management::measure::l::cycles < management::measure::l::i.size())
+				{
+					management::measure::l::i[management::measure::l::cycles].d = values.motor.rotor.i.d;
+					management::measure::l::i[management::measure::l::cycles].q = values.motor.rotor.i.q;
+				}
+			}
+
 			// transform the voltages to stator frame
 			u_ab = systems::transform::InversePark(u, phi_sc);
 

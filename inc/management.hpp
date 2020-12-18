@@ -81,9 +81,6 @@ namespace management
 		 */
 		namespace r
 		{
-			///< currents thresholds used to sample the phase currents
-			constexpr std::array<float, 6> CUR_STEPS = {5.0f, 10.0f, 15.0f, 20.0f, 25.0f, 30.0f};
-
 			///< enable flag
 			extern bool enable;
 
@@ -93,42 +90,29 @@ namespace management
 			///< measure all the phases.
 			constexpr std::array<float, 3> PHI_STEPS = {0.0f, 120.0f, 240.0f};
 
-			///< current current step
-			extern std::uint8_t cur_step;
-
 			///< current phi step
 			extern std::uint8_t phi_step;
 
 			///< cycle counter
 			extern std::uint32_t cycle;
-
-			///< currents (x) and voltages (y) at each sample point
-			extern std::array<float, CUR_STEPS.size() * PHI_STEPS.size()> x;
-			extern std::array<float, CUR_STEPS.size() * PHI_STEPS.size()> y;
-
-			///< current measurement point
-			extern std::uint8_t point;
 		}
 
 		/**
-		 * @namespace inductance measurement values
+		 * @namespace inductance by rise time measurement values
 		 */
 		namespace l
 		{
-		///< measurement current.
-		constexpr float CUR = 2.0f;
+			///< enable flag
+			extern bool enable;
 
-		///< measurement frequency
-		constexpr float FREQ = 1600.0f;
+			///< pulse cycles counter
+			extern std::uint32_t cycles;
 
-		///< enable flag
-		extern bool enable;
+			///< measurement voltage pulse
+			extern float u;
 
-		///< current measurement voltage
-		extern float u;
-
-		///< cycle counter
-		extern std::uint32_t cycle;
+			///< currents at each sample point
+			extern std::array<systems::dq, 3> i;
 		}
 	}
 
@@ -153,7 +137,6 @@ namespace management
 			CALCULATE_LS,
 			MEASURE_PSI,
 			CALCULATE_PSI,
-			MEASURE_HALL,
 		} sequencer;
 
 

@@ -83,17 +83,17 @@ namespace management
 		namespace r
 		{
 			///< currents (x) and voltages (y) at each sample point
-			std::array<float, CUR_STEPS.size() * PHI_STEPS.size()> x;
-			std::array<float, CUR_STEPS.size() * PHI_STEPS.size()> y;
+			std::array<float, PHI_STEPS.size()> x;
+			std::array<float, PHI_STEPS.size()> y;
+
+			///< target current
+			float current = 0.0f;
 
 			///< enable flag
 			bool enable = false;
 
 			///< current measurement voltage
 			float u = 0.0f;
-
-			///< current current step
-			std::uint8_t cur_step = 0;
 
 			///< current phi step
 			std::uint8_t phi_step = 0;
@@ -105,22 +105,26 @@ namespace management
 			std::uint32_t cycle = 0;
 		}
 
+
 		/**
-		 * @namespace inductance measurement values
+		 * @namespace inductance by rise time measurement values
 		 */
 		namespace l
 		{
 			///< enable flag
 			bool enable = false;
 
-			///< inductance measurement voltage
+			///< cycles counter
+			std::uint32_t cycles = 0;
+
+			///< measurement voltage pulse
 			float u = 0.0f;
 
-			///< cycle counter
-			std::uint32_t cycle = 0;
+			///< currents at each sample point
+			std::array<systems::dq, 3> i;
 
-			///< old omega limit
-			float w_limit = 0.0f;
+			///< current rise per control cycle
+			volatile systems::dq rise;
 		}
 
 		/**
@@ -135,30 +139,6 @@ namespace management
 			std::uint32_t cycle = 0;
 		}
 
-
-		/**
-		 * @namespace hallsensor measurement values
-		 */
-		namespace hall
-		{
-			///< enable flag
-			bool enable = false;
-
-			///< cycle counter
-			std::uint32_t cycle = 0;
-
-			///< actual hall sensor state
-			std::uint8_t state = 0;
-
-			///< last hall sensor state
-			std::uint8_t old_state = 0;
-
-			///< hall sensor state change angles table
-			std::array<float, 8> angles = {0.0f};
-
-			///< measured hall states
-			std::uint8_t states_seen = 0;
-		}
 	}
 
 
@@ -266,28 +246,29 @@ namespace management
 					measure::r::enable = true;
 					measure::l::enable = true;
 					measure::psi::enable = true;
-					measure::hall::enable = true;
 				}
 
 				if(measure::r::enable) sequencer = MEASURE_RS;
 				else if(measure::l::enable) sequencer = MEASURE_LS;
 				else if(measure::psi::enable) sequencer = MEASURE_PSI;
-				else if(measure::hall::enable) sequencer = MEASURE_HALL;
 
 				break;
 
 			case MEASURE_RS:
 				// init the measurement
-				if(measure::r::cycle == 0 && measure::r::phi_step == 0 && 	measure::r::cur_step == 0)
+				if(measure::r::cycle == 0 && measure::r::phi_step == 0)
 				{
 					measure::r::u = 0.0f;
 					values.motor.rotor.u.d = 0.0f;
 					values.motor.rotor.u.q = 0.0f;
 					values.motor.rotor.phi = 0.0f;
 					values.motor.rotor.omega = 0.0f;
+					control::current = false;
 					observer::mechanic = false;
 					observer::flux = false;
 					observer::hfi = false;
+
+					measure::r::current = settings.motor.limits.i * 0.75;
 				}
 
 				// handle PWM led to show PWM status
@@ -303,25 +284,17 @@ namespace management
 				palClearLine(LINE_LED_RUN);
 
 				// reached current steps current target
-				if(values.motor.rotor.i.d > measure::r::CUR_STEPS[measure::r::cur_step] && measure::r::cycle > 100)
+				if((values.motor.rotor.i.d > measure::r::current
+					&& measure::r::cycle > 100)
+					||	values.motor.rotor.u.d > values.battery.u * 0.50
+					||	measure::r::u > values.battery.u * 0.50)
 				{
 					// sample the point
 					measure::r::x[measure::r::point] = values.motor.rotor.i.d;
-					measure::r::y[measure::r::point] = measure::r::u;
+					measure::r::y[measure::r::point] = values.motor.rotor.u.d;
 					measure::r::point++;
-					measure::r::cur_step++;
-				}
-
-				if(		measure::r::cur_step >= measure::r::CUR_STEPS.size()
-					||	values.motor.rotor.u.d > values.battery.u * 0.50
-					||	measure::r::u > values.battery.u * 0.50) // Voltage limit
-				{
-					measure::r::cur_step = 0;
 					measure::r::phi_step++;
 					measure::r::u = 0.0f;
-					measure::r::cycle = 0;
-					values.motor.rotor.u.d = 0.0f;
-					values.motor.rotor.u.q = 0.0f;
 
 					if(measure::r::phi_step >= measure::r::PHI_STEPS.size())
 					{
@@ -333,9 +306,9 @@ namespace management
 						values.motor.rotor.phi = measure::r::PHI_STEPS[measure::r::phi_step];
 					}
 
-				}	else if(std::fabs(values.motor.rotor.i.d) > measure::r::CUR_STEPS.back()
-					|| std::fabs(values.motor.rotor.i.q) > measure::r::CUR_STEPS.back()
-					|| !hardware::pwm::output::Active())
+				}	else if(std::fabs(values.motor.rotor.i.d) > measure::r::current
+						|| std::fabs(values.motor.rotor.i.q) > measure::r::current
+						|| !hardware::pwm::output::Active())
 				{
 					// error target current not reached within voltage limits
 					// or the other currents reached target current but not the main current
@@ -357,29 +330,25 @@ namespace management
 				values.motor.rotor.phi = 0.0f;
 				values.motor.rotor.omega = 0.0f;
 
-				// at least 3 measurement points on all phases are there.
-				if(			measure::r::cur_step > 2
-					||		measure::r::phi_step >= measure::r::PHI_STEPS.size())
+				if(	measure::r::phi_step >= measure::r::PHI_STEPS.size())
 				{
-					float gain, offset;
-					filter::LinearRegression(measure::r::x.begin(), measure::r::y.begin(), measure::r::point, gain, offset);
-
-					if(!std::isnan(gain) && !std::isnan(offset))
+					float r = 0.0f;
+					for (std::uint8_t i = 0; i < measure::r::PHI_STEPS.size(); ++i)
 					{
-						settings.motor.rs = gain;
-
-						// calculate effective deadtime equivalent voltage error.
-						settings.converter.dt = hardware::Tc * offset / values.battery.u;
-
-						settings.control.current.kp = settings.motor.l.d/hardware::Tf;
-						settings.control.current.tn = settings.motor.l.d/settings.motor.rs;
+						r += measure::r::y[i] / measure::r::x[i];
 					}
+					r /= (float)measure::r::PHI_STEPS.size();
+
+					settings.motor.rs = r;
+
+					settings.control.current.kp = settings.motor.l.d/hardware::Tf;
+					settings.control.current.tn = settings.motor.l.d/settings.motor.rs;
+
 				}
 				measure::r::point = 0;
 				measure::r::u = 0.0f;
 				measure::r::enable = false;
 				measure::r::cycle = 0;
-				measure::r::cur_step = 0;
 				measure::r::phi_step = 0;
 
 				sequencer = RUN;
@@ -387,91 +356,47 @@ namespace management
 				break;
 
 			case MEASURE_LS:
-				// init the measurement
-				if(measure::l::cycle == 0)
-				{
-					measure::l::u = 0.0f;
-					values.motor.rotor.u.d = 0.0f;
-					values.motor.rotor.u.q = 0.0f;
-					values.motor.rotor.phi = 0.0f;
-					values.motor.rotor.omega = math::_2PI * measure::l::FREQ;
-					measure::l::w_limit = settings.motor.limits.omega;
-					settings.motor.limits.omega = values.motor.rotor.omega;
-					observer::mechanic = false;
-					observer::flux = false;
-					observer::hfi = false;
-				}
-
-				// handle PWM led to show PWM status
-				if(hardware::pwm::output::Active() && measure::l::enable) palSetLine(LINE_LED_PWM);
-				else
-				{
-					// wait for PWM release
-					sequencer = RUN;
-
-					palClearLine(LINE_LED_PWM);
-				}
-				// set Run Mode LED
-				palClearLine(LINE_LED_RUN);
-
-				measure::l::cycle++;
-				if((measure::l::cycle % 50) == 0)
-				{
-
-					if(	   std::fabs(values.motor.rotor.i.d) > measure::l::CUR
-						|| std::fabs(values.motor.rotor.i.q) > measure::l::CUR)
-					{
-						sequencer = CALCULATE_LS;
-					}
-					else
-					{
-						measure::l::u += 100e-3f; // 100mv increase every 25ms
-					}
-				}
-				values.motor.rotor.u.q = measure::l::u;
-				break;
-
-			case CALCULATE_LS:
-
-				// calculate the dc levels
-				values.motor.rotor.gid.SetFrequency(0.0f);
-				values.motor.rotor.giq.SetFrequency(0.0f);
-
-				values.motor.rotor.gid.Calculate();
-				values.motor.rotor.giq.Calculate();
-
-				{
-					systems::dq i = {values.motor.rotor.gid.Magnitude(), values.motor.rotor.giq.Magnitude()};
-					float i_len = systems::Length(i);
-
-					if(i_len > 0.0f)
-					{
-						// get the Ld - Lq current at twice the injection frequency
-						values.motor.rotor.gid.SetFrequency(2.0f * measure::l::FREQ);
-						values.motor.rotor.gid.Calculate();
-						float iac = values.motor.rotor.gid.Magnitude();
-
-						// assume that Ld is always lower than Lq due to Saturation
-						settings.motor.l.d = measure::l::u/(values.motor.rotor.omega * (i_len + iac));
-						settings.motor.l.q = measure::l::u/(values.motor.rotor.omega * (i_len - iac));
-
-						settings.control.current.kp = settings.motor.l.d/hardware::Tf;
-						settings.control.current.tn = settings.motor.l.q/settings.motor.rs;
-					}
-				}
-
 				values.motor.rotor.u.d = 0.0f;
 				values.motor.rotor.u.q = 0.0f;
 				values.motor.rotor.phi = 0.0f;
 				values.motor.rotor.omega = 0.0f;
-				settings.motor.limits.omega =  measure::l::w_limit;
+				control::current = false;
+				observer::mechanic = false;
+				observer::flux = false;
+				observer::hfi = false;
+				measure::l::u = values.battery.u * 0.45f;
+				measure::l::cycles = (settings.motor.limits.i * 0.75)/(measure::l::u/settings.motor.rs*1000.0f*hardware::Tc);
 
+				// reduce voltage to reach minimum number of cycles
+				if(measure::l::cycles < measure::l::i.size())
+				{
+					measure::l::u *= (float)measure::l::cycles / (float)measure::l::i.size();
+				}
+				sequencer = CALCULATE_LS;
+				break;
+
+			case CALCULATE_LS:
+			{
+				values.motor.rotor.u.d = 0.0f;
+				values.motor.rotor.u.q = 0.0f;
+				values.motor.rotor.phi = 0.0f;
+				values.motor.rotor.omega = 0.0f;
+				control::current = false;
+				observer::mechanic = false;
+				observer::flux = false;
+				observer::hfi = false;
+
+				// savitzky-golay filter 1. order derivative
+				measure::l::rise.d = 2.0f*measure::l::i[4].d + 2.0f*measure::l::i[3].d - measure::l::i[1].d - 2.0f*measure::l::i[0].d;
+				measure::l::rise.q = 2.0f*measure::l::i[4].q + 2.0f*measure::l::i[3].q - measure::l::i[1].q - 2.0f*measure::l::i[0].q;
+
+				settings.motor.l.d = measure::l::u * hardware::Tc / measure::l::rise.d;
+				settings.motor.l.q = measure::l::u * hardware::Tc / measure::l::rise.q;
 
 				measure::l::enable = false;
-				measure::l::cycle = 0;
-
 				sequencer = RUN;
 				break;
+			}
 
 			case MEASURE_PSI:
 				// init the measurement
@@ -551,95 +476,6 @@ namespace management
 				sequencer = RUN;
 				break;
 			}
-			case MEASURE_HALL:
-				// init the measurement
-				if(measure::hall::cycle == 0)
-				{
-					values.motor.rotor.u.d = 0.0f;
-					values.motor.rotor.u.q = 0.0f;
-					values.motor.rotor.phi = 0.0f;
-					values.motor.rotor.omega = 2.0f;
-
-					observer::mechanic = false;
-					observer::flux = false;
-					observer::hfi = false;
-
-					control::feedforward = false;
-					control::current = true;
-
-					std::memset((void*)measure::hall::angles.data(), 0, sizeof(measure::hall::angles.data()));
-
-					values.motor.rotor.setpoint.i.d = settings.motor.limits.i*0.5f;
-					values.motor.rotor.setpoint.i.q = 0.0f;
-				}
-
-				// handle PWM led to show PWM status
-				if(hardware::pwm::output::Active() && measure::hall::enable) palSetLine(LINE_LED_PWM);
-				else
-				{
-					// wait for PWM release
-					sequencer = RUN;
-
-					palClearLine(LINE_LED_PWM);
-				}
-				// set Run Mode LED
-				palClearLine(LINE_LED_RUN);
-
-				// get hall state
-				measure::hall::state = values.motor.rotor.hall;
-
-				// set first sector
-				if(!measure::hall::cycle)
-				{
-					measure::hall::old_state = measure::hall::state;
-				}
-
-				// new edge of a Hall sensor
-				if(measure::hall::state != measure::hall::old_state && measure::hall::cycle > 1000)
-				{
-					if(measure::hall::angles[measure::hall::state] == 0.0f) measure::hall::states_seen++;
-					measure::hall::angles[measure::hall::state] = values.motor.rotor.phi;
-				}
-				measure::hall::old_state = measure::hall::state;
-
-				// only valid hall states count
-				if(measure::hall::state < 1 || measure::hall::state > 6
-						|| (measure::hall::states_seen >= 6 && measure::hall::cycle > 10000)
-						|| measure::hall::cycle > 30000)
-				{
-					values.motor.rotor.u.d = 0.0f;
-					values.motor.rotor.u.q = 0.0f;
-					values.motor.rotor.phi = 0.0f;
-					values.motor.rotor.omega = 0.0f;
-
-					observer::mechanic = false;
-					observer::flux = false;
-					observer::hfi = false;
-
-					control::feedforward = false;
-					control::current = false;
-
-					values.motor.rotor.setpoint.i.d = 0.0f;
-					values.motor.rotor.setpoint.i.q = 0.0f;
-
-
-					measure::hall::enable = false;
-					measure::hall::cycle = 0;
-
-					// measurement successful
-					if(measure::hall::states_seen >= 6)
-					{
-						for(std::uint8_t i = 1; i < 7; i++)
-						{
-							systems::SinCos(measure::hall::angles[i], settings.motor.hall_table[i]);
-						}
-					}
-
-					sequencer = RUN;
-				}
-
-				measure::hall::cycle++;
-				break;
 			}
 
 			sleepUntilWindowed(deadline, deadline + CYCLE_TIME);
