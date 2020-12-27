@@ -114,17 +114,14 @@ namespace management
 			///< enable flag
 			bool enable = false;
 
-			///< cycles counter
-			std::uint32_t cycles = 0;
-
-			///< measurement voltage pulse
+			///< inductance measurement voltage
 			float u = 0.0f;
 
-			///< currents at each sample point
-			std::array<systems::dq, 3> i;
+			///< cycle counter
+			std::uint32_t cycle = 0;
 
-			///< current rise per control cycle
-			volatile systems::dq rise;
+			///< old omega limit
+			float w_limit = 0.0f;
 		}
 
 		/**
@@ -356,47 +353,92 @@ namespace management
 				break;
 
 			case MEASURE_LS:
-				values.motor.rotor.u.d = 0.0f;
-				values.motor.rotor.u.q = 0.0f;
-				values.motor.rotor.phi = 0.0f;
-				values.motor.rotor.omega = 0.0f;
-				control::current = false;
-				observer::mechanic = false;
-				observer::flux = false;
-				observer::hfi = false;
-				measure::l::u = values.battery.u * 0.45f;
-				measure::l::cycles = (settings.motor.limits.i * 0.75)/(measure::l::u/settings.motor.rs*1000.0f*hardware::Tc);
-
-				// reduce voltage to reach minimum number of cycles
-				if(measure::l::cycles < measure::l::i.size())
+				// init the measurement
+				if(measure::l::cycle == 0)
 				{
-					measure::l::u *= (float)measure::l::cycles / (float)measure::l::i.size();
+					measure::l::u = 0.0f;
+					values.motor.rotor.u.d = 0.0f;
+					values.motor.rotor.u.q = 0.0f;
+					values.motor.rotor.phi = 0.0f;
+					values.motor.rotor.omega = math::_2PI * measure::l::FREQ;
+					measure::l::w_limit = settings.motor.limits.omega;
+					settings.motor.limits.omega = values.motor.rotor.omega;
+					observer::mechanic = false;
+					observer::flux = false;
+					observer::hfi = false;
 				}
-				sequencer = CALCULATE_LS;
+
+				// handle PWM led to show PWM status
+				if(hardware::pwm::output::Active() && measure::l::enable) palSetLine(LINE_LED_PWM);
+				else
+				{
+					// wait for PWM release
+					sequencer = RUN;
+
+					palClearLine(LINE_LED_PWM);
+				}
+				// set Run Mode LED
+				palClearLine(LINE_LED_RUN);
+
+				measure::l::cycle++;
+				if((measure::l::cycle % 50) == 0)
+				{
+
+					if(	   std::fabs(values.motor.rotor.i.d) > measure::l::CUR
+						|| std::fabs(values.motor.rotor.i.q) > measure::l::CUR)
+					{
+						sequencer = CALCULATE_LS;
+					}
+					else
+					{
+						measure::l::u += 100e-3f; // 100mv increase every 25ms
+					}
+				}
+				values.motor.rotor.u.q = measure::l::u;
 				break;
 
 			case CALCULATE_LS:
-			{
+
+				// calculate the dc levels
+				values.motor.rotor.gid.SetFrequency(0.0f);
+				values.motor.rotor.gid.Calculate();
+				{
+					// only use inductive part of the response
+					float i_len = values.motor.rotor.gid.Magnitude();
+
+					if(i_len > 0.0f)
+					{
+						// get the Ld - Lq current at twice the injection frequency
+						values.motor.rotor.gid.SetFrequency(2.0f * measure::l::FREQ);
+						values.motor.rotor.gid.Calculate();
+						float iac = values.motor.rotor.gid.Magnitude();
+
+						// assume that Ld is always lower than Lq due to Saturation
+						settings.motor.l.d = measure::l::u/(values.motor.rotor.omega * (i_len + iac));
+						settings.motor.l.q = measure::l::u/(values.motor.rotor.omega * (i_len - iac));
+
+						settings.control.current.kp = settings.motor.l.d/hardware::Tf;
+						settings.control.current.tn = settings.motor.l.q/settings.motor.rs;
+					}
+				}
+
 				values.motor.rotor.u.d = 0.0f;
 				values.motor.rotor.u.q = 0.0f;
 				values.motor.rotor.phi = 0.0f;
 				values.motor.rotor.omega = 0.0f;
+				settings.motor.limits.omega =  measure::l::w_limit;
 				control::current = false;
 				observer::mechanic = false;
 				observer::flux = false;
 				observer::hfi = false;
+				
 
-				// savitzky-golay filter 1. order derivative
-				measure::l::rise.d = 2.0f*measure::l::i[4].d + 2.0f*measure::l::i[3].d - measure::l::i[1].d - 2.0f*measure::l::i[0].d;
-				measure::l::rise.q = 2.0f*measure::l::i[4].q + 2.0f*measure::l::i[3].q - measure::l::i[1].q - 2.0f*measure::l::i[0].q;
-
-				settings.motor.l.d = measure::l::u * hardware::Tc / measure::l::rise.d;
-				settings.motor.l.q = measure::l::u * hardware::Tc / measure::l::rise.q;
 
 				measure::l::enable = false;
+				measure::l::cycle = 0;
+
 				sequencer = RUN;
 				break;
-			}
 
 			case MEASURE_PSI:
 				// init the measurement

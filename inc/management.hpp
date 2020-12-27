@@ -98,21 +98,24 @@ namespace management
 		}
 
 		/**
-		 * @namespace inductance by rise time measurement values
+		 * @namespace inductance measurement values
 		 */
 		namespace l
 		{
-			///< enable flag
-			extern bool enable;
+		///< measurement current.
+		constexpr float CUR = 3.0f;
 
-			///< pulse cycles counter
-			extern std::uint32_t cycles;
+		///< measurement frequency
+		constexpr float FREQ = 1000.0f;
 
-			///< measurement voltage pulse
-			extern float u;
+		///< enable flag
+		extern bool enable;
 
-			///< currents at each sample point
-			extern std::array<systems::dq, 3> i;
+		///< current measurement voltage
+		extern float u;
+
+		///< cycle counter
+		extern std::uint32_t cycle;
 		}
 	}
 
