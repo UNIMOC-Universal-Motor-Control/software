@@ -239,7 +239,7 @@ namespace control
 			hardware::adc::current::Value(values.motor.i);
 
 			// calculate the sine and cosine of the new angle
-			angle = values.motor.rotor.phi + values.motor.rotor.omega * hardware::Tf;
+			angle = values.motor.rotor.phi - values.motor.rotor.omega * hardware::Tf;
 
 			// calculate new sine and cosine for the reference system
 			systems::SinCos(values.motor.rotor.phi, phi_sc);
