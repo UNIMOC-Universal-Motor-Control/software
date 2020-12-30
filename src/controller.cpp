@@ -112,10 +112,11 @@ namespace control
 	 * @param new_tn				integral action time.
 	 * @param new_positive_limit	positive output limit.
 	 * @param new_negative_limit	negative output limit.
+	 * @param ts					sampling time
 	 */
 	pi::pi(const float new_kp, const float new_tn,
 			const float new_positive_limit, const float new_negative_limit, const float ts):
-			ts(ts), error_sum(0.0f), output_unlimited(0.0f), output(0.0f), kp(new_kp),
+			error_sum(0.0f), output_unlimited(0.0f), output(0.0f), kp(new_kp),
 			ki(SetKi(kp, ts, new_tn)), positive_limit(new_positive_limit), negative_limit(new_negative_limit)
 	{}
 
@@ -161,8 +162,8 @@ namespace control
 	 * @brief constructor of the foc with all essential parameters.
 	 */
 	foc::foc(void):
-			ctrl_d(0.0f, 0.0f, 0.0f, 0.0f, hardware::Tc),
-			ctrl_q(0.0f, 0.0f, 0.0f, 0.0f, hardware::Tc)
+			ctrl_d(0.0f, 0.0f, 0.0f, 0.0f, hardware::Tc()),
+			ctrl_q(0.0f, 0.0f, 0.0f, 0.0f, hardware::Tc())
 	{}
 
 
@@ -211,7 +212,7 @@ namespace control
 	/**
 	 * generic constructor
 	 */
-	thread::thread():flux(), hfi(),foc()
+	thread::thread():flux(), foc()
 	{}
 
 	/**
@@ -239,7 +240,7 @@ namespace control
 			hardware::adc::current::Value(values.motor.i);
 
 			// calculate the sine and cosine of the new angle
-			angle = values.motor.rotor.phi - values.motor.rotor.omega * hardware::Tf;
+			angle = values.motor.rotor.phi - values.motor.rotor.omega * hardware::Tf();
 
 			// calculate new sine and cosine for the reference system
 			systems::SinCos(values.motor.rotor.phi, phi_sc);
@@ -286,15 +287,6 @@ namespace control
 			{
 				// calculate the flux observer
 				flux.Calculate(phi_sc, correction);
-
-				// correct the prediction
-				observer::mechanic::Correct(correction);
-			}
-
-			if(management::observer::hfi)
-			{
-				// calculate the flux observer
-				hfi.Calculate(values.motor.rotor.i, correction);
 
 				// correct the prediction
 				observer::mechanic::Correct(correction);
@@ -370,21 +362,16 @@ namespace control
 
 				systems::SinCos(k - values.motor.rotor.phi, tmp);
 
-				values.motor.rotor.u.d -= 4.0f/3.0f*values.battery.u*settings.converter.dt/hardware::Tc*tmp.cos;
-				values.motor.rotor.u.q -= 4.0f/3.0f*values.battery.u*settings.converter.dt/hardware::Tc*tmp.sin;
+				values.motor.rotor.u.d -= 4.0f/3.0f*values.battery.u*settings.converter.dt/hardware::Tc()*tmp.cos;
+				values.motor.rotor.u.q -= 4.0f/3.0f*values.battery.u*settings.converter.dt/hardware::Tc()*tmp.sin;
 			}
 			else
 			{
 				foc.Reset();
-				foc.SetParameters(settings.control.current.kp, settings.control.current.tn);
+				foc.SetParameters(settings.control.current.kp, settings.control.current.tn, hardware::Tc());
 			}
 
 			systems::dq u = values.motor.rotor.u;
-
-			if(management::observer::hfi)
-			{
-				u.d += hfi.Injection();
-			}
 
 			// transform the voltages to stator frame
 			u_ab = systems::transform::InversePark(u, phi_sc);

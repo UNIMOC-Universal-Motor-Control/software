@@ -152,27 +152,6 @@ __attribute__((aligned (32))) settings_ts settings =
 		},
 
 		/**
-		 * high frequency injection observer settings
-		 */
-		.hfi =
-		{
-			///< enable observer switch
-			.enable = false,
-
-			///< modell variance
-			.Q = 1e-5f,
-
-			///< measurement variance
-			.R = 1e5f,
-
-			///< injection frequency in rad/s
-			.frequency = 1500.0f,
-
-			///< injection current in A
-			.current = 1.5f,
-		},
-
-		/**
 		 * hall observer settings
 		 */
 		.hall =
@@ -226,11 +205,14 @@ __attribute__((aligned (32))) settings_ts settings =
 	 */
 	.converter =
 	{
-		///< compensated dead time in PWM switching -1 represents 0 and 1 represents 1
-		.dt = 0.0f,
+		///< dead time in PWM switching in ns
+		.dt = 800,
 
 		///< minimal current for full dead time compensation
 		.dt_i_min = 1.0f,
+
+		///< pwm frequency
+		.frequency = 16000,
 
 		/**
 		 * converter derating settings

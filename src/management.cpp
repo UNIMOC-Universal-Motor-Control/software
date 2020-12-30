@@ -41,9 +41,6 @@ namespace management
 	 */
 	namespace observer
 	{
-		///< release high frequency injection observer
-		bool hfi = false;
-
 		///< release flux observer
 		bool flux = false;
 
@@ -230,9 +227,8 @@ namespace management
 					control::current = false;
 				}
 				observer::flux = settings.observer.flux.enable;
-				observer::hfi = settings.observer.hfi.enable;
 
-				if(observer::flux || observer::hfi) observer::mechanic = true;
+				if(observer::flux)observer::mechanic = true;
 				else	observer::mechanic = false;
 
 				control::feedforward = settings.control.current.feedforward;
@@ -263,7 +259,6 @@ namespace management
 					control::current = false;
 					observer::mechanic = false;
 					observer::flux = false;
-					observer::hfi = false;
 
 					measure::r::current = settings.motor.limits.i * 0.75;
 				}
@@ -338,7 +333,7 @@ namespace management
 
 					settings.motor.rs = r;
 
-					settings.control.current.kp = settings.motor.l.d/hardware::Tf;
+					settings.control.current.kp = settings.motor.l.d/hardware::Tf();
 					settings.control.current.tn = settings.motor.l.d/settings.motor.rs;
 
 				}
@@ -365,7 +360,6 @@ namespace management
 					settings.motor.limits.omega = values.motor.rotor.omega;
 					observer::mechanic = false;
 					observer::flux = false;
-					observer::hfi = false;
 				}
 
 				// handle PWM led to show PWM status
@@ -400,7 +394,7 @@ namespace management
 			case CALCULATE_LS:
 
 				// calculate the dc levels
-				values.motor.rotor.gid.SetFrequency(0.0f);
+				values.motor.rotor.gid.SetFrequency(0.0f, hardware::Fc());
 				values.motor.rotor.gid.Calculate();
 				{
 					// only use inductive part of the response
@@ -409,7 +403,7 @@ namespace management
 					if(i_len > 0.0f)
 					{
 						// get the Ld - Lq current at twice the injection frequency
-						values.motor.rotor.gid.SetFrequency(2.0f * measure::l::FREQ);
+						values.motor.rotor.gid.SetFrequency(2.0f * measure::l::FREQ, hardware::Fc());
 						values.motor.rotor.gid.Calculate();
 						float iac = values.motor.rotor.gid.Magnitude();
 
@@ -417,7 +411,7 @@ namespace management
 						settings.motor.l.d = measure::l::u/(values.motor.rotor.omega * (i_len + iac));
 						settings.motor.l.q = measure::l::u/(values.motor.rotor.omega * (i_len - iac));
 
-						settings.control.current.kp = settings.motor.l.d/hardware::Tf;
+						settings.control.current.kp = settings.motor.l.d/hardware::Tf();
 						settings.control.current.tn = settings.motor.l.q/settings.motor.rs;
 					}
 				}
@@ -428,11 +422,9 @@ namespace management
 				values.motor.rotor.omega = 0.0f;
 				settings.motor.limits.omega =  measure::l::w_limit;
 				control::current = false;
+
 				observer::mechanic = false;
 				observer::flux = false;
-				observer::hfi = false;
-				
-
 
 				measure::l::enable = false;
 				measure::l::cycle = 0;
@@ -451,7 +443,6 @@ namespace management
 
 					observer::mechanic = false;
 					observer::flux = false;
-					observer::hfi = false;
 
 					control::feedforward = false;
 					control::current = true;
@@ -499,7 +490,6 @@ namespace management
 
 				observer::mechanic = false;
 				observer::flux = false;
-				observer::hfi = false;
 
 				control::feedforward = false;
 				control::current = false;

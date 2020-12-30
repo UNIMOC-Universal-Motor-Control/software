@@ -41,16 +41,41 @@ namespace hardware {
 		///< PWM Timer clock in Hz
 		extern const uint32_t TIMER_CLOCK;
 
-
-		///< deadtime in nano seconds
-		extern const uint32_t DEADTIME;
+		/**
+		 * Get Deadtime of PWM
+		 * @return deadtime in nano seconds
+		 */
+		extern std::uint32_t Deadtime(void);
 
 		/**
-		 * PWM frequency in Hz
-		 *
-		 * With center aligned PWM this is the period of PWM half period.
+		 * Set Deadtime of PWM
+		 * @param ns set deadtime in nano seconds to this value
+		 * @return new deadtime in nano seconds
 		 */
-		extern const uint32_t PERIOD;
+		extern std::uint32_t Deadtime(const std::uint32_t ns);
+
+		/**
+		 * Get Period of PWM
+		 *
+		 * @note With center aligned PWM this is the period of PWM half period.
+		 * @return Period of PWM in timer counts
+		 */
+		extern std::uint32_t Period(void);
+
+		/**
+		 * Get Frequency of PWM
+		 *
+		 * @return PWM frequency in Hz
+		 */
+		extern std::uint32_t Frequency(void);
+
+		/**
+		 * Set Frequency of PWM
+		 *
+		 * @param freq 	new PWM frequency
+		 * @return new PWM frequency in Hz
+		 */
+		extern std::uint32_t Frequency(const std::uint32_t freq);
 
 		/**
 		 * Initialize PWM hardware with outputs disabled!
@@ -84,14 +109,23 @@ namespace hardware {
 
 	} /* namespace pwm */
 
-	///< Control cycle time
-	extern const float Tc;
+	/**
+	 * get control cycle time
+	 * @return control cycle frequency in s
+	 */
+	extern float Tc(void);
 
-	///< Control cycle frequency
-	extern const float Fc;
+	/**
+	 * get control cycle frequency
+	 * @return control cycle frequency in Hz
+	 */
+	extern float Fc(void);
 
-	///< Filter Group delay
-	extern const float Tf;
+	/**
+	 * Get Filters Group delay (Hardware and Software)
+	 * @return Group delay of the hole signal chain in s
+	 */
+	extern float Tf(void);
 
 	namespace adc
 	{

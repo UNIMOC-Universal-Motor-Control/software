@@ -239,9 +239,6 @@ private:
 	///< index for latest sample in buffer.
 	std::uint32_t index;
 
-	///< sampling frequency of the source signal
-	const float Fs;
-
 	///< wave number of interest
 	std::uint32_t k;
 
@@ -262,17 +259,17 @@ private:
 public:
 	/**
 	 * Goertzel algorithm container constructor
-	 * @param Fs sampling frequency
 	 */
-	goertzel<N>(const float Fs): buffer{0.0f}, index(0), Fs(Fs), k(0),
+	goertzel<N>(void): buffer{0.0f}, index(0), k(0),
 		sc{0.0f, 1.0f}, coeff(2.0f), real(0.0f), imag(0.0f), ac(0.0f), dc(0.0f) {};
 
 	/**
 	 * set the frequency of interest.
 	 * @note frequency resolution is max Fs/N
 	 * @param F frequency to be selected
+	 * @param Fs sampling frequency of the source signal
 	 */
-	void SetFrequency(const float F)
+	void SetFrequency(const float F, const float Fs)
 	{
 		k = (uint32_t)(F/Fs*(float)N);
 		systems::SinCos(math::_2PI * (float)k/(float)N, sc);
@@ -337,35 +334,6 @@ public:
 
 	float Magnitude(void) { return std::sqrt(real*real + imag*imag);};
 	float Phase(void) { return std::atan2(imag, real); };
-
-	bool Test(void)
-	{
-		bool result = false;
-		const float limit = 1e-1f;
-		const float dc = 3.0f;
-		const float ac = 0.75f;
-		const float omega = 1000.0f*math::_2PI;
-		float phi = math::PIby2/3.0f;
-
-		for(uint32_t i = 0; i < N; i++)
-		{
-			float u = std::sin(phi)*ac + dc;
-			Sample(u);
-			phi += omega/Fs;
-			if(phi > math::_2PI) phi -= math::_2PI;
-		}
-
-		SetFrequency(0.0f);
-		Calculate();
-		this->dc = Magnitude();
-
-		SetFrequency(1000.0f);
-		Calculate();
-		this->ac = Magnitude();
-
-
-		return result;
-	}
 };
 
 

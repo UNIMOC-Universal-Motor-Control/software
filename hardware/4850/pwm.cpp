@@ -36,45 +36,49 @@ systems::abc duty_counts = {0};
 ///< PWM Timer clock in Hz
 const uint32_t hardware::pwm::TIMER_CLOCK = STM32_TIMCLK2;
 
+///< default PWM period in counts
+const std::uint32_t DEF_PERIOD = 6750;
+
+///< default deadtime in nanoseconds
+const std::uint32_t DEF_DEADTIME = 800;
 
 ///< deadtime in nano seconds
-const uint32_t hardware::pwm::DEADTIME = 800;
+uint32_t deadtime = DEF_DEADTIME;
+
+/**
+ * PWM counts
+ *
+ * With center aligned PWM this is the period of PWM half period.
+ */
+uint32_t period = DEF_PERIOD;
 
 /**
  * PWM frequency in Hz
  *
  * With center aligned PWM this is the period of PWM half period.
  */
-const uint32_t hardware::pwm::PERIOD = 6750;
+uint32_t frequency = hardware::pwm::TIMER_CLOCK/(2*DEF_PERIOD);
 
-///< Control cycle time
-const float hardware::Tc = ((float)hardware::pwm::PERIOD / (float)hardware::pwm::TIMER_CLOCK);
+///< control frequency in Hz
+float fc = hardware::pwm::TIMER_CLOCK/(DEF_PERIOD);
 
-///< Control cycle frequency
-const float hardware::Fc = 1.0f/hardware::Tc;
 
-/**
- * macro to calculate DTG value for BDTR
- * @param deadtime in ns
- * @return dtg value
- */
-constexpr uint16_t DTG(const uint32_t deadtime)
-{
-	float fdeadtime = (float)deadtime * 1e-9f;
-	float clock = (float)STM32_TIMCLK2;
-	osalDbgAssert((fdeadtime * clock) < 256.0f,
-	                "PWM: Dead too long");
-	return (uint16_t)((fdeadtime * clock) -1);
-}
+///< control period in s
+float tc = (float)DEF_PERIOD/(float)hardware::pwm::TIMER_CLOCK;
 
+///< Filter group delay
+/// RC Filter with 11k and 1n plus 5us for the INA240
+///  Software needs 1 control cycle for calculations
+const float TF_HW = (11e3f * 1e-9f) + 5e-6f;
+float tf = tc + TF_HW;
 
 /**
  * basic PWM configuration
  */
-const PWMConfig pwmcfg =
+PWMConfig pwmcfg =
 {
 		TIMER_CLOCK,
-		PERIOD,
+		6750,
 		nullptr,
 		{ /*  */
 				{PWM_OUTPUT_ACTIVE_HIGH | PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH, nullptr},
@@ -91,7 +95,7 @@ const PWMConfig pwmcfg =
 		 * Break and Deadtime Register
 		 * Break input enabled with filter of 8 clock cycles
 		 */
-		STM32_TIM_BDTR_DTG(DTG(DEADTIME)) | STM32_TIM_BDTR_BKE | STM32_TIM_BDTR_BKF(3),
+		STM32_TIM_BDTR_DTG(250) | STM32_TIM_BDTR_BKE | STM32_TIM_BDTR_BKF(3),
 		/*
 		 * DIER Register
 		 */
@@ -138,10 +142,11 @@ void hardware::pwm::Init(void)
 	 */
 	DBGMCU->APB2FZ |= DBGMCU_APB2_FZ_DBG_TIM1_STOP;
 	DBGMCU->APB1FZ |= DBGMCU_APB1_FZ_DBG_TIM5_STOP;
+
 	/* Start the PWM timer */
 	pwmStart(PWMP, &pwmcfg);
 	PWMP->tim->CR1 &=~ STM32_TIM_CR1_CEN; // timer stop
-	PWMP->tim->CR1 |= STM32_TIM_CR1_CMS(2); // center aligned mode
+	PWMP->tim->CR1 |= STM32_TIM_CR1_CMS(2) | STM32_TIM_CR1_CKD(1); // center aligned mode and deadtime generation with clock/2
 	PWMP->tim->SMCR |= STM32_TIM_SMCR_MSM;
 	PWMP->tim->CR1 &= ~STM32_TIM_CR1_URS; // every thing is an update event
 
@@ -157,9 +162,116 @@ void hardware::pwm::Init(void)
 	pwmEnableChannel(ADC_TRIGP, 3, 1);
 
 	/* enable pwms */
-	pwmEnableChannel(PWMP, 0, PERIOD/2);
-	pwmEnableChannel(PWMP, 1, PERIOD/2);
-	pwmEnableChannel(PWMP, 2, PERIOD/2);
+	pwmEnableChannel(PWMP, 0, period/2);
+	pwmEnableChannel(PWMP, 1, period/2);
+	pwmEnableChannel(PWMP, 2, period/2);
+}
+
+
+/**
+ * Get Deadtime of PWM
+ * @return deadtime in nano seconds
+ */
+std::uint32_t hardware::pwm::Deadtime(void)
+{
+	return deadtime;
+}
+
+/**
+ * Set Deadtime of PWM
+ *
+ * @param ns set deadtime in nano seconds to this value
+ * @return new deadtime in nano seconds
+ */
+std::uint32_t hardware::pwm::Deadtime(const std::uint32_t ns)
+{
+	// Deadtime generator counts is half the timer clock due to CR1 CKD = 1
+	std::uint16_t dtg = ((float)ns * (float)TIMER_CLOCK * 5e-8f);
+
+	if(dtg > 255)
+	{
+		dtg = 255;
+	}
+
+	deadtime = (dtg * 5e8f) / TIMER_CLOCK;
+
+	PWMP->tim->BDTR &= ~STM32_TIM_BDTR_DTG_MASK;
+	PWMP->tim->BDTR |= STM32_TIM_BDTR_DTG(dtg);
+
+	return deadtime;
+}
+
+/**
+ * Get Period of PWM
+ *
+ * @note With center aligned PWM this is the period of PWM half period.
+ * @return Period of PWM in timer counts
+ */
+std::uint32_t hardware::pwm::Period(void)
+{
+	return period;
+}
+
+/**
+ * Get Frequency of PWM
+ *
+ * @return PWM frequency in Hz
+ */
+std::uint32_t hardware::pwm::Frequency(void)
+{
+	return frequency;
+}
+
+/**
+ * Set Frequency of PWM
+ *
+ * @param freq 	new PWM frequency
+ * @return new PWM frequency in Hz
+ */
+std::uint32_t hardware::pwm::Frequency(const std::uint32_t freq)
+{
+	period = (std::uint32_t)((float)TIMER_CLOCK / (2.0f*(float)freq));
+
+	if(period > 0xffff) period = 0xffff;
+	if(period < 1000) period = 1000;
+
+	pwmChangePeriod(PWMP, period);
+
+	fc = (float)TIMER_CLOCK / (float)(period);
+	tc = (float)(period) / (float)TIMER_CLOCK;
+
+	frequency = (std::uint32_t)(fc * 0.5f);
+
+	return frequency;
+}
+
+
+/**
+ * get control cycle time
+ * @return control cycle frequency in s
+ */
+float hardware::Tc(void)
+{
+	return tc;
+}
+
+/**
+ * get control cycle frequency
+ * @return control cycle frequency in Hz
+ */
+float hardware::Fc(void)
+{
+	return fc;
+}
+
+/**
+ * Get Filters Group delay (Hardware and Software)
+ * @return Group delay of the hole signal chain in s
+ */
+float hardware::Tf(void)
+{
+	tf = tc + TF_HW;
+	return tf;
 }
 
 /**
@@ -200,10 +312,10 @@ void hardware::pwm::Duty(const systems::abc& dutys)
 
 	for (uint16_t i = 0; i < PHASES; ++i)
 	{
-		int16_t new_duty = (int16_t)((float)PERIOD * dutys.array[i]);
+		int16_t new_duty = (int16_t)((float)period * dutys.array[i]);
 
 		if(new_duty < 0) new_duty = 0;
-		if(new_duty > (int16_t)PERIOD) new_duty = PERIOD;
+		if(new_duty > (int16_t)period) new_duty = period;
 
 		pwmEnableChannel(PWMP, i, new_duty);
 	}

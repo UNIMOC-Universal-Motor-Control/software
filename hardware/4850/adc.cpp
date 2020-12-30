@@ -128,9 +128,6 @@ constexpr uint32_t ADC_SEQ_BUFFERED = 4;
 ///< # of ADCs
 constexpr uint32_t NUM_OF_ADC = 3;
 
-///< Software and Hardware Filter Group delay
-const float hardware::Tf = hardware::Tc + (11e3f * 1.5e-9f);
-
 ///< absolute maximum current
 constexpr float hardware::adc::current::MAX = 1.65f/(20.0f*(0.002f/3.0f));
 

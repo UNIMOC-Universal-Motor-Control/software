@@ -71,8 +71,6 @@ namespace control
 	class pi
 	{
 	private:
-		///< sample time (call timing of controller )
-		const float ts;
 		///< integral error sum
 		float 			error_sum;
 		///< unlimited controller output
@@ -100,6 +98,7 @@ namespace control
 		 * @param new_tn                integral action time.
 		 * @param new_positive_limit    positive output limit.
 		 * @param new_negative_limit    negative output limit.
+		 * @param ts					sampling time
 		 */
 		pi(const float kp, const float tn,
 				const float positive_limit, const float negative_limit, const float ts);
@@ -118,8 +117,9 @@ namespace control
 		 *
 		 * @param new_kp				proportional gain.
 		 * @param new_tn				integral action time.
+		 * @param ts					sampling time.
 		 */
-		constexpr inline void SetParameters(const float new_kp, const float new_tn) { kp = new_kp; ki = SetKi(kp, ts, new_tn); };
+		constexpr inline void SetParameters(const float new_kp, const float new_tn, const float ts) { kp = new_kp; ki = SetKi(kp, ts, new_tn); };
 
 		///< @brief Reset controller and integral part to 0
 		constexpr inline void Reset(void) {error_sum = 0.0f;  output_unlimited = 0.0f; output = 0.0f;};
@@ -153,13 +153,14 @@ namespace control
 		 * @brief set controller dynamic parameters.
 		 *
 		 *
-		 * @param kp	                Proportional gain of the PI controllers
-		 * @param tn                	zero crossing of the PI controller (Time constant)
+		 * @param kp	Proportional gain of the PI controllers
+		 * @param tn	zero crossing of the PI controller (Time constant)
+		 * @param ts 	sampling time
 		 */
-		constexpr inline void SetParameters(const float kp, const float tn)
+		constexpr inline void SetParameters(const float kp, const float tn, const float ts)
 		{
-			ctrl_d.SetParameters(kp, tn);
-			ctrl_q.SetParameters(kp, tn);
+			ctrl_d.SetParameters(kp, tn, ts);
+			ctrl_q.SetParameters(kp, tn, ts);
 		};
 
 		///< @brief Reset controller and integral part to 0
@@ -174,7 +175,6 @@ namespace control
 	private:
 		static constexpr float _3by2 = 3.0f/2.0f;
 		observer::flux       	flux;
-		observer::hfi			hfi;
 		control::foc      		foc;
 		systems::alpha_beta  	u_ab;
 		systems::alpha_beta 	i_ab;

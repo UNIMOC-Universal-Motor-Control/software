@@ -154,27 +154,6 @@ typedef struct settings_s
 		} flux;
 
 		/**
-		 * high frequency injection observer settings
-		 */
-		struct hfi_s
-		{
-			///< enable observer switch
-			bool enable;
-
-			///< modell variance
-			float Q;
-
-			///< measurement variance
-			float R;
-
-			///< injection frequency in Hz
-			float frequency;
-
-			///< injection current in A
-			float current;
-		} hfi;
-
-		/**
 		 * hall observer settings
 		 */
 		struct hall_s
@@ -229,10 +208,13 @@ typedef struct settings_s
 	struct converter_s
 	{
 		///< compensated dead time in PWM switching -1 represents 0 and 1 represents 1
-		float dt;
+		std::uint32_t dt;
 
 		///< minimal current for full dead time compensation
 		float dt_i_min;
+
+		///< pwm frequency
+		std::uint32_t frequency;
 
 		/**
 		 * converter derating settings

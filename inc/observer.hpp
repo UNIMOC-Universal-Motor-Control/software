@@ -84,7 +84,7 @@ namespace observer
 	class flux
 	{
 	public:
-//	private:
+	private:
 		typedef struct {
 			///< back emf vector
 			systems::dq bemf;
@@ -109,7 +109,7 @@ namespace observer
 
 		///< kalman filter for flux error signal
 		observer::mechanic mech;
-//	public:
+	public:
 		/**
 		 * @brief flux observers trivial constructor
 		 */
@@ -121,53 +121,6 @@ namespace observer
 		 * @retval kalman correction vector
 		 */
 		void Calculate(const systems::sin_cos& sin_cos, std::array<float, 3>& correction);
-	};
-
-	/**
-	 * high frequency injection based observer
-	 */
-	class hfi
-	{
-	private:
-		///< sine and cosine of the injection signal
-		systems::sin_cos sc;
-
-		///< angular velocity of injection signal
-		float w;
-
-		///< angle of injection signal
-		float phi;
-
-		///< injection voltage amplitude
-		float ui;
-
-		///< kalman filter for hfi error signal
-		observer::mechanic mech;
-
-		///< high pass FIR filter for current response
-		filter::fir_downsampled<64, 8> hpf_d;
-		filter::fir_downsampled<64, 8> hpf_q;
-
-		///< high pass FIR filter coefficients
-		static const std::array<float, 64> hpf_c;
-	public:
-		/**
-		 * @brief high frequency injection observers trivial constructor
-		 */
-		hfi(void);
-
-	    /**
-	     * @brief Get angular error from hfi estimation.
-	     * @param i_dq rotaiting current vector
-	     * @retval kalman correction vector
-	     */
-	    void Calculate(systems::dq& i_dq, std::array<float, 3>& correction);
-
-		/**
-		 * @brief add injection voltage
-		 * @return d-Voltage Injection
-		 */
-		float Injection(void);
 	};
 
 } /* namespace observer */
