@@ -73,15 +73,22 @@ int main(void)
 	usbStart(serusbcfg.usbp, &usbcfg);
 	usbConnectBus(serusbcfg.usbp);
 
-	chThdSetPriority(LOWPRIO);
+	/*
+	 * setup pwm according to config
+	 */
+	hardware::pwm::Frequency(settings.converter.frequency);
+	hardware::pwm::Deadtime(settings.converter.deadtime);
+
 
 	/*
 	 * start threads
 	 */
+	chThdSetPriority(HIGHPRIO);
 	freemaster.start(NORMALPRIO);
-	hardware::control_thread = controller.start(HIGHPRIO);
+	hardware::control_thread = controller.start(HIGHPRIO - 1);
 	manager.start(NORMALPRIO + 2);
-	pedal_assist.start(NORMALPRIO + 1);
+//	pedal_assist.start(NORMALPRIO + 1);
+	chThdSetPriority(LOWPRIO);
 
 	/*
 	 * Normal main() thread activity, in this demo it does nothing except
@@ -98,5 +105,16 @@ int main(void)
 
 		if(settings.motor.limits.i > settings.converter.limits.current)
 			settings.motor.limits.i = settings.converter.limits.current;
+
+		// update pwm settings
+		if(hardware::pwm::Frequency() != settings.converter.frequency)
+		{
+			hardware::pwm::Frequency(settings.converter.frequency);
+		}
+
+		if(hardware::pwm::Deadtime() != settings.converter.deadtime)
+		{
+			hardware::pwm::Deadtime(settings.converter.deadtime);
+		}
 	}
 }

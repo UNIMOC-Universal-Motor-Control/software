@@ -362,8 +362,8 @@ namespace control
 
 				systems::SinCos(k - values.motor.rotor.phi, tmp);
 
-				values.motor.rotor.u.d -= 4.0f/3.0f*values.battery.u*settings.converter.dt/hardware::Tc()*tmp.cos;
-				values.motor.rotor.u.q -= 4.0f/3.0f*values.battery.u*settings.converter.dt/hardware::Tc()*tmp.sin;
+				values.motor.rotor.u.d -= 4.0f/3.0f*values.battery.u*settings.converter.deadtime/hardware::Tc()*tmp.cos;
+				values.motor.rotor.u.q -= 4.0f/3.0f*values.battery.u*settings.converter.deadtime/hardware::Tc()*tmp.sin;
 			}
 			else
 			{

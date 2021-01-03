@@ -208,7 +208,7 @@ typedef struct settings_s
 	struct converter_s
 	{
 		///< compensated dead time in PWM switching -1 represents 0 and 1 represents 1
-		std::uint32_t dt;
+		std::uint32_t deadtime;
 
 		///< minimal current for full dead time compensation
 		float dt_i_min;
