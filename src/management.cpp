@@ -208,8 +208,8 @@ namespace management
 				// handle PWM led to show PWM status
 				if(hardware::pwm::output::Active()) palSetLine(LINE_LED_PWM);
 				else palClearLine(LINE_LED_PWM);
-				// set Run Mode LED
-				palSetLine(LINE_LED_RUN);
+//				// set Run Mode LED
+//				palSetLine(LINE_LED_RUN);
 				palClearLine(LINE_LED_MODE);
 
 				// activate control and observers
@@ -272,8 +272,8 @@ namespace management
 
 					palClearLine(LINE_LED_PWM);
 				}
-				// set Run Mode LED
-				palClearLine(LINE_LED_RUN);
+//				// set Run Mode LED
+//				palClearLine(LINE_LED_RUN);
 
 				// reached current steps current target
 				if((values.motor.rotor.i.d > measure::r::current
@@ -371,8 +371,8 @@ namespace management
 
 					palClearLine(LINE_LED_PWM);
 				}
-				// set Run Mode LED
-				palClearLine(LINE_LED_RUN);
+//				// set Run Mode LED
+//				palClearLine(LINE_LED_RUN);
 
 				measure::l::cycle++;
 				if((measure::l::cycle % 50) == 0)
@@ -461,8 +461,8 @@ namespace management
 
 					palClearLine(LINE_LED_PWM);
 				}
-				// set Run Mode LED
-				palClearLine(LINE_LED_RUN);
+//				// set Run Mode LED
+//				palClearLine(LINE_LED_RUN);
 
 				measure::psi::cycle++;
 				if((measure::psi::cycle % 100) == 0)

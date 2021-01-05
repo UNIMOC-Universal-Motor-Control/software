@@ -123,7 +123,8 @@ constexpr uint32_t LENGTH_ADC_SEQ = 5;
 ///< ADC sequences in buffer.
 /// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
 ///          so even length of sequence is best choice.
-constexpr uint32_t ADC_SEQ_BUFFERED = 4;
+/// @note: must be 2 to have the controller running twice per PWM period
+constexpr uint32_t ADC_SEQ_BUFFERED = 2;
 
 ///< # of ADCs
 constexpr uint32_t NUM_OF_ADC = 3;

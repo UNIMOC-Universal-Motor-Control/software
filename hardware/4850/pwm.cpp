@@ -148,7 +148,7 @@ void hardware::pwm::Init(void)
 	PWMP->tim->CR1 &=~ STM32_TIM_CR1_CEN; // timer stop
 	PWMP->tim->CR1 |= STM32_TIM_CR1_CMS(2) | STM32_TIM_CR1_CKD(1); // center aligned mode and deadtime generation with clock/2
 	PWMP->tim->SMCR |= STM32_TIM_SMCR_MSM;
-	PWMP->tim->CR1 &= ~STM32_TIM_CR1_URS; // every thing is an update event
+//	PWMP->tim->CR1 &= ~STM32_TIM_CR1_URS; // every thing is an update event
 
 	/* start the ADC trigger timer */
 	pwmStart(ADC_TRIGP, &adctriggercfg);

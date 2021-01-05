@@ -232,8 +232,14 @@ namespace control
 			systems::sin_cos cur_sc;
 			float angle;
 
+			// set Run Mode LED
+			palClearLine(LINE_LED_RUN);
+
 			/* Checks if an IRQ happened else wait.*/
 			chEvtWaitAny((eventmask_t)1);
+
+			// clear Run Mode LED
+			palSetLine(LINE_LED_RUN);
 
 			values.battery.u = hardware::adc::voltage::DCBus();
 
