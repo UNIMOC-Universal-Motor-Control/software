@@ -186,14 +186,14 @@ std::uint32_t hardware::pwm::Deadtime(void)
 std::uint32_t hardware::pwm::Deadtime(const std::uint32_t ns)
 {
 	// Deadtime generator counts is half the timer clock due to CR1 CKD = 1
-	std::uint16_t dtg = ((float)ns * (float)TIMER_CLOCK * 5e-8f);
+	std::uint16_t dtg = ((float)ns * (float)TIMER_CLOCK * 5e-10f);
 
 	if(dtg > 255)
 	{
 		dtg = 255;
 	}
 
-	deadtime = (dtg * 5e8f) / TIMER_CLOCK;
+	deadtime = (dtg * 2e9f) / TIMER_CLOCK;
 
 	PWMP->tim->BDTR &= ~STM32_TIM_BDTR_DTG_MASK;
 	PWMP->tim->BDTR |= STM32_TIM_BDTR_DTG(dtg);

@@ -109,12 +109,12 @@ int main(void)
 		// update pwm settings
 		if(hardware::pwm::Frequency() != settings.converter.frequency)
 		{
-			hardware::pwm::Frequency(settings.converter.frequency);
+			settings.converter.frequency = hardware::pwm::Frequency(settings.converter.frequency);
 		}
 
 		if(hardware::pwm::Deadtime() != settings.converter.deadtime)
 		{
-			hardware::pwm::Deadtime(settings.converter.deadtime);
+			settings.converter.deadtime = hardware::pwm::Deadtime(settings.converter.deadtime);
 		}
 	}
 }
