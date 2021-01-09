@@ -359,17 +359,17 @@ namespace control
 				foc.Calculate(setpoint);
 
 				// Deadtime Compensation
-				float k = 0.0f;
-				std::modf(values.motor.rotor.phi/math::_2PI*6.0f, &k);
-				k *= math::PI/3.0f;
-				k += math::PI/6.0f;
-
-				systems::sin_cos tmp;
-
-				systems::SinCos(k - values.motor.rotor.phi, tmp);
-
-				values.motor.rotor.u.d -= 4.0f/3.0f*values.battery.u*settings.converter.deadtime/hardware::Tc()*tmp.cos;
-				values.motor.rotor.u.q -= 4.0f/3.0f*values.battery.u*settings.converter.deadtime/hardware::Tc()*tmp.sin;
+//				float k = 0.0f;
+//				std::modf(values.motor.rotor.phi/math::_2PI*6.0f, &k);
+//				k *= math::PI/3.0f;
+//				k += math::PI/6.0f;
+//
+//				systems::sin_cos tmp;
+//
+//				systems::SinCos(k - values.motor.rotor.phi, tmp);
+//
+//				values.motor.rotor.u.d -= 4.0f/3.0f*values.battery.u*settings.converter.deadtime/hardware::Tc()*tmp.cos;
+//				values.motor.rotor.u.q -= 4.0f/3.0f*values.battery.u*settings.converter.deadtime/hardware::Tc()*tmp.sin;
 			}
 			else
 			{

@@ -333,8 +333,8 @@ namespace management
 
 					settings.motor.rs = r;
 
-					settings.control.current.kp = settings.motor.l.d/hardware::Tf();
-					settings.control.current.tn = settings.motor.l.d/settings.motor.rs;
+					settings.control.current.kp = settings.motor.l.d/(2.0f*hardware::Tf());
+					settings.control.current.tn = settings.motor.l.q/settings.motor.rs;
 
 				}
 				measure::r::point = 0;
@@ -411,7 +411,7 @@ namespace management
 						settings.motor.l.d = measure::l::u/(values.motor.rotor.omega * (i_len + iac));
 						settings.motor.l.q = measure::l::u/(values.motor.rotor.omega * (i_len - iac));
 
-						settings.control.current.kp = settings.motor.l.d/hardware::Tf()*0.5f;
+						settings.control.current.kp = settings.motor.l.d/(2.0f*hardware::Tf());
 						settings.control.current.tn = settings.motor.l.q/settings.motor.rs;
 					}
 				}
