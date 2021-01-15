@@ -24,7 +24,6 @@
 #include "hardware_interface.hpp"
 #include "freemaster_wrapper.hpp"
 #include "management.hpp"
-#include "pas.hpp"
 #include "main.hpp"
 
 using namespace chibios_rt;
@@ -32,7 +31,6 @@ using namespace chibios_rt;
 static modules::freemaster::thread freemaster;
 static control::thread controller;
 static management::thread manager;
-static pas::thread pedal_assist;
 
 /**
  * Code entry point
@@ -53,7 +51,7 @@ int main(void)
 	/*
 	 * initialize hardware with no control thread
 	 */
-	hardware::memory::Init();
+	hardware::i2c::Init();
 	hardware::pwm::Init();
 	hardware::adc::Init();
 
@@ -87,7 +85,6 @@ int main(void)
 	freemaster.start(NORMALPRIO);
 	hardware::control_thread = controller.start(HIGHPRIO - 1);
 	manager.start(NORMALPRIO + 2);
-//	pedal_assist.start(NORMALPRIO + 1);
 	chThdSetPriority(LOWPRIO);
 
 	/*

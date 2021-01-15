@@ -221,11 +221,6 @@ namespace hardware {
 	namespace memory
 	{
 		/**
-		 * initialize non volatile memory
-		 */
-		extern void Init(void);
-
-		/**
 		 * Read buffer from non-volatile memory
 		 * @param address Start address of the read in non-volatile memory, addressing starts with 0
 		 * @param buffer Pointer to the buffer to read data to
@@ -276,6 +271,18 @@ namespace hardware {
 		 */
 		extern void Receive(char* buffer, uint32_t length);
 	} /* namespace serial */
+
+
+	namespace i2c {
+		/**
+		 * initialize i2c driver instance
+		 */
+		extern void Init(void);
+
+		///< I2C Driver instance for external communication
+		extern I2CDriver* const instance;
+	}
+
 } /* namespace hardware */
 
 

@@ -79,7 +79,7 @@ static const I2CConfig i2ccfg = {
   0
 };
 
-I2CDriver* const I2CP = &I2CD1;
+I2CDriver* const hardware::i2c::instance = &I2CD1;
 volatile i2cflags_t i2c_error = 0;
 
 /**
@@ -121,17 +121,17 @@ static void select_half(const uint16_t half)
 
 	uint8_t dummy = 0xA5;
 
-	i2cMasterTransmitTimeout(I2CP, SPA(half), &dummy, sizeof(dummy), nullptr, 0, READ_TIMEOUT);
+	i2cMasterTransmitTimeout(hardware::i2c::instance, SPA(half), &dummy, sizeof(dummy), nullptr, 0, READ_TIMEOUT);
 }
 
 
 /**
  * initialize non volatile memory
  */
-void hardware::memory::Init(void)
+void hardware::i2c::Init(void)
 {
 	/* Initialize I2C */
-	i2cStart(I2CP, &i2ccfg);
+	i2cStart(instance, &i2ccfg);
 }
 
 /**
@@ -170,7 +170,7 @@ uint8_t hardware::memory::Read(const uint32_t address, const void* const buffer,
 		}
 	}
 
-	status |= i2cMasterTransmitTimeout(I2CP, RW_ADDRESS,
+	status |= i2cMasterTransmitTimeout(i2c::instance, RW_ADDRESS,
 			&wordaddr, 1, (uint8_t*)buffer, read_length, READ_TIMEOUT);
 
 	// Read the rest of the Data if we started in half 0
@@ -182,7 +182,7 @@ uint8_t hardware::memory::Read(const uint32_t address, const void* const buffer,
 		wordaddr = 0;
 		read_length = length- read_length;
 
-		status |= i2cMasterTransmitTimeout(I2CP, RW_ADDRESS,
+		status |= i2cMasterTransmitTimeout(i2c::instance, RW_ADDRESS,
 				&wordaddr, 1, buffer_addr, read_length, READ_TIMEOUT);
 	}
 
@@ -196,7 +196,7 @@ uint8_t hardware::memory::Read(const uint32_t address, const void* const buffer,
 	}
 	else
 	{
-		i2c_error = i2cGetErrors(I2CP);
+		i2c_error = i2cGetErrors(i2c::instance);
 		result = 0xFF;
 	}
 
@@ -246,7 +246,7 @@ uint8_t hardware::memory::Write(const uint32_t address, void const * buffer, con
 		// write buffer out to ram so that dma can access it.
 		cacheBufferFlush(write_buffer, sizeof(write_buffer));
 
-		status |= i2cMasterTransmitTimeout(I2CP, RW_ADDRESS,
+		status |= i2cMasterTransmitTimeout(i2c::instance, RW_ADDRESS,
 				write_buffer, write_length + 1, nullptr, 0, WRITE_TIMEOUT);
 
 		written_bytes += write_length;
@@ -274,7 +274,7 @@ uint8_t hardware::memory::Write(const uint32_t address, void const * buffer, con
 		// write buffer out to ram so that dma can access it.
 		cacheBufferFlush(write_buffer, sizeof(write_buffer));
 
-		status |= i2cMasterTransmitTimeout(I2CP, RW_ADDRESS,
+		status |= i2cMasterTransmitTimeout(i2c::instance, RW_ADDRESS,
 				write_buffer, write_length + 1, nullptr, 0, WRITE_TIMEOUT);
 
 		written_bytes += write_length;
@@ -289,7 +289,7 @@ uint8_t hardware::memory::Write(const uint32_t address, void const * buffer, con
 	}
 	else
 	{
-		i2c_error = i2cGetErrors(I2CP);
+		i2c_error = i2cGetErrors(i2c::instance);
 		result = 0xFF;
 	}
 

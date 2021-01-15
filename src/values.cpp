@@ -127,22 +127,17 @@ values_ts values =
 		///< phase dutys
 		.dutys = {0.0f, 0.0f, 0.0f},
 	},
+
 	/**
-	 * pedal assist system values
+	 * external sensor values
 	 */
-	.crank =
+	.sense =
 	{
-		///< crank angle in rad
-		.angle = 0.0f,
+		///< feedback sensor position value
+		.position = 0,
 
-		///< pedal cadence in rad/s
-		.cadence = 0.0f,
-
-		///< pedal torque in Nm
-		.torque = 0.0f,
-
-		///< pedal power in W
-		.power = 0.0f,
+		///< status of the feedback sensor
+		.status = 0,
 	},
 };
 

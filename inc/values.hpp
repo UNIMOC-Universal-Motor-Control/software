@@ -22,6 +22,7 @@
 #include <cstdint>
 #include "systems.hpp"
 #include "filter.hpp"
+#include "as5048b.hpp"
 
 /**
  * system global values
@@ -143,22 +144,16 @@ typedef struct values_s
 	} converter;
 
 	/**
-	 * pedal assist system values
+	 * external sensor values
 	 */
-	struct crank_s
+	struct sense_s
 	{
-		///< crank angle in rad
-		float angle;
+		///< feedback sensor position value
+		std::uint16_t position;
 
-		///< pedal cadence in rad/s
-		float cadence;
-
-		///< pedal torque in Nm
-		float torque;
-
-		///< pedal power in W
-		float power;
-	} crank;
+		///< status of the feedback sensor
+		std::uint8_t status;
+	} sense;
 } values_ts;
 
 extern values_ts values;
