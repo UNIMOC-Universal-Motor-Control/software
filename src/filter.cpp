@@ -28,27 +28,26 @@ namespace filter
 	/**
 	 * @brief low pass filter constructor with all essential parameters.
 	 *
-	 * @param new_ts			set sample time.
-	 * @param new_k				proportional gain.
-	 * @param new_t				time constant.
+	 * @param ts			set sample time.
+	 * @param k				proportional gain.
+	 * @param t				time constant.
 	 */
-	low_pass::low_pass(const float new_ts, const float new_k, const float new_t):
-										ts(new_ts), k(new_k), t_tmp(T(new_t, ts))
+	low_pass::low_pass(const float ts, const float k, const float t):
+										y(0.0f), k(k), t_tmp(T(t, ts))
 	{
 	}
 
 
 	/**
-	 * @brief calculate filter equation with out memory of old samples.
+	 * @brief calculate filter equation.
 	 *
 	 * @param uk			filter input.
-	 * @param yk_1			filter output from last cycle.
-	 * @retval yk			filter output.
+	 * @retval y			filter output.
 	 */
-	float low_pass::Calculate(const float uk, const float yk_1)
+	float low_pass::Calculate(const float u)
 	{
-		float yk = t_tmp*(k*uk - yk_1) + yk_1;
-		return yk;
+		y = t_tmp*(k*u - y) + y;
+		return y;
 	}
 
 	/**

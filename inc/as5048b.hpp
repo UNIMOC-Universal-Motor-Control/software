@@ -37,7 +37,7 @@ namespace sensor
 	/**
 	 * AS5048B 14Bit hall angle sensor
 	 */
-	class as5048b
+	class as5048b: public chibios_rt::BaseStaticThread<64>
 	{
 	private:
 		///< I2C Driver instance
@@ -48,6 +48,21 @@ namespace sensor
 
 		///< position
 		std::uint16_t position;
+
+		///< reference to the worker thread
+		chibios_rt::ThreadReference worker;
+
+		/**
+		 * get the current position from the sensor
+		 * @return sensor position with 14bits resolution
+		 */
+		std::uint16_t ReadPosition(void);
+
+	protected:
+		/**
+		 * Worker Thread function
+		 */
+		virtual void main(void);
 
 	public:
 
@@ -103,6 +118,10 @@ namespace sensor
 		 */
 		std::uint8_t GetStatus(void);
 
+		/**
+		 * Trigger new sensor read
+		 */
+		void Read(void);
 
 	};
 } /* namespace sensor */

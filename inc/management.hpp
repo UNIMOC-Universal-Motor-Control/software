@@ -88,7 +88,7 @@ namespace management
 			extern float u;
 
 			///< measure all the phases.
-			constexpr std::array<float, 3> PHI_STEPS = {0.0f, 120.0f, 240.0f};
+			constexpr std::array<float, 3> PHI_STEPS = {0.0f, unit::deg2rad * 120.0f, unit::deg2rad * 240.0f};
 
 			///< current phi step
 			extern std::uint8_t phi_step;

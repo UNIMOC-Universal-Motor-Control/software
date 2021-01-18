@@ -136,9 +136,6 @@ namespace management
 
 	}
 
-
-	sensor::as5048b sens(hardware::i2c::instance);
-
 	/**
 	 * generic constructor
 	 */
@@ -247,11 +244,6 @@ namespace management
 				if(measure::r::enable) sequencer = MEASURE_RS;
 				else if(measure::l::enable) sequencer = MEASURE_LS;
 				else if(measure::psi::enable) sequencer = MEASURE_PSI;
-
-
-				values.sense.position = sens.GetPosition();
-				values.sense.status = sens.GetStatus();
-
 
 				break;
 

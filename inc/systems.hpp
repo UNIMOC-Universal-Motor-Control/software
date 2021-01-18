@@ -50,9 +50,9 @@ namespace unit
     constexpr float RpmV2VsRad(float m) { return 60.0f/(m * math::_2PI);}
 
     ///< conversion constant from degree to radians
-    constexpr float deg2rad = 180.0f / math::PI;
+    constexpr float deg2rad = math::PI / 180.0f;
     ///< conversion constant from radians to degree
-    constexpr float rad2deg = math::PI / 180.0f;
+    constexpr float rad2deg = 180.0f / math::PI;
 
     ///< convert internal rad angle to degrees
     constexpr float Degrees(float m) { return m * rad2deg; }

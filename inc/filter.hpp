@@ -37,8 +37,8 @@ class low_pass
 {
 
 private:
-	///< filter sample time
-	const float ts;
+	///< last filter output value
+	float y;
 
 	///< proportional gain
 	const float k;
@@ -50,9 +50,9 @@ private:
 	static inline float T( float t, float ts) { return 1.0/(1.0 + t/ts); }
 
 public:
-	low_pass(const float new_ts, const float new_k, const float new_t);
+	low_pass(const float ts, const float k, const float t);
 
-	float Calculate(const float uk, const float yk_1);
+	float Calculate(const float u);
 };
 
 /**
@@ -68,29 +68,30 @@ private:
 
 	///< index for next input
 	std::uint32_t index;
+
+	///< sum over all buffer values
+	float sum;
 public:
-	moving_average<N>(void): buffer{0.0f}, index(0) {};
+	moving_average<N>(void): buffer{0.0f}, index(0), sum(0.0f) {};
 
 	/**
 	 * @brief insert uk to the buffer and calculate the average of all buffered uk's
 	 * @param uk new input value
 	 * @return mean of all buffered input values.
 	 */
-	float Calculate(const float uk)
+	float Calculate(const float u)
 	{
 		float mean = 0.0f;
 
-		buffer[index] = uk;
-		index++;
+		buffer[index] = u;
+		sum += buffer[index];	// add new sample
 
+		index++;
 		if(index >= N) index = 0;
 
-		for(std::uint32_t i = 0; i < N; i++)
-		{
-			mean += buffer[i];
-		}
+		sum -= buffer[index]; // remove oldest sample
 
-		mean /= N;
+		mean = sum/N;
 
 		return mean;
 	};

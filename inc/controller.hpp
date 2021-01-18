@@ -176,10 +176,11 @@ namespace control
 		static constexpr float _3by2 = 3.0f/2.0f;
 		observer::flux       	flux;
 		control::foc      		foc;
+		sensor::as5048b 		as5048;
 		systems::alpha_beta  	u_ab;
 		systems::alpha_beta 	i_ab;
 		std::array<float, 3>   	correction;
-		filter::moving_average<64> uq;
+		filter::low_pass		uq;
 	protected:
 		/**
 		 * Thread function

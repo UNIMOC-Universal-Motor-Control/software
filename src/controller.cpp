@@ -212,7 +212,7 @@ namespace control
 	/**
 	 * generic constructor
 	 */
-	thread::thread():flux(), foc()
+	thread::thread():flux(), foc(),	as5048(hardware::i2c::instance), uq(32e3f, 1.0f, 2e-3f)
 	{}
 
 	/**
@@ -222,6 +222,8 @@ namespace control
 	{
 		setName("Control");
 
+		// worker thread for as5048 read
+		as5048.start(NORMALPRIO + 3);
 
 		/*
 		 * Normal main() thread activity
@@ -247,6 +249,9 @@ namespace control
 
 			// calculate the sine and cosine of the new angle
 			angle = values.motor.rotor.phi - values.motor.rotor.omega * hardware::Tf();
+
+			// Get angle from as5048b
+			values.sense.position = as5048.GetPosition();
 
 			// calculate new sine and cosine for the reference system
 			systems::SinCos(values.motor.rotor.phi, phi_sc);
@@ -301,12 +306,12 @@ namespace control
 			if(management::control::current)
 			{
 				// starting help for traction drives
-				if(std::fabs(values.motor.rotor.setpoint.i.q) > settings.observer.mech.i_min
-						&& settings.motor.i_start > 0.1f)
-				{
-					values.motor.rotor.setpoint.i.d +=
-							settings.motor.i_start * std::exp(- std::fabs(values.motor.rotor.omega/200.0f));
-				}
+//				if(std::fabs(values.motor.rotor.setpoint.i.q) > settings.observer.mech.i_min
+//						&& settings.motor.i_start > 0.1f)
+//				{
+//					values.motor.rotor.setpoint.i.d +=
+//							settings.motor.i_start * std::exp(- std::fabs(values.motor.rotor.omega/200.0f));
+//				}
 
 				float ratio = values.battery.u / uq.Calculate(values.motor.rotor.u.q);
 				float min = -settings.motor.limits.i;
@@ -391,6 +396,14 @@ namespace control
 			hardware::pwm::Duty(values.converter.dutys);
 
 			modules::freemaster::Recorder();
+
+			// read as 5048 every 4th cycle
+			static std::uint8_t cnt = 0;
+			cnt++;
+			if(!(cnt % 4))
+			{
+				as5048.Read();
+			}
 		}
 
 	}

@@ -55,18 +55,6 @@ bool sensor::as5048b::SetZero(const std::uint16_t new_zero)
  */
 std::uint16_t sensor::as5048b::GetPosition(void)
 {
-	const std::uint8_t reg_address = 0xFE;
-	std::uint8_t buffer[2];
-
-	if(MSG_OK == i2cMasterTransmitTimeout(instance, ADDRESS, &reg_address, 1, buffer, 2, TIMEOUT))
-	{
-		position = (buffer[0] << 5) + (buffer[1] >> 3);
-	}
-	else
-	{
-		position = 0xFFFF;
-	}
-
 	return position;
 }
 
@@ -85,4 +73,59 @@ std::uint8_t sensor::as5048b::GetStatus(void)
 	}
 
 	return result;
+}
+
+
+/**
+ * Trigger new sensor read
+ */
+void sensor::as5048b::Read(void)
+{
+	/* Wakes up the worker thread.*/
+	osalSysLock();
+	chEvtSignalI(worker.getInner(), (eventmask_t)1);
+	osalSysUnlock();
+}
+
+
+/**
+ * read the current position from the sensor
+ * @return sensor position with 14bits resolution, 0xFFFF = error
+ */
+std::uint16_t sensor::as5048b::ReadPosition(void)
+{
+	std::uint16_t position;
+	const std::uint8_t reg_address = 0xFE;
+	std::uint8_t buffer[2];
+
+	if(MSG_OK == i2cMasterTransmitTimeout(instance, ADDRESS, &reg_address, 1, buffer, 2, TIMEOUT))
+	{
+		position = (buffer[0] << 5) + (buffer[1] >> 3);
+	}
+	else
+	{
+		position = 0xFFFF;
+	}
+
+	return position;
+}
+
+/**
+ * @brief Worker thread main function
+ */
+void sensor::as5048b::main(void)
+{
+	setName("AS5048B");
+
+	worker = getSelfX();
+
+	while (TRUE)
+	{
+		/* Checks if an IRQ happened else wait.*/
+		chEvtWaitAny((eventmask_t)1);
+
+		while(instance->state != I2C_READY) chThdSleepSeconds(100);
+
+		position = ReadPosition();
+	}
 }
