@@ -27,26 +27,11 @@ constexpr i2caddr_t ADDRESS			= 0x80>>1;	// the driver adds the R/W bit
 constexpr uint32_t TIMEOUT			= TIME_MS2I(1);
 
 /**
- * set new zero position in the sensor
- * @param new_zero zero position to be set
- * @return false = success
+ * set new zero position
  */
-bool sensor::as5048b::SetZero(const std::uint16_t new_zero)
+void sensor::as5048b::SetZero(const std::uint16_t new_zero)
 {
-	bool result = true;
-	std::uint8_t buffer[3];
-
-	buffer[0] = 0x16;				// Register Address
-	buffer[1] = new_zero >> 8;
-	buffer[2] = new_zero & 0x00FF;
-
-
-	if(MSG_OK == i2cMasterTransmitTimeout(instance, ADDRESS, buffer, 3, nullptr, 0, TIMEOUT))
-	{
-		result = false;
-		zero = new_zero;
-	}
-	return result;
+	zero = new_zero;
 }
 
 /**
@@ -57,6 +42,20 @@ std::uint16_t sensor::as5048b::GetPosition(void)
 {
 	return position;
 }
+
+/**
+ * get the current position from the sensor
+ * @return sensor position with 14bits resolution, 0xFFFF = error
+ */
+float sensor::as5048b::GetPosition(const std::uint8_t divider)
+{
+	const float scale =  math::PI/4096.0f;
+	float angle = (float)(position * (std::uint32_t)divider)*scale;
+
+	while((angle > math::_2PI) && (angle > 0.0f)) angle -= math::_2PI;
+	return angle;
+}
+
 
 /**
  * Get the Status of the sensor
@@ -126,6 +125,6 @@ void sensor::as5048b::main(void)
 
 		while(instance->state != I2C_READY) chThdSleepSeconds(100);
 
-		position = ReadPosition();
+		position = ReadPosition() - zero;
 	}
 }

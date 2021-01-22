@@ -151,8 +151,11 @@ typedef struct values_s
 		///< feedback sensor position value
 		std::uint16_t position;
 
-		///< status of the feedback sensor
-		std::uint8_t status;
+		///< feedback sensor zero position value
+		std::uint16_t zero_pos;
+
+		///< feedback sensor rotor angle
+		float angle;
 	} sense;
 } values_ts;
 

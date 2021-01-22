@@ -284,6 +284,13 @@ namespace management
 					// sample the point
 					measure::r::x[measure::r::point] = values.motor.rotor.i.d;
 					measure::r::y[measure::r::point] = values.motor.rotor.u.d;
+
+					// set zero position of the position sensor
+					if(measure::r::phi_step == 0)
+					{
+						values.sense.zero_pos = values.sense.position;
+					}
+
 					measure::r::point++;
 					measure::r::phi_step++;
 					measure::r::u = 0.0f;
@@ -333,7 +340,7 @@ namespace management
 
 					settings.motor.rs = r;
 
-					settings.control.current.kp = settings.motor.l.d/(2.0f*hardware::Tf());
+					settings.control.current.kp = settings.motor.l.d/(10.0f*hardware::Tf());
 					settings.control.current.tn = settings.motor.l.q/settings.motor.rs;
 
 				}
@@ -411,7 +418,7 @@ namespace management
 						settings.motor.l.d = measure::l::u/(values.motor.rotor.omega * (i_len + iac));
 						settings.motor.l.q = measure::l::u/(values.motor.rotor.omega * (i_len - iac));
 
-						settings.control.current.kp = settings.motor.l.d/(2.0f*hardware::Tf());
+						settings.control.current.kp = settings.motor.l.d/(10.0f*hardware::Tf());
 						settings.control.current.tn = settings.motor.l.q/settings.motor.rs;
 					}
 				}

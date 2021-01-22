@@ -47,7 +47,7 @@ namespace sensor
 		std::uint16_t zero;
 
 		///< position
-		std::uint16_t position;
+		std::uint32_t position;
 
 		///< reference to the worker thread
 		chibios_rt::ThreadReference worker;
@@ -100,9 +100,8 @@ namespace sensor
 		/**
 		 * set new zero position in the sensor
 		 * @param new_zero zero position to be set
-		 * @return false = success
 		 */
-		bool SetZero(const std::uint16_t new_zero);
+		void SetZero(const std::uint16_t new_zero);
 
 
 		/**
@@ -110,6 +109,12 @@ namespace sensor
 		 * @return sensor position with 14bits resolution
 		 */
 		std::uint16_t GetPosition(void);
+
+		/**
+		 * get the current angle of the rotor from the sensor
+		 * @return angle in radans
+		 */
+		float GetPosition(const std::uint8_t divider);
 
 
 		/**

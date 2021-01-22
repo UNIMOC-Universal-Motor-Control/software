@@ -232,6 +232,7 @@ namespace control
 		{
 			systems::sin_cos phi_sc;
 			systems::sin_cos cur_sc;
+			systems::sin_cos sense_sc;
 			float angle;
 
 			// set Run Mode LED
@@ -251,7 +252,8 @@ namespace control
 			angle = values.motor.rotor.phi - values.motor.rotor.omega * hardware::Tf();
 
 			// Get angle from as5048b
-			values.sense.position = as5048.GetPosition();
+			as5048.SetZero(values.sense.zero_pos);
+			values.sense.angle = as5048.GetPosition(settings.motor.P);
 
 			// calculate new sine and cosine for the reference system
 			systems::SinCos(values.motor.rotor.phi, phi_sc);
@@ -259,16 +261,11 @@ namespace control
 			// calculate new sine and cosine for the current system delayed be filters
 			systems::SinCos(angle, cur_sc);
 
-			// get hall sensor angle error signal
-			{
-				static std::uint8_t old_state = 0;
-				values.motor.rotor.hall = hardware::adc::hall::State();
-				if(old_state != values.motor.rotor.hall)
-				{
-					old_state = values.motor.rotor.hall;
-					values.motor.rotor.phi_err = phi_sc.sin*settings.motor.hall_table[old_state].cos - phi_sc.cos*settings.motor.hall_table[old_state].sin;
-				}
-			}
+			// calculate new sine and cosine for the sensor signal
+			systems::SinCos(values.sense.position, sense_sc);
+			// angle error to as5048 signal
+			values.motor.rotor.phi_err = phi_sc.sin*sense_sc.cos - phi_sc.cos*sense_sc.sin;
+
 
 			// convert 3 phase system to ortogonal
 			i_ab = systems::transform::Clark(values.motor.i);
