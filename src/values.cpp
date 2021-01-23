@@ -136,9 +136,6 @@ values_ts values =
 		///< feedback sensor position value
 		.position = 0,
 
-		///< feedback sensor zero position value
-		.zero_pos = 0,
-
 		///< feedback sensor rotor angle
 		.angle = 0.0f,
 	},

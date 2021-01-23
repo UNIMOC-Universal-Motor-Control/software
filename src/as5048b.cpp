@@ -50,9 +50,13 @@ std::uint16_t sensor::as5048b::GetPosition(void)
 float sensor::as5048b::GetPosition(const std::uint8_t divider)
 {
 	const float scale =  math::PI/4096.0f;
-	float angle = (float)(position * (std::uint32_t)divider)*scale;
+	std::int32_t pos_corrected = position - zero;
+	while(pos_corrected < 0)  pos_corrected += 8192;
+
+	float angle = (float)(pos_corrected * (std::uint32_t)divider)*scale;
 
 	while((angle > math::_2PI) && (angle > 0.0f)) angle -= math::_2PI;
+
 	return angle;
 }
 
@@ -97,6 +101,7 @@ std::uint16_t sensor::as5048b::ReadPosition(void)
 	const std::uint8_t reg_address = 0xFE;
 	std::uint8_t buffer[2];
 
+	i2cAcquireBus(instance);
 	if(MSG_OK == i2cMasterTransmitTimeout(instance, ADDRESS, &reg_address, 1, buffer, 2, TIMEOUT))
 	{
 		position = (buffer[0] << 5) + (buffer[1] >> 3);
@@ -105,6 +110,7 @@ std::uint16_t sensor::as5048b::ReadPosition(void)
 	{
 		position = 0xFFFF;
 	}
+	i2cReleaseBus(instance);
 
 	return position;
 }
@@ -123,8 +129,8 @@ void sensor::as5048b::main(void)
 		/* Checks if an IRQ happened else wait.*/
 		chEvtWaitAny((eventmask_t)1);
 
-		while(instance->state != I2C_READY) chThdSleepSeconds(100);
+		while(instance->state != I2C_READY) chThdSleepMilliseconds(100);
 
-		position = ReadPosition() - zero;
+		position = ReadPosition();
 	}
 }

@@ -252,7 +252,8 @@ namespace control
 			angle = values.motor.rotor.phi - values.motor.rotor.omega * hardware::Tf();
 
 			// Get angle from as5048b
-			as5048.SetZero(values.sense.zero_pos);
+			as5048.SetZero(settings.mechanics.zero_pos);
+			values.sense.position = as5048.GetPosition();
 			values.sense.angle = as5048.GetPosition(settings.motor.P);
 
 			// calculate new sine and cosine for the reference system
@@ -262,7 +263,7 @@ namespace control
 			systems::SinCos(angle, cur_sc);
 
 			// calculate new sine and cosine for the sensor signal
-			systems::SinCos(values.sense.position, sense_sc);
+			systems::SinCos(values.sense.angle, sense_sc);
 			// angle error to as5048 signal
 			values.motor.rotor.phi_err = phi_sc.sin*sense_sc.cos - phi_sc.cos*sense_sc.sin;
 

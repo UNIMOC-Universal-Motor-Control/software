@@ -151,6 +151,7 @@ uint8_t hardware::memory::Read(const uint32_t address, const void* const buffer,
 	osalDbgAssert((address + length) < SIZE, "EEPROM: Read out of bounds");
 	osalDbgAssert(buffer != NULL, "EEPROM: Read buffer not existing");
 
+	i2cAcquireBus(i2c::instance);
 
 	wordaddr = address;
 	read_length = length;
@@ -200,6 +201,8 @@ uint8_t hardware::memory::Read(const uint32_t address, const void* const buffer,
 		result = 0xFF;
 	}
 
+	i2cReleaseBus(i2c::instance);
+
 	return result;
 }
 
@@ -229,6 +232,8 @@ uint8_t hardware::memory::Write(const uint32_t address, void const * buffer, con
 	osalDbgAssert(buffer != NULL, "EEPROM: Write buffer not existing");
 
 	if(address > SIZE/2) half = 1;
+
+	i2cAcquireBus(i2c::instance);
 
 	select_half(half);
 
@@ -292,6 +297,8 @@ uint8_t hardware::memory::Write(const uint32_t address, void const * buffer, con
 		i2c_error = i2cGetErrors(i2c::instance);
 		result = 0xFF;
 	}
+
+	i2cReleaseBus(i2c::instance);
 
 	return result;
 }

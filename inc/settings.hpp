@@ -36,6 +36,9 @@ typedef struct settings_s
 	{
 		///< inertia of of rotor and connected known mechanics
 		float J;
+
+		///< feedback sensor zero position value
+		std::uint16_t zero_pos;
 	}  mechanics;
 
 	/**
@@ -177,30 +180,6 @@ typedef struct settings_s
 			float i_min;
 		} mech;
 	} observer;
-
-	/**
-	 * crank settings
-	 */
-	struct crank_s
-	{
-		///< crank torque sensor gain in Nm/Volts
-		float gain;
-
-		///< crank torque sensor offset in Volts
-		float offset;
-
-		///< torque sensor command enable
-		bool enable;
-
-		struct pas_s
-		{
-			///< pas counts per revolution both edges
-			std::uint32_t counts;
-
-			///< pas mode enable
-			bool enable;
-		} pas;
-	} crank;
 
 	/**
 	 * converter settings

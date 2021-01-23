@@ -288,7 +288,7 @@ namespace management
 					// set zero position of the position sensor
 					if(measure::r::phi_step == 0)
 					{
-						values.sense.zero_pos = values.sense.position;
+						settings.mechanics.zero_pos = values.sense.position;
 					}
 
 					measure::r::point++;

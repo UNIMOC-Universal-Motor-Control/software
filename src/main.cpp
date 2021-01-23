@@ -93,7 +93,7 @@ int main(void)
 	 */
 	while (true)
 	{
-		chThdSleepSeconds(10);
+		chThdSleepMilliseconds(250);
 		if(settings.battery.limits.i.charge > settings.converter.limits.current)
 			settings.battery.limits.i.charge = settings.converter.limits.current;
 

@@ -35,6 +35,9 @@ __attribute__((aligned (32))) settings_ts settings =
 	{
 		///< inertia of of rotor and connected known mechanics
 		.J = 1e-4f,
+
+		///< feedback sensor zero position value
+		.zero_pos = 0,
 	},
 
 	/**
@@ -173,30 +176,6 @@ __attribute__((aligned (32))) settings_ts settings =
 		{
 			///< electrical torque minimal current
 			.i_min = 2.0f,
-		},
-	},
-
-	/**
-	 * crank settings
-	 */
-	.crank =
-	{
-		///< crank torque sensor gain
-		.gain = 0.3f,
-
-		///< crank torque sensor offset
-		.offset = 0.84f,
-
-		///< torque sensor command enable
-		.enable = false,
-
-		.pas =
-		{
-			///< pas counts per revolution both edges
-			.counts = 32,
-
-			///< pas mode enable
-			.enable = false,
 		},
 	},
 
