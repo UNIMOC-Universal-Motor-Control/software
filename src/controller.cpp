@@ -248,16 +248,17 @@ namespace control
 
 			hardware::adc::current::Value(values.motor.i);
 
-			// calculate the sine and cosine of the new angle
-			angle = values.motor.rotor.phi - values.motor.rotor.omega * hardware::Tf();
-
 			// Get angle from as5048b
 			as5048.SetZero(settings.mechanics.zero_pos);
 			values.sense.position = as5048.GetPosition();
 			values.sense.angle = as5048.GetPosition(settings.motor.P);
 
+
+			// calculate the sine and cosine of the new angle
+			angle = values.motor.rotor.phi - values.motor.rotor.omega * hardware::Tf();
+
 			// calculate new sine and cosine for the reference system
-			systems::SinCos(values.motor.rotor.phi, phi_sc);
+			systems::SinCos(angle, phi_sc);
 
 			// calculate new sine and cosine for the current system delayed be filters
 			systems::SinCos(angle, cur_sc);
@@ -265,7 +266,7 @@ namespace control
 			// calculate new sine and cosine for the sensor signal
 			systems::SinCos(values.sense.angle, sense_sc);
 			// angle error to as5048 signal
-			values.motor.rotor.phi_err = phi_sc.sin*sense_sc.cos - phi_sc.cos*sense_sc.sin;
+			values.motor.rotor.phi_err =  phi_sc.cos*sense_sc.sin - phi_sc.sin*sense_sc.cos;
 
 
 			// convert 3 phase system to ortogonal
@@ -301,15 +302,20 @@ namespace control
 				observer::mechanic::Correct(correction);
 			}
 
+
 			if(management::control::current)
 			{
 				// starting help for traction drives
-//				if(std::fabs(values.motor.rotor.setpoint.i.q) > settings.observer.mech.i_min
-//						&& settings.motor.i_start > 0.1f)
-//				{
-//					values.motor.rotor.setpoint.i.d +=
-//							settings.motor.i_start * std::exp(- std::fabs(values.motor.rotor.omega/200.0f));
-//				}
+				if(std::fabs(values.motor.rotor.setpoint.i.q) > settings.observer.mech.i_min
+						&& settings.motor.i_start > 0.1f && std::fabs(values.motor.rotor.omega) < 200.0f)
+				{
+					values.motor.rotor.setpoint.i.d =
+							settings.motor.i_start * (1.0f - std::fabs(values.motor.rotor.omega) * 0.005f);
+				}
+				else
+				{
+					values.motor.rotor.setpoint.i.d = 0.0f;
+				}
 
 				float ratio = values.battery.u / uq.Calculate(values.motor.rotor.u.q);
 				float min = -settings.motor.limits.i;

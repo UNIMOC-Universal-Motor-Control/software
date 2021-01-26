@@ -130,6 +130,9 @@ namespace management
 			///< enable flag
 			bool enable = false;
 
+			///< old current controller kp
+			float kp = 0.0f;
+
 			///< cycle counter
 			std::uint32_t cycle = 0;
 		}
@@ -340,8 +343,8 @@ namespace management
 
 					settings.motor.rs = r;
 
-					settings.control.current.kp = settings.motor.l.d/(10.0f*hardware::Tf());
-					settings.control.current.tn = settings.motor.l.q/settings.motor.rs;
+					settings.control.current.kp = CalculateKp(settings.motor.l.d, hardware::Tf());
+					settings.control.current.tn = CalculateTn(settings.motor.l.q, settings.motor.rs);
 
 				}
 				measure::r::point = 0;
@@ -363,8 +366,11 @@ namespace management
 					values.motor.rotor.u.q = 0.0f;
 					values.motor.rotor.phi = 0.0f;
 					values.motor.rotor.omega = math::_2PI * measure::l::FREQ;
+					values.motor.m_l = 0.0f;
+
 					measure::l::w_limit = settings.motor.limits.omega;
 					settings.motor.limits.omega = values.motor.rotor.omega;
+					control::current = false;
 					observer::mechanic = false;
 					observer::flux = false;
 				}
@@ -418,8 +424,8 @@ namespace management
 						settings.motor.l.d = measure::l::u/(values.motor.rotor.omega * (i_len + iac));
 						settings.motor.l.q = measure::l::u/(values.motor.rotor.omega * (i_len - iac));
 
-						settings.control.current.kp = settings.motor.l.d/(10.0f*hardware::Tf());
-						settings.control.current.tn = settings.motor.l.q/settings.motor.rs;
+						settings.control.current.kp = CalculateKp(settings.motor.l.d, hardware::Tf());
+						settings.control.current.tn = CalculateTn(settings.motor.l.q, settings.motor.rs);
 					}
 				}
 
@@ -427,6 +433,7 @@ namespace management
 				values.motor.rotor.u.q = 0.0f;
 				values.motor.rotor.phi = 0.0f;
 				values.motor.rotor.omega = 0.0f;
+				values.motor.m_l = 0.0f;
 				settings.motor.limits.omega =  measure::l::w_limit;
 				control::current = false;
 
@@ -447,6 +454,17 @@ namespace management
 					values.motor.rotor.u.q = 0.0f;
 					values.motor.rotor.phi = 0.0f;
 					values.motor.rotor.omega = 0.0f;
+					values.motor.m_l = 0.0f;
+
+					control::feedforward = false;
+					control::current = false;
+
+					measure::psi::kp = settings.control.current.kp;
+					settings.control.current.kp = measure::psi::kp / 10.0f;
+
+					// sleep to get kp updated
+					sleepUntilWindowed(deadline, deadline + CYCLE_TIME);
+					deadline = chibios_rt::System::getTime();
 
 					observer::mechanic = false;
 					observer::flux = false;
@@ -501,10 +519,12 @@ namespace management
 				control::feedforward = false;
 				control::current = false;
 
+				settings.control.current.kp = measure::psi::kp;
 				values.motor.rotor.u.d = 0.0f;
 				values.motor.rotor.u.q = 0.0f;
 				values.motor.rotor.phi = 0.0f;
 				values.motor.rotor.omega = 0.0f;
+				values.motor.m_l = 0.0f;
 
 				values.motor.rotor.setpoint.i.d = 0.0f;
 				values.motor.rotor.setpoint.i.q = 0.0f;

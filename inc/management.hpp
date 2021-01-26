@@ -142,6 +142,28 @@ namespace management
 			CALCULATE_PSI,
 		} sequencer;
 
+		/**
+		 * calculates the optimal current controller proportional gain
+		 * @param inductance of the stator
+		 * @param t2 filter time constant
+		 * @return kp of the current controller
+		 */
+		constexpr float CalculateKp(const float inductance, const float t2)
+		{
+			return (inductance/t2*0.5f);
+		}
+
+		/**
+		 * calculates the time constant of the pi current controller to cancel
+		 * the electrical time constant
+		 * @param inductance of the stator
+		 * @param resitance of the stator
+		 * @return tn of the current controller
+		 */
+		constexpr float CalculateTn(const float inductance, const float resistance)
+		{
+			return (inductance/resistance);
+		}
 
 	protected:
 		/**

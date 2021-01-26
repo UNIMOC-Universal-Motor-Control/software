@@ -185,7 +185,7 @@ __attribute__((aligned (32))) settings_ts settings =
 	.converter =
 	{
 		///< dead time in PWM switching in ns
-		.deadtime = 800,
+		.deadtime = 1000,
 
 		///< minimal current for full dead time compensation
 		.dt_i_min = 1.0f,
