@@ -162,17 +162,21 @@ __attribute__((aligned (32))) settings_ts settings =
 			///< enable observer switch
 			.enable = false,
 
-			///< modell variance
-			.Q = 1e-5f,
+			///< Pll proportional Gain
+			.Kp = 0.0f,
 
-			///< measurement variance
-			.R = 1e5f,
+			///< PLL Integral Time
+			.Tn = 1.0f,
+
 
 			///< injection frequency in rad/s
 			.frequency = 1500.0f,
 
 			///< injection current in A
 			.current = 1.5f,
+
+			///< maximum speed where hfi is active
+			.omega_max = 50.0f,
 		},
 
 		/**

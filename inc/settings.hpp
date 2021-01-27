@@ -164,17 +164,20 @@ typedef struct settings_s
 			///< enable observer switch
 			bool enable;
 
-			///< modell variance
-			float Q;
+			///< Pll proportional Gain
+			float Kp;
 
-			///< measurement variance
-			float R;
+			///< PLL Integral Time
+			float Tn;
 
 			///< injection frequency in Hz
 			float frequency;
 
 			///< injection current in A
 			float current;
+
+			///< maximum speed where hfi is active
+			float omega_max;
 		} hfi;
 
 		/**

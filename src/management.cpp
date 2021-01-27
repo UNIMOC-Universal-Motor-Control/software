@@ -257,7 +257,23 @@ namespace management
 					control::current = false;
 				}
 				observer::flux = settings.observer.flux.enable;
-				observer::hfi = settings.observer.hfi.enable;
+
+				// hfi with hysteresis
+				if(settings.observer.hfi.enable)
+				{
+					 if(observer::hfi && (values.motor.rotor.omega > 1.2f * settings.observer.hfi.omega_max))
+					 {
+						 observer::hfi = false;
+					 }
+					 else if(!observer::hfi && (values.motor.rotor.omega < settings.observer.hfi.omega_max))
+					 {
+						 observer::hfi = true;
+					 }
+				}
+				else
+				{
+					observer::hfi = false;
+				}
 
 				if(observer::flux || observer::hfi) observer::mechanic = true;
 				else	observer::mechanic = false;

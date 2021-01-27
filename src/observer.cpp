@@ -291,9 +291,9 @@ namespace observer
     		values.motor.rotor.i_hfi.d = std::fabs(sc.sin);
     		values.motor.rotor.i_hfi.q = hpf_out.q * sc.sin;
     		values.motor.rotor.i_hfi.q *= (w*settings.motor.l.d*settings.motor.l.q)/((settings.motor.l.d - settings.motor.l.q)*0.5f*ui);
-    		mech.Update(settings.observer.hfi.Q, settings.observer.hfi.R, values.motor.rotor.i_hfi.q, correction);
-    		correction[0] = 0.0f;
-    		correction[2] = 0.0f;
+
+    		correction[0] = settings.observer.hfi.Kp * values.motor.rotor.i_hfi.q;
+    		correction[1] = settings.observer.hfi.Kp * hardware::Tc() / settings.observer.hfi.Tn * values.motor.rotor.i_hfi.q;
     	}
     }
 
