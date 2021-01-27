@@ -42,6 +42,9 @@ namespace management
 	 */
 	namespace observer
 	{
+		///< release high frequency injection observer
+		bool hfi = false;
+
 		///< release flux observer
 		bool flux = false;
 
@@ -105,7 +108,7 @@ namespace management
 
 
 		/**
-		 * @namespace inductance by rise time measurement values
+		 * @namespace inductance measurement values
 		 */
 		namespace l
 		{
@@ -135,6 +138,30 @@ namespace management
 
 			///< cycle counter
 			std::uint32_t cycle = 0;
+		}
+		
+		/**
+		 * @namespace hallsensor measurement values
+		 */
+		namespace hall
+		{
+			///< enable flag
+			bool enable = false;
+
+			///< cycle counter
+			std::uint32_t cycle = 0;
+
+			///< actual hall sensor state
+			std::uint8_t state = 0;
+
+			///< last hall sensor state
+			std::uint8_t old_state = 0;
+
+			///< hall sensor state change angles table
+			std::array<float, 8> angles = {0.0f};
+
+			///< measured hall states
+			std::uint8_t states_seen = 0;
 		}
 
 	}
@@ -230,8 +257,9 @@ namespace management
 					control::current = false;
 				}
 				observer::flux = settings.observer.flux.enable;
+				observer::hfi = settings.observer.hfi.enable;
 
-				if(observer::flux)observer::mechanic = true;
+				if(observer::flux || observer::hfi) observer::mechanic = true;
 				else	observer::mechanic = false;
 
 				control::feedforward = settings.control.current.feedforward;
@@ -242,11 +270,13 @@ namespace management
 					measure::r::enable = true;
 					measure::l::enable = true;
 					measure::psi::enable = true;
+					measure::hall::enable = true;
 				}
 
 				if(measure::r::enable) sequencer = MEASURE_RS;
 				else if(measure::l::enable) sequencer = MEASURE_LS;
 				else if(measure::psi::enable) sequencer = MEASURE_PSI;
+				else if(measure::hall::enable) sequencer = MEASURE_HALL;
 
 				break;
 
@@ -262,6 +292,7 @@ namespace management
 					control::current = false;
 					observer::mechanic = false;
 					observer::flux = false;
+					observer::hfi = false;
 
 					measure::r::current = settings.motor.limits.i * 0.75;
 				}
@@ -373,6 +404,7 @@ namespace management
 					control::current = false;
 					observer::mechanic = false;
 					observer::flux = false;
+					observer::hfi = false;
 				}
 
 				// handle PWM led to show PWM status
@@ -468,6 +500,7 @@ namespace management
 
 					observer::mechanic = false;
 					observer::flux = false;
+					observer::hfi = false;
 
 					control::feedforward = false;
 					control::current = true;
@@ -515,6 +548,7 @@ namespace management
 
 				observer::mechanic = false;
 				observer::flux = false;
+				observer::hfi = false;
 
 				control::feedforward = false;
 				control::current = false;
@@ -535,6 +569,95 @@ namespace management
 				sequencer = RUN;
 				break;
 			}
+			case MEASURE_HALL:
+				// init the measurement
+				if(measure::hall::cycle == 0)
+				{
+					values.motor.rotor.u.d = 0.0f;
+					values.motor.rotor.u.q = 0.0f;
+					values.motor.rotor.phi = 0.0f;
+					values.motor.rotor.omega = 2.0f;
+
+					observer::mechanic = false;
+					observer::flux = false;
+					observer::hfi = false;
+
+					control::feedforward = false;
+					control::current = true;
+
+					std::memset((void*)measure::hall::angles.data(), 0, sizeof(measure::hall::angles.data()));
+
+					values.motor.rotor.setpoint.i.d = settings.motor.limits.i*0.5f;
+					values.motor.rotor.setpoint.i.q = 0.0f;
+				}
+
+				// handle PWM led to show PWM status
+				if(hardware::pwm::output::Active()) palSetLine(LINE_LED_PWM);
+				else
+				{
+					// wait for PWM release
+					sequencer = RUN;
+
+					palClearLine(LINE_LED_PWM);
+				}
+				// set Run Mode LED
+				palClearLine(LINE_LED_RUN);
+
+				// get hall state
+				measure::hall::state = values.motor.rotor.hall;
+
+				// set first sector
+				if(!measure::hall::cycle)
+				{
+					measure::hall::old_state = measure::hall::state;
+				}
+
+				// new edge of a Hall sensor
+				if(measure::hall::state != measure::hall::old_state && measure::hall::cycle > 1000)
+				{
+					if(measure::hall::angles[measure::hall::state] == 0.0f) measure::hall::states_seen++;
+					measure::hall::angles[measure::hall::state] = values.motor.rotor.phi;
+				}
+				measure::hall::old_state = measure::hall::state;
+
+				// only valid hall states count
+				if(measure::hall::state < 1 || measure::hall::state > 6
+						|| (measure::hall::states_seen >= 6 && measure::hall::cycle > 10000)
+						|| measure::hall::cycle > 30000)
+				{
+					values.motor.rotor.u.d = 0.0f;
+					values.motor.rotor.u.q = 0.0f;
+					values.motor.rotor.phi = 0.0f;
+					values.motor.rotor.omega = 0.0f;
+
+					observer::mechanic = false;
+					observer::flux = false;
+					observer::hfi = false;
+
+					control::feedforward = false;
+					control::current = false;
+
+					values.motor.rotor.setpoint.i.d = 0.0f;
+					values.motor.rotor.setpoint.i.q = 0.0f;
+
+
+					measure::hall::enable = false;
+					measure::hall::cycle = 0;
+
+					// measurement successful
+					if(measure::hall::states_seen >= 6)
+					{
+						for(std::uint8_t i = 1; i < 7; i++)
+						{
+							systems::SinCos(measure::hall::angles[i], settings.motor.hall_table[i]);
+						}
+					}
+
+					sequencer = RUN;
+				}
+
+				measure::hall::cycle++;
+				break;
 			}
 
 			sleepUntilWindowed(deadline, deadline + CYCLE_TIME);

@@ -18,7 +18,7 @@
 			<member name="mapfile_pre_select" type="sint32">0</member>
 			<member name="comm_params_saved" type="sint32">1</member>
 			<member name="comm_state_saved" type="sint32">0</member>
-			<member name="comm_state_enabled" type="sint32">0</member>
+			<member name="comm_state_enabled" type="sint32">1</member>
 			<member name="comm_port" type="sint32">15</member>
 			<member name="comm_port_hint" type="string">COM16</member>
 			<member name="comm_speed" type="sint32">115200</member>
@@ -5480,7 +5480,7 @@
 			<member name="yblock3_info" type="CPrjItemRS_YBlockInfo">ObjId1280</member>
 			<member name="yblock4_info" type="CPrjItemRS_YBlockInfo">ObjId1281</member>
 			<member name="yblock5_info" type="CPrjItemRS_YBlockInfo">ObjId1282</member>
-			<member name="rec_time_base" type="sint32">9</member>
+			<member name="rec_time_base" type="sint32">0</member>
 			<member name="rec_total_samples" type="sint32">341</member>
 			<member name="trig_pretrigger" type="sint32">20</member>
 			<member name="trig_arun" type="sint32">1</member>

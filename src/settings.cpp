@@ -155,6 +155,27 @@ __attribute__((aligned (32))) settings_ts settings =
 		},
 
 		/**
+		 * high frequency injection observer settings
+		 */
+		.hfi =
+		{
+			///< enable observer switch
+			.enable = false,
+
+			///< modell variance
+			.Q = 1e-5f,
+
+			///< measurement variance
+			.R = 1e5f,
+
+			///< injection frequency in rad/s
+			.frequency = 1500.0f,
+
+			///< injection current in A
+			.current = 1.5f,
+		},
+
+		/**
 		 * hall observer settings
 		 */
 		.hall =

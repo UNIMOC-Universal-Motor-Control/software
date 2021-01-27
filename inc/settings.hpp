@@ -157,6 +157,27 @@ typedef struct settings_s
 		} flux;
 
 		/**
+		 * high frequency injection observer settings
+		 */
+		struct hfi_s
+		{
+			///< enable observer switch
+			bool enable;
+
+			///< modell variance
+			float Q;
+
+			///< measurement variance
+			float R;
+
+			///< injection frequency in Hz
+			float frequency;
+
+			///< injection current in A
+			float current;
+		} hfi;
+
+		/**
 		 * hall observer settings
 		 */
 		struct hall_s

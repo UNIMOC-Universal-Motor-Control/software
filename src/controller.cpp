@@ -212,7 +212,7 @@ namespace control
 	/**
 	 * generic constructor
 	 */
-	thread::thread():flux(), foc(),	as5048(hardware::i2c::instance), uq(32e3f, 1.0f, 2e-3f)
+	thread::thread():flux(), hfi(), foc(),	as5048(hardware::i2c::instance), uq(32e3f, 1.0f, 2e-3f)
 	{}
 
 	/**
@@ -231,7 +231,6 @@ namespace control
 		while (TRUE)
 		{
 			systems::sin_cos phi_sc;
-			systems::sin_cos cur_sc;
 			systems::sin_cos sense_sc;
 			float angle;
 
@@ -260,9 +259,6 @@ namespace control
 			// calculate new sine and cosine for the reference system
 			systems::SinCos(angle, phi_sc);
 
-			// calculate new sine and cosine for the current system delayed be filters
-			systems::SinCos(angle, cur_sc);
-
 			// calculate new sine and cosine for the sensor signal
 			systems::SinCos(values.sense.angle, sense_sc);
 			// angle error to as5048 signal
@@ -272,7 +268,7 @@ namespace control
 			// convert 3 phase system to ortogonal
 			i_ab = systems::transform::Clark(values.motor.i);
 			// convert current samples from clark to rotor frame;
-			values.motor.rotor.i = systems::transform::Park(i_ab, cur_sc);
+			values.motor.rotor.i = systems::transform::Park(i_ab, phi_sc);
 
 			//sample currents for frequency analysis
 			values.motor.rotor.gid = values.motor.rotor.i.d;
@@ -302,6 +298,14 @@ namespace control
 				observer::mechanic::Correct(correction);
 			}
 
+			if(management::observer::hfi)
+			{
+				// calculate the flux observer
+				hfi.Calculate(values.motor.rotor.i, correction);
+
+				// correct the prediction
+				observer::mechanic::Correct(correction);
+			}
 
 			if(management::control::current)
 			{
@@ -366,19 +370,29 @@ namespace control
 
 				// calculate the field orientated controllers
 				foc.Calculate(setpoint);
-
+				
 				// Deadtime Compensation
-//				float k = 0.0f;
-//				std::modf(values.motor.rotor.phi/math::_2PI*6.0f, &k);
-//				k *= math::PI/3.0f;
-//				k += math::PI/6.0f;
-//
-//				systems::sin_cos tmp;
-//
-//				systems::SinCos(k - values.motor.rotor.phi, tmp);
-//
-//				values.motor.rotor.u.d -= 4.0f/3.0f*values.battery.u*settings.converter.deadtime/hardware::Tc()*tmp.cos;
-//				values.motor.rotor.u.q -= 4.0f/3.0f*values.battery.u*settings.converter.deadtime/hardware::Tc()*tmp.sin;
+				float k = 3.0f;
+				const float PIby6 = math::PI / 6.0f;
+				// get the sector of the voltage vector, 3 is above 11/6*pi and below 1/6*pi
+				if(values.motor.rotor.phi <  PIby6) k = math::PI;
+				else if(values.motor.rotor.phi <  3.0f*PIby6) k = 8.0f * PIby6;
+				else if(values.motor.rotor.phi <  5.0f*PIby6) k = 10.0f* PIby6;
+				else if(values.motor.rotor.phi <  7.0f*PIby6) k = 0.0f;
+				else if(values.motor.rotor.phi <  9.0f*PIby6) k = 2.0f* PIby6;
+				else if(values.motor.rotor.phi < 11.0f*PIby6) k = 4.0f* PIby6;
+
+				systems::sin_cos tmp;
+
+				systems::SinCos(k - values.motor.rotor.phi, tmp);
+
+				values.motor.rotor.u.d += 4.0f/3.0f*values.battery.u*(settings.converter.deadtime*1e-9f)*hardware::Fc()*tmp.cos;
+				values.motor.rotor.u.q += 4.0f/3.0f*values.battery.u*(settings.converter.deadtime*1e-9f)*hardware::Fc()*tmp.sin;
+
+				if(management::observer::hfi)
+				{
+					values.motor.rotor.u.d += hfi.Injection();
+				}
 			}
 			else
 			{
@@ -386,10 +400,8 @@ namespace control
 				foc.SetParameters(settings.control.current.kp, settings.control.current.tn, hardware::Tc());
 			}
 
-			systems::dq u = values.motor.rotor.u;
-
 			// transform the voltages to stator frame
-			u_ab = systems::transform::InversePark(u, phi_sc);
+			u_ab = systems::transform::InversePark(values.motor.rotor.u, phi_sc);
 
 			// transform to ab system
 			values.motor.u = systems::transform::InverseClark(u_ab);
