@@ -370,24 +370,22 @@ namespace control
 
 				// calculate the field orientated controllers
 				foc.Calculate(setpoint);
-				
-				// Deadtime Compensation
-				float k = 3.0f;
-				const float PIby6 = math::PI / 6.0f;
-				// get the sector of the voltage vector, 3 is above 11/6*pi and below 1/6*pi
-				if(values.motor.rotor.phi <  PIby6) k = math::PI;
-				else if(values.motor.rotor.phi <  3.0f*PIby6) k = 8.0f * PIby6;
-				else if(values.motor.rotor.phi <  5.0f*PIby6) k = 10.0f* PIby6;
-				else if(values.motor.rotor.phi <  7.0f*PIby6) k = 0.0f;
-				else if(values.motor.rotor.phi <  9.0f*PIby6) k = 2.0f* PIby6;
-				else if(values.motor.rotor.phi < 11.0f*PIby6) k = 4.0f* PIby6;
 
-				systems::sin_cos tmp;
-
-				systems::SinCos(k - values.motor.rotor.phi, tmp);
-
-				values.motor.rotor.u.d += 4.0f/3.0f*values.battery.u*(settings.converter.deadtime*1e-9f)*hardware::Fc()*tmp.cos;
-				values.motor.rotor.u.q += 4.0f/3.0f*values.battery.u*(settings.converter.deadtime*1e-9f)*hardware::Fc()*tmp.sin;
+//				// Deadtime Compensation, runs but needs some more ifs and else
+//				float k = 0.0f;
+//				if		(values.motor.rotor.phi < 1.0f * math::PI/6.0f) k = 0.0f;
+//				else if	(values.motor.rotor.phi < 3.0f * math::PI/6.0f) k = 2.0f * math::PI/6.0f;
+//				else if	(values.motor.rotor.phi < 5.0f * math::PI/6.0f) k = 4.0f * math::PI/6.0f;
+//				else if	(values.motor.rotor.phi < 7.0f * math::PI/6.0f) k = 6.0f * math::PI/6.0f;
+//				else if	(values.motor.rotor.phi < 9.0f * math::PI/6.0f) k = 8.0f * math::PI/6.0f;
+//				else if	(values.motor.rotor.phi <11.0f * math::PI/6.0f) k =10.0f * math::PI/6.0f;
+//
+//
+//				systems::sin_cos tmp;
+//				systems::SinCos(k - values.motor.rotor.phi, tmp);
+//
+//				values.motor.rotor.u.d += 4.0f/3.0f*values.battery.u*(settings.converter.deadtime*1e-9f)*hardware::Fc()*tmp.cos;
+//				values.motor.rotor.u.q += 4.0f/3.0f*values.battery.u*(settings.converter.deadtime*1e-9f)*hardware::Fc()*tmp.sin;
 
 				if(management::observer::hfi)
 				{

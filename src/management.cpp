@@ -376,7 +376,6 @@ namespace management
 
 					settings.control.current.kp = CalculateKp(settings.motor.l.d, hardware::Tf());
 					settings.control.current.tn = CalculateTn(settings.motor.l.q, settings.motor.rs);
-
 				}
 				measure::r::point = 0;
 				measure::r::u = 0.0f;
