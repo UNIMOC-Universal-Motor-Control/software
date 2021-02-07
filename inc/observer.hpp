@@ -150,6 +150,9 @@ namespace observer
 
 		///< high pass FIR filter coefficients
 		static const std::array<float, 64> hpf_c;
+
+		///< lowpass filter
+		filter::low_pass lpf;
 	public:
 		/**
 		 * @brief high frequency injection observers trivial constructor

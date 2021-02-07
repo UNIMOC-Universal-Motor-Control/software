@@ -47,7 +47,7 @@ namespace management
 		extern bool hfi;
 
 		///< release mechanic observer
-		extern bool mechanic;
+		extern bool hall;
 	}
 
 	/**
@@ -122,7 +122,7 @@ namespace management
 	/**
 	 * controller management thread
 	 */
-	class thread : public chibios_rt::BaseStaticThread<450>
+	class thread : public chibios_rt::BaseStaticThread<500>
 	{
 	private:
 		static constexpr systime_t CYCLE_TIME = TIME_MS2I(1);

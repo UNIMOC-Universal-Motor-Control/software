@@ -48,8 +48,8 @@ namespace management
 		///< release flux observer
 		bool flux = false;
 
-		///< release mechanic observer
-		bool mechanic = false;
+		///< release hall sensor based observer
+		bool hall = false;
 	}
 
 	/**
@@ -158,10 +158,22 @@ namespace management
 			std::uint8_t old_state = 0;
 
 			///< hall sensor state change angles table
-			std::array<float, 8> angles = {0.0f};
+			std::array<float, 8> angles_cw = {0.0f};
+			std::array<float, 8> angles_ccw = {0.0f};
+
+			///< direction of turning
+			typedef enum direction_e
+			{
+				CW = 0,
+				CCW = 1,
+			} direction_te;
+			direction_te direction = CW;
 
 			///< measured hall states
 			std::uint8_t states_seen = 0;
+
+			///< old current controller kp
+			float kp = 0.0f;
 		}
 
 	}
@@ -257,6 +269,7 @@ namespace management
 					control::current = false;
 				}
 				observer::flux = settings.observer.flux.enable;
+				observer::hall = settings.observer.hall.enable;
 
 				// hfi with hysteresis
 				if(settings.observer.hfi.enable)
@@ -275,8 +288,20 @@ namespace management
 					observer::hfi = false;
 				}
 
-				if(observer::flux || observer::hfi) observer::mechanic = true;
-				else	observer::mechanic = false;
+//				if(observer::flux || observer::hfi) observer::hall = true;
+//				else	observer::hall = false;
+
+				// starting help for traction drives
+				if(std::fabs(values.motor.rotor.setpoint.i.q) > settings.observer.mech.i_min
+						&& settings.motor.i_start > 0.1f && std::fabs(values.motor.rotor.omega) < 200.0f)
+				{
+					values.motor.rotor.setpoint.i.d =
+							settings.motor.i_start * (1.0f - std::fabs(values.motor.rotor.omega) * 0.005f);
+				}
+				else
+				{
+					values.motor.rotor.setpoint.i.d = 0.0f;
+				}
 
 				control::feedforward = settings.control.current.feedforward;
 
@@ -306,7 +331,7 @@ namespace management
 					values.motor.rotor.phi = 0.0f;
 					values.motor.rotor.omega = 0.0f;
 					control::current = false;
-					observer::mechanic = false;
+					observer::hall = false;
 					observer::flux = false;
 					observer::hfi = false;
 
@@ -319,6 +344,8 @@ namespace management
 				{
 					// wait for PWM release
 					sequencer = RUN;
+
+					measure::r::cycle = 0;
 
 					palClearLine(LINE_LED_PWM);
 				}
@@ -417,7 +444,7 @@ namespace management
 					measure::l::w_limit = settings.motor.limits.omega;
 					settings.motor.limits.omega = values.motor.rotor.omega;
 					control::current = false;
-					observer::mechanic = false;
+					observer::hall = false;
 					observer::flux = false;
 					observer::hfi = false;
 				}
@@ -428,6 +455,8 @@ namespace management
 				{
 					// wait for PWM release
 					sequencer = RUN;
+
+					measure::l::cycle = 0;
 
 					palClearLine(LINE_LED_PWM);
 				}
@@ -484,7 +513,7 @@ namespace management
 				settings.motor.limits.omega =  measure::l::w_limit;
 				control::current = false;
 
-				observer::mechanic = false;
+				observer::hall = false;
 				observer::flux = false;
 
 				measure::l::enable = false;
@@ -507,13 +536,13 @@ namespace management
 					control::current = false;
 
 					measure::psi::kp = settings.control.current.kp;
-					settings.control.current.kp = measure::psi::kp / 10.0f;
+					settings.control.current.kp = CalculateKp(settings.motor.l.d, hardware::Tf()) / 10.0f;
 
 					// sleep to get kp updated
 					sleepUntilWindowed(deadline, deadline + CYCLE_TIME);
 					deadline = chibios_rt::System::getTime();
 
-					observer::mechanic = false;
+					observer::hall = false;
 					observer::flux = false;
 					observer::hfi = false;
 
@@ -531,6 +560,9 @@ namespace management
 				{
 					// wait for PWM release
 					sequencer = RUN;
+
+					measure::psi::cycle = 0;
+					settings.control.current.kp = measure::psi::kp;
 
 					palClearLine(LINE_LED_PWM);
 				}
@@ -561,7 +593,7 @@ namespace management
 				systems::dq bemf = {bemf_d, bemf_q};
 				if(values.motor.rotor.omega > 1.0f) settings.motor.psi = systems::Length(bemf)/values.motor.rotor.omega;
 
-				observer::mechanic = false;
+				observer::hall = false;
 				observer::flux = false;
 				observer::hfi = false;
 
@@ -588,30 +620,44 @@ namespace management
 				// init the measurement
 				if(measure::hall::cycle == 0)
 				{
-					values.motor.rotor.u.d = 0.0f;
-					values.motor.rotor.u.q = 0.0f;
-					values.motor.rotor.phi = 0.0f;
-					values.motor.rotor.omega = 2.0f;
 
-					observer::mechanic = false;
+					measure::hall::kp = settings.control.current.kp;
+					settings.control.current.kp = CalculateKp(settings.motor.l.d, hardware::Tf()) / 10.0f;
+
+					// sleep to get kp updated
+					sleepUntilWindowed(deadline, deadline + CYCLE_TIME);
+					deadline = chibios_rt::System::getTime();
+
+					observer::hall = false;
 					observer::flux = false;
 					observer::hfi = false;
-
 					control::feedforward = false;
 					control::current = true;
 
-					std::memset((void*)measure::hall::angles.data(), 0, sizeof(measure::hall::angles.data()));
+					values.motor.rotor.u.d = 0.0f;
+					values.motor.rotor.u.q = 0.0f;
+					values.motor.rotor.phi = 0.0f;
+					if(measure::hall::direction == measure::hall::direction_te::CW) values.motor.rotor.omega = 2.0f;
+					if(measure::hall::direction == measure::hall::direction_te::CCW) values.motor.rotor.omega = -2.0f;
+					values.motor.m_l = 0.0f;
+
+					if(measure::hall::direction == measure::hall::direction_te::CW)  std::memset((void*)measure::hall::angles_cw.data(), 0, sizeof(measure::hall::angles_cw.data()));
+					if(measure::hall::direction == measure::hall::direction_te::CCW) std::memset((void*)measure::hall::angles_ccw.data(), 0, sizeof(measure::hall::angles_ccw.data()));
 
 					values.motor.rotor.setpoint.i.d = settings.motor.limits.i*0.5f;
 					values.motor.rotor.setpoint.i.q = 0.0f;
 				}
 
 				// handle PWM led to show PWM status
-				if(hardware::pwm::output::Active()) palSetLine(LINE_LED_PWM);
+				if(hardware::pwm::output::Active() && measure::hall::enable) palSetLine(LINE_LED_PWM);
 				else
 				{
 					// wait for PWM release
 					sequencer = RUN;
+
+					measure::hall::cycle = 0;
+
+					settings.control.current.kp = measure::hall::kp;
 
 					palClearLine(LINE_LED_PWM);
 				}
@@ -630,10 +676,19 @@ namespace management
 				// new edge of a Hall sensor
 				if(measure::hall::state != measure::hall::old_state && measure::hall::cycle > 1000)
 				{
-					if(measure::hall::angles[measure::hall::state] == 0.0f) measure::hall::states_seen++;
-					measure::hall::angles[measure::hall::state] = values.motor.rotor.phi;
+					float* angle = &measure::hall::angles_cw[measure::hall::state];
+					if(measure::hall::direction == measure::hall::direction_te::CW) angle = &measure::hall::angles_cw[measure::hall::state];
+					if(measure::hall::direction == measure::hall::direction_te::CCW) angle = &measure::hall::angles_ccw[measure::hall::state];
+
+					if(*angle == 0.0f)
+					{
+						measure::hall::states_seen++;
+						*angle = values.motor.rotor.phi;
+					}
 				}
 				measure::hall::old_state = measure::hall::state;
+
+				measure::hall::cycle++;
 
 				// only valid hall states count
 				if(measure::hall::state < 1 || measure::hall::state > 6
@@ -645,7 +700,7 @@ namespace management
 					values.motor.rotor.phi = 0.0f;
 					values.motor.rotor.omega = 0.0f;
 
-					observer::mechanic = false;
+					observer::hall = false;
 					observer::flux = false;
 					observer::hfi = false;
 
@@ -655,23 +710,33 @@ namespace management
 					values.motor.rotor.setpoint.i.d = 0.0f;
 					values.motor.rotor.setpoint.i.q = 0.0f;
 
-
-					measure::hall::enable = false;
+					if(measure::hall::direction == measure::hall::direction_te::CCW)
+					{
+						measure::hall::direction = measure::hall::direction_te::CW;
+						measure::hall::enable = false;
+						settings.control.current.kp = measure::hall::kp;
+						sequencer = RUN;
+					}
+					else
+					{
+						measure::hall::direction = measure::hall::direction_te::CCW;
+						measure::hall::states_seen = 0;
+					}
 					measure::hall::cycle = 0;
+
 
 					// measurement successful
 					if(measure::hall::states_seen >= 6)
 					{
 						for(std::uint8_t i = 1; i < 7; i++)
 						{
-							systems::SinCos(measure::hall::angles[i], settings.motor.hall_table[i]);
+							systems::SinCos(measure::hall::angles_cw[i], settings.motor.hall_table_cw[i]);
+							systems::SinCos(measure::hall::angles_ccw[i], settings.motor.hall_table_ccw[i]);
 						}
 					}
 
-					sequencer = RUN;
-				}
 
-				measure::hall::cycle++;
+				}
 				break;
 			}
 

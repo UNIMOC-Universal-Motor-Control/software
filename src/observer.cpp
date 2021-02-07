@@ -269,7 +269,7 @@ namespace observer
     /**
      * @brief hfi observers trivial constructor
      */
-    hfi::hfi(void): sc{0.0f, 0.0f}, w(0.0f), phi(0.0f), ui(0.0f), mech(), hpf_d(hpf_c), hpf_q(hpf_c) {}
+    hfi::hfi(void): sc{0.0f, 0.0f}, w(0.0f), phi(0.0f), ui(0.0f), mech(), hpf_d(hpf_c), hpf_q(hpf_c), lpf(1.0f/32e3, 1.0f, 10e-3) {}
 
     /**
      * @brief Get angular error from hfi estimation.
@@ -284,17 +284,12 @@ namespace observer
     	i_dq.d -= hpf_out.d;
     	i_dq.q -= hpf_out.q;
 
-    	// sample response in sync, accept 0.5% amplitude error
-    	if (	std::fabs(phi - math::PIby2) 		<  0.1f
-    		||	std::fabs(phi - 3.0f*math::PIby2) 	<  0.1f)
-    	{
-    		values.motor.rotor.i_hfi.d = std::fabs(sc.sin);
-    		values.motor.rotor.i_hfi.q = hpf_out.q * sc.sin;
-    		values.motor.rotor.i_hfi.q *= (w*settings.motor.l.d*settings.motor.l.q)/((settings.motor.l.d - settings.motor.l.q)*0.5f*ui);
+       	values.motor.rotor.i_hfi.d = hpf_out.d;
+    	values.motor.rotor.i_hfi.q = lpf.Calculate(hpf_out.q * sc.sin);
+    	values.motor.rotor.i_hfi.q *= (w*settings.motor.l.d*settings.motor.l.q)/((settings.motor.l.d - settings.motor.l.q)*0.5f*ui);
 
-    		correction[0] = settings.observer.hfi.Kp * values.motor.rotor.i_hfi.q;
-    		correction[1] = settings.observer.hfi.Kp * hardware::Tc() / settings.observer.hfi.Tn * values.motor.rotor.i_hfi.q;
-    	}
+    	correction[1] = settings.observer.hfi.Kp * values.motor.rotor.i_hfi.q;
+    	correction[0] = settings.observer.hfi.Kp * hardware::Tc() / settings.observer.hfi.Tn * values.motor.rotor.i_hfi.q;
     }
 
 	/**
@@ -306,7 +301,7 @@ namespace observer
 		w = math::_2PI * settings.observer.hfi.frequency;
 		phi += w * hardware::Tc();
 
-		// limit phii to 2 * pi
+		// limit phi to 2 * pi
 		if(phi > math::_2PI)
 		{
 			phi -= math::_2PI;

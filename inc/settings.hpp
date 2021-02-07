@@ -61,8 +61,9 @@ typedef struct settings_s
 		///< starting direct current
 		float i_start;
 
-		///< hall sensor state change angles table
-		std::array<systems::sin_cos, 8> hall_table;
+		///< hall sensor state change angles tables in clock wise and counter clock wise direction
+		std::array<systems::sin_cos, 8> hall_table_cw;
+		std::array<systems::sin_cos, 8> hall_table_ccw;
 
 		/**
 		 * motor limits
@@ -188,11 +189,14 @@ typedef struct settings_s
 			///< enable observer switch
 			bool enable;
 
-			///< modell variance
-			float Q;
+			///< omega gain for hall observer
+			float Ko;
 
-			///< measurement variance
-			float R;
+			///< phi gain for hall observer
+			float Kp;
+
+			///< load torque gain for hall observer
+			float Kl;
 		} hall;
 
 		/**
@@ -212,9 +216,6 @@ typedef struct settings_s
 	{
 		///< compensated dead time in PWM switching -1 represents 0 and 1 represents 1
 		std::uint32_t deadtime;
-
-		///< minimal current for full dead time compensation
-		float dt_i_min;
 
 		///< pwm frequency
 		std::uint32_t frequency;

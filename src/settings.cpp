@@ -46,22 +46,23 @@ __attribute__((aligned (32))) settings_ts settings =
 	.motor =
 	{
 		///< Stator resistance
-		.rs = 0.243666f,
+		.rs = 0.15f,
 
 		///< anisotropic inductance vector
-		.l = {0.000246604f, 0.000335957f},
+		.l = {0.00022f, 0.00025f},
 
 		///< magnetic flux inducted voltage in rotor
-		.psi = unit::RpmV2VsRad(75.0f) / (30.0f / 2.0f),
+		.psi = 0.0019,
 
 		///< number of pole pairs
-		.P = 30 / 2,
+		.P = 4,
 
 		///< starting direct current
 		.i_start = 0.0f,
 
-		///< hall sensor state change angles table
-		.hall_table = {0.0f},
+		///< hall sensor state change angles tables in clock wise and counter clock wise direction
+		.hall_table_cw = {0.0f},
+		.hall_table_ccw = {0.0f},
 
 		/**
 		 * motor limit settings
@@ -69,7 +70,7 @@ __attribute__((aligned (32))) settings_ts settings =
 		.limits =
 		{
 			///< maximum coil current
-			.i = 10.0f,
+			.i = 40.0f,
 
 			///< maximum angular velocity
 			.omega = 1000.0f,
@@ -98,7 +99,7 @@ __attribute__((aligned (32))) settings_ts settings =
 			.i =
 			{
 				///< maximum drive current
-				.drive = 2.0f,
+				.drive = 15.0f,
 
 				///< maximum charge current
 				.charge = 0.0f,
@@ -151,7 +152,7 @@ __attribute__((aligned (32))) settings_ts settings =
 			.R = 1e-4f,
 
 			///< flux observer feedback gains
-			.C = {50.0f, 1.0f},
+			.C = {250.0f, 10.0f},
 		},
 
 		/**
@@ -187,11 +188,14 @@ __attribute__((aligned (32))) settings_ts settings =
 			///< enable observer switch
 			.enable = false,
 
-			///< modell variance
-			.Q = 1e-5f,
+			///< omega gain for hall observer
+			.Ko = 0.0f,
 
-			///< measurement variance
-			.R = 1e5f,
+			///< phi gain for hall observer
+			.Kp = 0.0f,
+
+			///< load torque gain for hall observer
+			.Kl = 0.0f,
 		},
 
 		/**
@@ -211,9 +215,6 @@ __attribute__((aligned (32))) settings_ts settings =
 	{
 		///< dead time in PWM switching in ns
 		.deadtime = 1000,
-
-		///< minimal current for full dead time compensation
-		.dt_i_min = 1.0f,
 
 		///< pwm frequency
 		.frequency = 16000,
@@ -271,7 +272,7 @@ bool settings_s::Load(void)
 	// align to cache lines for better cache handling
 	__attribute__((aligned (32))) settings_ts tmp;
 
-	hardware::memory::Read(0, &tmp, sizeof(settings_ts));
+ 	hardware::memory::Read(0, &tmp, sizeof(settings_ts));
 
 	if(tmp.crc == hardware::memory::Crc32(&tmp, offsetof(settings_ts, crc)))
 	{

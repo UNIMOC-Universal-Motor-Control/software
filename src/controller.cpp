@@ -230,8 +230,6 @@ namespace control
 		 */
 		while (TRUE)
 		{
-			systems::sin_cos phi_sc;
-			systems::sin_cos sense_sc;
 			float angle;
 
 			// set Run Mode LED
@@ -252,23 +250,47 @@ namespace control
 			values.sense.position = as5048.GetPosition();
 			values.sense.angle = as5048.GetPosition(settings.motor.P);
 
+			std::uint16_t max = 8192 / settings.motor.P;
+			std::uint16_t sec = max / 6;
+			std::uint16_t pos = values.sense.position % max;
+
+			switch(pos / sec)
+			{
+			case 0:
+				values.motor.rotor.hall = 0b110;
+				break;
+			case 1:
+				values.motor.rotor.hall = 0b100;
+				break;
+			case 2:
+				values.motor.rotor.hall = 0b101;
+				break;
+			case 3:
+				values.motor.rotor.hall = 0b001;
+				break;
+			case 4:
+				values.motor.rotor.hall = 0b011;
+				break;
+			case 5:
+				values.motor.rotor.hall = 0b010;
+				break;
+			default: break;
+			}
+
 
 			// calculate the sine and cosine of the new angle
 			angle = values.motor.rotor.phi - values.motor.rotor.omega * hardware::Tf();
 
 			// calculate new sine and cosine for the reference system
-			systems::SinCos(angle, phi_sc);
+			systems::SinCos(angle, values.motor.rotor.sc);
 
 			// calculate new sine and cosine for the sensor signal
-			systems::SinCos(values.sense.angle, sense_sc);
-			// angle error to as5048 signal
-			values.motor.rotor.phi_err =  phi_sc.cos*sense_sc.sin - phi_sc.sin*sense_sc.cos;
+			//systems::SinCos(values.sense.angle, sense_sc);
 
-
-			// convert 3 phase system to ortogonal
+			// convert 3 phase system to orthogonal
 			i_ab = systems::transform::Clark(values.motor.i);
 			// convert current samples from clark to rotor frame;
-			values.motor.rotor.i = systems::transform::Park(i_ab, phi_sc);
+			values.motor.rotor.i = systems::transform::Park(i_ab, values.motor.rotor.sc);
 
 			//sample currents for frequency analysis
 			values.motor.rotor.gid = values.motor.rotor.i.d;
@@ -278,8 +300,7 @@ namespace control
 			values.battery.i = (values.motor.rotor.u.d * values.motor.rotor.i.d
 					+ values.motor.rotor.u.q * values.motor.rotor.i.q)/values.battery.u;
 
-			if(			management::observer::mechanic
-					&& 	std::fabs(values.motor.rotor.i.q) > settings.observer.mech.i_min)
+			if(std::fabs(values.motor.rotor.i.q) > settings.observer.mech.i_min)
 			{
 				observer::mechanic::Predict(values.motor.rotor.i);
 			}
@@ -289,10 +310,29 @@ namespace control
 				observer::mechanic::Predict(i);
 			}
 
+			if(management::observer::hall)
+			{
+				values.motor.rotor.hall_cw_sin = settings.motor.hall_table_cw[values.motor.rotor.hall].sin;
+				values.motor.rotor.hall_cw_cos = settings.motor.hall_table_cw[values.motor.rotor.hall].cos;
+				values.motor.rotor.hall_ccw_sin = settings.motor.hall_table_ccw[values.motor.rotor.hall].sin;
+				values.motor.rotor.hall_ccw_cos = settings.motor.hall_table_ccw[values.motor.rotor.hall].cos;
+//				// hall signal angular error
+//				values.motor.rotor.phi_err = /*(phi_sc.sin*settings.motor.hall_table_ccw[values.motor.rotor.hall].cos - phi_sc.cos*settings.motor.hall_table_ccw[values.motor.rotor.hall].sin
+//						+*/ phi_sc.cos*settings.motor.hall_table_cw[values.motor.rotor.hall].sin - phi_sc.sin*settings.motor.hall_table_cw[values.motor.rotor.hall].cos/*) * 0.5f*/;
+//
+//				correction[0] = values.motor.rotor.phi_err * settings.observer.hall.Ko;
+//				correction[1] = values.motor.rotor.phi_err * settings.observer.hall.Kp;
+//				correction[2] = values.motor.rotor.phi_err * settings.observer.hall.Kl;
+//
+//				// correct the prediction
+//				observer::mechanic::Correct(correction);
+			}
+
+
 			if(management::observer::flux)
 			{
 				// calculate the flux observer
-				flux.Calculate(phi_sc, correction);
+				flux.Calculate(values.motor.rotor.sc, correction);
 
 				// correct the prediction
 				observer::mechanic::Correct(correction);
@@ -309,18 +349,6 @@ namespace control
 
 			if(management::control::current)
 			{
-				// starting help for traction drives
-				if(std::fabs(values.motor.rotor.setpoint.i.q) > settings.observer.mech.i_min
-						&& settings.motor.i_start > 0.1f && std::fabs(values.motor.rotor.omega) < 200.0f)
-				{
-					values.motor.rotor.setpoint.i.d =
-							settings.motor.i_start * (1.0f - std::fabs(values.motor.rotor.omega) * 0.005f);
-				}
-				else
-				{
-					values.motor.rotor.setpoint.i.d = 0.0f;
-				}
-
 				float ratio = values.battery.u / uq.Calculate(values.motor.rotor.u.q);
 				float min = -settings.motor.limits.i;
 				float max =  settings.motor.limits.i;
@@ -371,6 +399,12 @@ namespace control
 				// calculate the field orientated controllers
 				foc.Calculate(setpoint);
 
+
+				if(management::observer::hfi)
+				{
+					values.motor.rotor.u.d += hfi.Injection();
+				}
+
 //				// Deadtime Compensation, runs but needs some more ifs and else
 //				float k = 0.0f;
 //				if		(values.motor.rotor.phi < 1.0f * math::PI/6.0f) k = 0.0f;
@@ -386,11 +420,6 @@ namespace control
 //
 //				values.motor.rotor.u.d += 4.0f/3.0f*values.battery.u*(settings.converter.deadtime*1e-9f)*hardware::Fc()*tmp.cos;
 //				values.motor.rotor.u.q += 4.0f/3.0f*values.battery.u*(settings.converter.deadtime*1e-9f)*hardware::Fc()*tmp.sin;
-
-				if(management::observer::hfi)
-				{
-					values.motor.rotor.u.d += hfi.Injection();
-				}
 			}
 			else
 			{
@@ -399,7 +428,7 @@ namespace control
 			}
 
 			// transform the voltages to stator frame
-			u_ab = systems::transform::InversePark(values.motor.rotor.u, phi_sc);
+			u_ab = systems::transform::InversePark(values.motor.rotor.u, values.motor.rotor.sc);
 
 			// transform to ab system
 			values.motor.u = systems::transform::InverseClark(u_ab);
