@@ -243,39 +243,37 @@ namespace control
 
 			values.battery.u = hardware::adc::voltage::DCBus();
 
-			hardware::adc::current::Value(values.motor.i);
-
 			// Get angle from as5048b
 			as5048.SetZero(settings.mechanics.zero_pos);
 			values.sense.position = as5048.GetPosition();
 			values.sense.angle = as5048.GetPosition(settings.motor.P);
 
-			std::uint16_t max = 8192 / settings.motor.P;
-			std::uint16_t sec = max / 6;
-			std::uint16_t pos = values.sense.position % max;
-
-			switch(pos / sec)
-			{
-			case 0:
-				values.motor.rotor.hall = 0b110;
-				break;
-			case 1:
-				values.motor.rotor.hall = 0b100;
-				break;
-			case 2:
-				values.motor.rotor.hall = 0b101;
-				break;
-			case 3:
-				values.motor.rotor.hall = 0b001;
-				break;
-			case 4:
-				values.motor.rotor.hall = 0b011;
-				break;
-			case 5:
-				values.motor.rotor.hall = 0b010;
-				break;
-			default: break;
-			}
+//			std::uint16_t max = 8192 / settings.motor.P;
+//			std::uint16_t sec = max / 6;
+//			std::uint16_t pos = values.sense.position % max;
+//
+//			switch(pos / sec)
+//			{
+//			case 0:
+//				values.motor.rotor.hall = 0b110;
+//				break;
+//			case 1:
+//				values.motor.rotor.hall = 0b100;
+//				break;
+//			case 2:
+//				values.motor.rotor.hall = 0b101;
+//				break;
+//			case 3:
+//				values.motor.rotor.hall = 0b001;
+//				break;
+//			case 4:
+//				values.motor.rotor.hall = 0b011;
+//				break;
+//			case 5:
+//				values.motor.rotor.hall = 0b010;
+//				break;
+//			default: break;
+//			}
 
 			// calculate new sine and cosine for the sensor signal
 			//systems::SinCos(values.sense.angle, sense_sc);
@@ -419,11 +417,14 @@ namespace control
 			}
 
 			std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> dutys;
+			std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> i;
 
-			for (std::uint_fast8_t i = 0; i < hardware::pwm::INJECTION_CYCLES; ++i)
+			hardware::adc::current::Value(i);
+
+			for (std::uint_fast8_t j = 0; j < hardware::pwm::INJECTION_CYCLES; ++j)
 			{
 				// calculate the sine and cosine of the new angle
-				angle = values.motor.rotor.phi + values.motor.rotor.omega * (hardware::Tc() *(float)i*0.25f - hardware::Tf());
+				angle = values.motor.rotor.phi + values.motor.rotor.omega * (hardware::Tc() *(float)j*0.25f - hardware::Tf());
 
 				// calculate new sine and cosine for the reference system
 				systems::SinCos(angle, values.motor.rotor.sc);
@@ -437,10 +438,13 @@ namespace control
 				// set dutys with overmodulation
 				Overmodulation(values.motor.u, values.battery.u, values.converter.dutys);
 
-				dutys[i] = values.converter.dutys;
+				dutys[j] = values.converter.dutys;
+
+				values.motor.i = i[j];
 
 				modules::freemaster::Recorder();
 			}
+
 			hardware::pwm::Duty(dutys);
 
 			// read as 5048 every 4th cycle

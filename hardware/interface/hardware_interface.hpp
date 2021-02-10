@@ -150,7 +150,7 @@ namespace hardware {
 			 * cycles
 			 * @param currents
 			 */
-			extern void Value(systems::abc& currents);
+			extern void Value(std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& currents);
 
 			/**
 			 * set current offsets

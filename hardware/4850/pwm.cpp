@@ -38,10 +38,10 @@ const stm32_dma_stream_t* dmastp;
 std::array<std::uint32_t, PHASES * INJECTION_CYCLES * 2> duty_counts = {0};
 
 ///< buffer index for the duty buffer
-std::uint8_t duty_index = 0;
+std::uint_fast8_t duty_index = 0;
 
 ///< PWM Timer clock in Hz
-const uint32_t hardware::pwm::TIMER_CLOCK = STM32_TIMCLK2;
+const std::uint32_t hardware::pwm::TIMER_CLOCK = STM32_TIMCLK2;
 
 ///< default PWM period in counts
 const std::uint32_t DEF_PERIOD = 6750;
@@ -50,21 +50,21 @@ const std::uint32_t DEF_PERIOD = 6750;
 const std::uint32_t DEF_DEADTIME = 1000;
 
 ///< deadtime in nano seconds
-uint32_t deadtime = DEF_DEADTIME;
+std::uint32_t deadtime = DEF_DEADTIME;
 
 /**
  * PWM counts
  *
  * With center aligned PWM this is the period of PWM half period.
  */
-uint32_t period = DEF_PERIOD;
+std::uint32_t period = DEF_PERIOD;
 
 /**
  * PWM frequency in Hz
  *
  * With center aligned PWM this is the period of PWM half period.
  */
-uint32_t frequency = hardware::pwm::TIMER_CLOCK/(2*DEF_PERIOD);
+std::uint32_t frequency = hardware::pwm::TIMER_CLOCK/(2*DEF_PERIOD);
 
 ///< control frequency in Hz
 float fc = hardware::pwm::TIMER_CLOCK/(DEF_PERIOD * INJECTION_CYCLES);

@@ -123,7 +123,7 @@ constexpr uint32_t LENGTH_ADC_SEQ = 5;
 /// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
 ///          so even length of sequence is best choice.
 /// @note: must be 2 to have the controller running twice per PWM period
-constexpr uint32_t ADC_SEQ_BUFFERED = 8;
+constexpr uint32_t ADC_SEQ_BUFFERED = hardware::pwm::INJECTION_CYCLES * 2;
 
 ///< # of ADCs
 constexpr uint32_t NUM_OF_ADC = 3;
@@ -152,8 +152,8 @@ chibios_rt::ThreadReference hardware::control_thread = nullptr;
 ///< current offsets
 std::int32_t current_offset[hardware::PHASES];
 
-///< cadence signal counter
-std::uint32_t cadence_counter = 0;
+///< buffer index for the sample buffer
+std::uint_fast8_t sample_index = 0;
 
 /**
  * ADC conversion group.
@@ -297,22 +297,25 @@ void hardware::adc::Init(void)
  * Get the current values in the last control cycle
  * @param currents references to the current samples
  */
-void hardware::adc::current::Value(systems::abc& currents)
+void hardware::adc::current::Value(std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& currents)
 {
+	sample_index++;
+	if(sample_index > 1) sample_index = 0;
+
 	for(std::uint_fast8_t i = 0; i < PHASES; i++)
 	{
-		std::int32_t sum = 0;
-		std::int32_t cnt = 0;
-		for (std::uint_fast32_t s = 0; s < ADC_SEQ_BUFFERED; s++)
+		for (std::uint_fast8_t s = 0; s < hardware::pwm::INJECTION_CYCLES; s++)
 		{
-			for (std::uint_fast32_t a = 1; a < LENGTH_ADC_SEQ; a++)
-			{
-				sum += samples[i][s][a];
-				cnt++;
-			}
-		}
+			std::int_fast32_t sum = 0;
+			std::int_fast32_t cnt = 0;
 
-		currents.array[i] = ADC2CURRENT * (float)(current_offset[i] - sum) / (float)cnt;
+			for (std::uint_fast8_t a = 1; a < LENGTH_ADC_SEQ; a++)
+			{
+				sum += samples[i][s + (sample_index * hardware::pwm::INJECTION_CYCLES)][a];
+				cnt += 1;
+			}
+			currents[s].array[i] = ADC2CURRENT * (float)(current_offset[i] - sum) / (float)cnt;
+		}
 	}
 }
 
@@ -324,14 +327,14 @@ void hardware::adc::current::SetOffset(void)
 	for(std::uint_fast8_t i = 0; i < PHASES; i++)
 	{
 		std::int32_t sum = 0;
-		for (std::uint_fast32_t s = 0; s < ADC_SEQ_BUFFERED; s++)
+		for (std::uint_fast8_t s = 0; s < ADC_SEQ_BUFFERED; s++)
 		{
-			for (std::uint_fast32_t a = 1; a < LENGTH_ADC_SEQ; a++)
+			for (std::uint_fast8_t a = 1; a < LENGTH_ADC_SEQ; a++)
 			{
 				sum += samples[i][s][a];
 			}
 		}
-		current_offset[i] = sum;
+		current_offset[i] = sum / ADC_SEQ_BUFFERED;
 	}
 }
 
@@ -421,26 +424,26 @@ float hardware::crank::Torque(const float offset, const float gain)
 	return torque;
 }
 
-/**
- * Angle of the crank arm
- *
- * @param edge_max Number of edges per revolution
- * @return Angle in rads, range 0 - 2*PI
- */
-float hardware::crank::Angle(uint32_t edge_max)
-{
-	static float angle = 0.0f;
-
-	if(cadence_counter)
-	{
-		angle += (float)cadence_counter/(float)edge_max * math::_2PI;
-		cadence_counter = 0;
-	}
-
-	if(angle > math::_2PI) angle -= math::_2PI;
-
-	return angle;
-}
+///**
+// * Angle of the crank arm
+// *
+// * @param edge_max Number of edges per revolution
+// * @return Angle in rads, range 0 - 2*PI
+// */
+//float hardware::crank::Angle(uint32_t edge_max)
+//{
+//	static float angle = 0.0f;
+//
+//	if(cadence_counter)
+//	{
+//		angle += (float)cadence_counter/(float)edge_max * math::_2PI;
+//		cadence_counter = 0;
+//	}
+//
+//	if(angle > math::_2PI) angle -= math::_2PI;
+//
+//	return angle;
+//}
 
 
 ///**
