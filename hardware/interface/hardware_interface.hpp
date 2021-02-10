@@ -40,7 +40,10 @@ namespace hardware {
 
 		///< PWM Timer clock in Hz
 		extern const uint32_t TIMER_CLOCK;
-
+		
+		///< current injection cycles used for low speed position estimation
+		constexpr uint32_t INJECTION_CYCLES = 4;
+		
 		/**
 		 * Get Deadtime of PWM
 		 * @return deadtime in nano seconds
@@ -86,7 +89,8 @@ namespace hardware {
 		 * Set the normalized duty cycles for each phase
 		 * @param dutys -1 = LOW, 0 = 50%, 1=HIGH
 		 */
-		extern void Duty(const systems::abc& dutys);
+		extern void Duty(const std::array<systems::abc, INJECTION_CYCLES>& dutys);
+
 
 		namespace output {
 			/**

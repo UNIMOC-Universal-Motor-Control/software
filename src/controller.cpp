@@ -277,13 +277,6 @@ namespace control
 			default: break;
 			}
 
-
-			// calculate the sine and cosine of the new angle
-			angle = values.motor.rotor.phi - values.motor.rotor.omega * hardware::Tf();
-
-			// calculate new sine and cosine for the reference system
-			systems::SinCos(angle, values.motor.rotor.sc);
-
 			// calculate new sine and cosine for the sensor signal
 			//systems::SinCos(values.sense.angle, sense_sc);
 
@@ -310,23 +303,21 @@ namespace control
 				observer::mechanic::Predict(i);
 			}
 
-			if(management::observer::hall)
-			{
-				values.motor.rotor.hall_cw_sin = settings.motor.hall_table_cw[values.motor.rotor.hall].sin;
-				values.motor.rotor.hall_cw_cos = settings.motor.hall_table_cw[values.motor.rotor.hall].cos;
-				values.motor.rotor.hall_ccw_sin = settings.motor.hall_table_ccw[values.motor.rotor.hall].sin;
-				values.motor.rotor.hall_ccw_cos = settings.motor.hall_table_ccw[values.motor.rotor.hall].cos;
-//				// hall signal angular error
-//				values.motor.rotor.phi_err = /*(phi_sc.sin*settings.motor.hall_table_ccw[values.motor.rotor.hall].cos - phi_sc.cos*settings.motor.hall_table_ccw[values.motor.rotor.hall].sin
-//						+*/ phi_sc.cos*settings.motor.hall_table_cw[values.motor.rotor.hall].sin - phi_sc.sin*settings.motor.hall_table_cw[values.motor.rotor.hall].cos/*) * 0.5f*/;
-//
-//				correction[0] = values.motor.rotor.phi_err * settings.observer.hall.Ko;
-//				correction[1] = values.motor.rotor.phi_err * settings.observer.hall.Kp;
-//				correction[2] = values.motor.rotor.phi_err * settings.observer.hall.Kl;
-//
-//				// correct the prediction
-//				observer::mechanic::Correct(correction);
-			}
+//			if(management::observer::hall)
+//			{
+//				values.motor.rotor.hall_cw = settings.motor.hall_table_cw[values.motor.rotor.hall];
+//				values.motor.rotor.hall_ccw = settings.motor.hall_table_ccw[values.motor.rotor.hall];
+////				// hall signal angular error
+////				values.motor.rotor.phi_err = /*(phi_sc.sin*settings.motor.hall_table_ccw[values.motor.rotor.hall].cos - phi_sc.cos*settings.motor.hall_table_ccw[values.motor.rotor.hall].sin
+////						+*/ phi_sc.cos*settings.motor.hall_table_cw[values.motor.rotor.hall].sin - phi_sc.sin*settings.motor.hall_table_cw[values.motor.rotor.hall].cos/*) * 0.5f*/;
+////
+////				correction[0] = values.motor.rotor.phi_err * settings.observer.hall.Ko;
+////				correction[1] = values.motor.rotor.phi_err * settings.observer.hall.Kp;
+////				correction[2] = values.motor.rotor.phi_err * settings.observer.hall.Kl;
+////
+////				// correct the prediction
+////				observer::mechanic::Correct(correction);
+//			}
 
 
 			if(management::observer::flux)
@@ -427,18 +418,30 @@ namespace control
 				foc.SetParameters(settings.control.current.kp, settings.control.current.tn, hardware::Tc());
 			}
 
-			// transform the voltages to stator frame
-			u_ab = systems::transform::InversePark(values.motor.rotor.u, values.motor.rotor.sc);
+			std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> dutys;
 
-			// transform to ab system
-			values.motor.u = systems::transform::InverseClark(u_ab);
+			for (std::uint_fast8_t i = 0; i < hardware::pwm::INJECTION_CYCLES; ++i)
+			{
+				// calculate the sine and cosine of the new angle
+				angle = values.motor.rotor.phi + values.motor.rotor.omega * (hardware::Tc() *(float)i*0.25f - hardware::Tf());
 
-			// set dutys with overmodulation
-			Overmodulation(values.motor.u, values.battery.u, values.converter.dutys);
+				// calculate new sine and cosine for the reference system
+				systems::SinCos(angle, values.motor.rotor.sc);
 
-			hardware::pwm::Duty(values.converter.dutys);
+				// transform the voltages to stator frame
+				u_ab = systems::transform::InversePark(values.motor.rotor.u, values.motor.rotor.sc);
 
-			modules::freemaster::Recorder();
+				// transform to ab system
+				values.motor.u = systems::transform::InverseClark(u_ab);
+
+				// set dutys with overmodulation
+				Overmodulation(values.motor.u, values.battery.u, values.converter.dutys);
+
+				dutys[i] = values.converter.dutys;
+
+				modules::freemaster::Recorder();
+			}
+			hardware::pwm::Duty(dutys);
 
 			// read as 5048 every 4th cycle
 			static std::uint8_t cnt = 0;

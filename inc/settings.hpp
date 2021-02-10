@@ -61,9 +61,9 @@ typedef struct settings_s
 		///< starting direct current
 		float i_start;
 
-		///< hall sensor state change angles tables in clock wise and counter clock wise direction
-		std::array<systems::sin_cos, 8> hall_table_cw;
-		std::array<systems::sin_cos, 8> hall_table_ccw;
+//		///< hall sensor state change angles tables in clock wise and counter clock wise direction
+//		std::array<float, 8> hall_table_cw;
+//		std::array<float, 8> hall_table_ccw;
 
 		/**
 		 * motor limits
@@ -181,23 +181,23 @@ typedef struct settings_s
 			float omega_max;
 		} hfi;
 
-		/**
-		 * hall observer settings
-		 */
-		struct hall_s
-		{
-			///< enable observer switch
-			bool enable;
-
-			///< omega gain for hall observer
-			float Ko;
-
-			///< phi gain for hall observer
-			float Kp;
-
-			///< load torque gain for hall observer
-			float Kl;
-		} hall;
+//		/**
+//		 * hall observer settings
+//		 */
+//		struct hall_s
+//		{
+//			///< enable observer switch
+//			bool enable;
+//
+//			///< omega gain for hall observer
+//			float Ko;
+//
+//			///< phi gain for hall observer
+//			float Kp;
+//
+//			///< load torque gain for hall observer
+//			float Kl;
+//		} hall;
 
 		/**
 		 * mechanic observer settings

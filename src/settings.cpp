@@ -55,14 +55,14 @@ __attribute__((aligned (32))) settings_ts settings =
 		.psi = 0.0019,
 
 		///< number of pole pairs
-		.P = 4,
+		.P = 7,
 
 		///< starting direct current
 		.i_start = 0.0f,
 
-		///< hall sensor state change angles tables in clock wise and counter clock wise direction
-		.hall_table_cw = {0.0f},
-		.hall_table_ccw = {0.0f},
+//		///< hall sensor state change angles tables in clock wise and counter clock wise direction
+//		.hall_table_cw = {0.0f},
+//		.hall_table_ccw = {0.0f},
 
 		/**
 		 * motor limit settings
@@ -180,23 +180,23 @@ __attribute__((aligned (32))) settings_ts settings =
 			.omega_max = 50.0f,
 		},
 
-		/**
-		 * hall observer settings
-		 */
-		.hall =
-		{
-			///< enable observer switch
-			.enable = false,
-
-			///< omega gain for hall observer
-			.Ko = 0.0f,
-
-			///< phi gain for hall observer
-			.Kp = 0.0f,
-
-			///< load torque gain for hall observer
-			.Kl = 0.0f,
-		},
+//		/**
+//		 * hall observer settings
+//		 */
+//		.hall =
+//		{
+//			///< enable observer switch
+//			.enable = false,
+//
+//			///< omega gain for hall observer
+//			.Ko = 0.0f,
+//
+//			///< phi gain for hall observer
+//			.Kp = 0.0f,
+//
+//			///< load torque gain for hall observer
+//			.Kl = 0.0f,
+//		},
 
 		/**
 		 * mechanic observer settings
@@ -217,7 +217,7 @@ __attribute__((aligned (32))) settings_ts settings =
 		.deadtime = 1000,
 
 		///< pwm frequency
-		.frequency = 16000,
+		.frequency = 32000,
 
 		/**
 		 * converter derating settings

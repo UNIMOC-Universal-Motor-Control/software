@@ -28,7 +28,6 @@ using namespace hardware::adc;
 
 static void adcerrorcallback(ADCDriver *adcp, adcerror_t err);
 static void adccallback(ADCDriver *adcp);
-static void palcallback(void *arg);
 static float adc2ntc_temperature(const uint16_t adc_value);
 
 
@@ -124,7 +123,7 @@ constexpr uint32_t LENGTH_ADC_SEQ = 5;
 /// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
 ///          so even length of sequence is best choice.
 /// @note: must be 2 to have the controller running twice per PWM period
-constexpr uint32_t ADC_SEQ_BUFFERED = 2;
+constexpr uint32_t ADC_SEQ_BUFFERED = 8;
 
 ///< # of ADCs
 constexpr uint32_t NUM_OF_ADC = 3;
@@ -289,9 +288,9 @@ void hardware::adc::Init(void)
 	adcStartConversion(&ADCD2, &adcgrpcfg2, &samples[1][0][0], ADC_SEQ_BUFFERED);
 	adcStartConversion(&ADCD3, &adcgrpcfg3, &samples[2][0][0], ADC_SEQ_BUFFERED);
 
-	/* Enabling events on both edges of the button line.*/
-	palEnableLineEvent(LINE_CADENCE, PAL_EVENT_MODE_BOTH_EDGES);
-	palSetLineCallback(LINE_CADENCE, palcallback, NULL);
+//	/* Enabling events on both edges of the button line.*/
+//	palEnableLineEvent(LINE_CADENCE, PAL_EVENT_MODE_BOTH_EDGES);
+//	palSetLineCallback(LINE_CADENCE, palcallback, NULL);
 }
 
 /**
@@ -444,14 +443,14 @@ float hardware::crank::Angle(uint32_t edge_max)
 }
 
 
-/**
- * get cadence pin level
- * @return true when cadence pin is high
- */
-bool hardware::crank::Cadence(void)
-{
-	return palReadLine(LINE_CADENCE);
-}
+///**
+// * get cadence pin level
+// * @return true when cadence pin is high
+// */
+//bool hardware::crank::Cadence(void)
+//{
+//	return palReadLine(LINE_CADENCE);
+//}
 
 /**
  * get the angle which is represented by the hall sensors
@@ -484,15 +483,15 @@ static float adc2ntc_temperature(const uint16_t adc_value)
 	return ((float)p1 - ( (float)(p1-p2) * (float)(adc_value & (NTC_TABLE.TABLE_LEN - 1)) ) * onebylen)*0.01f;
 };
 
-/**
- * callback from pal driver on each edge of the PAS Cadence signal
- * @param arg
- */
-static void palcallback(void *arg)
-{
-	(void)arg;
-	cadence_counter++;
-}
+///**
+// * callback from pal driver on each edge of the PAS Cadence signal
+// * @param arg
+// */
+//static void palcallback(void *arg)
+//{
+//	(void)arg;
+//	cadence_counter++;
+//}
 
 /**
  *  ADC errors callback, should never happen.

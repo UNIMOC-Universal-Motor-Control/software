@@ -78,10 +78,8 @@ typedef struct values_s
 			///< rotor hall sensor states
 			std::uint8_t hall;
 
-			float hall_cw_sin;
-			float hall_cw_cos;
-			float hall_ccw_sin;
-			float hall_ccw_cos;
+			float hall_cw;
+			float hall_ccw;
 
 			///< rotor hall sensor angle error
 			float phi_err;

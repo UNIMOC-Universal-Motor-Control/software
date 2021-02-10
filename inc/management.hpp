@@ -140,7 +140,6 @@ namespace management
 			CALCULATE_LS,
 			MEASURE_PSI,
 			CALCULATE_PSI,
-			MEASURE_HALL,
 		} sequencer;
 
 		/**

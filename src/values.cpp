@@ -66,10 +66,8 @@ values_ts values =
 			///< rotor hall sensor states
 			.hall = 0,
 
-			.hall_cw_sin = 0.0f,
-			.hall_cw_cos = 0.0f,
-			.hall_ccw_sin = 0.0f,
-			.hall_ccw_cos = 0.0f,
+			.hall_cw = 0.0f,
+			.hall_ccw = 0.0f,
 
 			///< rotor hall sensor angle error
 			.phi_err = 0.0f,

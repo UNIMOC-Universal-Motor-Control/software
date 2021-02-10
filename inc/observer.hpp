@@ -173,6 +173,45 @@ namespace observer
 		float Injection(void);
 	};
 
+	/**
+	 * observer based on admittance differences in the motor
+	 */
+	class admittance
+	{
+	private:
+
+	public:
+		/**
+		 * @brief trivial admittance observer constructor
+		 */
+		admittance(void);
+
+	    /**
+	     * add the injection pattern to the output voltage
+	     * @param u_in stator frame voltage vector
+	     * @param u_out stator frame voltage vectors with injection
+	     */
+	    void Injection(const systems::alpha_beta u_in, std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& u_out);
+
+		/**
+		 * @brief calculate the mean stator admittance.
+		 *
+		 * @note call only once per control cycle
+		 *
+		 * @retval mean stator admittance.
+		 */
+		systems::alpha_beta GetMean(std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& ad);
+
+		/**
+		 * @brief calculate the stator admittance vector.
+		 *
+		 * @note call only once per control cycle
+		 *
+		 * @retval stator admittance vector.
+		 */
+		systems::alpha_beta GetVector(std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& ad);
+
+	};
 } /* namespace observer */
 
 #endif /* INC_OBSERVER_HPP_ */

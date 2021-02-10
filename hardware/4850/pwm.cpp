@@ -23,15 +23,22 @@
 using namespace hardware;
 using namespace hardware::pwm;
 
+static void pwm_serve_dma_interrupt(PWMDriver *pwmp, uint32_t flags);
+
 ///< PWM driver instance
 PWMDriver* PWMP = &PWMD1;
 
 ///< ADC trigger timer driver instance
 PWMDriver* ADC_TRIGP = &PWMD4;
 
-///< PWM duty counts
-systems::abc duty_counts = {0};
+///< Pointer to the dma stream for duty update
+const stm32_dma_stream_t* dmastp;
 
+///< PWM duty counts
+std::array<std::uint32_t, PHASES * INJECTION_CYCLES * 2> duty_counts = {0};
+
+///< buffer index for the duty buffer
+std::uint8_t duty_index = 0;
 
 ///< PWM Timer clock in Hz
 const uint32_t hardware::pwm::TIMER_CLOCK = STM32_TIMCLK2;
@@ -40,7 +47,7 @@ const uint32_t hardware::pwm::TIMER_CLOCK = STM32_TIMCLK2;
 const std::uint32_t DEF_PERIOD = 6750;
 
 ///< default deadtime in nanoseconds
-const std::uint32_t DEF_DEADTIME = 800;
+const std::uint32_t DEF_DEADTIME = 1000;
 
 ///< deadtime in nano seconds
 uint32_t deadtime = DEF_DEADTIME;
@@ -60,11 +67,11 @@ uint32_t period = DEF_PERIOD;
 uint32_t frequency = hardware::pwm::TIMER_CLOCK/(2*DEF_PERIOD);
 
 ///< control frequency in Hz
-float fc = hardware::pwm::TIMER_CLOCK/(DEF_PERIOD);
+float fc = hardware::pwm::TIMER_CLOCK/(DEF_PERIOD * INJECTION_CYCLES);
 
 
 ///< control period in s
-float tc = (float)DEF_PERIOD/(float)hardware::pwm::TIMER_CLOCK;
+float tc = (float)(DEF_PERIOD * INJECTION_CYCLES)/(float)hardware::pwm::TIMER_CLOCK;
 
 ///< Filter group delay
 /// RC Filter with 11k and 1n plus 5us for the INA240
@@ -99,7 +106,7 @@ PWMConfig pwmcfg =
 		/*
 		 * DIER Register
 		 */
-		0
+		STM32_TIM_DIER_UDE
 };
 
 
@@ -131,6 +138,31 @@ const PWMConfig adctriggercfg =
 		0
 };
 
+/**
+ * @brief   PWM DMA ISR service routine.
+ *
+ * @param[in] pwmp      pointer to the @p PWMDriver object
+ * @param[in] flags     pre-shifted content of the ISR register
+ */
+static void pwm_serve_dma_interrupt(PWMDriver *pwmp, uint32_t flags)
+{
+	(void)pwmp;
+	/* DMA errors handling.*/
+	if(flags & STM32_DMA_ISR_TCIF)		// Transfer complete
+	{
+		palClearLine(LINE_LED_ERROR);
+	}
+	if(flags & STM32_DMA_ISR_HTIF)		// Half Transfer
+	{
+		palSetLine(LINE_LED_ERROR);
+	}
+	if ((flags & (STM32_DMA_ISR_TEIF | STM32_DMA_ISR_DMEIF)) != 0) {
+		/* DMA, this could help only if the DMA tries to access an unmapped
+          address space or violates alignment rules.*/
+		osalSysHalt("PWM DMA Error");
+	}
+}
+
 
 /**
  * Initialize PWM hardware with outputs disabled!
@@ -156,7 +188,31 @@ void hardware::pwm::Init(void)
 	ADC_TRIGP->tim->SMCR |= STM32_TIM_SMCR_SMS(4) | STM32_TIM_SMCR_MSM;
 	ADC_TRIGP->tim->CR1 |= STM32_TIM_CR1_CEN; // adc trigger timer start again
 
+	/* DMA setup.*/
+	dmastp = dmaStreamAlloc(STM32_DMA_STREAM_ID(2, 5), 3,
+							(stm32_dmaisr_t)pwm_serve_dma_interrupt, (void*)PWMP);
+	osalDbgAssert(dmastp != nullptr, "unable to allocate stream");
+
+	PWMP->tim->DCR = STM32_TIM_DCR_DBL(2) | STM32_TIM_DCR_DBA(0xD); //
 	PWMP->tim->CR1 |= STM32_TIM_CR1_CEN; // pwm timer start again
+
+	dmaStreamSetPeripheral(dmastp, &PWMP->tim->DMAR);
+	dmaStreamSetMemory0(dmastp, duty_counts.data());
+
+	dmaStreamSetTransactionSize(dmastp, duty_counts.size());
+
+	std::uint32_t dmamode = STM32_DMA_CR_CHSEL(6)	 |
+							STM32_DMA_CR_MSIZE_WORD  | STM32_DMA_CR_PSIZE_WORD  |
+	                  	  	STM32_DMA_CR_PL(3)       | STM32_DMA_CR_MINC        |
+							STM32_DMA_CR_DIR_M2P     | STM32_DMA_CR_CIRC        |
+							STM32_DMA_CR_HTIE        | STM32_DMA_CR_TCIE		|
+							STM32_DMA_CR_DMEIE       | STM32_DMA_CR_TEIE;
+
+	dmaStreamSetMode(dmastp, dmamode);
+
+
+
+	dmaStreamEnable(dmastp);
 
 	/* set adc trigger offset = minimal */
 	pwmEnableChannel(ADC_TRIGP, 3, 1);
@@ -237,10 +293,10 @@ std::uint32_t hardware::pwm::Frequency(const std::uint32_t freq)
 
 	pwmChangePeriod(PWMP, period);
 
-	fc = (float)TIMER_CLOCK / (float)(period);
-	tc = (float)(period) / (float)TIMER_CLOCK;
+	fc = (float)TIMER_CLOCK / (float)(period * INJECTION_CYCLES);
+	tc = (float)(period * INJECTION_CYCLES) / (float)TIMER_CLOCK;
 
-	frequency = (std::uint32_t)(fc * 0.5f);
+	frequency = (std::uint32_t)(fc * 2.0f);
 
 	return frequency;
 }
@@ -307,18 +363,25 @@ bool hardware::pwm::output::Active(void)
  * Set the normalized duty cycles for each phase
  * @param dutys 0 = LOW, 1=HIGH
  */
-void hardware::pwm::Duty(const systems::abc& dutys)
+void hardware::pwm::Duty(const std::array<systems::abc, INJECTION_CYCLES>& dutys)
 {
+	duty_index++;
+	if(duty_index > 1) duty_index = 0;
 
-	for (uint16_t i = 0; i < PHASES; ++i)
+	for (std::uint_fast8_t i = 0; i < INJECTION_CYCLES; ++i)
 	{
-		int16_t new_duty = (int16_t)((float)period * dutys.array[i]);
+		for (uint16_t p = 0; p < PHASES; ++p)
+		{
+			int16_t new_duty = (int16_t)((float)period * dutys[i].array[p]);
 
-		if(new_duty < 0) new_duty = 0;
-		if(new_duty > (int16_t)period) new_duty = period;
+			if(new_duty < 0) new_duty = 0;
+			if(new_duty > (int16_t)period) new_duty = period;
 
-		pwmEnableChannel(PWMP, i, new_duty);
+			duty_counts[p + 3*(i + (INJECTION_CYCLES * duty_index))] = new_duty;
+		}
 	}
+
+	cacheBufferFlush(duty_counts.data(), duty_counts.size()*2);
 }
 
 
