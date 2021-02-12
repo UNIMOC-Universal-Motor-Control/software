@@ -175,13 +175,15 @@ namespace control
 	private:
 		static constexpr float _3by2 = 3.0f/2.0f;
 		observer::flux       	flux;
-		observer::hfi			hfi;
 		control::foc      		foc;
 		sensor::as5048b 		as5048;
-		systems::alpha_beta  	u_ab;
-		systems::alpha_beta 	i_ab;
 		std::array<float, 3>   	correction;
 		filter::low_pass		uq;
+		std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> i_abc;
+		std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES> i_ab;
+		std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES> u_ab;
+		std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> dutys;
+
 	protected:
 		/**
 		 * Thread function

@@ -152,8 +152,6 @@ chibios_rt::ThreadReference hardware::control_thread = nullptr;
 ///< current offsets
 std::int32_t current_offset[hardware::PHASES];
 
-///< buffer index for the sample buffer
-std::uint_fast8_t sample_index = 0;
 
 /**
  * ADC conversion group.
@@ -299,20 +297,16 @@ void hardware::adc::Init(void)
  */
 void hardware::adc::current::Value(std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& currents)
 {
-	sample_index++;
-	if(sample_index > 1) sample_index = 0;
-
 	for(std::uint_fast8_t i = 0; i < PHASES; i++)
 	{
 		for (std::uint_fast8_t s = 0; s < hardware::pwm::INJECTION_CYCLES; s++)
 		{
 			std::int_fast32_t sum = 0;
 			std::int_fast32_t cnt = 0;
-
 			for (std::uint_fast8_t a = 1; a < LENGTH_ADC_SEQ; a++)
 			{
-				sum += samples[i][s + (sample_index * hardware::pwm::INJECTION_CYCLES)][a];
-				cnt += 1;
+				sum += samples[i][s][a] + samples[i][s + hardware::pwm::INJECTION_CYCLES][a];
+				cnt += 2;
 			}
 			currents[s].array[i] = ADC2CURRENT * (float)(current_offset[i] - sum) / (float)cnt;
 		}
@@ -334,7 +328,7 @@ void hardware::adc::current::SetOffset(void)
 				sum += samples[i][s][a];
 			}
 		}
-		current_offset[i] = sum / ADC_SEQ_BUFFERED;
+		current_offset[i] = sum / hardware::pwm::INJECTION_CYCLES;
 	}
 }
 

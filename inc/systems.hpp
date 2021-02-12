@@ -148,10 +148,10 @@ namespace systems
 
     /**
       @brief         Floating-point sine and cosine function.
-      @param[in]     theta    input value in rad
-      @param[out]    out      points to processed sine cosine output
+      @param 	     theta    input value in rad
+      @retval	     out      points to processed sine cosine output
      */
-    void SinCos(const float theta, sin_cos& out);
+    sin_cos SinCos(const float theta);
 
 
     /**

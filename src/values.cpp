@@ -34,10 +34,16 @@ values_ts values =
 		.temp = 0.0f,
 
 		///< motor phase current
-		.i = {0.0f, 0.0f, 0.0f},
+		.i = {0.0f, 0.0f},
 
 		///< motor phase voltage
-		.u = {0.0f, 0.0f, 0.0f},
+		.u = {0.0f, 0.0f},
+
+		///< motor stator admittance
+		.y = {0.0f, 0.0f},
+
+		///< motor stator admittance vector
+		.yd = {0.0f, 0.0f},
 
 		///< motor rotor system values
 		.rotor =
@@ -129,9 +135,6 @@ values_ts values =
 	{
 		///< power stage temperature
 		.temp = 0.0f,
-
-		///< phase dutys
-		.dutys = {0.0f, 0.0f, 0.0f},
 	},
 
 	/**

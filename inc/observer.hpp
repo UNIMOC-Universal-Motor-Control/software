@@ -129,69 +129,14 @@ namespace observer
 	class hfi
 	{
 	private:
-		///< sine and cosine of the injection signal
-		systems::sin_cos sc;
-
-		///< angular velocity of injection signal
-		float w;
-
-		///< angle of injection signal
-		float phi;
-
-		///< injection voltage amplitude
-		float ui;
-
-		///< kalman filter for hfi error signal
-		observer::mechanic mech;
-
-		///< high pass FIR filter for current response
-		filter::fir_downsampled<64, 8> hpf_d;
-		filter::fir_downsampled<64, 8> hpf_q;
-
-		///< high pass FIR filter coefficients
-		static const std::array<float, 64> hpf_c;
-
-		///< lowpass filter
-		filter::low_pass lpf;
-	public:
-		/**
-		 * @brief high frequency injection observers trivial constructor
-		 */
-		hfi(void);
-
-	    /**
-	     * @brief Get angular error from hfi estimation.
-	     * @param i_dq rotaiting current vector
-	     * @retval kalman correction vector
-	     */
-	    void Calculate(systems::dq& i_dq, std::array<float, 3>& correction);
-
-		/**
-		 * @brief add injection voltage
-		 * @return d-Voltage Injection
-		 */
-		float Injection(void);
-	};
-
-	/**
-	 * observer based on admittance differences in the motor
-	 */
-	class admittance
-	{
-	private:
 
 	public:
-		/**
-		 * @brief trivial admittance observer constructor
-		 */
-		admittance(void);
-
 	    /**
 	     * add the injection pattern to the output voltage
 	     * @param u_in stator frame voltage vector
 	     * @param u_out stator frame voltage vectors with injection
 	     */
-	    void Injection(const systems::alpha_beta u_in, std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& u_out);
+	    static void Injection(const systems::alpha_beta u_in, std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& u_out);
 
 		/**
 		 * @brief calculate the mean stator admittance.
@@ -200,7 +145,7 @@ namespace observer
 		 *
 		 * @retval mean stator admittance.
 		 */
-		systems::alpha_beta GetMean(std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& ad);
+		static systems::alpha_beta GetMean(std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& ad);
 
 		/**
 		 * @brief calculate the stator admittance vector.
@@ -209,8 +154,7 @@ namespace observer
 		 *
 		 * @retval stator admittance vector.
 		 */
-		systems::alpha_beta GetVector(std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& ad);
-
+		static systems::alpha_beta GetVector(std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& ad);
 	};
 } /* namespace observer */
 

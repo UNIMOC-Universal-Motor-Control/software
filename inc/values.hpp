@@ -43,11 +43,17 @@ typedef struct values_s
 		///< motor temperature
 		float temp;
 
-		///< motor phase current
-		systems::abc i;
+		///< motor stator current
+		systems::alpha_beta i;
 
-		///< motor phase voltage
-		systems::abc u;
+		///< motor stator voltage
+		systems::alpha_beta u;
+
+		///< motor stator admittance
+		systems::alpha_beta y;
+
+		///< motor stator admittance vector
+		systems::alpha_beta yd;
 
 		/**
 		 * motor rotor system values
@@ -144,9 +150,6 @@ typedef struct values_s
 	{
 		///< powerstage temperature
 		float temp;
-
-		///< phase dutys
-		systems::abc dutys;
 	} converter;
 
 	/**

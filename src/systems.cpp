@@ -185,11 +185,12 @@ namespace systems
 
     /**
       @brief         Floating-point sine and cosine function.
-      @param[in]     theta    input value in rad
-      @param[out]    out      points to processed sine cosine output
+      @param 	     theta   input value in rad
+      @retval	     out     points to processed sine cosine output
      */
-    void SinCos(const float theta, sin_cos& out)
+    sin_cos SinCos(const float theta)
     {
+    	sin_cos out = {0.0f, 0.0f};
     	constexpr float _1by2PI = 1.0f/math::_2PI;
     	float Dn = math::_2PI / FAST_MATH_TABLE_SIZE;    /* delta between the two points (fixed), in this case 2*pi/FAST_MATH_TABLE_SIZE */
     	float fract, in;                                 /* Temporary input, output variables */
@@ -254,6 +255,7 @@ namespace systems
     	{
     		out.sin = -out.sin;
     	}
+    	return out;
     }
 
     /**

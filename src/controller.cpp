@@ -106,6 +106,71 @@ namespace control
 	}
 
 	/**
+	 * Clark transform of 4 cycle current measurements
+	 * @param[in]  i_abc		phase current samples
+	 * @param[out] i_ab 		transformed stator current samples
+	 */
+	void QuadClark(const std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& i_abc, std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& i_ab)
+	{
+		for (std::uint_fast8_t i = 0; i < i_abc.size(); ++i)
+		{
+			i_ab[i] = systems::transform::Clark(i_abc[i]);
+		}
+	}
+
+	/**
+	 * Clark transform of 4 cycle current measurements
+	 * @param[in]  i_abc		stator current samples
+	 * @retval 					mean of stator current samples
+	 */
+	systems::alpha_beta MeanAlphaBeta(const std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& i_ab)
+	{
+		systems::alpha_beta i_ab_mean =
+		{
+				i_ab[0].alpha + i_ab[1].alpha + i_ab[2].alpha + i_ab[3].alpha,
+				i_ab[0].beta + i_ab[1].beta + i_ab[2].beta + i_ab[3].beta
+		};
+		return i_ab_mean;
+	}
+
+	/**
+	 * Inverse Clark transform of 4 cycle voltages that compensates for angle advance due to omega
+	 * @param[in]  u_ab			stator voltage vector
+	 * @param[out] u_ab_turn	stator voltage vectors with angle advance
+	 */
+	void QuadInvClark(const systems::alpha_beta u_ab, const float omega, std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& u_ab_turn)
+	{
+		systems::sin_cos sc;
+		systems::dq u_tmp = {u_ab.alpha, u_ab.beta};
+		u_ab_turn[0] = u_tmp;
+		sc = systems::SinCos(omega*hardware::Fc()*hardware::pwm::INJECTION_CYCLES);
+
+		for (std::uint_fast8_t i = 1; i < u_ab_turn.size(); ++i)
+		{
+			systems::alpha_beta u_ab_tmp = systems::transform::InversePark(u_tmp, sc);
+			u_tmp = {u_ab_tmp.alpha, u_ab_tmp.beta};
+			u_ab_turn[i] = u_ab_tmp;
+		}
+	}
+
+	/**
+	 * Quad sample over modulation for svpwm
+	 * @param u_ab		input voltage samples vector
+	 * @param ubat		current battery voltage
+	 * @param dutys		output duty cycles vector
+	 */
+	void QuadOvermodulation(const std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& u_ab, const float ubat, std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& dutys)
+	{
+		for (std::uint_fast8_t i = 0; i < dutys.size(); ++i)
+		{
+			systems::abc u_abc = systems::transform::InverseClark(u_ab[i]);
+			Overmodulation(u_abc, ubat, dutys[i]);
+		}
+	}
+
+
+
+	/**
 	 * @brief Pi controller constructor with all essential parameters.
 	 *
 	 * @param new_kp				proportional gain.
@@ -212,7 +277,7 @@ namespace control
 	/**
 	 * generic constructor
 	 */
-	thread::thread():flux(), hfi(), foc(),	as5048(hardware::i2c::instance), uq(32e3f, 1.0f, 2e-3f)
+	thread::thread():flux(), foc(),	as5048(hardware::i2c::instance), uq(32e3f, 1.0f, 2e-3f)
 	{}
 
 	/**
@@ -243,45 +308,28 @@ namespace control
 
 			values.battery.u = hardware::adc::voltage::DCBus();
 
+			hardware::adc::current::Value(i_abc);
+			// transform the current samples to stator frame
+			QuadClark(i_abc, i_ab);
+
+			// calculate the admittance and mean current from the samples
+			values.motor.i = MeanAlphaBeta(i_ab);
+			values.motor.y = observer::hfi::GetMean(i_ab);
+			values.motor.yd = observer::hfi::GetVector(i_ab);
+
 			// Get angle from as5048b
 			as5048.SetZero(settings.mechanics.zero_pos);
 			values.sense.position = as5048.GetPosition();
 			values.sense.angle = as5048.GetPosition(settings.motor.P);
 
-//			std::uint16_t max = 8192 / settings.motor.P;
-//			std::uint16_t sec = max / 6;
-//			std::uint16_t pos = values.sense.position % max;
-//
-//			switch(pos / sec)
-//			{
-//			case 0:
-//				values.motor.rotor.hall = 0b110;
-//				break;
-//			case 1:
-//				values.motor.rotor.hall = 0b100;
-//				break;
-//			case 2:
-//				values.motor.rotor.hall = 0b101;
-//				break;
-//			case 3:
-//				values.motor.rotor.hall = 0b001;
-//				break;
-//			case 4:
-//				values.motor.rotor.hall = 0b011;
-//				break;
-//			case 5:
-//				values.motor.rotor.hall = 0b010;
-//				break;
-//			default: break;
-//			}
+			// calculate the sine and cosine of the new angle
+			angle = values.motor.rotor.phi - values.motor.rotor.omega * hardware::Tf();
 
-			// calculate new sine and cosine for the sensor signal
-			//systems::SinCos(values.sense.angle, sense_sc);
+			// calculate new sine and cosine for the reference system
+			values.motor.rotor.sc = systems::SinCos(angle);
 
-			// convert 3 phase system to orthogonal
-			i_ab = systems::transform::Clark(values.motor.i);
 			// convert current samples from clark to rotor frame;
-			values.motor.rotor.i = systems::transform::Park(i_ab, values.motor.rotor.sc);
+			values.motor.rotor.i = systems::transform::Park(values.motor.i, values.motor.rotor.sc);
 
 			//sample currents for frequency analysis
 			values.motor.rotor.gid = values.motor.rotor.i.d;
@@ -301,22 +349,6 @@ namespace control
 				observer::mechanic::Predict(i);
 			}
 
-//			if(management::observer::hall)
-//			{
-//				values.motor.rotor.hall_cw = settings.motor.hall_table_cw[values.motor.rotor.hall];
-//				values.motor.rotor.hall_ccw = settings.motor.hall_table_ccw[values.motor.rotor.hall];
-////				// hall signal angular error
-////				values.motor.rotor.phi_err = /*(phi_sc.sin*settings.motor.hall_table_ccw[values.motor.rotor.hall].cos - phi_sc.cos*settings.motor.hall_table_ccw[values.motor.rotor.hall].sin
-////						+*/ phi_sc.cos*settings.motor.hall_table_cw[values.motor.rotor.hall].sin - phi_sc.sin*settings.motor.hall_table_cw[values.motor.rotor.hall].cos/*) * 0.5f*/;
-////
-////				correction[0] = values.motor.rotor.phi_err * settings.observer.hall.Ko;
-////				correction[1] = values.motor.rotor.phi_err * settings.observer.hall.Kp;
-////				correction[2] = values.motor.rotor.phi_err * settings.observer.hall.Kl;
-////
-////				// correct the prediction
-////				observer::mechanic::Correct(correction);
-//			}
-
 
 			if(management::observer::flux)
 			{
@@ -329,11 +361,8 @@ namespace control
 
 			if(management::observer::hfi)
 			{
-				// calculate the flux observer
-				hfi.Calculate(values.motor.rotor.i, correction);
-
-				// correct the prediction
-				observer::mechanic::Correct(correction);
+//				// correct the prediction
+//				observer::mechanic::Correct(correction);
 			}
 
 			if(management::control::current)
@@ -388,12 +417,6 @@ namespace control
 				// calculate the field orientated controllers
 				foc.Calculate(setpoint);
 
-
-				if(management::observer::hfi)
-				{
-					values.motor.rotor.u.d += hfi.Injection();
-				}
-
 //				// Deadtime Compensation, runs but needs some more ifs and else
 //				float k = 0.0f;
 //				if		(values.motor.rotor.phi < 1.0f * math::PI/6.0f) k = 0.0f;
@@ -416,36 +439,24 @@ namespace control
 				foc.SetParameters(settings.control.current.kp, settings.control.current.tn, hardware::Tc());
 			}
 
-			std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> dutys;
-			std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> i;
+			// transform the voltages to stator frame
+			values.motor.u = systems::transform::InversePark(values.motor.rotor.u, values.motor.rotor.sc);
 
-			hardware::adc::current::Value(i);
-
-			for (std::uint_fast8_t j = 0; j < hardware::pwm::INJECTION_CYCLES; ++j)
+			if(management::observer::hfi)
 			{
-				// calculate the sine and cosine of the new angle
-				angle = values.motor.rotor.phi + values.motor.rotor.omega * (hardware::Tc() *(float)j*0.25f - hardware::Tf());
-
-				// calculate new sine and cosine for the reference system
-				systems::SinCos(angle, values.motor.rotor.sc);
-
-				// transform the voltages to stator frame
-				u_ab = systems::transform::InversePark(values.motor.rotor.u, values.motor.rotor.sc);
-
-				// transform to ab system
-				values.motor.u = systems::transform::InverseClark(u_ab);
-
-				// set dutys with overmodulation
-				Overmodulation(values.motor.u, values.battery.u, values.converter.dutys);
-
-				dutys[j] = values.converter.dutys;
-
-				values.motor.i = i[j];
-
-				modules::freemaster::Recorder();
+				observer::hfi::Injection(values.motor.u, u_ab);
+			}
+			else
+			{
+				QuadInvClark(values.motor.u, values.motor.rotor.omega, u_ab);
 			}
 
+			// set dutys with overmodulation
+			QuadOvermodulation(u_ab, values.battery.u, dutys);
+
 			hardware::pwm::Duty(dutys);
+
+			modules::freemaster::Recorder();
 
 			// read as 5048 every 4th cycle
 			static std::uint8_t cnt = 0;
