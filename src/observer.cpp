@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <cmath>
 #include <array>
+#include <limits>
 
 /**
  * @namespace observer classes
@@ -252,6 +253,79 @@ namespace observer
 
         return yd;
     }
+
+
+    /**
+     * @brief hall observers trivial constructor
+     */
+    hall::hall(void)    {}
+
+    /**
+     * @brief Get angular error from hall estimation.
+     * @param sin_cos sine and cosine of the actual rotor angle
+     * @retval kalman correction vector
+     */
+    void hall::Calculate(const systems::sin_cos& sin_cos, std::array<float, 3>& correction)
+    {
+    	constexpr float sqrt3by2 = std::sqrt(3.0f)*0.5f;
+    	float error = 0.0f;
+    	systems::sin_cos sc;
+    	switch(values.motor.rotor.hall)
+    	{
+    	case 0b100:	// 0 deg.
+    		sc.sin = 0.0f;
+    		sc.cos = 1.0f;
+    		break;
+    	case 0b110:	// 60 deg.
+    		sc.sin = sqrt3by2;
+    		sc.cos = 0.5f;
+    		break;
+    	case 0b010:	// 120 deg.
+    		sc.sin = sqrt3by2;
+    		sc.cos = -0.5f;
+    		break;
+    	case 0b011:	// 180 deg.
+    		sc.sin = 0.0f;
+    		sc.cos = -1.0f;
+    		break;
+    	case 0b001:	// 240 deg.
+    		sc.sin = -sqrt3by2;
+    		sc.cos = -0.5f;
+    		break;
+    	case 0b101:	// 300 deg.
+    		sc.sin = -sqrt3by2;
+    		sc.cos = 0.5f;
+    		break;
+    	}
+
+    	// advance angle by offset
+//    	systems::alpha_beta tab = {sc.sin, sc.cos};
+//    	systems::dq tdq = systems::transform::Park(tab, sc_offset);
+//
+//    	sc.sin = tdq.d;
+//    	sc.cos = tdq.q;
+
+
+    	error = sc.sin*sin_cos.cos - sc.cos*sin_cos.sin;
+
+    	// Kalman filter on angular error
+    	mech.Update(settings.observer.hall.Q, settings.observer.hall.R, error, correction);
+    }
+
+	/**
+	 * Update the angle offset
+	 * @param new_offset
+	 */
+	void hall::SetOffset(const float new_offset)
+	{
+		constexpr float eps = 100.0f * std::numeric_limits<float>::epsilon();
+
+		if(std::abs(new_offset-offset) > eps)
+		{
+			sc_offset = systems::SinCos(new_offset);
+			offset = new_offset;
+		}
+	}
 }/* namespace observer */
 
 

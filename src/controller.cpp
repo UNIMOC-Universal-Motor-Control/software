@@ -143,7 +143,7 @@ namespace control
 		systems::sin_cos sc;
 		systems::dq u_tmp = {u_ab.alpha, u_ab.beta};
 		u_ab_turn[0] = u_tmp;
-		sc = systems::SinCos(omega*hardware::Fc()*hardware::pwm::INJECTION_CYCLES);
+		sc = systems::SinCos(omega*hardware::Tc()/(float)hardware::pwm::INJECTION_CYCLES);
 
 		for (std::uint_fast8_t i = 1; i < u_ab_turn.size(); ++i)
 		{
@@ -277,7 +277,7 @@ namespace control
 	/**
 	 * generic constructor
 	 */
-	thread::thread():flux(), foc(),	as5048(hardware::i2c::instance), uq(32e3f, 1.0f, 2e-3f)
+	thread::thread():flux(), hall(), foc(),	as5048(hardware::i2c::instance), uq(32e3f, 1.0f, 2e-3f)
 	{}
 
 	/**
@@ -322,6 +322,9 @@ namespace control
 			values.sense.position = as5048.GetPosition();
 			values.sense.angle = as5048.GetPosition(settings.motor.P);
 
+			// read hall sensors
+			values.motor.rotor.hall = hardware::adc::hall::State();
+
 			// calculate the sine and cosine of the new angle
 			angle = values.motor.rotor.phi - values.motor.rotor.omega * hardware::Tf();
 
@@ -354,6 +357,15 @@ namespace control
 			{
 				// calculate the flux observer
 				flux.Calculate(values.motor.rotor.sc, correction);
+
+				// correct the prediction
+				observer::mechanic::Correct(correction);
+			}
+
+			if(management::observer::hall)
+			{
+				// calculate the flux observer
+				hall.Calculate(values.motor.rotor.sc, correction);
 
 				// correct the prediction
 				observer::mechanic::Correct(correction);

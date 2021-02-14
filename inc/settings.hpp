@@ -181,23 +181,23 @@ typedef struct settings_s
 			float omega_max;
 		} hfi;
 
-//		/**
-//		 * hall observer settings
-//		 */
-//		struct hall_s
-//		{
-//			///< enable observer switch
-//			bool enable;
-//
-//			///< omega gain for hall observer
-//			float Ko;
-//
-//			///< phi gain for hall observer
-//			float Kp;
-//
-//			///< load torque gain for hall observer
-//			float Kl;
-//		} hall;
+		/**
+		 * hall observer settings
+		 */
+		struct hall_s
+		{
+			///< enable observer switch
+			bool enable;
+
+			///< float theta offset
+			float offset;
+
+			///< modell variance
+			float Q;
+
+			///< measurement variance
+			float R;
+		} hall;
 
 		/**
 		 * mechanic observer settings

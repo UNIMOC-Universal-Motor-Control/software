@@ -269,7 +269,7 @@ namespace management
 					control::current = false;
 				}
 				observer::flux = settings.observer.flux.enable;
-//				observer::hall = settings.observer.hall.enable;
+				observer::hall = settings.observer.hall.enable;
 
 				// hfi with hysteresis
 				if(settings.observer.hfi.enable)

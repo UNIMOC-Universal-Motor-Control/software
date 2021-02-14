@@ -83,7 +83,6 @@ namespace observer
 	 */
 	class flux
 	{
-	public:
 	private:
 		typedef struct {
 			///< back emf vector
@@ -155,6 +154,42 @@ namespace observer
 		 * @retval stator admittance vector.
 		 */
 		static systems::alpha_beta GetVector(std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& ad);
+	};
+
+	/**
+	 * hall sensor based observer
+	 */
+	class hall
+	{
+	private:
+
+		///< current theta offset
+		float offset;
+
+		///< offsets sine cosine values for rotation
+		systems::sin_cos sc_offset;
+
+
+		///< kalman filter for hall error signal
+		observer::mechanic mech;
+	public:
+		/**
+		 * @brief hall observers trivial constructor
+		 */
+		hall(void);
+
+		/**
+		 * Update the angle offset
+		 * @param new_offset
+		 */
+		void SetOffset(const float new_offset);
+
+		/**
+		 * @brief Get angular error from hall sensors.
+		 * @param sin_cos sine and cosine of the actual rotor angle
+		 * @retval kalman correction vector
+		 */
+		void Calculate(const systems::sin_cos& sin_cos, std::array<float, 3>& correction);
 	};
 } /* namespace observer */
 

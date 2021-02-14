@@ -94,7 +94,7 @@ namespace systems
     } dq;
 
     ///< rotation angle sine and cosine value.
-    typedef union sin_cos_u{
+    typedef union sin_cos_u {
         std::array<float, 2> array;
         struct {
             float sin;

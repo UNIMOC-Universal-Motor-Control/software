@@ -180,23 +180,23 @@ __attribute__((aligned (32))) settings_ts settings =
 			.omega_max = 50.0f,
 		},
 
-//		/**
-//		 * hall observer settings
-//		 */
-//		.hall =
-//		{
-//			///< enable observer switch
-//			.enable = false,
-//
-//			///< omega gain for hall observer
-//			.Ko = 0.0f,
-//
-//			///< phi gain for hall observer
-//			.Kp = 0.0f,
-//
-//			///< load torque gain for hall observer
-//			.Kl = 0.0f,
-//		},
+		/**
+		 * hall observer settings
+		 */
+		.hall =
+		{
+			///< enable observer switch
+			.enable = false,
+
+			///< float theta offset
+			.offset = 0.0f,
+
+			///< modell variance
+			.Q = 1e-5f,
+
+			///< measurement variance
+			.R = 1e-4f,
+		},
 
 		/**
 		 * mechanic observer settings
