@@ -303,6 +303,7 @@ void hardware::adc::current::Value(std::array<systems::abc, hardware::pwm::INJEC
 		{
 			std::int_fast32_t sum = 0;
 			std::int_fast32_t cnt = 0;
+
 			for (std::uint_fast8_t a = 1; a < LENGTH_ADC_SEQ; a++)
 			{
 				sum += samples[i][s][a] + samples[i][s + hardware::pwm::INJECTION_CYCLES][a];
@@ -320,15 +321,18 @@ void hardware::adc::current::SetOffset(void)
 {
 	for(std::uint_fast8_t i = 0; i < PHASES; i++)
 	{
-		std::int32_t sum = 0;
+		std::int_fast32_t sum = 0;
+		std::int_fast32_t cnt = 0;
+
 		for (std::uint_fast8_t s = 0; s < ADC_SEQ_BUFFERED; s++)
 		{
 			for (std::uint_fast8_t a = 1; a < LENGTH_ADC_SEQ; a++)
 			{
 				sum += samples[i][s][a];
+				cnt ++;
 			}
 		}
-		current_offset[i] = sum / hardware::pwm::INJECTION_CYCLES;
+		current_offset[i] = ADC_SEQ_BUFFERED * sum / cnt;
 	}
 }
 
@@ -341,9 +345,6 @@ float hardware::adc::voltage::DCBus(void)
 	uint32_t sum = 0;
 	float vdc;
 
-	/*
-	 * VDC is sampled by ADC1 2 times as a non current sample
-	 */
 	for(std::uint_fast32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
 	{
 		sum += samples[0][i][0];
@@ -480,15 +481,6 @@ static float adc2ntc_temperature(const uint16_t adc_value)
 	return ((float)p1 - ( (float)(p1-p2) * (float)(adc_value & (NTC_TABLE.TABLE_LEN - 1)) ) * onebylen)*0.01f;
 };
 
-///**
-// * callback from pal driver on each edge of the PAS Cadence signal
-// * @param arg
-// */
-//static void palcallback(void *arg)
-//{
-//	(void)arg;
-//	cadence_counter++;
-//}
 
 /**
  *  ADC errors callback, should never happen.

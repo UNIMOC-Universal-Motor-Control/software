@@ -127,8 +127,8 @@ namespace control
 	{
 		systems::alpha_beta i_ab_mean =
 		{
-				i_ab[0].alpha + i_ab[1].alpha + i_ab[2].alpha + i_ab[3].alpha,
-				i_ab[0].beta + i_ab[1].beta + i_ab[2].beta + i_ab[3].beta
+				(i_ab[0].alpha + i_ab[1].alpha + i_ab[2].alpha + i_ab[3].alpha) * 0.25f,
+				(i_ab[0].beta + i_ab[1].beta + i_ab[2].beta + i_ab[3].beta) * 0.25f
 		};
 		return i_ab_mean;
 	}
@@ -329,10 +329,10 @@ namespace control
 			angle = values.motor.rotor.phi - values.motor.rotor.omega * hardware::Tf();
 
 			// calculate new sine and cosine for the reference system
-			values.motor.rotor.sc = systems::SinCos(angle);
+			systems::sin_cos sc = systems::SinCos(angle);
 
 			// convert current samples from clark to rotor frame;
-			values.motor.rotor.i = systems::transform::Park(values.motor.i, values.motor.rotor.sc);
+			values.motor.rotor.i = systems::transform::Park(values.motor.i, sc);
 
 			//sample currents for frequency analysis
 			values.motor.rotor.gid = values.motor.rotor.i.d;
@@ -342,7 +342,7 @@ namespace control
 			values.battery.i = (values.motor.rotor.u.d * values.motor.rotor.i.d
 					+ values.motor.rotor.u.q * values.motor.rotor.i.q)/values.battery.u;
 
-			if(std::fabs(values.motor.rotor.i.q) > settings.observer.mech.i_min)
+			if(std::fabs(values.motor.rotor.setpoint.i.q) > settings.observer.mech.i_min)
 			{
 				observer::mechanic::Predict(values.motor.rotor.i);
 			}
@@ -364,7 +364,9 @@ namespace control
 
 			if(management::observer::hall)
 			{
-				// calculate the flux observer
+				hall.SetOffset(settings.observer.hall.offset);
+
+				// calculate the hall observer
 				hall.Calculate(values.motor.rotor.sc, correction);
 
 				// correct the prediction
@@ -450,6 +452,9 @@ namespace control
 				foc.Reset();
 				foc.SetParameters(settings.control.current.kp, settings.control.current.tn, hardware::Tc());
 			}
+
+			// calculate new sine and cosine for the reference system
+			values.motor.rotor.sc = systems::SinCos(values.motor.rotor.phi);
 
 			// transform the voltages to stator frame
 			values.motor.u = systems::transform::InversePark(values.motor.rotor.u, values.motor.rotor.sc);

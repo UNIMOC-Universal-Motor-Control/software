@@ -226,6 +226,10 @@ namespace management
 
 				sequencer = CURRENT_OFFSETS;
 				delay = 100; // wait 100ms before taking current samples
+
+				// software release for PWM
+				hardware::pwm::output::Enable();
+
 				break;
 			/* measure current offsets */
 			case CURRENT_OFFSETS:
@@ -235,9 +239,6 @@ namespace management
 				}
 				else
 				{
-					// software release for PWM
-					hardware::pwm::output::Enable();
-
 					hardware::adc::current::SetOffset();
 
 					sequencer = RUN;
@@ -288,8 +289,8 @@ namespace management
 					observer::hfi = false;
 				}
 
-//				if(observer::flux || observer::hfi) observer::hall = true;
-//				else	observer::hall = false;
+
+
 
 				// starting help for traction drives
 				if(std::fabs(values.motor.rotor.setpoint.i.q) > settings.observer.mech.i_min
@@ -467,8 +468,7 @@ namespace management
 				if((measure::l::cycle % 50) == 0)
 				{
 
-					if(	   std::fabs(values.motor.rotor.i.d) > measure::l::CUR
-						|| std::fabs(values.motor.rotor.i.q) > measure::l::CUR)
+					if(systems::Length(values.motor.rotor.i) > measure::l::CUR)
 					{
 						sequencer = CALCULATE_LS;
 					}

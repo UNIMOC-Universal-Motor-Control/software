@@ -76,7 +76,7 @@ float tc = (float)(DEF_PERIOD * INJECTION_CYCLES)/(float)hardware::pwm::TIMER_CL
 ///< Filter group delay
 /// RC Filter with 11k and 1n plus 5us for the INA240
 ///  Software needs 1 control cycle for calculations
-const float TF_HW = (11e3f * 1e-9f) + 5e-6f;
+const float TF_HW = (11e3f * 1e-9f) + 30e-6;
 float tf = tc + TF_HW;
 
 /**
@@ -295,6 +295,7 @@ std::uint32_t hardware::pwm::Frequency(const std::uint32_t freq)
 
 	fc = (float)TIMER_CLOCK / (float)(period * INJECTION_CYCLES);
 	tc = (float)(period * INJECTION_CYCLES) / (float)TIMER_CLOCK;
+	tf = tc + TF_HW;
 
 	frequency = (std::uint32_t)(fc * 2.0f);
 
@@ -326,7 +327,6 @@ float hardware::Fc(void)
  */
 float hardware::Tf(void)
 {
-	tf = tc + TF_HW;
 	return tf;
 }
 

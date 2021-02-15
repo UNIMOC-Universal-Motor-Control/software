@@ -299,14 +299,14 @@ namespace observer
     	}
 
     	// advance angle by offset
-//    	systems::alpha_beta tab = {sc.sin, sc.cos};
-//    	systems::dq tdq = systems::transform::Park(tab, sc_offset);
-//
-//    	sc.sin = tdq.d;
-//    	sc.cos = tdq.q;
+    	systems::alpha_beta tab = {sc.sin, sc.cos};
+    	systems::dq tdq = systems::transform::Park(tab, sc_offset);
+
+    	sc.sin = tdq.d;
+    	sc.cos = tdq.q;
 
 
-    	error = sc.sin*sin_cos.cos - sc.cos*sin_cos.sin;
+    	error = sc.cos*sin_cos.sin - sc.sin*sin_cos.cos;
 
     	// Kalman filter on angular error
     	mech.Update(settings.observer.hall.Q, settings.observer.hall.R, error, correction);
