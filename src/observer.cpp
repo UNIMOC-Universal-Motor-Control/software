@@ -274,26 +274,26 @@ namespace observer
     	{
     	case 0b100:	// 0 deg.
     		sc.sin = 0.0f;
-    		sc.cos = 1.0f;
+    		sc.cos = -1.0f;
     		break;
     	case 0b110:	// 60 deg.
-    		sc.sin = sqrt3by2;
-    		sc.cos = 0.5f;
+    		sc.sin = -sqrt3by2;
+    		sc.cos = -0.5f;
     		break;
     	case 0b010:	// 120 deg.
-    		sc.sin = sqrt3by2;
-    		sc.cos = -0.5f;
+    		sc.sin = -sqrt3by2;
+    		sc.cos = 0.5f;
     		break;
     	case 0b011:	// 180 deg.
     		sc.sin = 0.0f;
-    		sc.cos = -1.0f;
+    		sc.cos = 1.0f;
     		break;
     	case 0b001:	// 240 deg.
-    		sc.sin = -sqrt3by2;
-    		sc.cos = -0.5f;
+    		sc.sin = sqrt3by2;
+    		sc.cos = 0.5f;
     		break;
     	case 0b101:	// 300 deg.
-    		sc.sin = -sqrt3by2;
+    		sc.sin = sqrt3by2;
     		sc.cos = 0.5f;
     		break;
     	}
