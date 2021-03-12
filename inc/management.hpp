@@ -122,7 +122,7 @@ namespace management
 	/**
 	 * controller management thread
 	 */
-	class thread : public chibios_rt::BaseStaticThread<500>
+	class thread : public chibios_rt::BaseStaticThread<512>
 	{
 	private:
 		static constexpr systime_t CYCLE_TIME = TIME_MS2I(1);

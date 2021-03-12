@@ -170,7 +170,7 @@ namespace control
 	/**
 	 * generic FOC controller thread
 	 */
-	class thread : public chibios_rt::BaseStaticThread<256>
+	class thread : public chibios_rt::BaseStaticThread<512>
 	{
 	private:
 		static constexpr float _3by2 = 3.0f/2.0f;
@@ -181,7 +181,9 @@ namespace control
 		std::array<float, 3>   	correction;
 		filter::low_pass		uq;
 		std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> i_abc;
+		std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> i_abc_ac;
 		std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES> i_ab;
+		std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES> i_ab_ac;
 		std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES> u_ab;
 		std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> dutys;
 

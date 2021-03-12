@@ -30,7 +30,7 @@ namespace modules
 	namespace freemaster
 	{
 
-		class thread : public chibios_rt::BaseStaticThread<256>
+		class thread : public chibios_rt::BaseStaticThread<512>
 		{
 		private:
 

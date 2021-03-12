@@ -137,6 +137,11 @@ namespace hardware {
 		 * This interface defines the functions for adc handling
 		 * which all hardware variants need to implement.
 		 */
+		/**
+		 * get analog input
+		 * @return analog in put 0 - 1
+		 */
+		float input(void);
 
 		/**
 		 * Initialize ADC hardware with outputs disabled!
@@ -151,6 +156,13 @@ namespace hardware {
 			 * @param currents
 			 */
 			extern void Value(std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& currents);
+
+			/**
+			 * Get current derivatives in the last control
+			 * cycles
+			 * @param derivatives
+			 */
+			extern void Derivative(std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& derivatives);
 
 			/**
 			 * set current offsets
@@ -192,35 +204,9 @@ namespace hardware {
 			 * @return sector of the halls
 			 */
 			uint8_t State(void);
-		} /* namespace angle */
+		} /* namespace hall */
+
 	} /* namespace adc */
-
-	namespace crank {
-
-		/**
-		 * Torque on the crank arm
-		 *
-		 * @param offset in Volts
-		 * @param gain in Nm/V
-		 * @return Torque in Nm
-		 */
-		extern float Torque(const float offset, const float gain);
-
-		/**
-		 * Angle of the crank arm
-		 *
-		 * @param edge_max Number of edges per revolution
-		 * @return Angle in rads, range 0 - 2*PI
-		 */
-		extern float Angle(uint32_t edge_max);
-
-		/**
-		 * get cadence pin level
-		 * @return true when cadence pin is high
-		 */
-		extern bool Cadence(void);
-
-	} /* namespace crank */
 
 	namespace memory
 	{

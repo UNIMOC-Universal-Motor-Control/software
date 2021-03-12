@@ -52,6 +52,9 @@ const std::uint32_t DEF_DEADTIME = 1000;
 ///< deadtime in nano seconds
 std::uint32_t deadtime = DEF_DEADTIME;
 
+///< adc sampling offset
+const std::uint32_t ADC_SAMPLING_OFFSET = 3.5e-6f * (float)hardware::pwm::TIMER_CLOCK;
+
 /**
  * PWM counts
  *
@@ -215,7 +218,7 @@ void hardware::pwm::Init(void)
 	dmaStreamEnable(dmastp);
 
 	/* set adc trigger offset = minimal */
-	pwmEnableChannel(ADC_TRIGP, 3, 1);
+	pwmEnableChannel(ADC_TRIGP, 3, ADC_SAMPLING_OFFSET);
 
 	/* enable pwms */
 	pwmEnableChannel(PWMP, 0, period/2);

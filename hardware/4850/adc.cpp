@@ -37,22 +37,26 @@ static float adc2ntc_temperature(const uint16_t adc_value);
  * Signal			Pin		ADC1	ADC2	ADC3
  * -----------------------------------------------
  * AIN_TORQUE		PC1		CH11	CH11	CH11
- * AIN_CUR_A		PC2		CH12	CH12	CH12
- * AIN_CUR_B	 	PA0		CH0		CH0		CH0
- * AIN_CUR_C	 	PA2		CH2		CH2		CH2
+ * AIN_CUR_A_DC		PC2		CH12	CH12	CH12
+ * AIN_CUR_A_AC		PC3		CH13	CH13	CH13
+ * AIN_CUR_B_DC 	PA0		CH0		CH0		CH0
+ * AIN_CUR_B_AC 	PA1		CH1		CH1		CH1
+ * AIN_CUR_C_DC 	PA2		CH2		CH2		CH2
+ * AIN_CUR_C_AC 	PA3		CH3		CH3		CH3
  * AIN_VDC			PA4		CH4		CH4		---
  * AIN_BRDG_TEMP	PA5		CH5		CH5		---
  * AIN_MOT_TEMP		PA6		CH6		CH6		---
- * VREF				---		CH17	---		---
  */
 #define ADC_CH_TORQUE			ADC_CHANNEL_IN11
 #define ADC_CH_CUR_A			ADC_CHANNEL_IN12
+#define ADC_CH_CUR_A_AC			ADC_CHANNEL_IN13
 #define ADC_CH_CUR_B			ADC_CHANNEL_IN0
+#define ADC_CH_CUR_B_AC			ADC_CHANNEL_IN1
 #define ADC_CH_CUR_C			ADC_CHANNEL_IN2
+#define ADC_CH_CUR_C_AC			ADC_CHANNEL_IN3
 #define ADC_CH_VDC				ADC_CHANNEL_IN4
 #define ADC_CH_BRDG_TEMP		ADC_CHANNEL_IN5
 #define ADC_CH_MOT_TEMP			ADC_CHANNEL_IN6
-#define ADC_CH_REF				ADC_CHANNEL_IN17
 
 
 /**
@@ -117,7 +121,7 @@ const NTC_LUT_ST NTC_TABLE;
 ///< Samples in ADC sequence.
 /// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
 ///          so even length of sequence is best choice.
-constexpr uint32_t LENGTH_ADC_SEQ = 5;
+constexpr uint32_t LENGTH_ADC_SEQ = 16;
 
 ///< ADC sequences in buffer.
 /// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
@@ -133,6 +137,9 @@ constexpr float hardware::adc::current::MAX = 1.65f/(20.0f*(0.002f/3.0f));
 
 ///< Three 2mR shunts in parallel with a 20V/V gain map to 2048 per 1.65V
 constexpr float ADC2CURRENT = hardware::adc::current::MAX /(2048.0f);
+
+///< Currents are amplified by high pass
+constexpr float ADC2DERIVATIVE = ADC2CURRENT * 44.0f;
 
 ///< Voltage divider
 constexpr float ADC2VDC = (24e3f+1.2e3f)/1.2e3f * 3.3f/(4096.0f);
@@ -170,22 +177,22 @@ static ADCConversionGroup adcgrpcfg1 = {
 		0,                                                    /* HTR */
 		0,                                                    /* LTR */
 		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) |
-		ADC_SQR1_SQ16_N(ADC_CH_CUR_A) |
-		ADC_SQR1_SQ15_N(ADC_CH_CUR_A) |
-		ADC_SQR1_SQ14_N(ADC_CH_CUR_A) |
-		ADC_SQR1_SQ13_N(ADC_CH_CUR_A),                      /* SQR1  */
-		ADC_SQR2_SQ12_N(ADC_CH_CUR_A) |
-		ADC_SQR2_SQ11_N(ADC_CH_CUR_A) |
-		ADC_SQR2_SQ10_N(ADC_CH_CUR_A) |
-		ADC_SQR2_SQ9_N(ADC_CH_CUR_A) |
-		ADC_SQR2_SQ8_N(ADC_CH_CUR_A) |
-		ADC_SQR2_SQ7_N(ADC_CH_CUR_A),                      /* SQR2  */
+		ADC_SQR1_SQ16_N(ADC_CH_CUR_A_AC) |
+		ADC_SQR1_SQ15_N(ADC_CH_CUR_A_AC) |
+		ADC_SQR1_SQ14_N(ADC_CH_CUR_A_AC) |
+		ADC_SQR1_SQ13_N(ADC_CH_CUR_A_AC),                  	  /* SQR1  */
+		ADC_SQR2_SQ12_N(ADC_CH_CUR_A_AC) |
+		ADC_SQR2_SQ11_N(ADC_CH_CUR_A_AC) |
+		ADC_SQR2_SQ10_N(ADC_CH_VDC) |
+		ADC_SQR2_SQ9_N(ADC_CH_VDC) |
+		ADC_SQR2_SQ8_N(ADC_CH_VDC) |
+		ADC_SQR2_SQ7_N(ADC_CH_VDC),                 	     /* SQR2  */
 		ADC_SQR3_SQ6_N(ADC_CH_CUR_A) |
 		ADC_SQR3_SQ5_N(ADC_CH_CUR_A) |
 		ADC_SQR3_SQ4_N(ADC_CH_CUR_A) |
 		ADC_SQR3_SQ3_N(ADC_CH_CUR_A) |
 		ADC_SQR3_SQ2_N(ADC_CH_CUR_A) |
-		ADC_SQR3_SQ1_N(ADC_CH_VDC)                            /* SQR3  */
+		ADC_SQR3_SQ1_N(ADC_CH_CUR_A)                            /* SQR3  */
 };
 
 /**
@@ -207,22 +214,22 @@ static ADCConversionGroup adcgrpcfg2 = {
 		0,                                                    /* HTR */
 		0,                                                    /* LTR */
 		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) |
-		ADC_SQR1_SQ16_N(ADC_CH_CUR_B) |
-		ADC_SQR1_SQ15_N(ADC_CH_CUR_B) |
-		ADC_SQR1_SQ14_N(ADC_CH_CUR_B) |
-		ADC_SQR1_SQ13_N(ADC_CH_CUR_B),                      /* SQR1  */
-		ADC_SQR2_SQ12_N(ADC_CH_CUR_B) |
-		ADC_SQR2_SQ11_N(ADC_CH_CUR_B) |
-		ADC_SQR2_SQ10_N(ADC_CH_CUR_B) |
-		ADC_SQR2_SQ9_N(ADC_CH_CUR_B) |
-		ADC_SQR2_SQ8_N(ADC_CH_CUR_B) |
-		ADC_SQR2_SQ7_N(ADC_CH_CUR_B),                      /* SQR2  */
+		ADC_SQR1_SQ16_N(ADC_CH_CUR_B_AC) |
+		ADC_SQR1_SQ15_N(ADC_CH_CUR_B_AC) |
+		ADC_SQR1_SQ14_N(ADC_CH_CUR_B_AC) |
+		ADC_SQR1_SQ13_N(ADC_CH_CUR_B_AC),                      /* SQR1  */
+		ADC_SQR2_SQ12_N(ADC_CH_CUR_B_AC) |
+		ADC_SQR2_SQ11_N(ADC_CH_CUR_B_AC) |
+		ADC_SQR2_SQ10_N(ADC_CH_BRDG_TEMP) |
+		ADC_SQR2_SQ9_N(ADC_CH_BRDG_TEMP) |
+		ADC_SQR2_SQ8_N(ADC_CH_BRDG_TEMP) |
+		ADC_SQR2_SQ7_N(ADC_CH_BRDG_TEMP),                      /* SQR2  */
 		ADC_SQR3_SQ6_N(ADC_CH_CUR_B) |
 		ADC_SQR3_SQ5_N(ADC_CH_CUR_B) |
 		ADC_SQR3_SQ4_N(ADC_CH_CUR_B) |
 		ADC_SQR3_SQ3_N(ADC_CH_CUR_B) |
 		ADC_SQR3_SQ2_N(ADC_CH_CUR_B) |
-		ADC_SQR3_SQ1_N(ADC_CH_BRDG_TEMP)                   /* SQR3  */
+		ADC_SQR3_SQ1_N(ADC_CH_CUR_B)                   /* SQR3  */
 };
 
 /**
@@ -242,22 +249,22 @@ static ADCConversionGroup adcgrpcfg3 = {
 		0,                                                    /* HTR */
 		0,                                                    /* LTR */
 		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) |
-		ADC_SQR1_SQ16_N(ADC_CH_CUR_C) |
-		ADC_SQR1_SQ15_N(ADC_CH_CUR_C) |
-		ADC_SQR1_SQ14_N(ADC_CH_CUR_C) |
-		ADC_SQR1_SQ13_N(ADC_CH_CUR_C),                      /* SQR1  */
-		ADC_SQR2_SQ12_N(ADC_CH_CUR_C) |
-		ADC_SQR2_SQ11_N(ADC_CH_CUR_C) |
-		ADC_SQR2_SQ10_N(ADC_CH_CUR_C) |
-		ADC_SQR2_SQ9_N(ADC_CH_CUR_C) |
-		ADC_SQR2_SQ8_N(ADC_CH_CUR_C) |
-		ADC_SQR2_SQ7_N(ADC_CH_CUR_C),                      /* SQR2  */
+		ADC_SQR1_SQ16_N(ADC_CH_CUR_C_AC) |
+		ADC_SQR1_SQ15_N(ADC_CH_CUR_C_AC) |
+		ADC_SQR1_SQ14_N(ADC_CH_CUR_C_AC) |
+		ADC_SQR1_SQ13_N(ADC_CH_CUR_C_AC),                      /* SQR1  */
+		ADC_SQR2_SQ12_N(ADC_CH_CUR_C_AC) |
+		ADC_SQR2_SQ11_N(ADC_CH_CUR_C_AC) |
+		ADC_SQR2_SQ10_N(ADC_CH_TORQUE) |
+		ADC_SQR2_SQ9_N(ADC_CH_TORQUE) |
+		ADC_SQR2_SQ8_N(ADC_CH_TORQUE) |
+		ADC_SQR2_SQ7_N(ADC_CH_TORQUE),                      /* SQR2  */
 		ADC_SQR3_SQ6_N(ADC_CH_CUR_C) |
 		ADC_SQR3_SQ5_N(ADC_CH_CUR_C) |
 		ADC_SQR3_SQ4_N(ADC_CH_CUR_C) |
 		ADC_SQR3_SQ3_N(ADC_CH_CUR_C) |
 		ADC_SQR3_SQ2_N(ADC_CH_CUR_C) |
-		ADC_SQR3_SQ1_N(ADC_CH_TORQUE)                       /* SQR3  */
+		ADC_SQR3_SQ1_N(ADC_CH_CUR_C)                       /* SQR3  */
 };
 
 
@@ -304,12 +311,36 @@ void hardware::adc::current::Value(std::array<systems::abc, hardware::pwm::INJEC
 			std::int_fast32_t sum = 0;
 			std::int_fast32_t cnt = 0;
 
-			for (std::uint_fast8_t a = 1; a < LENGTH_ADC_SEQ; a++)
+			for (std::uint_fast8_t a = 0; a < 6; a++)
 			{
 				sum += samples[i][s][a] + samples[i][s + hardware::pwm::INJECTION_CYCLES][a];
 				cnt += 2;
 			}
 			currents[s].array[i] = ADC2CURRENT * (float)(current_offset[i] - sum) / (float)cnt;
+		}
+	}
+}
+
+/**
+ * Get current derivatives in the last control
+ * cycles
+ * @param derivatives
+ */
+void hardware::adc::current::Derivative(std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& derivatives)
+{
+	for(std::uint_fast8_t i = 0; i < PHASES; i++)
+	{
+		for (std::uint_fast8_t s = 0; s < hardware::pwm::INJECTION_CYCLES; s++)
+		{
+			std::int_fast32_t sum = 0;
+			std::int_fast32_t cnt = 0;
+
+			for (std::uint_fast8_t a = 10; a < 16; a++)
+			{
+				sum += samples[i][s][a] + samples[i][s + hardware::pwm::INJECTION_CYCLES][a];
+				cnt += 2;
+			}
+			derivatives[s].array[i] = ADC2DERIVATIVE * (float)(current_offset[i] - sum) / (float)cnt;
 		}
 	}
 }
@@ -326,7 +357,7 @@ void hardware::adc::current::SetOffset(void)
 
 		for (std::uint_fast8_t s = 0; s < ADC_SEQ_BUFFERED; s++)
 		{
-			for (std::uint_fast8_t a = 1; a < LENGTH_ADC_SEQ; a++)
+			for (std::uint_fast8_t a = 0; a < 6; a++)
 			{
 				sum += samples[i][s][a];
 				cnt ++;
@@ -342,16 +373,21 @@ void hardware::adc::current::SetOffset(void)
  */
 float hardware::adc::voltage::DCBus(void)
 {
-	uint32_t sum = 0;
+	std::int_fast32_t sum = 0;
+	std::int_fast32_t cnt = 0;
 	float vdc;
 
 	for(std::uint_fast32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
 	{
-		sum += samples[0][i][0];
+		for (std::uint_fast8_t a = 6; a < 10; a++)
+		{
+			sum += samples[0][i][a];
+			cnt ++;
+		}
 	}
 
 	// Filter inverts the values
-	vdc = (float)sum * ADC2VDC / (float)ADC_SEQ_BUFFERED;
+	vdc = (float)sum * ADC2VDC / (float)(ADC_SEQ_BUFFERED * cnt);
 
 	return vdc;
 }
@@ -362,18 +398,20 @@ float hardware::adc::voltage::DCBus(void)
  */
 float hardware::adc::temperature::Bridge(void)
 {
-	uint32_t sum = 0;
+	std::int_fast32_t sum = 0;
+	std::int_fast32_t cnt = 0;
 
 	for(std::uint_fast32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
 	{
-		/*
-		 * Bridge temperature is sampled by ADC2 first non current sample
-		 */
-		sum += samples[1][i][0];
+		for (std::uint_fast8_t a = 6; a < 10; a++)
+		{
+			sum += samples[1][i][a];
+			cnt ++;
+		}
 	}
 
 	// Filter inverts the values
-	return adc2ntc_temperature(sum/ADC_SEQ_BUFFERED);
+	return adc2ntc_temperature(sum/(ADC_SEQ_BUFFERED * cnt));
 }
 
 /**
@@ -382,73 +420,43 @@ float hardware::adc::temperature::Bridge(void)
  */
 float hardware::adc::temperature::Motor(void)
 {
-	uint32_t sum = 0;
-
-	for(std::uint_fast32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
-	{
-		/*
-		 * Motor temperature is sampled by ADC2 second non current sample
-		 */
-		sum += samples[1][i][0];
-	}
+//	std::int_fast32_t sum = 0;
+//	std::int_fast32_t cnt = 0;
+//
+//	for(std::uint_fast32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
+//	{
+//		for (std::uint_fast8_t a = 6; a < 10; a++)
+//		{
+//			sum += samples[0][i][a];
+//			cnt ++;
+//		}
+//	}
 
 	// Filter inverts the values
-	return adc2ntc_temperature(sum/ADC_SEQ_BUFFERED);
+	return 0.0f;
 }
 
+
 /**
- * Torque on the crank arm
- *
- * @param offset in Volts
- * @param gain in Nm/V
- * @return Torque in Nm
+ * get analog input
+ * @return analog in put 0 - 1
  */
-float hardware::crank::Torque(const float offset, const float gain)
+float hardware::adc::input(void)
 {
-	constexpr float ADC2VOLTAGE = 3.3f/(4096.0f * 2.0f * ADC_SEQ_BUFFERED);
-	uint32_t sum = 0;
-	float torque;
+	std::int_fast32_t sum = 0;
+	std::int_fast32_t cnt = 0;
 
 	for(std::uint_fast32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
 	{
-		sum += samples[2][i][0];
-		sum += samples[2][i][2];
+		for (std::uint_fast8_t a = 6; a < 10; a++)
+		{
+			sum += samples[2][i][a];
+			cnt ++;
+		}
 	}
-	torque = (((float)sum * ADC2VOLTAGE) - offset) * gain;
 
-	return torque;
+	return (float)sum / (float)(cnt * 4096);
 }
-
-///**
-// * Angle of the crank arm
-// *
-// * @param edge_max Number of edges per revolution
-// * @return Angle in rads, range 0 - 2*PI
-// */
-//float hardware::crank::Angle(uint32_t edge_max)
-//{
-//	static float angle = 0.0f;
-//
-//	if(cadence_counter)
-//	{
-//		angle += (float)cadence_counter/(float)edge_max * math::_2PI;
-//		cadence_counter = 0;
-//	}
-//
-//	if(angle > math::_2PI) angle -= math::_2PI;
-//
-//	return angle;
-//}
-
-
-///**
-// * get cadence pin level
-// * @return true when cadence pin is high
-// */
-//bool hardware::crank::Cadence(void)
-//{
-//	return palReadLine(LINE_CADENCE);
-//}
 
 /**
  * get the angle which is represented by the hall sensors

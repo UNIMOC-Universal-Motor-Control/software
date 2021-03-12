@@ -43,8 +43,17 @@ typedef struct values_s
 		///< motor temperature
 		float temp;
 
+		///< motor phase current
+		systems::abc i_abc;
+
+		///< motor phase current derivatives
+		systems::abc i_ac_abc;
+
 		///< motor stator current
 		systems::alpha_beta i;
+
+		///< motor stator current derivatives
+		systems::alpha_beta i_ac;
 
 		///< motor stator voltage
 		systems::alpha_beta u;
@@ -66,8 +75,8 @@ typedef struct values_s
 			///< Goertzel Frequency analysis instance for direct current
 			filter::goertzel<128> gid;
 
-			///< Goertzel Frequency analysis instance for quadrature current
-			filter::goertzel<128> giq;
+//			///< Goertzel Frequency analysis instance for quadrature current
+//			filter::goertzel<128> giq;
 
 			///< Voltage in rotor frame
 			systems::dq u;

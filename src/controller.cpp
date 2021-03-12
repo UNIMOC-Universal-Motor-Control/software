@@ -309,8 +309,11 @@ namespace control
 			values.battery.u = hardware::adc::voltage::DCBus();
 
 			hardware::adc::current::Value(i_abc);
+			hardware::adc::current::Derivative(i_abc_ac);
+
 			// transform the current samples to stator frame
 			QuadClark(i_abc, i_ab);
+			QuadClark(i_abc_ac, i_ab_ac);
 
 			// calculate the admittance and mean current from the samples
 			values.motor.i = MeanAlphaBeta(i_ab);
@@ -336,7 +339,7 @@ namespace control
 
 			//sample currents for frequency analysis
 			values.motor.rotor.gid = values.motor.rotor.i.d;
-			values.motor.rotor.giq = values.motor.rotor.i.q;
+//			values.motor.rotor.giq = values.motor.rotor.i.q;
 
 			// calculate battery current from power equality
 			values.battery.i = (values.motor.rotor.u.d * values.motor.rotor.i.d
@@ -473,7 +476,15 @@ namespace control
 
 			hardware::pwm::Duty(dutys);
 
-			modules::freemaster::Recorder();
+			for (std::uint_fast8_t i = 0; i < hardware::pwm::INJECTION_CYCLES; ++i)
+			{
+				values.motor.i_abc = i_abc[i];
+				values.motor.i_ac_abc = i_abc_ac[i];
+				values.motor.i = i_ab[i];
+				values.motor.i_ac = i_ab_ac[i];
+
+				modules::freemaster::Recorder();
+			}
 
 			// read as 5048 every 4th cycle
 			static std::uint8_t cnt = 0;

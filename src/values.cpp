@@ -34,7 +34,17 @@ values_ts values =
 		.temp = 0.0f,
 
 		///< motor phase current
+		.i_abc = {0.0f, 0.0f, 0.0f},
+
+		///< motor phase current derivatives
+		.i_ac_abc = {0.0f, 0.0f, 0.0f},
+
+		///< motor stator current
 		.i = {0.0f, 0.0f},
+
+		///< motor stator current derivatives
+		.i_ac = {0.0f, 0.0f},
+
 
 		///< motor phase voltage
 		.u = {0.0f, 0.0f},
@@ -54,8 +64,8 @@ values_ts values =
 			///< Goertzel Frequency analysis instance for direct current
 			.gid = filter::goertzel<128>(),
 
-			///< Goertzel Frequency analysis instance for quadrature current
-			.giq = filter::goertzel<128>(),
+//			///< Goertzel Frequency analysis instance for quadrature current
+//			.giq = filter::goertzel<128>(),
 
 			///< Voltage in rotor frame
 			.u = {0.0f, 0.0f},
