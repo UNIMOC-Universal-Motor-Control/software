@@ -44,47 +44,50 @@ namespace observer
      */
     void mechanic::Predict(const systems::dq& i)
     {
+    	using namespace values::motor::rotor;
+    	using namespace values::motor;
+
         // update constants
         const float ts = hardware::Tc();
         const float tsj = ts/settings.mechanics.J;
 
         // electric torque
-        values.motor.m_el = _3by2 * (settings.motor.psi * i.q +
+        m_el = _3by2 * (settings.motor.psi * i.q +
         		(settings.motor.l.d - settings.motor.l.q) * i.d * i.q);
 
         // omega
-        values.motor.rotor.omega += tsj * (values.motor.m_el - values.motor.m_l);
+        omega += tsj * (m_el - m_l);
 
-        if(std::fabs(values.motor.rotor.omega) > 2.0f * settings.motor.limits.omega)
+        if(std::fabs(omega) > 2.0f * settings.motor.limits.omega)
         {
-        	values.motor.rotor.omega = std::copysign(2.0f * settings.motor.limits.omega, values.motor.rotor.omega);
+        	omega = std::copysign(2.0f * settings.motor.limits.omega, omega);
         }
 
-        if(!std::isfinite(values.motor.rotor.omega))
+        if(!std::isfinite(omega))
         {
-        	values.motor.rotor.omega = 0.0f;
+        	omega = 0.0f;
         }
 
         // integrate omega for phi
-        values.motor.rotor.phi += values.motor.rotor.omega * ts;
+        phi += omega * ts;
 
         // integrate load
         //values.motor.m_l += 0;
 
         // limit phi to 2 * pi and count rotations
-        if(values.motor.rotor.phi > math::_2PI)
+        if(phi > math::_2PI)
         {
-        	values.motor.rotor.phi -= math::_2PI;
-        	values.motor.rotor.rotation++;
+        	phi -= math::_2PI;
+        	rotation++;
         }
-        else if(values.motor.rotor.phi < 0.0)
+        else if(phi < 0.0)
         {
-        	values.motor.rotor.phi += math::_2PI;
-        	values.motor.rotor.rotation--;
+        	phi += math::_2PI;
+        	rotation--;
         }
-        else if(!std::isfinite(values.motor.rotor.phi))
+        else if(!std::isfinite(phi))
         {
-        	values.motor.rotor.phi = 0.0f;
+        	phi = 0.0f;
         }
     }
 
@@ -95,9 +98,12 @@ namespace observer
      */
     void mechanic::Correct(const std::array<float, 3> error)
     {
-        values.motor.rotor.omega += error[0];
-        values.motor.rotor.phi += error[1];
-        values.motor.m_l += error[2];
+    	using namespace values::motor::rotor;
+    	using namespace values::motor;
+
+        omega += error[0];
+        phi += error[1];
+        m_l += error[2];
     }
 
 	/**
@@ -162,11 +168,13 @@ namespace observer
      */
     void flux::Calculate(const systems::sin_cos& sin_cos, std::array<float, 3>& correction)
     {
+    	using namespace values::motor::rotor;
+    	using namespace values::motor;
     	float error = 0.0f;
 
     	// BEMF voltage and feedback
-    	rotor.bemf.d = values.motor.rotor.u.d - settings.motor.rs * values.motor.rotor.i.d + rotor.feedback.d;
-    	rotor.bemf.q = values.motor.rotor.u.q - settings.motor.rs * values.motor.rotor.i.q + rotor.feedback.q;
+    	rotor.bemf.d = u.d - settings.motor.rs * i.d + rotor.feedback.d;
+    	rotor.bemf.q = u.q - settings.motor.rs * i.q + rotor.feedback.q;
 
     	// rotate the bemf to stator system
     	stator.bemf = systems::transform::InversePark(rotor.bemf, sin_cos);
@@ -179,8 +187,8 @@ namespace observer
     	rotor.flux = systems::transform::Park(stator.flux, sin_cos);
 
     	// sub the voltage inducted in the inductors of the stator
-    	rotor.flux.d -= values.motor.rotor.i.d * settings.motor.l.d;
-    	rotor.flux.q -= values.motor.rotor.i.q * settings.motor.l.q;
+    	rotor.flux.d -= i.d * settings.motor.l.d;
+    	rotor.flux.q -= i.q * settings.motor.l.q;
 
     	// compare actual flux with flux parameter
     	rotor.feedback.d = settings.observer.flux.C.d * (settings.motor.psi - rotor.flux.d);
@@ -270,7 +278,7 @@ namespace observer
     	constexpr float sqrt3by2 = std::sqrt(3.0f)*0.5f;
     	float error = 0.0f;
     	systems::sin_cos sc;
-    	switch(values.motor.rotor.hall)
+    	switch(values::motor::rotor::hall)
     	{
     	case 0b100:	// 0 deg.
     		sc.sin = 0.0f;

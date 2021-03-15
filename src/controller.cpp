@@ -142,7 +142,7 @@ namespace control
 	{
 		systems::sin_cos sc;
 		systems::dq u_tmp = {u_ab.alpha, u_ab.beta};
-		u_ab_turn[0] = u_tmp;
+		u_ab_turn[0] = {u_tmp.d, u_tmp.q};
 		sc = systems::SinCos(omega*hardware::Tc()/(float)hardware::pwm::INJECTION_CYCLES);
 
 		for (std::uint_fast8_t i = 1; i < u_ab_turn.size(); ++i)
@@ -238,18 +238,21 @@ namespace control
 	 */
 	void foc::Calculate(systems::dq& setpoint)
 	{
-		float limit = _1bysqrt3 * values.battery.u*0.95f;
+		using namespace values;
+		using namespace values::motor;
+
+		float limit = _1bysqrt3 * battery::u*0.95f;
 
 		// Current controller is limited to 1/sqrt(3)*DC Bus Voltage due to SVM
 		// d current controller is master for voltage limit
 		ctrl_d.positive_limit = limit;
 		ctrl_d.negative_limit = -limit;
 
-		float length = systems::Length(values.motor.rotor.u);
+		float length = systems::Length(rotor::u);
 
 		if(length > ctrl_d.positive_limit)									// saturation
 		{
-			float rest = std::sqrt(length*length - values.motor.rotor.u.d * values.motor.rotor.u.d);
+			float rest = std::sqrt(length*length - rotor::u.d * rotor::u.d);
 			// q current controller is only fully free if we are not in voltage limit
 			ctrl_q.positive_limit = rest;
 			ctrl_q.negative_limit = -rest;
@@ -265,13 +268,12 @@ namespace control
 
 		if(settings.control.current.feedforward)
 		{
-			feedforward.d = settings.motor.rs*setpoint.d - values.motor.rotor.omega * setpoint.q * settings.motor.l.q;
-			feedforward.q = settings.motor.rs*setpoint.q + values.motor.rotor.omega * setpoint.d * settings.motor.l.d
-					+ values.motor.rotor.omega*settings.motor.psi;
+			feedforward.d = settings.motor.rs*setpoint.d - rotor::omega * setpoint.q * settings.motor.l.q;
+			feedforward.q = settings.motor.rs*setpoint.q + rotor::omega * setpoint.d * settings.motor.l.d + rotor::omega*settings.motor.psi;
 		}
 
-		values.motor.rotor.u.d = ctrl_d.Calculate(setpoint.d, values.motor.rotor.i.d, feedforward.d);
-		values.motor.rotor.u.q = ctrl_q.Calculate(setpoint.q, values.motor.rotor.i.q, feedforward.q);
+		rotor::u.d = ctrl_d.Calculate(setpoint.d, rotor::i.d, feedforward.d);
+		rotor::u.q = ctrl_q.Calculate(setpoint.q, rotor::i.q, feedforward.q);
 	}
 
 	/**
@@ -285,6 +287,7 @@ namespace control
 	 */
 	void thread::main(void)
 	{
+		using namespace values;
 		setName("Control");
 
 		// worker thread for as5048 read
@@ -306,7 +309,7 @@ namespace control
 			// clear Run Mode LED
 			palSetLine(LINE_LED_RUN);
 
-			values.battery.u = hardware::adc::voltage::DCBus();
+			battery::u = hardware::adc::voltage::DCBus();
 
 			hardware::adc::current::Value(i_abc);
 			hardware::adc::current::Derivative(i_abc_ac);
@@ -316,38 +319,38 @@ namespace control
 			QuadClark(i_abc_ac, i_ab_ac);
 
 			// calculate the admittance and mean current from the samples
-			values.motor.i = MeanAlphaBeta(i_ab);
-			values.motor.y = observer::hfi::GetMean(i_ab);
-			values.motor.yd = observer::hfi::GetVector(i_ab);
+			motor::stator::i = MeanAlphaBeta(i_ab);
+			motor::stator::y = observer::hfi::GetMean(i_ab);
+			motor::stator::yd = observer::hfi::GetVector(i_ab);
 
 			// Get angle from as5048b
 			as5048.SetZero(settings.mechanics.zero_pos);
-			values.sense.position = as5048.GetPosition();
-			values.sense.angle = as5048.GetPosition(settings.motor.P);
+			sense::position = as5048.GetPosition();
+			sense::angle = as5048.GetPosition(settings.motor.P);
 
 			// read hall sensors
-			values.motor.rotor.hall = hardware::adc::hall::State();
+			motor::rotor::hall = hardware::adc::hall::State();
 
 			// calculate the sine and cosine of the new angle
-			angle = values.motor.rotor.phi - values.motor.rotor.omega * hardware::Tf();
+			angle = motor::rotor::phi - motor::rotor::omega * hardware::Tf();
 
 			// calculate new sine and cosine for the reference system
 			systems::sin_cos sc = systems::SinCos(angle);
 
 			// convert current samples from clark to rotor frame;
-			values.motor.rotor.i = systems::transform::Park(values.motor.i, sc);
+			motor::rotor::i = systems::transform::Park(motor::stator::i, sc);
 
 			//sample currents for frequency analysis
-			values.motor.rotor.gid = values.motor.rotor.i.d;
-//			values.motor.rotor.giq = values.motor.rotor.i.q;
+			motor::rotor::gid = motor::rotor::i.d;
+			motor::rotor::giq = motor::rotor::i.q;
 
 			// calculate battery current from power equality
-			values.battery.i = (values.motor.rotor.u.d * values.motor.rotor.i.d
-					+ values.motor.rotor.u.q * values.motor.rotor.i.q)/values.battery.u;
+			battery::i = (motor::rotor::u.d * motor::rotor::i.d
+					+ motor::rotor::u.q * motor::rotor::i.q)/battery::u;
 
-			if(std::fabs(values.motor.rotor.setpoint.i.q) > settings.observer.mech.i_min)
+			if(std::fabs(motor::rotor::setpoint::i.q) > settings.observer.mech.i_min)
 			{
-				observer::mechanic::Predict(values.motor.rotor.i);
+				observer::mechanic::Predict(motor::rotor::i);
 			}
 			else
 			{
@@ -359,7 +362,7 @@ namespace control
 			if(management::observer::flux)
 			{
 				// calculate the flux observer
-				flux.Calculate(values.motor.rotor.sc, correction);
+				flux.Calculate(motor::rotor::sc, correction);
 
 				// correct the prediction
 				observer::mechanic::Correct(correction);
@@ -370,7 +373,7 @@ namespace control
 				hall.SetOffset(settings.observer.hall.offset);
 
 				// calculate the hall observer
-				hall.Calculate(values.motor.rotor.sc, correction);
+				hall.Calculate(motor::rotor::sc, correction);
 
 				// correct the prediction
 				observer::mechanic::Correct(correction);
@@ -384,12 +387,12 @@ namespace control
 
 			if(management::control::current)
 			{
-				float ratio = values.battery.u / uq.Calculate(values.motor.rotor.u.q);
+				float ratio = battery::u / uq.Calculate(motor::rotor::u.q);
 				float min = -settings.motor.limits.i;
 				float max =  settings.motor.limits.i;
 
 				// deadzone for battery current limiter of 1W
-				if(std::fabs(values.motor.rotor.u.q * values.motor.rotor.setpoint.i.q) > 1.0f)
+				if(std::fabs(motor::rotor::u.q * motor::rotor::setpoint::i.q) > 1.0f)
 				{
 					if(ratio > 1e-3f)
 					{
@@ -410,13 +413,13 @@ namespace control
 				// derate by temperature and voltage
 				std::array<float, 4> derate;
 				derate[0] = Derate(settings.converter.limits.temperature,
-						settings.converter.derating.temprature, values.converter.temp);
+						settings.converter.derating.temprature, converter::temp);
 				derate[1] = Derate(settings.battery.limits.voltage,
-						-settings.converter.derating.voltage, values.battery.u);
+						-settings.converter.derating.voltage, battery::u);
 				derate[2] = Derate(settings.motor.limits.omega,
-										settings.converter.derating.omega, values.motor.rotor.omega);
+										settings.converter.derating.omega, motor::rotor::omega);
 				derate[3] = Derate(-settings.motor.limits.omega,
-										-settings.converter.derating.omega, values.motor.rotor.omega);
+										-settings.converter.derating.omega, motor::rotor::omega);
 
 				// always use the minimal derating possible
 				float derating = *std::min_element(derate.begin(), derate.end());
@@ -425,30 +428,30 @@ namespace control
 				min *= derating;
 				max *= derating;
 
-				values.motor.rotor.setpoint.limit.i.min = min;
-				values.motor.rotor.setpoint.limit.i.max = max;
+				motor::rotor::setpoint::limit::i::min = min;
+				motor::rotor::setpoint::limit::i::max = max;
 
-				systems::dq setpoint = values.motor.rotor.setpoint.i;
-				Limit(setpoint.q, values.motor.rotor.setpoint.limit.i.min, values.motor.rotor.setpoint.limit.i.max);
+				systems::dq setpoint = motor::rotor::setpoint::i;
+				Limit(setpoint.q, motor::rotor::setpoint::limit::i::min, motor::rotor::setpoint::limit::i::max);
 
 				// calculate the field orientated controllers
 				foc.Calculate(setpoint);
 
 //				// Deadtime Compensation, runs but needs some more ifs and else
 //				float k = 0.0f;
-//				if		(values.motor.rotor.phi < 1.0f * math::PI/6.0f) k = 0.0f;
-//				else if	(values.motor.rotor.phi < 3.0f * math::PI/6.0f) k = 2.0f * math::PI/6.0f;
-//				else if	(values.motor.rotor.phi < 5.0f * math::PI/6.0f) k = 4.0f * math::PI/6.0f;
-//				else if	(values.motor.rotor.phi < 7.0f * math::PI/6.0f) k = 6.0f * math::PI/6.0f;
-//				else if	(values.motor.rotor.phi < 9.0f * math::PI/6.0f) k = 8.0f * math::PI/6.0f;
-//				else if	(values.motor.rotor.phi <11.0f * math::PI/6.0f) k =10.0f * math::PI/6.0f;
+//				if		(motor::rotor::phi < 1.0f * math::PI/6.0f) k = 0.0f;
+//				else if	(motor::rotor::phi < 3.0f * math::PI/6.0f) k = 2.0f * math::PI/6.0f;
+//				else if	(motor::rotor::phi < 5.0f * math::PI/6.0f) k = 4.0f * math::PI/6.0f;
+//				else if	(motor::rotor::phi < 7.0f * math::PI/6.0f) k = 6.0f * math::PI/6.0f;
+//				else if	(motor::rotor::phi < 9.0f * math::PI/6.0f) k = 8.0f * math::PI/6.0f;
+//				else if	(motor::rotor::phi <11.0f * math::PI/6.0f) k =10.0f * math::PI/6.0f;
 //
 //
 //				systems::sin_cos tmp;
-//				systems::SinCos(k - values.motor.rotor.phi, tmp);
+//				systems::SinCos(k - motor::rotor::phi, tmp);
 //
-//				values.motor.rotor.u.d += 4.0f/3.0f*values.battery.u*(settings.converter.deadtime*1e-9f)*hardware::Fc()*tmp.cos;
-//				values.motor.rotor.u.q += 4.0f/3.0f*values.battery.u*(settings.converter.deadtime*1e-9f)*hardware::Fc()*tmp.sin;
+//				motor::rotor::u.d += 4.0f/3.0f*battery::u*(settings.converter.deadtime*1e-9f)*hardware::Fc()*tmp.cos;
+//				motor::rotor::u.q += 4.0f/3.0f*battery::u*(settings.converter.deadtime*1e-9f)*hardware::Fc()*tmp.sin;
 			}
 			else
 			{
@@ -457,31 +460,31 @@ namespace control
 			}
 
 			// calculate new sine and cosine for the reference system
-			values.motor.rotor.sc = systems::SinCos(values.motor.rotor.phi);
+			motor::rotor::sc = systems::SinCos(motor::rotor::phi);
 
 			// transform the voltages to stator frame
-			values.motor.u = systems::transform::InversePark(values.motor.rotor.u, values.motor.rotor.sc);
+			motor::stator::u = systems::transform::InversePark(motor::rotor::u, motor::rotor::sc);
 
 			if(management::observer::hfi)
 			{
-				observer::hfi::Injection(values.motor.u, u_ab);
+				observer::hfi::Injection(motor::stator::u, u_ab);
 			}
 			else
 			{
-				QuadInvClark(values.motor.u, values.motor.rotor.omega, u_ab);
+				QuadInvClark(motor::stator::u, motor::rotor::omega, u_ab);
 			}
 
 			// set dutys with overmodulation
-			QuadOvermodulation(u_ab, values.battery.u, dutys);
+			QuadOvermodulation(u_ab, battery::u, dutys);
 
 			hardware::pwm::Duty(dutys);
 
 			for (std::uint_fast8_t i = 0; i < hardware::pwm::INJECTION_CYCLES; ++i)
 			{
-				values.motor.i_abc = i_abc[i];
-				values.motor.i_ac_abc = i_abc_ac[i];
-				values.motor.i = i_ab[i];
-				values.motor.i_ac = i_ab_ac[i];
+				motor::phase::i = i_abc[i];
+				motor::phase::di = i_abc_ac[i];
+				motor::stator::i = i_ab[i];
+				motor::stator::di = i_ab_ac[i];
 
 				modules::freemaster::Recorder();
 			}

@@ -199,10 +199,11 @@ namespace management
 		 */
 		while (TRUE)
 		{
+			using namespace values;
 			deadline = chibios_rt::System::getTime();
 
-			values.converter.temp = hardware::adc::temperature::Bridge();
-			values.motor.temp = hardware::adc::temperature::Motor();
+			converter::temp = hardware::adc::temperature::Bridge();
+			motor::temp = hardware::adc::temperature::Motor();
 
 			if(save)
 			{
@@ -260,8 +261,8 @@ namespace management
 				{
 					if(control::current != settings.control.current.active && control::current)
 					{
-						values.motor.rotor.u.d = 0.0f;
-						values.motor.rotor.u.q = 0.0f;
+						motor::rotor::u.d = 0.0f;
+						motor::rotor::u.q = 0.0f;
 					}
 					control::current = settings.control.current.active;
 				}
@@ -275,11 +276,11 @@ namespace management
 				// hfi with hysteresis
 				if(settings.observer.hfi.enable)
 				{
-					 if(observer::hfi && (values.motor.rotor.omega > 1.2f * settings.observer.hfi.omega_max))
+					 if(observer::hfi && (motor::rotor::omega > 1.2f * settings.observer.hfi.omega_max))
 					 {
 						 observer::hfi = false;
 					 }
-					 else if(!observer::hfi && (values.motor.rotor.omega < settings.observer.hfi.omega_max))
+					 else if(!observer::hfi && (motor::rotor::omega < settings.observer.hfi.omega_max))
 					 {
 						 observer::hfi = true;
 					 }
@@ -293,15 +294,15 @@ namespace management
 
 
 				// starting help for traction drives
-				if(std::fabs(values.motor.rotor.setpoint.i.q) > settings.observer.mech.i_min
-						&& settings.motor.i_start > 0.1f && std::fabs(values.motor.rotor.omega) < 200.0f)
+				if(std::fabs(motor::rotor::setpoint::i.q) > settings.observer.mech.i_min
+						&& settings.motor.i_start > 0.1f && std::fabs(motor::rotor::omega) < 200.0f)
 				{
-					values.motor.rotor.setpoint.i.d =
-							settings.motor.i_start * (1.0f - std::fabs(values.motor.rotor.omega) * 0.005f);
+					using namespace values::motor::rotor;
+					setpoint::i.d = settings.motor.i_start * (1.0f - std::fabs(omega) * 0.005f);
 				}
 				else
 				{
-					values.motor.rotor.setpoint.i.d = 0.0f;
+					motor::rotor::setpoint::i.d = 0.0f;
 				}
 
 				control::feedforward = settings.control.current.feedforward;
@@ -326,11 +327,12 @@ namespace management
 				// init the measurement
 				if(measure::r::cycle == 0 && measure::r::phi_step == 0)
 				{
+					using namespace values::motor::rotor;
 					measure::r::u = 0.0f;
-					values.motor.rotor.u.d = 0.0f;
-					values.motor.rotor.u.q = 0.0f;
-					values.motor.rotor.phi = 0.0f;
-					values.motor.rotor.omega = 0.0f;
+					u.d = 0.0f;
+					u.q = 0.0f;
+					phi = 0.0f;
+					omega = 0.0f;
 					control::current = false;
 					observer::hall = false;
 					observer::flux = false;
@@ -354,19 +356,20 @@ namespace management
 //				palClearLine(LINE_LED_RUN);
 
 				// reached current steps current target
-				if((values.motor.rotor.i.d > measure::r::current
+				if((motor::rotor::i.d > measure::r::current
 					&& measure::r::cycle > 100)
-					||	values.motor.rotor.u.d > values.battery.u * 0.50
-					||	measure::r::u > values.battery.u * 0.50)
+					||	motor::rotor::u.d > battery::u * 0.50
+					||	measure::r::u > battery::u * 0.50)
 				{
+					using namespace values::motor::rotor;
 					// sample the point
-					measure::r::x[measure::r::point] = values.motor.rotor.i.d;
-					measure::r::y[measure::r::point] = values.motor.rotor.u.d;
+					measure::r::x[measure::r::point] = i.d;
+					measure::r::y[measure::r::point] = u.d;
 
 					// set zero position of the position sensor
 					if(measure::r::phi_step == 0)
 					{
-						settings.mechanics.zero_pos = values.sense.position;
+						settings.mechanics.zero_pos = sense::position;
 					}
 
 					measure::r::point++;
@@ -380,11 +383,11 @@ namespace management
 					}
 					else
 					{
-						values.motor.rotor.phi = measure::r::PHI_STEPS[measure::r::phi_step];
+						phi = measure::r::PHI_STEPS[measure::r::phi_step];
 					}
 
-				}	else if(std::fabs(values.motor.rotor.i.d) > measure::r::current
-						|| std::fabs(values.motor.rotor.i.q) > measure::r::current
+				}	else if(std::fabs(motor::rotor::i.d) > measure::r::current
+						|| std::fabs(motor::rotor::i.q) > measure::r::current
 						|| !hardware::pwm::output::Active())
 				{
 					// error target current not reached within voltage limits
@@ -398,14 +401,14 @@ namespace management
 				{
 					measure::r::u += 100e-3f; // 100mv increase every 25ms
 				}
-				values.motor.rotor.u.d = measure::r::u;
+				motor::rotor::u.d = measure::r::u;
 				break;
 
 			case CALCULATE_RS:
-				values.motor.rotor.u.d = 0.0f;
-				values.motor.rotor.u.q = 0.0f;
-				values.motor.rotor.phi = 0.0f;
-				values.motor.rotor.omega = 0.0f;
+				motor::rotor::u.d = 0.0f;
+				motor::rotor::u.q = 0.0f;
+				motor::rotor::phi = 0.0f;
+				motor::rotor::omega = 0.0f;
 
 				if(	measure::r::phi_step >= measure::r::PHI_STEPS.size())
 				{
@@ -435,15 +438,16 @@ namespace management
 				// init the measurement
 				if(measure::l::cycle == 0)
 				{
+					using namespace values::motor::rotor;
 					measure::l::u = 0.0f;
-					values.motor.rotor.u.d = 0.0f;
-					values.motor.rotor.u.q = 0.0f;
-					values.motor.rotor.phi = 0.0f;
-					values.motor.rotor.omega = math::_2PI * measure::l::FREQ;
-					values.motor.m_l = 0.0f;
+					u.d = 0.0f;
+					u.q = 0.0f;
+					phi = 0.0f;
+					omega = math::_2PI * measure::l::FREQ;
+					motor::m_l = 0.0f;
 
 					measure::l::w_limit = settings.motor.limits.omega;
-					settings.motor.limits.omega = values.motor.rotor.omega;
+					settings.motor.limits.omega = omega;
 					control::current = false;
 					observer::hall = false;
 					observer::flux = false;
@@ -468,7 +472,7 @@ namespace management
 				if((measure::l::cycle % 50) == 0)
 				{
 
-					if(systems::Length(values.motor.rotor.i) > measure::l::CUR)
+					if(systems::Length(motor::rotor::i) > measure::l::CUR)
 					{
 						sequencer = CALCULATE_LS;
 					}
@@ -477,39 +481,40 @@ namespace management
 						measure::l::u += 100e-3f; // 100mv increase every 25ms
 					}
 				}
-				values.motor.rotor.u.q = measure::l::u;
+				motor::rotor::u.q = measure::l::u;
 				break;
 
 			case CALCULATE_LS:
 
 				// calculate the dc levels
-				values.motor.rotor.gid.SetFrequency(0.0f, hardware::Fc());
-				values.motor.rotor.gid.Calculate();
+				motor::rotor::gid.SetFrequency(0.0f, hardware::Fc());
+				motor::rotor::gid.Calculate();
 				{
+					using namespace values::motor::rotor;
 					// only use inductive part of the response
-					float i_len = values.motor.rotor.gid.Magnitude();
+					float i_len = gid.Magnitude();
 
 					if(i_len > 0.0f)
 					{
 						// get the Ld - Lq current at twice the injection frequency
-						values.motor.rotor.gid.SetFrequency(2.0f * measure::l::FREQ, hardware::Fc());
-						values.motor.rotor.gid.Calculate();
-						float iac = values.motor.rotor.gid.Magnitude();
+						gid.SetFrequency(2.0f * measure::l::FREQ, hardware::Fc());
+						gid.Calculate();
+						float iac = gid.Magnitude();
 
 						// assume that Ld is always lower than Lq due to Saturation
-						settings.motor.l.d = measure::l::u/(values.motor.rotor.omega * (i_len + iac));
-						settings.motor.l.q = measure::l::u/(values.motor.rotor.omega * (i_len - iac));
+						settings.motor.l.d = measure::l::u/(omega * (i_len + iac));
+						settings.motor.l.q = measure::l::u/(omega * (i_len - iac));
 
 						settings.control.current.kp = CalculateKp(settings.motor.l.d, hardware::Tf());
 						settings.control.current.tn = CalculateTn(settings.motor.l.q, settings.motor.rs);
 					}
 				}
 
-				values.motor.rotor.u.d = 0.0f;
-				values.motor.rotor.u.q = 0.0f;
-				values.motor.rotor.phi = 0.0f;
-				values.motor.rotor.omega = 0.0f;
-				values.motor.m_l = 0.0f;
+				motor::rotor::u.d = 0.0f;
+				motor::rotor::u.q = 0.0f;
+				motor::rotor::phi = 0.0f;
+				motor::rotor::omega = 0.0f;
+				motor::m_l = 0.0f;
 				settings.motor.limits.omega =  measure::l::w_limit;
 				control::current = false;
 
@@ -526,11 +531,12 @@ namespace management
 				// init the measurement
 				if(measure::psi::cycle == 0)
 				{
-					values.motor.rotor.u.d = 0.0f;
-					values.motor.rotor.u.q = 0.0f;
-					values.motor.rotor.phi = 0.0f;
-					values.motor.rotor.omega = 0.0f;
-					values.motor.m_l = 0.0f;
+					using namespace values::motor::rotor;
+					u.d = 0.0f;
+					u.q = 0.0f;
+					phi = 0.0f;
+					omega = 0.0f;
+					motor::m_l = 0.0f;
 
 					control::feedforward = false;
 					control::current = false;
@@ -550,8 +556,8 @@ namespace management
 					control::current = true;
 
 					settings.motor.psi = 0.0f;
-					values.motor.rotor.setpoint.i.d = 0.0f;
-					values.motor.rotor.setpoint.i.q = settings.motor.limits.i * 0.5f;
+					setpoint::i.d = 0.0f;
+					setpoint::i.q = settings.motor.limits.i * 0.5f;
 				}
 
 				// handle PWM led to show PWM status
@@ -572,15 +578,16 @@ namespace management
 				measure::psi::cycle++;
 				if((measure::psi::cycle % 100) == 0)
 				{
-					if(	   std::fabs(values.motor.rotor.u.d) > values.battery.u * 0.125f
-							|| std::fabs(values.motor.rotor.u.q) > values.battery.u * 0.125f
-							|| values.motor.rotor.omega > 0.5f*settings.motor.limits.omega)
+					using namespace values::motor::rotor;
+					if(	   std::fabs(u.d) > battery::u * 0.125f
+							|| std::fabs(u.q) > battery::u * 0.125f
+							|| omega > 0.5f*settings.motor.limits.omega)
 					{
 						sequencer = CALCULATE_PSI;
 					}
 					else
 					{
-						values.motor.rotor.omega += 1.0f;
+						omega += 1.0f;
 					}
 				}
 
@@ -588,10 +595,12 @@ namespace management
 
 			case CALCULATE_PSI:
 			{
-				float bemf_d = values.motor.rotor.u.d - values.motor.rotor.i.d*settings.motor.rs + values.motor.rotor.omega*settings.motor.l.q*values.motor.rotor.i.q;
-				float bemf_q = values.motor.rotor.u.q - values.motor.rotor.i.q*settings.motor.rs - values.motor.rotor.omega*settings.motor.l.d*values.motor.rotor.i.d;
+				using namespace values::motor::rotor;
+
+				float bemf_d = u.d - i.d*settings.motor.rs + omega*settings.motor.l.q*i.q;
+				float bemf_q = u.q - i.q*settings.motor.rs - omega*settings.motor.l.d*i.d;
 				systems::dq bemf = {bemf_d, bemf_q};
-				if(values.motor.rotor.omega > 1.0f) settings.motor.psi = systems::Length(bemf)/values.motor.rotor.omega;
+				if(omega > 1.0f) settings.motor.psi = systems::Length(bemf)/omega;
 
 				observer::hall = false;
 				observer::flux = false;
@@ -601,13 +610,13 @@ namespace management
 				control::current = false;
 
 				settings.control.current.kp = measure::psi::kp;
-				values.motor.rotor.u.d = 0.0f;
-				values.motor.rotor.u.q = 0.0f;
-				values.motor.rotor.omega = 0.0f;
-				values.motor.m_l = 0.0f;
+				u.d = 0.0f;
+				u.q = 0.0f;
+				omega = 0.0f;
+				motor::m_l = 0.0f;
 
-				values.motor.rotor.setpoint.i.d = 0.0f;
-				values.motor.rotor.setpoint.i.q = 0.0f;
+				setpoint::i.d = 0.0f;
+				setpoint::i.q = 0.0f;
 
 
 				measure::psi::enable = false;

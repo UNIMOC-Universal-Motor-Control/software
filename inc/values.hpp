@@ -27,153 +27,167 @@
 /**
  * system global values
  */
-typedef struct values_s
+namespace values
 {
 	/**
 	 * motor values
 	 */
-	struct motor_s
+	namespace motor
 	{
 		///< electric torque
-		float m_el;
+		extern float m_el;
 
 		///< external load torque
-		float m_l;
+		extern float m_l;
 
 		///< motor temperature
-		float temp;
+		extern float temp;
 
-		///< motor phase current
-		systems::abc i_abc;
+		/**
+		 * motor phase system values
+		 */
+		namespace phase
+		{
+			///< Current in phases
+			extern systems::abc i;
 
-		///< motor phase current derivatives
-		systems::abc i_ac_abc;
+			///< motor phase current derivatives
+			extern systems::abc di;
 
-		///< motor stator current
-		systems::alpha_beta i;
+			///< motor phase voltage
+			extern systems::abc u;
+		} /* namespace phase */
 
-		///< motor stator current derivatives
-		systems::alpha_beta i_ac;
+		/**
+		 * motor stator system values
+		 */
+		namespace stator
+		{
+			///< Current in stator frame
+			extern systems::alpha_beta i;
 
-		///< motor stator voltage
-		systems::alpha_beta u;
+			///< motor stator current derivatives
+			extern systems::alpha_beta di;
 
-		///< motor stator admittance
-		systems::alpha_beta y;
+			///< motor stator voltage
+			extern systems::alpha_beta u;
 
-		///< motor stator admittance vector
-		systems::alpha_beta yd;
+			///< motor stator admittance
+			extern systems::alpha_beta y;
+
+			///< motor stator admittance vector
+			extern systems::alpha_beta yd;
+		} /* namespace stator */
 
 		/**
 		 * motor rotor system values
 		 */
-		struct rotor_s
+		namespace rotor
 		{
 			///< Current in rotor frame
-			systems::dq i;
+			extern systems::dq i;
 
 			///< Goertzel Frequency analysis instance for direct current
-			filter::goertzel<128> gid;
+			extern filter::goertzel<128> gid;
 
-//			///< Goertzel Frequency analysis instance for quadrature current
-//			filter::goertzel<128> giq;
+			///< Goertzel Frequency analysis instance for quadrature current
+			extern filter::goertzel<128> giq;
 
 			///< Voltage in rotor frame
-			systems::dq u;
+			extern systems::dq u;
 
 			///< angular velocity in rotor frame
-			float omega;
+			extern float omega;
 
 			///< rotor angle
-			float phi;
+			extern float phi;
 
 			///< sine cosine values of phi
-			systems::sin_cos sc;
+			extern systems::sin_cos sc;
 
 			///< rotor hall sensor states
-			std::uint8_t hall;
+			extern std::uint8_t hall;
 
-			float hall_cw;
-			float hall_ccw;
+			extern float hall_cw;
+			extern float hall_ccw;
 
 			///< rotor hall sensor angle error
-			float phi_err;
+			extern float phi_err;
 
 			///< rotor full rotation from start
-			std::int32_t rotation;
+			extern std::int32_t rotation;
 
 			///< hfi currents
-			systems::dq i_hfi;
+			extern systems::dq i_hfi;
 
 			/**
 			 * motor rotor system setpoints
 			 */
-			struct setpoint_s
+			namespace setpoint
 			{
 				///< Current setpoint in rotor frame
-				systems::dq i;
+				extern systems::dq i;
 
 				///< electrical angular velocity setpoint in rotor frame
-				float omega;
+				extern float omega;
 
 				///< rotor angle setpoint
-				float phi;
+				extern float phi;
 
 				///< motor electrical torque in Nm
-				float torque;
+				extern float torque;
 
 				/**
 				 * motor rotor system setpoint limits
 				 */
-				struct limit_s
+				namespace limit
 				{
 					/**
 					 * motor rotor system setpoint limits current
 					 */
-					struct i_s
+					namespace i
 					{
-						float min;
-						float max;
-					}i;
-				} limit;
-			} setpoint;
-		} rotor;
-	} motor;
+						extern float min;
+						extern float max;
+					} /* namespace i */
+				} /* namespace limit */
+			} /* namespace setpoint */
+		} /* namespace rotor */
+	} /* namespace stator */
 
 	/**
 	 * battery values
 	 */
-	struct battery_s
+	namespace battery
 	{
 		///< Battery voltage
-		float u;
+		extern float u;
 
 		///< Battery current
-		float i;
-	} battery;
+		extern float i;
+	} /* namespace battery */
 
 	/**
 	 * converter values
 	 */
-	struct converter_s
+	namespace converter
 	{
 		///< powerstage temperature
-		float temp;
-	} converter;
+		extern float temp;
+	} /* namespace converter */
 
 	/**
 	 * external sensor values
 	 */
-	struct sense_s
+	namespace sense
 	{
 		///< feedback sensor position value
-		std::uint16_t position;
+		extern std::uint16_t position;
 
 		///< feedback sensor rotor angle
-		float angle;
-	} sense;
-} values_ts;
+		extern float angle;
+	} /* namespace sense */
+} /* namespace values */
 
-extern values_ts values;
 #endif /* INC_VALUES_HPP_ */
 

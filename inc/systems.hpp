@@ -84,13 +84,6 @@ namespace systems
             float d;
             float q;
         };
-
-        /**
-         * Systems casting assignment operator
-         * @param dq dq system
-         * @return alpha beta system
-         */
-        dq_u& operator= (alpha_beta_u& ab);
     } dq;
 
     ///< rotation angle sine and cosine value.
@@ -109,13 +102,6 @@ namespace systems
             float alpha;
             float beta;
         };
-
-        /**
-         * Systems casting assignment operator
-         * @param dq dq system
-         * @return alpha beta system
-         */
-        alpha_beta_u& operator= (dq_u& dq);
     } alpha_beta;
 
 

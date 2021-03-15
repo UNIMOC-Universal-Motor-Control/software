@@ -159,31 +159,6 @@ namespace systems
     }
 
     /**
-     * Systems casting assignment operator
-     * @param dq dq system
-     * @return alpha beta system
-     */
-    alpha_beta_u& alpha_beta_u::operator= (dq& dq)
-    {
-    	this->alpha = dq.d;
-    	this->beta = dq.q;
-    	return *this;
-    }
-
-    /**
-     * Systems casting assignment operator
-     * @param dq dq system
-     * @return alpha beta system
-     */
-    dq_u& dq_u::operator= (alpha_beta& ab)
-    {
-    	this->d = ab.alpha;
-    	this->q = ab.beta;
-    	return *this;
-    }
-
-
-    /**
       @brief         Floating-point sine and cosine function.
       @param 	     theta   input value in rad
       @retval	     out     points to processed sine cosine output

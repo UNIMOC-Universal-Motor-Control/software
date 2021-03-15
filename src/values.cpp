@@ -20,145 +20,163 @@
 #include "hardware_interface.hpp"
 
 
-values_ts values =
+/**
+ * system global values
+ */
+namespace values
 {
-	.motor =
+	/**
+	 * motor values
+	 */
+	namespace motor
 	{
 		///< electric torque
-		.m_el = 0.0f,
+		float m_el = 0.0f;
 
 		///< external load torque
-		.m_l = 0.0f,
+		float m_l = 0.0f;
 
 		///< motor temperature
-		.temp = 0.0f,
+		float temp = 0.0f;
 
-		///< motor phase current
-		.i_abc = {0.0f, 0.0f, 0.0f},
+		/**
+		 * motor phase system values
+		 */
+		namespace phase
+		{
+			///< Current in phases
+			systems::abc i = {0.0f, 0.0f, 0.0f};
 
-		///< motor phase current derivatives
-		.i_ac_abc = {0.0f, 0.0f, 0.0f},
+			///< motor phase current derivatives
+			systems::abc di = {0.0f, 0.0f, 0.0f};
 
-		///< motor stator current
-		.i = {0.0f, 0.0f},
+			///< motor phase voltage
+			systems::abc u = {0.0f, 0.0f, 0.0f};
+		} /* namespace phase */
 
-		///< motor stator current derivatives
-		.i_ac = {0.0f, 0.0f},
+		/**
+		 * motor stator system values
+		 */
+		namespace stator
+		{
+			///< Current in stator frame
+			systems::alpha_beta i = {0.0f, 0.0f};
 
+			///< motor stator current derivatives
+			systems::alpha_beta di = {0.0f, 0.0f};
 
-		///< motor phase voltage
-		.u = {0.0f, 0.0f},
+			///< motor stator voltage
+			systems::alpha_beta u = {0.0f, 0.0f};
 
-		///< motor stator admittance
-		.y = {0.0f, 0.0f},
+			///< motor stator admittance
+			systems::alpha_beta y = {0.0f, 0.0f};
 
-		///< motor stator admittance vector
-		.yd = {0.0f, 0.0f},
+			///< motor stator admittance vector
+			systems::alpha_beta yd = {0.0f, 0.0f};
+		} /* namespace stator */
 
-		///< motor rotor system values
-		.rotor =
+		/**
+		 * motor rotor system values
+		 */
+		namespace rotor
 		{
 			///< Current in rotor frame
-			.i = {0.0f, 0.0f},
+			systems::dq i = {0.0f, 0.0f};
 
 			///< Goertzel Frequency analysis instance for direct current
-			.gid = filter::goertzel<128>(),
+			filter::goertzel<128> gid;
 
-//			///< Goertzel Frequency analysis instance for quadrature current
-//			.giq = filter::goertzel<128>(),
+			///< Goertzel Frequency analysis instance for quadrature current
+			filter::goertzel<128> giq;
 
 			///< Voltage in rotor frame
-			.u = {0.0f, 0.0f},
+			systems::dq u = {0.0f, 0.0f};
 
 			///< angular velocity in rotor frame
-			.omega = 0.0f,
+			float omega = 0.0f;
 
 			///< rotor angle
-			.phi = 0.0f,
+			float phi = 0.0f;
 
 			///< sine cosine values of phi
-			.sc = {0.0f},
+			systems::sin_cos sc = {0.0f, 0.0f};
 
 			///< rotor hall sensor states
-			.hall = 0,
-
-			.hall_cw = 0.0f,
-			.hall_ccw = 0.0f,
+			std::uint8_t hall = 0;
 
 			///< rotor hall sensor angle error
-			.phi_err = 0.0f,
+			float phi_err = 0.0f;
 
 			///< rotor full rotation from start
-			.rotation = 0,
-
-			///< hfi currents
-			.i_hfi = {0.0f, 0.0f},
-
-			///< motor rotor system setpoints
-			.setpoint =
+			std::int32_t rotation = 0;
+			/**
+			 * motor rotor system setpoints
+			 */
+			namespace setpoint
 			{
 				///< Current setpoint in rotor frame
-				.i = {0.0f, 0.0f},
+				systems::dq i = {0.0f, 0.0f};
 
-				///< angular velocity setpoint in rotor frame
-				.omega = 0.0f,
+				///< electrical angular velocity setpoint in rotor frame
+				float omega = 0.0f;
 
 				///< rotor angle setpoint
-				.phi = 0.0f,
+				float phi  = 0.0f;
 
 				///< motor electrical torque in Nm
-				.torque = 0.0f,
+				float torque  = 0.0f;
 
 				/**
 				 * motor rotor system setpoint limits
 				 */
-				.limit =
+				namespace limit
 				{
 					/**
 					 * motor rotor system setpoint limits current
 					 */
-					.i =
+					namespace i
 					{
-						///< minimum current limit
-						.min = 0.0f,
+						float min  = 0.0f;
+						float max  = 0.0f;
+					} /* namespace i */
+				} /* namespace limit */
+			} /* namespace setpoint */
+		} /* namespace rotor */
+	} /* namespace stator */
 
-						///< maxium current limit
-						.max = 0.0f,
-					},
-				},
-			},
-		},
-	},
-
-	///< battery values
-	.battery =
+	/**
+	 * battery values
+	 */
+	namespace battery
 	{
 		///< Battery voltage
-		.u = 10.0f,
+		float u  = 0.0f;
 
 		///< Battery current
-		.i = 0.0f,
-	},
+		float i = 0.0f;
+	} /* namespace battery */
 
-	///< converter values
-	.converter =
+	/**
+	 * converter values
+	 */
+	namespace converter
 	{
-		///< power stage temperature
-		.temp = 0.0f,
-	},
+		///< powerstage temperature
+		float temp = 0.0f;
+	} /* namespace converter */
 
 	/**
 	 * external sensor values
 	 */
-	.sense =
+	namespace sense
 	{
 		///< feedback sensor position value
-		.position = 0,
+		std::uint16_t position = 0;
 
 		///< feedback sensor rotor angle
-		.angle = 0.0f,
-	},
-};
+		float angle = 0.0f;
+	} /* namespace sense */
+} /* namespace values */
 
 
 
