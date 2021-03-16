@@ -280,6 +280,7 @@ namespace observer
     	systems::sin_cos sc;
     	switch(values::motor::rotor::hall)
     	{
+    	default:
     	case 0b100:	// 0 deg.
     		sc.sin = 0.0f;
     		sc.cos = -1.0f;

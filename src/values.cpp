@@ -19,6 +19,8 @@
 #include "values.hpp"
 #include "hardware_interface.hpp"
 
+#pragma GCC push_options
+#pragma GCC optimize ("-O0")
 
 /**
  * system global values
@@ -178,5 +180,5 @@ namespace values
 	} /* namespace sense */
 } /* namespace values */
 
-
+#pragma GCC pop_options
 

@@ -21,6 +21,9 @@
 #include <cstddef>
 #include "hardware_interface.hpp"
 
+#pragma GCC push_options
+#pragma GCC optimize ("-O0")
+
 /**
  * @namespace system settings
  *
@@ -250,6 +253,8 @@ __attribute__((aligned (32))) settings_ts settings =
 	///< crc32 value for the hole settings
 	.crc = 0,
 };
+
+#pragma GCC pop_options
 
 
 /**

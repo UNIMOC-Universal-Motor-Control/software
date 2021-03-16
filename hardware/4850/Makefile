@@ -5,7 +5,7 @@
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -Og -ggdb -fomit-frame-pointer -falign-functions=16 -fsingle-precision-constant -ffunction-sections -fdata-sections -Wdouble-promotion
+  USE_OPT = -O2 -g -fomit-frame-pointer -falign-functions=16 -fsingle-precision-constant -Wdouble-promotion
  #-ffast-math
 endif
 
@@ -31,7 +31,7 @@ endif
 
 # Enable this if you want link time optimizations (LTO).
 ifeq ($(USE_LTO),)
-  USE_LTO = yes
+  USE_LTO = no
 endif
 
 # Enable this if you want to see the full log while compiling.
