@@ -163,45 +163,34 @@ namespace observer
 
     /**
      * @brief Get angular error from flux estimation.
-     * @param sin_cos sine and cosine of the actual rotor angle
+     * @param set_flux expected flux vector
      * @retval kalman correction vector
      */
-    void flux::Calculate(const systems::sin_cos& sin_cos, std::array<float, 3>& correction)
+    void flux::Calculate(systems::alpha_beta& set_flux, std::array<float, 3>& correction)
     {
-    	using namespace values::motor::rotor;
+    	using namespace values::motor::stator;
     	using namespace values::motor;
     	float error = 0.0f;
 
     	// BEMF voltage and feedback
-    	rotor.bemf.d = u.d - settings.motor.rs * i.d + rotor.feedback.d;
-    	rotor.bemf.q = u.q - settings.motor.rs * i.q + rotor.feedback.q;
-
-    	// rotate the bemf to stator system
-    	stator.bemf = systems::transform::InversePark(rotor.bemf, sin_cos);
+    	bemf.alpha = u.alpha - settings.motor.rs * i.alpha + feedback.alpha;
+    	bemf.beta  = u.beta  - settings.motor.rs * i.beta  + feedback.beta;
 
     	// integrate bemf to flux
-    	stator.flux.alpha +=  stator.bemf.alpha * hardware::Tc();
-    	stator.flux.beta  +=  stator.bemf.beta  * hardware::Tc();
-
-    	// transform flux to rotor system
-    	rotor.flux = systems::transform::Park(stator.flux, sin_cos);
+    	flux.alpha +=  bemf.alpha * hardware::Tc();
+    	flux.beta  +=  bemf.beta  * hardware::Tc();
 
     	// sub the voltage inducted in the inductors of the stator
-    	rotor.flux.d -= i.d * settings.motor.l.d;
-    	rotor.flux.q -= i.q * settings.motor.l.q;
+    	flux.alpha -= i.alpha * settings.motor.l.d;
+    	flux.beta  -= i.beta  * settings.motor.l.q;
 
     	// compare actual flux with flux parameter
-    	rotor.feedback.d = settings.observer.flux.C.d * (settings.motor.psi - rotor.flux.d);
-    	rotor.feedback.q = settings.observer.flux.C.q * (0.0f - rotor.flux.q);
+    	feedback.alpha = pi_alpha.Calculate(set_flux.alpha, flux.alpha, 0.0f);
+    	feedback.beta  = pi_beta.Calculate(set_flux.beta, flux.beta, 0.0f);
 
-    	if(settings.motor.psi > 1e-6)
-    	{
-    		error = rotor.flux.q / settings.motor.psi;
-    	}
-    	else
-    	{
-    		error = rotor.flux.q;
-    	}
+    	float flux_len = systems::Length(flux);
+    	if(flux_len < )
+
 
     	// Kalman filter on angular error
     	mech.Update(settings.observer.flux.Q, settings.observer.flux.R, error, correction);

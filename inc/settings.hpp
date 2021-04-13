@@ -153,8 +153,11 @@ typedef struct settings_s
 			///< measurement variance
 			float R;
 
-			///< flux observer feedback gains
-			systems::dq C;
+			///< flux observer feedback dampening
+			float D;
+
+			///< flux observer feedback mid frequency
+			float wm;
 		} flux;
 
 		/**

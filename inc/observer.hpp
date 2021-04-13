@@ -21,6 +21,7 @@
 
 #include "systems.hpp"
 #include "filter.hpp"
+#include "controller.hpp"
 #include "hardware_interface.hpp"
 
 /**
@@ -84,27 +85,16 @@ namespace observer
 	class flux
 	{
 	private:
-		typedef struct {
-			///< back emf vector
-			systems::dq bemf;
-			///< flux error feedback vector
-			systems::dq feedback;
-			///< estimated flux vector
-			systems::dq flux;
-		} rotor_s;
-
-		///< Rotor frame values
-		rotor_s rotor;
-
-		typedef struct {
-			///< back emf vector
-			systems::alpha_beta bemf;
-			///< estimated flux without inducted flux
-			systems::alpha_beta flux;
-		} stator_s;
-
-		///< stationary frame values
-		stator_s stator;
+		///< back emf vector
+		systems::alpha_beta bemf;
+		///< estimated flux without inducted flux
+		systems::alpha_beta flux;
+		///< flux error feedback vector
+		systems::alpha_beta feedback;
+		///< feedback controller for alpha flux
+		control::pi pi_alpha;
+		///< feedback controller for beta flux
+		control::pi pi_beta;
 
 		///< kalman filter for flux error signal
 		observer::mechanic mech;
