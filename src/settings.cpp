@@ -148,12 +148,6 @@ __attribute__((aligned (32))) settings_ts settings =
 			///< enable observer switch
 			.enable = false,
 
-			///< modell variance
-			.Q = 1e-5f,
-
-			///< measurement variance
-			.R = 1e-4f,
-
 			///< flux observer feedback dampening
 			.D = 0.707f,
 
@@ -196,12 +190,6 @@ __attribute__((aligned (32))) settings_ts settings =
 
 			///< float theta offset
 			.offset = 0.0f,
-
-			///< modell variance
-			.Q = 1e-5f,
-
-			///< measurement variance
-			.R = 1e-4f,
 		},
 
 		/**
@@ -211,6 +199,12 @@ __attribute__((aligned (32))) settings_ts settings =
 		{
 			///< electrical torque minimal current
 			.i_min = 2.0f,
+
+			///< modell variance
+			.Q = 1e-5f,
+
+			///< measurement variance
+			.R = 1e-4f,
 		},
 	},
 

@@ -24,6 +24,7 @@
 #include "hardware_interface.hpp"
 #include "freemaster_wrapper.hpp"
 #include "management.hpp"
+#include "control_thread.hpp"
 #include "main.hpp"
 
 using namespace chibios_rt;

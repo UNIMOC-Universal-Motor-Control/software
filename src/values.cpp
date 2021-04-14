@@ -42,6 +42,18 @@ namespace values
 		float temp = 0.0f;
 
 		/**
+		 * motor hall values
+		 */
+		namespace hall
+		{
+			///< hall sensor states
+			std::uint8_t state = 0;
+
+			///< hall sensor sine and cosine values
+			systems::sin_cos sc = {0.0f, 0.0f};
+		}
+
+		/**
 		 * motor phase system values
 		 */
 		namespace phase
@@ -75,6 +87,18 @@ namespace values
 
 			///< motor stator admittance vector
 			systems::alpha_beta yd = {0.0f, 0.0f};
+
+			/**
+			 * motor stator flux values
+			 */
+			namespace flux
+			{
+				///< motor stator flux vector setpoint
+				systems::alpha_beta set = {0.0f, 0.0f};
+
+				///< motor stator flux vector actual
+				systems::alpha_beta act = {0.0f, 0.0f};
+			}
 		} /* namespace stator */
 
 		/**
@@ -97,20 +121,12 @@ namespace values
 			///< angular velocity in rotor frame
 			float omega = 0.0f;
 
-			///< rotor angle
-			float phi = 0.0f;
+			///< rotor angle in q31
+			std::int32_t phi = 0;
 
 			///< sine cosine values of phi
 			systems::sin_cos sc = {0.0f, 0.0f};
 
-			///< rotor hall sensor states
-			std::uint8_t hall = 0;
-
-			///< rotor hall sensor angle error
-			float phi_err = 0.0f;
-
-			///< rotor full rotation from start
-			std::int32_t rotation = 0;
 			/**
 			 * motor rotor system setpoints
 			 */

@@ -331,7 +331,7 @@ namespace management
 					measure::r::u = 0.0f;
 					u.d = 0.0f;
 					u.q = 0.0f;
-					phi = 0.0f;
+					phi = 0;
 					omega = 0.0f;
 					control::current = false;
 					observer::hall = false;
@@ -407,7 +407,7 @@ namespace management
 			case CALCULATE_RS:
 				motor::rotor::u.d = 0.0f;
 				motor::rotor::u.q = 0.0f;
-				motor::rotor::phi = 0.0f;
+				motor::rotor::phi = 0;
 				motor::rotor::omega = 0.0f;
 
 				if(	measure::r::phi_step >= measure::r::PHI_STEPS.size())
@@ -442,7 +442,7 @@ namespace management
 					measure::l::u = 0.0f;
 					u.d = 0.0f;
 					u.q = 0.0f;
-					phi = 0.0f;
+					phi = 0;
 					omega = math::_2PI * measure::l::FREQ;
 					motor::m_l = 0.0f;
 
@@ -512,7 +512,7 @@ namespace management
 
 				motor::rotor::u.d = 0.0f;
 				motor::rotor::u.q = 0.0f;
-				motor::rotor::phi = 0.0f;
+				motor::rotor::phi = 0;
 				motor::rotor::omega = 0.0f;
 				motor::m_l = 0.0f;
 				settings.motor.limits.omega =  measure::l::w_limit;

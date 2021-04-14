@@ -69,26 +69,10 @@ namespace observer
         }
 
         // integrate omega for phi
-        phi += omega * ts;
+        phi += unit::Q31(omega * ts);
 
         // integrate load
         //values.motor.m_l += 0;
-
-        // limit phi to 2 * pi and count rotations
-        if(phi > math::_2PI)
-        {
-        	phi -= math::_2PI;
-        	rotation++;
-        }
-        else if(phi < 0.0)
-        {
-        	phi += math::_2PI;
-        	rotation--;
-        }
-        else if(!std::isfinite(phi))
-        {
-        	phi = 0.0f;
-        }
     }
 
     /**
@@ -102,7 +86,7 @@ namespace observer
     	using namespace values::motor;
 
         omega += error[0];
-        phi += error[1];
+        phi += unit::Q31(error[1]);
         m_l += error[2];
     }
 
@@ -159,47 +143,36 @@ namespace observer
     /**
      * @brief flux observers trivial constructor
      */
-    flux::flux(void)    {}
+    flux::flux(void):bemf(),feedback(), pi_alpha(0.0f, 0.0f, 0.0f, 0.0f, hardware::Tc()), pi_beta(0.0f, 0.0f, 0.0f, 0.0f, hardware::Tc())
+    {}
 
     /**
      * @brief Get angular error from flux estimation.
      * @param set_flux expected flux vector
+     * @param out_flux estimated flux without inducted flux
      * @retval kalman correction vector
      */
-    void flux::Calculate(systems::alpha_beta& set_flux, std::array<float, 3>& correction)
+    void flux::Calculate(systems::alpha_beta& set_flux, systems::alpha_beta& out_flux)
     {
     	using namespace values::motor::stator;
     	using namespace values::motor;
-    	float error = 0.0f;
 
     	// BEMF voltage and feedback
     	bemf.alpha = u.alpha - settings.motor.rs * i.alpha + feedback.alpha;
     	bemf.beta  = u.beta  - settings.motor.rs * i.beta  + feedback.beta;
 
     	// integrate bemf to flux
-    	flux.alpha +=  bemf.alpha * hardware::Tc();
-    	flux.beta  +=  bemf.beta  * hardware::Tc();
+    	out_flux.alpha +=  bemf.alpha * hardware::Tc();
+    	out_flux.beta  +=  bemf.beta  * hardware::Tc();
 
     	// sub the voltage inducted in the inductors of the stator
-    	flux.alpha -= i.alpha * settings.motor.l.d;
-    	flux.beta  -= i.beta  * settings.motor.l.q;
+    	out_flux.alpha -= i.alpha * settings.motor.l.d;
+    	out_flux.beta  -= i.beta  * settings.motor.l.q;
 
     	// compare actual flux with flux parameter
-    	feedback.alpha = pi_alpha.Calculate(set_flux.alpha, flux.alpha, 0.0f);
-    	feedback.beta  = pi_beta.Calculate(set_flux.beta, flux.beta, 0.0f);
-
-    	float flux_len = systems::Length(flux);
-    	if(flux_len < )
-
-
-    	// Kalman filter on angular error
-    	mech.Update(settings.observer.flux.Q, settings.observer.flux.R, error, correction);
+    	feedback.alpha = pi_alpha.Calculate(set_flux.alpha, out_flux.alpha, 0.0f);
+    	feedback.beta  = pi_beta.Calculate(set_flux.beta, out_flux.beta, 0.0f);
     }
-
-    /**
-     * @brief trivial admittance observer constructor
-     */
-//    hfi::hfi(void){}
 
     /**
      * add the injection pattern to the output voltage
@@ -258,16 +231,14 @@ namespace observer
     hall::hall(void)    {}
 
     /**
-     * @brief Get angular error from hall estimation.
-     * @param sin_cos sine and cosine of the actual rotor angle
-     * @retval kalman correction vector
+     * @brief Get sine and cosine values from hall for estimation.
+     * @retval sin_cos sine and cosine of the hall sensors
      */
-    void hall::Calculate(const systems::sin_cos& sin_cos, std::array<float, 3>& correction)
+    void hall::Calculate(systems::sin_cos& sc)
     {
     	constexpr float sqrt3by2 = std::sqrt(3.0f)*0.5f;
-    	float error = 0.0f;
-    	systems::sin_cos sc;
-    	switch(values::motor::rotor::hall)
+
+    	switch(values::motor::hall::state)
     	{
     	default:
     	case 0b100:	// 0 deg.
@@ -302,12 +273,6 @@ namespace observer
 
     	sc.sin = tdq.d;
     	sc.cos = tdq.q;
-
-
-    	error = sc.cos*sin_cos.sin - sc.sin*sin_cos.cos;
-
-    	// Kalman filter on angular error
-    	mech.Update(settings.observer.hall.Q, settings.observer.hall.R, error, correction);
     }
 
 	/**
@@ -320,7 +285,7 @@ namespace observer
 
 		if(std::abs(new_offset-offset) > eps)
 		{
-			sc_offset = systems::SinCos(new_offset);
+			sc_offset = systems::SinCos(unit::Q31(new_offset));
 			offset = new_offset;
 		}
 	}

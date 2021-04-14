@@ -22,7 +22,7 @@
 #include <cstdint>
 #include <cmath>
 #include <cstring>
-#include <climits>
+#include <limits>
 #include <array>
 #include <math.h>
 
@@ -53,9 +53,21 @@ namespace unit
     constexpr float deg2rad = math::PI / 180.0f;
     ///< conversion constant from radians to degree
     constexpr float rad2deg = 180.0f / math::PI;
+    ///< conversion constant from q31 to degree
+    constexpr float q312deg = 180.0f / (float)std::numeric_limits<std::int32_t>::max();
+    ///< conversion constant from q31 to rad
+    constexpr float q312rad = math::PI / (float)std::numeric_limits<std::int32_t>::max();
+    ///< conversion constant from rad to q31
+    constexpr float rad2q31 = (float)std::numeric_limits<std::int32_t>::max() / math::PI;
+    ///< conversion constant from deg to q31
+    constexpr float deg2q31 = (float)std::numeric_limits<std::int32_t>::max() / 180.0f;
 
-    ///< convert internal rad angle to degrees
-    constexpr float Degrees(float m) { return m * rad2deg; }
+    ///< convert internal q31 angle to degrees
+    constexpr float Degrees(std::int32_t m) { return (float)m * q312deg; }
+    ///< convert internal q31 angle to degrees
+    constexpr float Rad(std::int32_t m) { return (float)m * q312rad; }
+    ///< convert rad angle to internal q31
+    constexpr float Q31(float m) { return (std::int32_t)(m * rad2q31); }
 
     ///< scale from radians per second to rpm
     constexpr float rad_s2rpm = 60.0f / math::_2PI;
@@ -137,7 +149,15 @@ namespace systems
       @param 	     theta    input value in rad
       @retval	     out      points to processed sine cosine output
      */
-    sin_cos SinCos(const float theta);
+    sin_cos SinCos(const std::int32_t theta);
+
+    /**
+      @brief         Calculate angle difference from sin/cosine values.
+      @param 	     a    	sin/cosine of the angle a in c = a - b
+      @param 	     b    	sin/cosine of the angle b in c = a - b
+      @retval	     c      angle difference (sin(c)) but ok for small values
+     */
+    float SinCosDiff(const sin_cos& a, const sin_cos& b);
 
 
     /**

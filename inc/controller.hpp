@@ -23,13 +23,9 @@
 #include <cmath>
 #include <climits>
 #include "ch.hpp"
-#include "filter.hpp"
-#include "systems.hpp"
 #include "systems.hpp"
 #include "values.hpp"
 #include "settings.hpp"
-#include "observer.hpp"
-#include "management.hpp"
 #include "hardware_interface.hpp"
 
 /**
@@ -165,39 +161,6 @@ namespace control
 
 		///< @brief Reset controller and integral part to 0
 		inline void Reset(void) { ctrl_d.Reset(); ctrl_q.Reset();};
-	};
-
-	/**
-	 * generic FOC controller thread
-	 */
-	class thread : public chibios_rt::BaseStaticThread<512>
-	{
-	private:
-		static constexpr float _3by2 = 3.0f/2.0f;
-		observer::flux       	flux;
-		observer::hall       	hall;
-		control::foc      		foc;
-		sensor::as5048b 		as5048;
-		std::array<float, 3>   	correction;
-		filter::low_pass		uq;
-		std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> i_abc;
-		std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> i_abc_ac;
-		std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES> i_ab;
-		std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES> i_ab_ac;
-		std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES> u_ab;
-		std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> dutys;
-
-	protected:
-		/**
-		 * Thread function
-		 */
-		virtual void main(void);
-
-	public:
-		/**
-		 * generic constructor
-		 */
-		thread();
 	};
 } /* namespace control */
 

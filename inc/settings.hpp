@@ -147,12 +147,6 @@ typedef struct settings_s
 			///< enable observer switch
 			bool enable;
 
-			///< modell variance
-			float Q;
-
-			///< measurement variance
-			float R;
-
 			///< flux observer feedback dampening
 			float D;
 
@@ -194,12 +188,6 @@ typedef struct settings_s
 
 			///< float theta offset
 			float offset;
-
-			///< modell variance
-			float Q;
-
-			///< measurement variance
-			float R;
 		} hall;
 
 		/**
@@ -209,6 +197,12 @@ typedef struct settings_s
 		{
 			///< electrical torque minimal current
 			float i_min;
+
+			///< modell variance
+			float Q;
+
+			///< measurement variance
+			float R;
 		} mech;
 	} observer;
 

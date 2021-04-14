@@ -44,6 +44,18 @@ namespace values
 		extern float temp;
 
 		/**
+		 * motor hall values
+		 */
+		namespace hall
+		{
+			///< hall sensor states
+			extern std::uint8_t state;
+
+			///< hall sensor sine and cosine values
+			extern systems::sin_cos sc;
+		} /* namespace hall */
+
+		/**
 		 * motor phase system values
 		 */
 		namespace phase
@@ -77,6 +89,18 @@ namespace values
 
 			///< motor stator admittance vector
 			extern systems::alpha_beta yd;
+
+			/**
+			 * motor stator flux values
+			 */
+			namespace flux
+			{
+				///< motor stator flux vector setpoint
+				extern systems::alpha_beta set;
+
+				///< motor stator flux vector actual
+				extern systems::alpha_beta act;
+			}
 		} /* namespace stator */
 
 		/**
@@ -99,26 +123,14 @@ namespace values
 			///< angular velocity in rotor frame
 			extern float omega;
 
-			///< rotor angle
-			extern float phi;
+			///< rotor angle in q31
+			extern std::int32_t phi;
+
+			///< rotor angle in deg
+			extern float angle;
 
 			///< sine cosine values of phi
 			extern systems::sin_cos sc;
-
-			///< rotor hall sensor states
-			extern std::uint8_t hall;
-
-			extern float hall_cw;
-			extern float hall_ccw;
-
-			///< rotor hall sensor angle error
-			extern float phi_err;
-
-			///< rotor full rotation from start
-			extern std::int32_t rotation;
-
-			///< hfi currents
-			extern systems::dq i_hfi;
 
 			/**
 			 * motor rotor system setpoints

@@ -273,7 +273,7 @@ public:
 	void SetFrequency(const float F, const float Fs)
 	{
 		k = (uint32_t)(F/Fs*(float)N);
-		sc = systems::SinCos(math::_2PI * (float)k/(float)N);
+		sc = systems::SinCos(unit::Q31(math::_2PI * (float)k/(float)N));
 		coeff = 2.0f*sc.cos;
 	}
 

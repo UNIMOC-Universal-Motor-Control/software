@@ -160,13 +160,13 @@ namespace systems
 
     /**
       @brief         Floating-point sine and cosine function.
-      @param 	     theta   input value in rad
+      @param 	     theta   input value in q31
       @retval	     out     points to processed sine cosine output
      */
-    sin_cos SinCos(const float theta)
+    sin_cos SinCos(const std::int32_t theta)
     {
     	sin_cos out = {0.0f, 0.0f};
-    	constexpr float _1by2PI = 1.0f/math::_2PI;
+    	constexpr float _1by2PI = 1.0f/(float)std::numeric_limits<std::int32_t>::max();
     	float Dn = math::_2PI / FAST_MATH_TABLE_SIZE;    /* delta between the two points (fixed), in this case 2*pi/FAST_MATH_TABLE_SIZE */
     	float fract, in;                                 /* Temporary input, output variables */
     	uint16_t indexS, indexC;                         /* Index variable */
@@ -226,11 +226,22 @@ namespace systems
     	/* Calculation of sine value */
     	out.sin = fract * temp + f1;
 
-    	if (theta < 0.0f)
+    	if (theta < 0)
     	{
     		out.sin = -out.sin;
     	}
     	return out;
+    }
+
+    /**
+      @brief         Calculate angle difference from sin/cosine values.
+      @param 	     a    	sin/cosine of the angle a in c = a - b
+      @param 	     b    	sin/cosine of the angle b in c = a - b
+      @retval	     c      angle difference (sin(c)) but ok for small values
+     */
+    float SinCosDiff(const sin_cos& a, const sin_cos& b)
+    {
+    	return a.sin * b.cos - a.cos * b.sin;
     }
 
     /**

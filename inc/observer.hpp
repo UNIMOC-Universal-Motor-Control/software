@@ -87,29 +87,24 @@ namespace observer
 	private:
 		///< back emf vector
 		systems::alpha_beta bemf;
-		///< estimated flux without inducted flux
-		systems::alpha_beta flux;
 		///< flux error feedback vector
 		systems::alpha_beta feedback;
 		///< feedback controller for alpha flux
 		control::pi pi_alpha;
 		///< feedback controller for beta flux
 		control::pi pi_beta;
-
-		///< kalman filter for flux error signal
-		observer::mechanic mech;
 	public:
 		/**
 		 * @brief flux observers trivial constructor
 		 */
 		flux(void);
 
-		/**
-		 * @brief Get angular error from flux estimation.
-		 * @param sin_cos sine and cosine of the actual rotor angle
-		 * @retval kalman correction vector
-		 */
-		void Calculate(const systems::sin_cos& sin_cos, std::array<float, 3>& correction);
+	    /**
+	     * @brief Get angular error from flux estimation.
+	     * @param set_flux expected flux vector
+	     * @retval out_flux estimated flux without inducted flux
+	     */
+		void Calculate(systems::alpha_beta& set_flux, systems::alpha_beta& out_flux);
 	};
 
 	/**
@@ -174,12 +169,11 @@ namespace observer
 		 */
 		void SetOffset(const float new_offset);
 
-		/**
-		 * @brief Get angular error from hall sensors.
-		 * @param sin_cos sine and cosine of the actual rotor angle
-		 * @retval kalman correction vector
-		 */
-		void Calculate(const systems::sin_cos& sin_cos, std::array<float, 3>& correction);
+	    /**
+	     * @brief Get sine and cosine values from hall for estimation.
+	     * @retval sin_cos sine and cosine of the hall sensors
+	     */
+	    void Calculate(systems::sin_cos& sc);
 	};
 } /* namespace observer */
 

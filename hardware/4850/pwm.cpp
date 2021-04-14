@@ -213,8 +213,6 @@ void hardware::pwm::Init(void)
 
 	dmaStreamSetMode(dmastp, dmamode);
 
-
-
 	dmaStreamEnable(dmastp);
 
 	/* set adc trigger offset = minimal */
