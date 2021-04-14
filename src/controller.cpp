@@ -138,6 +138,7 @@ namespace control
 		rotor::u.d = ctrl_d.Calculate(setpoint.d, rotor::i.d, feedforward.d);
 		rotor::u.q = ctrl_q.Calculate(setpoint.q, rotor::i.q, feedforward.q);
 	}
+
 }/* namespace control */
 
 

@@ -159,6 +159,9 @@ chibios_rt::ThreadReference hardware::control_thread = nullptr;
 ///< current offsets
 std::int32_t current_offset[hardware::PHASES];
 
+///< current derivative offsets
+std::int32_t derivative_offset[hardware::PHASES];
+
 
 /**
  * ADC conversion group.
@@ -340,7 +343,7 @@ void hardware::adc::current::Derivative(std::array<systems::abc, hardware::pwm::
 				sum += samples[i][s][a] + samples[i][s + hardware::pwm::INJECTION_CYCLES][a];
 				cnt += 2;
 			}
-			derivatives[s].array[i] = ADC2DERIVATIVE * (float)(current_offset[i] - sum) / (float)cnt;
+			derivatives[s].array[i] = ADC2DERIVATIVE * (float)(derivative_offset[i] - sum) / (float)cnt;
 		}
 	}
 }
@@ -353,17 +356,29 @@ void hardware::adc::current::SetOffset(void)
 	for(std::uint_fast8_t i = 0; i < PHASES; i++)
 	{
 		std::int_fast32_t sum = 0;
-		std::int_fast32_t cnt = 0;
 
 		for (std::uint_fast8_t s = 0; s < ADC_SEQ_BUFFERED; s++)
 		{
 			for (std::uint_fast8_t a = 0; a < 6; a++)
 			{
 				sum += samples[i][s][a];
-				cnt ++;
 			}
 		}
-		current_offset[i] = ADC_SEQ_BUFFERED * sum / cnt;
+		current_offset[i] = sum / hardware::pwm::INJECTION_CYCLES;
+	}
+
+	for(std::uint_fast8_t i = 0; i < PHASES; i++)
+	{
+		std::int_fast32_t sum = 0;
+
+		for (std::uint_fast8_t s = 0; s < ADC_SEQ_BUFFERED; s++)
+		{
+			for (std::uint_fast8_t a = 10; a < 16; a++)
+			{
+				sum += samples[i][s][a];
+			}
+		}
+		derivative_offset[i] = sum / hardware::pwm::INJECTION_CYCLES;
 	}
 }
 
@@ -387,7 +402,7 @@ float hardware::adc::voltage::DCBus(void)
 	}
 
 	// Filter inverts the values
-	vdc = (float)sum * ADC2VDC / (float)(ADC_SEQ_BUFFERED * cnt);
+	vdc = (float)sum * ADC2VDC / (float)cnt;
 
 	return vdc;
 }
@@ -411,7 +426,7 @@ float hardware::adc::temperature::Bridge(void)
 	}
 
 	// Filter inverts the values
-	return adc2ntc_temperature(sum/(ADC_SEQ_BUFFERED * cnt));
+	return adc2ntc_temperature(sum/cnt);
 }
 
 /**
