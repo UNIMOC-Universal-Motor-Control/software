@@ -101,6 +101,8 @@ namespace control
 	thread::thread():flux(), hall(), foc(),	as5048(hardware::i2c::instance), uq(32e3f, 1.0f, 2e-3f)
 	{}
 
+#pragma GCC push_options
+#pragma GCC optimize ("-O0")
 	/**
 	 * @brief Thread main function
 	 */
@@ -322,9 +324,12 @@ namespace control
 				motor::phase::di = i_abc_ac[i];
 				motor::stator::i = i_ab[i];
 				motor::stator::di = i_ab_ac[i];
+				motor::stator::u = u_ab[i];
+				motor::phase::u = dutys[i];
 
 				modules::freemaster::Recorder();
 			}
+
 
 			// read as 5048 every 4th cycle
 			static std::uint8_t cnt = 0;
@@ -336,6 +341,7 @@ namespace control
 		}
 
 	}
+#pragma GCC pop_options
 }/* namespace control */
 
 

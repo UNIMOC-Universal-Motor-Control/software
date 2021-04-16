@@ -348,7 +348,15 @@ namespace management
 					// wait for PWM release
 					sequencer = RUN;
 
+					motor::rotor::u.d = 0.0f;
+					motor::rotor::u.q = 0.0f;
+					motor::rotor::phi = 0;
+					motor::rotor::omega = 0.0f;
+					measure::r::point = 0;
+					measure::r::u = 0.0f;
+					measure::r::enable = false;
 					measure::r::cycle = 0;
+					measure::r::phi_step = 0;
 
 					palClearLine(LINE_LED_PWM);
 				}
@@ -461,6 +469,18 @@ namespace management
 					// wait for PWM release
 					sequencer = RUN;
 
+					motor::rotor::u.d = 0.0f;
+					motor::rotor::u.q = 0.0f;
+					motor::rotor::phi = 0;
+					motor::rotor::omega = 0.0f;
+					motor::m_l = 0.0f;
+					settings.motor.limits.omega =  measure::l::w_limit;
+					control::current = false;
+
+					observer::hall = false;
+					observer::flux = false;
+
+					measure::l::enable = false;
 					measure::l::cycle = 0;
 
 					palClearLine(LINE_LED_PWM);
@@ -566,11 +586,30 @@ namespace management
 				if(hardware::pwm::output::Active() && measure::psi::enable) palSetLine(LINE_LED_PWM);
 				else
 				{
+					using namespace values::motor::rotor;
+
 					// wait for PWM release
 					sequencer = RUN;
 
-					measure::psi::cycle = 0;
+					observer::hall = false;
+					observer::flux = false;
+					observer::hfi = false;
+
+					control::feedforward = false;
+					control::current = false;
+
 					settings.control.current.kp = measure::psi::kp;
+					u.d = 0.0f;
+					u.q = 0.0f;
+					omega = 0.0f;
+					motor::m_l = 0.0f;
+
+					setpoint::i.d = 0.0f;
+					setpoint::i.q = 0.0f;
+
+
+					measure::psi::enable = false;
+					measure::psi::cycle = 0;
 
 					palClearLine(LINE_LED_PWM);
 				}

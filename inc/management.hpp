@@ -103,10 +103,10 @@ namespace management
 		namespace l
 		{
 		///< measurement current.
-		constexpr float CUR = 2.0f;
+		constexpr float CUR = 3.0f;
 
 		///< measurement frequency
-		constexpr float FREQ = 1500.0f;
+		constexpr float FREQ = 500.0f;
 
 		///< enable flag
 		extern bool enable;
@@ -122,7 +122,7 @@ namespace management
 	/**
 	 * controller management thread
 	 */
-	class thread : public chibios_rt::BaseStaticThread<512>
+	class thread : public chibios_rt::BaseStaticThread<1024>
 	{
 	private:
 		static constexpr systime_t CYCLE_TIME = TIME_MS2I(1);
@@ -150,7 +150,8 @@ namespace management
 		 */
 		constexpr float CalculateKp(const float inductance, const float t2)
 		{
-			return (inductance/t2*0.5f);
+			if(t2 > 1e-9) return (inductance/t2*0.5f);
+			else return (0.0f);
 		}
 
 		/**
@@ -162,7 +163,8 @@ namespace management
 		 */
 		constexpr float CalculateTn(const float inductance, const float resistance)
 		{
-			return (inductance/resistance);
+			if(resistance > 1e-9) return (inductance/resistance);
+			else return (1e3f);
 		}
 
 	protected:
