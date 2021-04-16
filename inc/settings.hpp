@@ -147,11 +147,8 @@ typedef struct settings_s
 			///< enable observer switch
 			bool enable;
 
-			///< flux observer feedback dampening
-			float D;
-
-			///< flux observer feedback mid frequency
-			float wm;
+			///< flux observer feedback gains
+			systems::dq C;
 		} flux;
 
 		/**

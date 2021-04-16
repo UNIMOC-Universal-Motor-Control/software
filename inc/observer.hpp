@@ -85,16 +85,25 @@ namespace observer
 	class flux
 	{
 	private:
-		///< back emf vector
-		systems::alpha_beta bemf;
-		///< stator flux vector vector
-		systems::alpha_beta stator_flux;
-		///< flux error feedback vector
-		systems::alpha_beta feedback;
-		///< feedback controller for alpha flux
-		control::pi ctrl_alpha;
-		///< feedback controller for beta flux
-		control::pi ctrl_beta;
+		typedef struct {
+			///< back emf vector
+			systems::dq bemf;
+			///< flux error feedback vector
+			systems::dq feedback;
+		} rotor_s;
+
+		///< Rotor frame values
+		rotor_s rotor;
+
+		typedef struct {
+			///< back emf vector
+			systems::alpha_beta bemf;
+			///< estimated flux without inducted flux
+			systems::alpha_beta flux;
+		} stator_s;
+
+		///< stationary frame values
+		stator_s stator;
 	public:
 		/**
 		 * @brief flux observers trivial constructor
@@ -106,24 +115,8 @@ namespace observer
 	     * @param set_flux expected flux vector
 	     * @retval out_flux estimated flux without inducted flux
 	     */
-		void Calculate(systems::alpha_beta& set_flux, systems::alpha_beta& out_flux);
+		void Calculate(systems::dq& set_flux, systems::dq& out_flux);
 
-		/**
-		 * @brief set controller dynamic parameters.
-		 *
-		 *
-		 * @param d		dampening of the observers bandpass
-		 * @param wm	mid frequency of the observers bandpass
-		 * @param ts 	sampling time
-		 */
-		constexpr inline void SetParameters(const float d, const float wm, const float ts)
-		{
-			ctrl_alpha.SetParameters(2.0f*d*wm, 2.0f*d/wm, ts);
-			ctrl_beta.SetParameters(2.0f*d*wm, 2.0f*d/wm, ts);
-		};
-
-		///< @brief Reset controller and integral part to 0
-		inline void Reset(void) { ctrl_alpha.Reset(); ctrl_beta.Reset();};
 	};
 
 	/**
@@ -185,10 +178,10 @@ namespace observer
 		void SetOffset(const float new_offset);
 
 	    /**
-	     * @brief Get sine and cosine values from hall for estimation.
-	     * @retval sin_cos sine and cosine of the hall sensors
+	     * @brief Get sine and cosine values from hall for estimation in rotor frame.
+	     * @retval est hall sensor signal in rotor frame
 	     */
-	    void Calculate(systems::sin_cos& sc);
+	    void Calculate(systems::dq& est);
 	};
 } /* namespace observer */
 

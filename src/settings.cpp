@@ -148,11 +148,8 @@ __attribute__((aligned (32))) settings_ts settings =
 			///< enable observer switch
 			.enable = false,
 
-			///< flux observer feedback dampening
-			.D = 0.707f,
-
-			///< flux observer feedback mid frequency [rad/s]
-			.wm = 1.0f,
+			///< flux observer feedback gains
+			.C = {250.0f, 10.0f},
 		},
 
 		/**

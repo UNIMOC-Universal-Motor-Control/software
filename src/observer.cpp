@@ -143,35 +143,40 @@ namespace observer
     /**
      * @brief flux observers trivial constructor
      */
-    flux::flux(void):bemf(), stator_flux(), feedback(), ctrl_alpha(0.0f, 0.0f, 100.0f, -100.0f, hardware::Tc()), ctrl_beta(0.0f, 0.0f, 100.0f, -100.0f, hardware::Tc())
+    flux::flux(void):rotor(), stator()
     {}
 
     /**
      * @brief Get angular error from flux estimation.
      * @param set_flux expected flux vector
-     * @param out_flux estimated flux without inducted flux
-     * @retval kalman correction vector
+     * @retval out_flux estimated flux without inducted flux
      */
-    void flux::Calculate(systems::alpha_beta& set_flux, systems::alpha_beta& out_flux)
+    void flux::Calculate(systems::dq& set_flux, systems::dq& out_flux)
     {
-    	using namespace values::motor::stator;
+    	using namespace values::motor::rotor;
     	using namespace values::motor;
 
     	// BEMF voltage and feedback
-    	bemf.alpha = u.alpha - settings.motor.rs * i.alpha + feedback.alpha;
-    	bemf.beta  = u.beta  - settings.motor.rs * i.beta  + feedback.beta;
+    	rotor.bemf.d = u.d - settings.motor.rs * i.d + rotor.feedback.d;
+    	rotor.bemf.q = u.q - settings.motor.rs * i.q + rotor.feedback.q;
+
+    	// rotate the bemf to stator system
+    	stator.bemf = systems::transform::InversePark(rotor.bemf, values::motor::rotor::sc);
 
     	// integrate bemf to flux
-    	stator_flux.alpha +=  bemf.alpha * hardware::Tc();
-    	stator_flux.beta  +=  bemf.beta  * hardware::Tc();
+    	stator.flux.alpha +=  stator.bemf.alpha * hardware::Tc();
+    	stator.flux.beta  +=  stator.bemf.beta  * hardware::Tc();
+
+    	// transform flux to rotor system
+    	out_flux = systems::transform::Park(stator.flux, values::motor::rotor::sc);
 
     	// sub the voltage inducted in the inductors of the stator
-    	out_flux.alpha = stator_flux.alpha - i.alpha * settings.motor.l.d;
-    	out_flux.beta  = stator_flux.beta  - i.beta  * settings.motor.l.q;
+    	out_flux.d -= i.d * settings.motor.l.d;
+    	out_flux.q -= i.q * settings.motor.l.q;
 
     	// compare actual flux with flux parameter
-    	feedback.alpha = ctrl_alpha.Calculate(set_flux.alpha, out_flux.alpha, 0.0f);
-    	feedback.beta  = ctrl_beta.Calculate(set_flux.beta, out_flux.beta, 0.0f);
+    	rotor.feedback.d = settings.observer.flux.C.d * (set_flux.d - out_flux.d);
+    	rotor.feedback.q = settings.observer.flux.C.q * (set_flux.q - out_flux.q);
     }
 
     /**
@@ -231,48 +236,51 @@ namespace observer
     hall::hall(void):offset(0.0f), sc_offset{0.0f, 1.0f}   {}
 
     /**
-     * @brief Get sine and cosine values from hall for estimation.
-     * @retval sin_cos sine and cosine of the hall sensors
+     * @brief Get sine and cosine values from hall for estimation in rotor frame.
+     * @retval est hall sensor signal in rotor frame
      */
-    void hall::Calculate(systems::sin_cos& sc)
+    void hall::Calculate(systems::dq& est)
     {
     	constexpr float sqrt3by2 = std::sqrt(3.0f)*0.5f;
+    	systems::alpha_beta tab;
 
     	switch(values::motor::hall::state)
     	{
     	default:
     	case 0b100:	// 0 deg.
-    		sc.sin = 0.0f;
-    		sc.cos = -1.0f;
+    		tab.alpha = 0.0f;
+    		tab.beta = -1.0f;
     		break;
     	case 0b110:	// 60 deg.
-    		sc.sin = -sqrt3by2;
-    		sc.cos = -0.5f;
+    		tab.alpha = -sqrt3by2;
+    		tab.beta = -0.5f;
     		break;
     	case 0b010:	// 120 deg.
-    		sc.sin = -sqrt3by2;
-    		sc.cos = 0.5f;
+    		tab.alpha = -sqrt3by2;
+    		tab.beta = 0.5f;
     		break;
     	case 0b011:	// 180 deg.
-    		sc.sin = 0.0f;
-    		sc.cos = 1.0f;
+    		tab.alpha = 0.0f;
+    		tab.beta = 1.0f;
     		break;
     	case 0b001:	// 240 deg.
-    		sc.sin = sqrt3by2;
-    		sc.cos = 0.5f;
+    		tab.alpha = sqrt3by2;
+    		tab.beta = 0.5f;
     		break;
     	case 0b101:	// 300 deg.
-    		sc.sin = sqrt3by2;
-    		sc.cos = 0.5f;
+    		tab.alpha = sqrt3by2;
+    		tab.beta = 0.5f;
     		break;
     	}
 
     	// advance angle by offset
-    	systems::alpha_beta tab = {sc.sin, sc.cos};
-    	systems::dq tdq = systems::transform::Park(tab, sc_offset);
+    	est = systems::transform::Park(tab, sc_offset);
 
-    	sc.sin = tdq.d;
-    	sc.cos = tdq.q;
+    	tab.alpha = est.d;
+    	tab.beta = est.q;
+
+    	// bring hall angle vector to rotor frame
+    	est = systems::transform::Park(tab, values::motor::rotor::sc);
     }
 
 	/**

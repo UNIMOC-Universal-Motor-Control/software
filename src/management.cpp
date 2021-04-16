@@ -472,7 +472,9 @@ namespace management
 				if((measure::l::cycle % 50) == 0)
 				{
 
-					if(systems::Length(motor::rotor::i) > measure::l::CUR)
+					if(systems::Length(motor::rotor::i) > measure::l::CUR
+						||	motor::rotor::u.q > battery::u * 0.50
+						||	measure::l::u > battery::u * 0.50)
 					{
 						sequencer = CALCULATE_LS;
 					}

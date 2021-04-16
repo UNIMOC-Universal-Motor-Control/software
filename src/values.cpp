@@ -49,8 +49,8 @@ namespace values
 			///< hall sensor states
 			std::uint8_t state = 0;
 
-			///< hall sensor sine and cosine values
-			systems::sin_cos sc = {0.0f, 0.0f};
+			///< hall sensor flux estimate
+			systems::dq flux = {0.0f, 0.0f};
 		}
 
 		/**
@@ -87,18 +87,6 @@ namespace values
 
 			///< motor stator admittance vector
 			systems::alpha_beta yd = {0.0f, 0.0f};
-
-			/**
-			 * motor stator flux values
-			 */
-			namespace flux
-			{
-				///< motor stator flux vector setpoint
-				systems::alpha_beta set = {0.0f, 0.0f};
-
-				///< motor stator flux vector actual
-				systems::alpha_beta act = {0.0f, 0.0f};
-			}
 		} /* namespace stator */
 
 		/**
@@ -126,6 +114,18 @@ namespace values
 
 			///< sine cosine values of phi
 			systems::sin_cos sc = {0.0f, 0.0f};
+
+			/**
+			 * motor rotor flux values
+			 */
+			namespace flux
+			{
+				///< motor rotor flux vector setpoint
+				systems::dq set = {0.0f, 0.0f};
+
+				///< motor rotor flux vector actual
+				systems::dq act = {0.0f, 0.0f};
+			}
 
 			/**
 			 * motor rotor system setpoints

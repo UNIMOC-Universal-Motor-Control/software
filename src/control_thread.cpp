@@ -151,7 +151,7 @@ namespace control
 			motor::hall::state = hardware::adc::hall::State();
 
 			// calculate the sine and cosine of the new angle
-			angle = motor::rotor::phi;// - unit::Q31(unit::rad2q31*motor::rotor::omega * hardware::Tf());
+			angle = motor::rotor::phi - unit::Q31(motor::rotor::omega * hardware::Tf());;
 
 			// calculate new sine and cosine for the reference system
 			systems::sin_cos sc = systems::SinCos(angle);
@@ -172,50 +172,50 @@ namespace control
 				hall.SetOffset(settings.observer.hall.offset);
 
 				// calculate the hall observer
-				hall.Calculate(motor::hall::sc);
+				hall.Calculate(motor::hall::flux);
 
 				// calculate reference flux vector from hall sensors
-				motor::stator::flux::set.alpha = motor::hall::sc.cos * settings.motor.psi;
-				motor::stator::flux::set.beta  = motor::hall::sc.sin * settings.motor.psi;
+				motor::rotor::flux::set.d = motor::hall::flux.d * settings.motor.psi;
+				motor::rotor::flux::set.q = motor::hall::flux.q * settings.motor.psi;
 			}
 			else
 			{
 				// calculate reference flux vector from estimated rotor position
-				motor::stator::flux::set.alpha = motor::rotor::sc.cos * settings.motor.psi;
-				motor::stator::flux::set.beta  = motor::rotor::sc.sin * settings.motor.psi;
+				motor::rotor::flux::set.d = motor::rotor::sc.cos * settings.motor.psi;
+				motor::rotor::flux::set.q = motor::rotor::sc.sin * settings.motor.psi;
 			}
 
 			if(management::observer::flux)
 			{
 				std::array<float, 3> correction;
+				float error;
 
 				// Predict the new rotor position
 				mech.Predict(motor::rotor::i);
 
 				// calculate the flux observer
-				flux.Calculate(motor::stator::flux::set, motor::stator::flux::act);
+				flux.Calculate(motor::rotor::flux::set, motor::rotor::flux::act);
 
-				// calculate the most steady angular error
-				systems::sin_cos sc_flux =
-				{
-						motor::stator::flux::act.beta/settings.motor.psi,
-						motor::stator::flux::act.alpha/settings.motor.psi
-				};
-				float angle_error = systems::SinCosDiff(motor::rotor::sc, sc_flux);
+		    	if(settings.motor.psi > 1e-8)
+		    	{
+		    		error = motor::rotor::flux::act.q/settings.motor.psi;
+		    	}
+		    	else
+		    	{
+		    		error = motor::rotor::flux::act.q;
+		    	}
 
-				// Update the
-				mech.Update(settings.observer.mech.Q, settings.observer.mech.R, angle_error, correction);
+		    	// Update the
+				mech.Update(settings.observer.mech.Q, settings.observer.mech.R, error, correction);
 
 				// correct the prediction
 				mech.Correct(correction);
 			}
 			else
 			{
-				flux.Reset();
-				flux.SetParameters(settings.observer.flux.D, settings.observer.flux.wm, hardware::Tc());
 				// start with flux on reference
-				motor::stator::flux::act.alpha = motor::stator::flux::set.alpha;
-				motor::stator::flux::act.beta  = motor::stator::flux::set.beta;
+				motor::rotor::flux::act.d = motor::rotor::flux::set.d;
+				motor::rotor::flux::act.q  = motor::rotor::flux::set.q;
 
 				systems::dq i = {0.0f, 0.0f};
 				mech.Predict(i);
