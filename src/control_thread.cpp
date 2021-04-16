@@ -32,78 +32,6 @@
  */
 namespace control
 {
-/**
-	 * derate control input envelope
-	 * @param limit	value to end derating
-	 * @param envelope positive value sets the envelope below the limit, negative above the limit
-	 * @param actual actual value
-	 * @return 1 when no derating active and 1 to 0 when in envelope and 0 when above limit
-	 */
-	float Derate(const float limit, const float envelope, const float actual)
-	{
-		const float start = limit - envelope;
-
-		float derating = (actual - start)/envelope;
-
-		if(derating < 0.0f) derating = 0.0f;
-		if(derating > 1.0f) derating = 1.0f;
-
-		// cut off the derating value from the maximum
-		return (1.0f - derating);
-	}
-
-	/**
-	 * limit the input value
-	 * @param[in/out] in input value
-	 * @param min minimal value
-	 * @param max maximal value
-	 * @return true when value is out of limits
-	 */
-	bool Limit(float& in, const float min, const float max)
-	{
-		bool did_trunc = false;
-
-		if (in > max)
-		{
-			in = max;
-			did_trunc = true;
-
-		}
-		else if (in < min)
-		{
-			in = min;
-			did_trunc = true;
-		}
-
-		return did_trunc;
-	}
-
-	/**
-	 * SVPWM Overmodulation modified to flat bottom.
-	 * @param u phase voltages
-	 * @param ubat battery voltage
-	 * @return dutys in 0 to 1
-	 */
-	void Overmodulation(systems::abc& u, float ubat, systems::abc& dutys)
-	{
-		const float* min = std::min_element(u.array.begin(), u.array.end());
-		const float* max = std::max_element(u.array.begin(), u.array.end());
-		float mid = (*min + *max)*0.5f;
-
-		// prevent division by zero
-		if(ubat < 10.0f)
-		{
-			ubat = 10.0f;
-		}
-		// scale voltage to -1 to 1
-		float scale = 1.0f / ubat;
-
-		for (std::uint8_t i = 0; i < hardware::PHASES; ++i)
-		{
-			dutys.array[i] = (u.array[i] - mid) * scale + 0.5f;
-		}
-	}
-
 	/**
 	 * Clark transform of 4 cycle current measurements
 	 * @param[in]  i_abc		phase current samples
@@ -223,7 +151,7 @@ namespace control
 			motor::hall::state = hardware::adc::hall::State();
 
 			// calculate the sine and cosine of the new angle
-			angle = motor::rotor::phi - unit::Q31(unit::rad2q31*motor::rotor::omega * hardware::Tf());
+			angle = motor::rotor::phi;// - unit::Q31(unit::rad2q31*motor::rotor::omega * hardware::Tf());
 
 			// calculate new sine and cosine for the reference system
 			systems::sin_cos sc = systems::SinCos(angle);
@@ -238,16 +166,6 @@ namespace control
 			// calculate battery current from power equality
 			battery::i = (motor::rotor::u.d * motor::rotor::i.d
 					+ motor::rotor::u.q * motor::rotor::i.q)/battery::u;
-
-			if(std::fabs(motor::rotor::setpoint::i.q) > settings.observer.mech.i_min)
-			{
-				mech.Predict(motor::rotor::i);
-			}
-			else
-			{
-				systems::dq i = {0.0f, 0.0f};
-				mech.Predict(i);
-			}
 
 			if(management::observer::hall)
 			{
@@ -271,15 +189,18 @@ namespace control
 			{
 				std::array<float, 3> correction;
 
+				// Predict the new rotor position
+				mech.Predict(motor::rotor::i);
+
 				// calculate the flux observer
 				flux.Calculate(motor::stator::flux::set, motor::stator::flux::act);
 
 				// calculate the most steady angular error
 				systems::sin_cos sc_flux =
-					{
-							motor::stator::flux::act.beta/settings.motor.psi,
-							motor::stator::flux::act.alpha/settings.motor.psi
-					};
+				{
+						motor::stator::flux::act.beta/settings.motor.psi,
+						motor::stator::flux::act.alpha/settings.motor.psi
+				};
 				float angle_error = systems::SinCosDiff(motor::rotor::sc, sc_flux);
 
 				// Update the
@@ -287,6 +208,18 @@ namespace control
 
 				// correct the prediction
 				mech.Correct(correction);
+			}
+			else
+			{
+				flux.Reset();
+				flux.SetParameters(settings.observer.flux.D, settings.observer.flux.wm, hardware::Tc());
+				// start with flux on reference
+				motor::stator::flux::act.alpha = motor::stator::flux::set.alpha;
+				motor::stator::flux::act.beta  = motor::stator::flux::set.beta;
+
+				systems::dq i = {0.0f, 0.0f};
+				mech.Predict(i);
+
 			}
 
 			if(management::control::current)

@@ -87,12 +87,14 @@ namespace observer
 	private:
 		///< back emf vector
 		systems::alpha_beta bemf;
+		///< stator flux vector vector
+		systems::alpha_beta stator_flux;
 		///< flux error feedback vector
 		systems::alpha_beta feedback;
 		///< feedback controller for alpha flux
-		control::pi pi_alpha;
+		control::pi ctrl_alpha;
 		///< feedback controller for beta flux
-		control::pi pi_beta;
+		control::pi ctrl_beta;
 	public:
 		/**
 		 * @brief flux observers trivial constructor
@@ -105,6 +107,23 @@ namespace observer
 	     * @retval out_flux estimated flux without inducted flux
 	     */
 		void Calculate(systems::alpha_beta& set_flux, systems::alpha_beta& out_flux);
+
+		/**
+		 * @brief set controller dynamic parameters.
+		 *
+		 *
+		 * @param d		dampening of the observers bandpass
+		 * @param wm	mid frequency of the observers bandpass
+		 * @param ts 	sampling time
+		 */
+		constexpr inline void SetParameters(const float d, const float wm, const float ts)
+		{
+			ctrl_alpha.SetParameters(2.0f*d*wm, 2.0f*d/wm, ts);
+			ctrl_beta.SetParameters(2.0f*d*wm, 2.0f*d/wm, ts);
+		};
+
+		///< @brief Reset controller and integral part to 0
+		inline void Reset(void) { ctrl_alpha.Reset(); ctrl_beta.Reset();};
 	};
 
 	/**
@@ -153,10 +172,6 @@ namespace observer
 
 		///< offsets sine cosine values for rotation
 		systems::sin_cos sc_offset;
-
-
-		///< kalman filter for hall error signal
-		observer::mechanic mech;
 	public:
 		/**
 		 * @brief hall observers trivial constructor

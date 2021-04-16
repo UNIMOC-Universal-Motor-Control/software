@@ -34,6 +34,78 @@ namespace control
 {
 
 	/**
+	 * derate control input envelope
+	 * @param limit	value to end derating
+	 * @param envelope positive value sets the envelope below the limit, negative above the limit
+	 * @param actual actual value
+	 * @return 1 when no derating active and 1 to 0 when in envelope and 0 when above limit
+	 */
+	float Derate(const float limit, const float envelope, const float actual)
+	{
+		const float start = limit - envelope;
+
+		float derating = (actual - start)/envelope;
+
+		if(derating < 0.0f) derating = 0.0f;
+		if(derating > 1.0f) derating = 1.0f;
+
+		// cut off the derating value from the maximum
+		return (1.0f - derating);
+	}
+
+	/**
+	 * limit the input value
+	 * @param[in/out] in input value
+	 * @param min minimal value
+	 * @param max maximal value
+	 * @return true when value is out of limits
+	 */
+	bool Limit(float& in, const float min, const float max)
+	{
+		bool did_trunc = false;
+
+		if (in > max)
+		{
+			in = max;
+			did_trunc = true;
+
+		}
+		else if (in < min)
+		{
+			in = min;
+			did_trunc = true;
+		}
+
+		return did_trunc;
+	}
+
+	/**
+	 * SVPWM Overmodulation modified to flat bottom.
+	 * @param u phase voltages
+	 * @param ubat battery voltage
+	 * @return dutys in 0 to 1
+	 */
+	void Overmodulation(systems::abc& u, float ubat, systems::abc& dutys)
+	{
+		const float* min = std::min_element(u.array.begin(), u.array.end());
+		const float* max = std::max_element(u.array.begin(), u.array.end());
+		float mid = (*min + *max)*0.5f;
+
+		// prevent division by zero
+		if(ubat < 10.0f)
+		{
+			ubat = 10.0f;
+		}
+		// scale voltage to -1 to 1
+		float scale = 1.0f / ubat;
+
+		for (std::uint8_t i = 0; i < hardware::PHASES; ++i)
+		{
+			dutys.array[i] = (u.array[i] - mid) * scale + 0.5f;
+		}
+	}
+
+	/**
 	 * @brief Pi controller constructor with all essential parameters.
 	 *
 	 * @param new_kp				proportional gain.

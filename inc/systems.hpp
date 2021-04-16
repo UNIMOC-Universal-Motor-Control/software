@@ -67,7 +67,7 @@ namespace unit
     ///< convert internal q31 angle to degrees
     constexpr float Rad(std::int32_t m) { return (float)m * q312rad; }
     ///< convert rad angle to internal q31
-    constexpr float Q31(float m) { return (std::int32_t)(m * rad2q31); }
+    constexpr std::int32_t Q31(float m) { return (std::int32_t)(m * rad2q31); }
 
     ///< scale from radians per second to rpm
     constexpr float rad_s2rpm = 60.0f / math::_2PI;

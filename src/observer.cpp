@@ -143,7 +143,7 @@ namespace observer
     /**
      * @brief flux observers trivial constructor
      */
-    flux::flux(void):bemf(),feedback(), pi_alpha(0.0f, 0.0f, 0.0f, 0.0f, hardware::Tc()), pi_beta(0.0f, 0.0f, 0.0f, 0.0f, hardware::Tc())
+    flux::flux(void):bemf(), stator_flux(), feedback(), ctrl_alpha(0.0f, 0.0f, 100.0f, -100.0f, hardware::Tc()), ctrl_beta(0.0f, 0.0f, 100.0f, -100.0f, hardware::Tc())
     {}
 
     /**
@@ -162,16 +162,16 @@ namespace observer
     	bemf.beta  = u.beta  - settings.motor.rs * i.beta  + feedback.beta;
 
     	// integrate bemf to flux
-    	out_flux.alpha +=  bemf.alpha * hardware::Tc();
-    	out_flux.beta  +=  bemf.beta  * hardware::Tc();
+    	stator_flux.alpha +=  bemf.alpha * hardware::Tc();
+    	stator_flux.beta  +=  bemf.beta  * hardware::Tc();
 
     	// sub the voltage inducted in the inductors of the stator
-    	out_flux.alpha -= i.alpha * settings.motor.l.d;
-    	out_flux.beta  -= i.beta  * settings.motor.l.q;
+    	out_flux.alpha = stator_flux.alpha - i.alpha * settings.motor.l.d;
+    	out_flux.beta  = stator_flux.beta  - i.beta  * settings.motor.l.q;
 
     	// compare actual flux with flux parameter
-    	feedback.alpha = pi_alpha.Calculate(set_flux.alpha, out_flux.alpha, 0.0f);
-    	feedback.beta  = pi_beta.Calculate(set_flux.beta, out_flux.beta, 0.0f);
+    	feedback.alpha = ctrl_alpha.Calculate(set_flux.alpha, out_flux.alpha, 0.0f);
+    	feedback.beta  = ctrl_beta.Calculate(set_flux.beta, out_flux.beta, 0.0f);
     }
 
     /**
@@ -228,7 +228,7 @@ namespace observer
     /**
      * @brief hall observers trivial constructor
      */
-    hall::hall(void)    {}
+    hall::hall(void):offset(0.0f), sc_offset{0.0f, 1.0f}   {}
 
     /**
      * @brief Get sine and cosine values from hall for estimation.
