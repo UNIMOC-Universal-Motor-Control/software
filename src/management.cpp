@@ -562,20 +562,16 @@ namespace management
 
 					control::feedforward = false;
 					control::current = false;
-
-					measure::psi::kp = settings.control.current.kp;
-					settings.control.current.kp = CalculateKp(settings.motor.l.d, hardware::Tf()) / 10.0f;
-
-					// sleep to get kp updated
-					sleepUntilWindowed(deadline, deadline + CYCLE_TIME);
-					deadline = chibios_rt::System::getTime();
-
 					observer::hall = false;
 					observer::flux = false;
 					observer::hfi = false;
 
-					control::feedforward = false;
-					control::current = true;
+					measure::psi::kp = settings.control.current.kp;
+					settings.control.current.kp = 0.1f;
+
+					// sleep to get kp updated
+					sleepUntilWindowed(deadline, deadline + CYCLE_TIME);
+					deadline = chibios_rt::System::getTime();
 
 					settings.motor.psi = 0.0f;
 					setpoint::i.d = 0.0f;
@@ -620,8 +616,8 @@ namespace management
 				if((measure::psi::cycle % 100) == 0)
 				{
 					using namespace values::motor::rotor;
-					if(	   std::fabs(u.d) > battery::u * 0.125f
-							|| std::fabs(u.q) > battery::u * 0.125f
+					if(	   std::fabs(u.d) > battery::u * 0.25f
+							|| std::fabs(u.q) > battery::u * 0.25f
 							|| omega > 0.5f*settings.motor.limits.omega)
 					{
 						sequencer = CALCULATE_PSI;

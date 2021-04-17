@@ -166,7 +166,7 @@ namespace systems
     sin_cos SinCos(const std::int32_t theta)
     {
     	sin_cos out = {0.0f, 0.0f};
-    	constexpr float _1by2PI = 1.0f/(float)std::numeric_limits<std::int32_t>::max();
+    	constexpr float _1by2PI = 0.5f/(float)std::numeric_limits<std::int32_t>::max();
     	float Dn = math::_2PI / FAST_MATH_TABLE_SIZE;    /* delta between the two points (fixed), in this case 2*pi/FAST_MATH_TABLE_SIZE */
     	float fract, in;                                 /* Temporary input, output variables */
     	uint16_t indexS, indexC;                         /* Index variable */

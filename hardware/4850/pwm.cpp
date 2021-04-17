@@ -79,7 +79,7 @@ float tc = (float)(DEF_PERIOD * INJECTION_CYCLES)/(float)hardware::pwm::TIMER_CL
 ///< Filter group delay
 /// RC Filter with 11k and 1n plus 5us for the INA240
 ///  Software needs 1 control cycle for calculations
-const float TF_HW = (900.0f * 11e-9f);
+const float TF_HW = (510.0f * 1e-9f);
 float tf = tc + TF_HW;
 
 /**
