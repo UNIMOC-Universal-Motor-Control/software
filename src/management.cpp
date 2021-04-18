@@ -112,6 +112,12 @@ namespace management
 		 */
 		namespace l
 		{
+			///< measurement current.
+			float CUR = 3.0f;
+
+			///< measurement frequency
+			float FREQ = 800.0f;
+
 			///< enable flag
 			bool enable = false;
 
@@ -263,6 +269,8 @@ namespace management
 					{
 						motor::rotor::u.d = 0.0f;
 						motor::rotor::u.q = 0.0f;
+						motor::rotor::setpoint::i.d = 0.0f;
+						motor::rotor::setpoint::i.q = 0.0f;
 					}
 					control::current = settings.control.current.active;
 				}
@@ -288,21 +296,6 @@ namespace management
 				else
 				{
 					observer::hfi = false;
-				}
-
-
-
-
-				// starting help for traction drives
-				if(std::fabs(motor::rotor::setpoint::i.q) > settings.observer.mech.i_min
-						&& settings.motor.i_start > 0.1f && std::fabs(motor::rotor::omega) < 200.0f)
-				{
-					using namespace values::motor::rotor;
-					setpoint::i.d = settings.motor.i_start * (1.0f - std::fabs(omega) * 0.005f);
-				}
-				else
-				{
-					motor::rotor::setpoint::i.d = 0.0f;
 				}
 
 				control::feedforward = settings.control.current.feedforward;
@@ -507,7 +500,7 @@ namespace management
 				break;
 
 			case CALCULATE_LS:
-
+				// TODO needs rework: phase Lag of current vetor is motor depandent.
 				// calculate the dc levels
 				motor::rotor::gid.SetFrequency(0.0f, hardware::Fc());
 				motor::rotor::gid.Calculate();
@@ -560,11 +553,13 @@ namespace management
 					omega = 0.0f;
 					motor::m_l = 0.0f;
 
-					control::feedforward = false;
-					control::current = false;
 					observer::hall = false;
 					observer::flux = false;
 					observer::hfi = false;
+					control::feedforward = false;
+
+					// turn controller off to update KP
+					control::current = false;
 
 					measure::psi::kp = settings.control.current.kp;
 					settings.control.current.kp = 0.1f;
@@ -572,6 +567,8 @@ namespace management
 					// sleep to get kp updated
 					sleepUntilWindowed(deadline, deadline + CYCLE_TIME);
 					deadline = chibios_rt::System::getTime();
+
+					control::current = true;
 
 					settings.motor.psi = 0.0f;
 					setpoint::i.d = 0.0f;

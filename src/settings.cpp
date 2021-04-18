@@ -60,13 +60,6 @@ __attribute__((aligned (32))) settings_ts settings =
 		///< number of pole pairs
 		.P = 7,
 
-		///< starting direct current
-		.i_start = 0.0f,
-
-//		///< hall sensor state change angles tables in clock wise and counter clock wise direction
-//		.hall_table_cw = {0.0f},
-//		.hall_table_ccw = {0.0f},
-
 		/**
 		 * motor limit settings
 		 */
@@ -159,16 +152,6 @@ __attribute__((aligned (32))) settings_ts settings =
 		{
 			///< enable observer switch
 			.enable = false,
-
-			///< Pll proportional Gain
-			.Kp = 0.0f,
-
-			///< PLL Integral Time
-			.Tn = 1.0f,
-
-
-			///< injection frequency in rad/s
-			.frequency = 1500.0f,
 
 			///< injection current in A
 			.current = 1.5f,

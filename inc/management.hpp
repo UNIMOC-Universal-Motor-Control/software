@@ -103,10 +103,10 @@ namespace management
 		namespace l
 		{
 		///< measurement current.
-		constexpr float CUR = 3.0f;
+		extern float CUR;
 
 		///< measurement frequency
-		constexpr float FREQ = 1000.0f;
+		extern float FREQ;
 
 		///< enable flag
 		extern bool enable;

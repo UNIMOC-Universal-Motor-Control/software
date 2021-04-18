@@ -181,8 +181,8 @@ namespace control
 			else
 			{
 				// calculate reference flux vector from estimated rotor position
-				motor::rotor::flux::set.d = motor::rotor::sc.cos * settings.motor.psi;
-				motor::rotor::flux::set.q = motor::rotor::sc.sin * settings.motor.psi;
+				motor::rotor::flux::set.d = settings.motor.psi;
+				motor::rotor::flux::set.q = 0.0f;
 			}
 
 			if(management::observer::flux)

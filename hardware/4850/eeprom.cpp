@@ -21,7 +21,7 @@
 #include "hardware_interface.hpp"
 #include "hal.h"
 
-static void select_half(const uint16_t half);
+static msg_t select_half(const uint16_t half);
 
 /**
  * EEPROM constants
@@ -65,8 +65,8 @@ constexpr uint32_t SIZE				= 512; 	// AT32C04 4KBit EEPROM
 
 constexpr uint32_t CRC32MASK   		= 0x04C11DB7;
 
-constexpr uint32_t READ_TIMEOUT		= TIME_MS2I(250);
-constexpr uint32_t WRITE_TIMEOUT	= TIME_MS2I(300);
+constexpr uint32_t READ_TIMEOUT		= TIME_MS2I(1000);
+constexpr uint32_t WRITE_TIMEOUT	= TIME_MS2I(1000);
 
 /**
  * I2C configuration for EEPROM bus.
@@ -112,16 +112,15 @@ uint32_t hardware::memory::Crc32(const void* const buffer, const uint32_t length
 /**
  * Select current half of the EEPROM
  * @param half 0= first half, 1= second half of the EEPROM
- * @return 0 = success
+ * @return MSG_OK
  */
-static void select_half(const uint16_t half)
+static msg_t select_half(const uint16_t half)
 {
-	(void)half;
 	osalDbgAssert(half < 2, "EEPROM: Half out of bounds");
 
 	uint8_t dummy = 0xA5;
 
-	i2cMasterTransmitTimeout(hardware::i2c::instance, SPA(half), &dummy, sizeof(dummy), nullptr, 0, READ_TIMEOUT);
+	return i2cMasterTransmitTimeout(hardware::i2c::instance, SPA(half), &dummy, sizeof(dummy), nullptr, 0, READ_TIMEOUT);
 }
 
 
@@ -158,12 +157,12 @@ uint8_t hardware::memory::Read(const uint32_t address, const void* const buffer,
 
 	if(address > SIZE/2)
 	{
-		select_half(1);
+		status = select_half(1);
 		wordaddr = address - (SIZE/2);
 	}
 	else
 	{
-		select_half(0);
+		status = select_half(0);
 
 		if((address + length) > SIZE/2)
 		{
@@ -171,8 +170,11 @@ uint8_t hardware::memory::Read(const uint32_t address, const void* const buffer,
 		}
 	}
 
-	status |= i2cMasterTransmitTimeout(i2c::instance, RW_ADDRESS,
-			&wordaddr, 1, (uint8_t*)buffer, read_length, READ_TIMEOUT);
+	if(status == MSG_OK)
+	{
+		status |= i2cMasterTransmitTimeout(i2c::instance, RW_ADDRESS,
+				&wordaddr, 1, (uint8_t*)buffer, read_length, READ_TIMEOUT);
+	}
 
 	// Read the rest of the Data if we started in half 0
 	if(read_length < length && status == MSG_OK)
@@ -235,11 +237,11 @@ uint8_t hardware::memory::Write(const uint32_t address, void const * buffer, con
 
 	i2cAcquireBus(i2c::instance);
 
-	select_half(half);
+	status = select_half(half);
 
 	// In case address is within the first page to write.
 	// do a write to the next page boundary
-	if(address % PAGE_SIZE)
+	if(address % PAGE_SIZE && status == MSG_OK)
 	{
 		write_length = PAGE_SIZE - write_addr%PAGE_SIZE;
 

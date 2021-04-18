@@ -58,13 +58,6 @@ typedef struct settings_s
 		///< number of pole pairs
 		uint32_t P;
 
-		///< starting direct current
-		float i_start;
-
-//		///< hall sensor state change angles tables in clock wise and counter clock wise direction
-//		std::array<float, 8> hall_table_cw;
-//		std::array<float, 8> hall_table_ccw;
-
 		/**
 		 * motor limits
 		 */
@@ -158,15 +151,6 @@ typedef struct settings_s
 		{
 			///< enable observer switch
 			bool enable;
-
-			///< Pll proportional Gain
-			float Kp;
-
-			///< PLL Integral Time
-			float Tn;
-
-			///< injection frequency in Hz
-			float frequency;
 
 			///< injection current in A
 			float current;
