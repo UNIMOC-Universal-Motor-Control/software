@@ -241,43 +241,19 @@ namespace observer
      */
     void hall::Calculate(systems::dq& est)
     {
-    	constexpr float sqrt3by2 = std::sqrt(3.0f)*0.5f;
     	systems::alpha_beta tab;
+    	systems::abc hall;
 
-    	switch(values::motor::hall::state)
-    	{
-    	default:
-    	case 0b100:	// 0 deg.
-    		tab.alpha = 0.0f;
-    		tab.beta = -1.0f;
-    		break;
-    	case 0b110:	// 60 deg.
-    		tab.alpha = -sqrt3by2;
-    		tab.beta = -0.5f;
-    		break;
-    	case 0b010:	// 120 deg.
-    		tab.alpha = -sqrt3by2;
-    		tab.beta = 0.5f;
-    		break;
-    	case 0b011:	// 180 deg.
-    		tab.alpha = 0.0f;
-    		tab.beta = 1.0f;
-    		break;
-    	case 0b001:	// 240 deg.
-    		tab.alpha = sqrt3by2;
-    		tab.beta = 0.5f;
-    		break;
-    	case 0b101:	// 300 deg.
-    		tab.alpha = sqrt3by2;
-    		tab.beta = 0.5f;
-    		break;
-    	}
+    	if(values::motor::hall::state & settings.observer.hall.map.a) hall.a = 1.0f;
+    	else hall.a = -1.0f;
 
-    	// advance angle by offset
-    	est = systems::transform::Park(tab, sc_offset);
+    	if(values::motor::hall::state & settings.observer.hall.map.b) hall.b = 1.0f;
+    	else hall.b = -1.0f;
 
-    	tab.alpha = est.d;
-    	tab.beta = est.q;
+    	if(values::motor::hall::state & settings.observer.hall.map.c) hall.c = 1.0f;
+    	else hall.c = -1.0f;
+
+    	tab = systems::transform::Clark(hall);
 
     	// bring hall angle vector to rotor frame
     	est = systems::transform::Park(tab, values::motor::rotor::sc);

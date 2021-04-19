@@ -165,6 +165,7 @@ namespace observer
 
 		///< offsets sine cosine values for rotation
 		systems::sin_cos sc_offset;
+
 	public:
 		/**
 		 * @brief hall observers trivial constructor

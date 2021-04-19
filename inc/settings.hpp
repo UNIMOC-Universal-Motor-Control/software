@@ -22,7 +22,6 @@
 #include <cstdint>
 #include "systems.hpp"
 
-
 /**
  * settings to be saved in non volatile memory
  */
@@ -167,8 +166,18 @@ typedef struct settings_s
 			///< enable observer switch
 			bool enable;
 
-			///< float theta offset
-			float offset;
+			///< maps the hall sensor inputs to phases
+			struct map_s
+			{
+				///< mapps hall sensor to phase a
+				std::uint8_t a;
+				///< mapps hall sensor to phase a
+				std::uint8_t b;
+				///< mapps hall sensor to phase a
+				std::uint8_t c;
+
+				std::uint8_t unused;
+			} map;
 		} hall;
 
 		/**

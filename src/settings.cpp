@@ -168,8 +168,18 @@ __attribute__((aligned (32))) settings_ts settings =
 			///< enable observer switch
 			.enable = false,
 
-			///< float theta offset
-			.offset = 0.0f,
+			///< maps the hall sensor inputs to phases
+			.map =
+			{
+				///< mapps hall sensor to phase a
+				.a = 0b001,
+				///< mapps hall sensor to phase a
+				.b = 0b010,
+				///< mapps hall sensor to phase a
+				.c = 0b100,
+
+				.unused = 0,
+			},
 		},
 
 		/**

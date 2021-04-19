@@ -155,39 +155,39 @@ uint8_t hardware::memory::Read(const uint32_t address, const void* const buffer,
 	wordaddr = address;
 	read_length = length;
 
-	if(address > SIZE/2)
-	{
-		status = select_half(1);
-		wordaddr = address - (SIZE/2);
-	}
-	else
-	{
-		status = select_half(0);
+//	if(address > SIZE/2)
+//	{
+//		status = select_half(1);
+//		wordaddr = address - (SIZE/2);
+//	}
+//	else
+//	{
+//		status = select_half(0);
+//
+//		if((address + length) > SIZE/2)
+//		{
+//			read_length = SIZE/2 - address;
+//		}
+//	}
 
-		if((address + length) > SIZE/2)
-		{
-			read_length = SIZE/2 - address;
-		}
-	}
-
-	if(status == MSG_OK)
+//	if(status == MSG_OK)
 	{
 		status |= i2cMasterTransmitTimeout(i2c::instance, RW_ADDRESS,
 				&wordaddr, 1, (uint8_t*)buffer, read_length, READ_TIMEOUT);
 	}
 
-	// Read the rest of the Data if we started in half 0
-	if(read_length < length && status == MSG_OK)
-	{
-		uint8_t* buffer_addr = (uint8_t*)buffer + read_length;
-
-		select_half(1);
-		wordaddr = 0;
-		read_length = length- read_length;
-
-		status |= i2cMasterTransmitTimeout(i2c::instance, RW_ADDRESS,
-				&wordaddr, 1, buffer_addr, read_length, READ_TIMEOUT);
-	}
+//	// Read the rest of the Data if we started in half 0
+//	if(read_length < length && status == MSG_OK)
+//	{
+//		uint8_t* buffer_addr = (uint8_t*)buffer + read_length;
+//
+//		select_half(1);
+//		wordaddr = 0;
+//		read_length = length- read_length;
+//
+//		status |= i2cMasterTransmitTimeout(i2c::instance, RW_ADDRESS,
+//				&wordaddr, 1, buffer_addr, read_length, READ_TIMEOUT);
+//	}
 
 	// buffer needs to be invalidated because data was written from dma
 	cacheBufferInvalidate(buffer, length);
@@ -233,11 +233,11 @@ uint8_t hardware::memory::Write(const uint32_t address, void const * buffer, con
 	osalDbgAssert((address + length) < SIZE, "EEPROM: Write out of bounds");
 	osalDbgAssert(buffer != NULL, "EEPROM: Write buffer not existing");
 
-	if(address > SIZE/2) half = 1;
+//	if(address > SIZE/2) half = 1;
 
 	i2cAcquireBus(i2c::instance);
 
-	status = select_half(half);
+//	status = select_half(half);
 
 	// In case address is within the first page to write.
 	// do a write to the next page boundary

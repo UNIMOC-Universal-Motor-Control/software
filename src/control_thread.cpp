@@ -169,8 +169,6 @@ namespace control
 
 			if(management::observer::hall)
 			{
-				hall.SetOffset(settings.observer.hall.offset);
-
 				// calculate the hall observer
 				hall.Calculate(motor::hall::flux);
 
