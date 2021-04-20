@@ -167,7 +167,9 @@ namespace control
 			battery::i = (motor::rotor::u.d * motor::rotor::i.d
 					+ motor::rotor::u.q * motor::rotor::i.q)/battery::u;
 
-			if(management::observer::hall)
+			// Handle obviously wrong hall states as pure flux observer info
+			if(management::observer::hall
+				&& (motor::hall::state != 0 && motor::hall::state != 7))
 			{
 				// calculate the hall observer
 				hall.Calculate(motor::hall::flux);

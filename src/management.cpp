@@ -279,7 +279,22 @@ namespace management
 					control::current = false;
 				}
 				observer::flux = settings.observer.flux.enable;
-				observer::hall = settings.observer.hall.enable;
+				// hall with hysteresis
+				if(settings.observer.hall.enable)
+				{
+					 if(observer::hall && (motor::rotor::omega > 1.2f * settings.observer.hall.omega_max))
+					 {
+						 observer::hall = false;
+					 }
+					 else if(!observer::hall && (motor::rotor::omega < settings.observer.hall.omega_max))
+					 {
+						 observer::hall = true;
+					 }
+				}
+				else
+				{
+					observer::hall = false;
+				}
 
 				// hfi with hysteresis
 				if(settings.observer.hfi.enable)

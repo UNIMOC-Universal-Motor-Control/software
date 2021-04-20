@@ -178,6 +178,9 @@ typedef struct settings_s
 
 				std::uint8_t unused;
 			} map;
+
+			///< maximum speed where hall is active
+			float omega_max;
 		} hall;
 
 		/**
