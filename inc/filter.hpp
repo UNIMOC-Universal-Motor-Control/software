@@ -53,6 +53,8 @@ public:
 	low_pass(const float ts, const float k, const float t);
 
 	float Calculate(const float u);
+
+	float Get(void) { return y; };
 };
 
 /**

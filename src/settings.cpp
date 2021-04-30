@@ -61,27 +61,6 @@ __attribute__((aligned (32))) settings_ts settings =
 		.P = 7,
 
 		/**
-		 * motor throttle setting
-		 */
-		.throttle =
-		{
-			/**
-			 * motor throttle deadzone
-			 */
-			.deadzone =
-			{
-				///< low deadzone
-				.low = 0.0f,
-
-				///< high deadzone
-				.high = 1.0f,
-			},
-
-			///< Throttle signal source selection
-			.sel = settings_ts::motor_s::throttle_s::NONE,
-		},
-
-		/**
 		 * motor limit settings
 		 */
 		.limits =
@@ -119,8 +98,17 @@ __attribute__((aligned (32))) settings_ts settings =
 		 */
 		.limits =
 		{
-			///< low voltage battery limit
-			.voltage = 29.0f,
+			/**
+			 * battery limits
+			 */
+			.voltage =
+			{
+				///< low voltage limit
+				.low = 29.0f,
+
+				///< high voltage limit
+				.high = 45.0f,
+			},
 
 			.i =
 			{
@@ -270,6 +258,27 @@ __attribute__((aligned (32))) settings_ts settings =
 			///< maximum power stage temperature
 			.temperature = 90.0f,
 		},
+	},
+
+	/**
+	 * motor throttle setting
+	 */
+	.throttle =
+	{
+		/**
+		 * motor throttle deadzone
+		 */
+		.deadzone =
+		{
+			///< low deadzone
+			.low = 0.0f,
+
+			///< high deadzone
+			.high = 1.0f,
+		},
+
+		///< Throttle signal source selection
+		.sel = settings_ts::throttle_s::NONE,
 	},
 
 	///< crc32 value for the hole settings

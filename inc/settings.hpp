@@ -58,35 +58,6 @@ typedef struct settings_s
 		std::uint32_t P;
 
 		/**
-		 * motor throttle setting
-		 */
-		struct throttle_s
-		{
-			/**
-			 * motor throttle deadzone
-			 */
-			struct deadzone_s
-			{
-				///< low deadzone
-				float low;
-
-				///< high deadzone
-				float high;
-			}deadzone;
-
-			///< Throttle signal source selection
-			enum select_e
-			{
-				NONE = 0,		// no throttle at all
-				ANALOG = 1,		// analog input as Throttle
-				PAS = 2,		// Pedal assist power as throttle
-			} sel;
-
-		} throttle;
-
-
-
-		/**
 		 * motor limits
 		 */
 		struct limits_s
@@ -124,8 +95,18 @@ typedef struct settings_s
 		 */
 		struct limits_s
 		{
-			///< low voltage battery limit
-			float voltage;
+			/**
+			 * battery limits
+			 */
+			struct voltage_s
+			{
+				///< low voltage limit
+				float low;
+
+				///< high voltage limit
+				float high;
+			} voltage;
+
 			/**
 			 * current limits
 			 */
@@ -278,6 +259,36 @@ typedef struct settings_s
 			float temperature;
 		} limits;
 	}  converter;
+
+	/**
+	 * motor throttle setting
+	 */
+	struct throttle_s
+	{
+		/**
+		 * motor throttle deadzone
+		 */
+		struct deadzone_s
+		{
+			///< low deadzone
+			float low;
+
+			///< high deadzone
+			float high;
+		}deadzone;
+
+		///< Throttle signal source selection
+		enum select_e
+		{
+			NONE,							// no throttle at all
+			ANALOG_BIDIRECTIONAL,			// analog input as bidirectional Throttle with midpoint 0
+			ANALOG_FORWARDS,				// analog input as unidirectional Throttle running only forwards
+			ANALOG_BACKWARDS,				// analog input as unidirectional Throttle running only backwards
+			ANALOG_SWITCH,					// analog input as unidirectional Throttle with switch input to select direction
+			PAS,							// Pedal assist power as throttle
+		} sel;
+
+	} throttle;
 
 	///< crc32 value for the hole settings
 	uint32_t crc;

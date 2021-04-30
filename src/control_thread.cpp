@@ -95,11 +95,172 @@ namespace control
 		}
 	}
 
+
 	/**
 	 * generic constructor
 	 */
-	thread::thread():flux(), hall(), foc(),	as5048(hardware::i2c::instance), uq(32e3f, 1.0f, 2e-3f)
+	thread::thread():flux(), hall(), foc(),	as5048(hardware::i2c::instance), uq(32e3f, 1.0f, 2e-3f), ubat(32e3f, 1.0f, 2e-3f), w(32e3f, 1.0f, 2e-3f)
 	{}
+
+
+	/**
+	 * Limit the current setpoint according to temp, voltage, and current limits
+	 * @param setpoint[in/out] current setpoint
+	 */
+	void thread::LimitCurrentSetpoint(systems::dq& setpoint)
+	{
+		using namespace values::motor::rotor;
+		using namespace values;
+
+		float ratio = ubat.Calculate(battery::u) / uq.Calculate(u.q);
+		float min = -settings.motor.limits.i;
+		float max =  settings.motor.limits.i;
+
+		// deadzone for battery current limiter of 1W
+		if(std::fabs(uq.Get() * setpoint::i.q) > 1.0f)
+		{
+			if(ratio > 1e-3f)
+			{
+				min = ratio * -settings.battery.limits.i.charge;
+				max = ratio * settings.battery.limits.i.drive;
+			}
+			else if(ratio < -1e-3f)
+			{
+				min = ratio * settings.battery.limits.i.drive;
+				max = ratio * -settings.battery.limits.i.charge;
+			}
+
+			if(min < -settings.motor.limits.i) min = -settings.motor.limits.i;
+			if(max > settings.motor.limits.i) max =  settings.motor.limits.i;
+		}
+
+		// derate by temperature and voltage
+		std::array<float, 5> derate;
+		derate[0] = Derate(settings.converter.limits.temperature,
+				settings.converter.derating.temprature, converter::temp);
+
+		derate[1] = Derate(settings.battery.limits.voltage.low,
+				-settings.converter.derating.voltage, ubat.Get());
+
+		derate[2] = Derate(settings.battery.limits.voltage.high,
+						settings.converter.derating.voltage, ubat.Get());
+
+		w.Calculate(omega);
+		derate[3] = Derate(settings.motor.limits.omega.forwards,
+				settings.converter.derating.omega, w.Get());
+
+		derate[4] = Derate(settings.motor.limits.omega.backwards,
+				-settings.converter.derating.omega, w.Get());
+
+		// always use the minimal derating possible
+		float derating = *std::min_element(derate.begin(), derate.end());
+
+		// derate the limits
+		min *= derating;
+		max *= derating;
+
+		motor::rotor::setpoint::limit::i::min = min;
+		motor::rotor::setpoint::limit::i::max = max;
+
+		Limit(setpoint.q, motor::rotor::setpoint::limit::i::min, motor::rotor::setpoint::limit::i::max);
+	}
+
+	/**
+	 * compensate the commanded voltage for the error introduced by PWM deadtime
+	 */
+	void thread::DeadtimeCompensation(void)
+	{
+//		using namespace values;
+//		using namespace values::motor::rotor;
+//		using namespace math;
+//
+//		// Deadtime Compensation, runs but needs some more ifs and else
+//		std::int32_t k = 0;
+//		if		(phi < std::numeric_limits<std::int32_t>::max()/6) 		k = 0;
+//		else if	(phi < std::numeric_limits<std::int32_t>::max()/2)	 	k = std::numeric_limits<std::int32_t>::max()/3;
+//		else if	(phi < std::numeric_limits<std::int32_t>::max()/6*5) 	k = std::numeric_limits<std::int32_t>::max()/3*2;
+//		else if	(phi > -std::numeric_limits<std::int32_t>::max()/6*5)	k = std::numeric_limits<std::int32_t>::max();
+//		else if	(phi < std::numeric_limits<std::int32_t>::max()/6*9) 	k = std::numeric_limits<std::int32_t>::max()/6*8;
+//		else if	(phi < std::numeric_limits<std::int32_t>::max()/6*11) 	k = std::numeric_limits<std::int32_t>::max()/6*11;
+//
+//
+//		systems::sin_cos tmp = systems::SinCos(k - phi);
+//
+//		u.d += 4.0f/3.0f*battery::u*(settings.converter.deadtime*1e-9f)*hardware::Fc()*tmp.cos;
+//		u.q += 4.0f/3.0f*battery::u*(settings.converter.deadtime*1e-9f)*hardware::Fc()*tmp.sin;
+	}
+
+	/**
+	 * calculate analog input signal with deadzones
+	 * @param input 0-1 input
+	 * @return	0-1 output with dead zones
+	 */
+	float thread::UniAnalogThrottleDeadzone(const float input)
+	{
+		float output = (input - settings.throttle.deadzone.low)/(settings.throttle.deadzone.high - settings.throttle.deadzone.low);
+		Limit(output, 0.0f, 1.0f);
+		return output;
+	}
+
+	/**
+	 * calculate analog input signal with dead zones in bidirectional manner
+	 * @param input 0-1 input
+	 * @return	-1-1 output with dead zones at 0 and +-1
+	 */
+	float thread::BiAnalogThrottleDeadzone(const float input)
+	{
+		float bi_input = (input *2.0f) - 1.0f;
+		// low dead zone bidirectional
+		if(std::fabs(bi_input) < settings.throttle.deadzone.low) bi_input = 0.0f;
+		else bi_input -= std::copysign(settings.throttle.deadzone.low, bi_input);
+		// scaling for high dead zone
+		float output = bi_input/(settings.throttle.deadzone.high - settings.throttle.deadzone.low);
+		// cut of high dead zone
+		Limit(output, -1.0f, 1.0f);
+
+		return output;
+	}
+
+	/**
+	 * get the mapped throttle input signal
+	 * @param setpoint
+	 */
+	void thread::SetThrottleSetpoint(systems::dq& setpoint)
+	{
+		using namespace values::motor::rotor;
+
+		switch(settings.throttle.sel)
+		{
+		default:
+		case settings_ts::throttle_s::NONE:
+			break;
+		case settings_ts::throttle_s::ANALOG_BIDIRECTIONAL:
+		{
+			setpoint.d = 0.0f;
+			float throttle = BiAnalogThrottleDeadzone(hardware::adc::input());
+
+			if(throttle > 0.0f) setpoint.q = throttle * setpoint::limit::i::max;
+			else setpoint.q = throttle * setpoint::limit::i::min;
+
+			break;
+		}
+
+		case settings_ts::throttle_s::ANALOG_FORWARDS:
+			setpoint.d = 0.0f;
+			setpoint.q = UniAnalogThrottleDeadzone(hardware::adc::input()) * setpoint::limit::i::max;
+			break;
+		case settings_ts::throttle_s::ANALOG_BACKWARDS:
+			setpoint.d = 0.0f;
+			setpoint.q = UniAnalogThrottleDeadzone(hardware::adc::input()) * setpoint::limit::i::min;
+			break;
+		case settings_ts::throttle_s::ANALOG_SWITCH:
+			break;
+		case settings_ts::throttle_s::PAS:
+			break;
+		}
+
+	}
+
 
 	/**
 	 * @brief Thread main function
@@ -224,71 +385,10 @@ namespace control
 
 			if(management::control::current)
 			{
-				float ratio = battery::u / uq.Calculate(motor::rotor::u.q);
-				float min = -settings.motor.limits.i;
-				float max =  settings.motor.limits.i;
-
-				// deadzone for battery current limiter of 1W
-				if(std::fabs(motor::rotor::u.q * motor::rotor::setpoint::i.q) > 1.0f)
-				{
-					if(ratio > 1e-3f)
-					{
-						min = ratio * -settings.battery.limits.i.charge;
-						max = ratio * settings.battery.limits.i.drive;
-					}
-					else if(ratio < -1e-3f)
-					{
-						min = ratio * settings.battery.limits.i.drive;
-						max = ratio * -settings.battery.limits.i.charge;
-					}
-
-					if(min < -settings.motor.limits.i) min = -settings.motor.limits.i;
-					if(max > settings.motor.limits.i) max =  settings.motor.limits.i;
-				}
-
-
-				// derate by temperature and voltage
-				std::array<float, 4> derate;
-				derate[0] = Derate(settings.converter.limits.temperature,
-						settings.converter.derating.temprature, converter::temp);
-				derate[1] = Derate(settings.battery.limits.voltage,
-						-settings.converter.derating.voltage, battery::u);
-				derate[2] = Derate(settings.motor.limits.omega.forwards,
-										settings.converter.derating.omega, motor::rotor::omega);
-				derate[3] = Derate(settings.motor.limits.omega.backwards,
-										-settings.converter.derating.omega, motor::rotor::omega);
-
-				// always use the minimal derating possible
-				float derating = *std::min_element(derate.begin(), derate.end());
-
-				// derate the limits
-				min *= derating;
-				max *= derating;
-
-				motor::rotor::setpoint::limit::i::min = min;
-				motor::rotor::setpoint::limit::i::max = max;
-
-				systems::dq setpoint = motor::rotor::setpoint::i;
-				Limit(setpoint.q, motor::rotor::setpoint::limit::i::min, motor::rotor::setpoint::limit::i::max);
+				LimitCurrentSetpoint(motor::rotor::setpoint::i);
 
 				// calculate the field orientated controllers
-				foc.Calculate(setpoint);
-
-//				// Deadtime Compensation, runs but needs some more ifs and else
-//				float k = 0.0f;
-//				if		(motor::rotor::phi < 1.0f * math::PI/6.0f) k = 0.0f;
-//				else if	(motor::rotor::phi < 3.0f * math::PI/6.0f) k = 2.0f * math::PI/6.0f;
-//				else if	(motor::rotor::phi < 5.0f * math::PI/6.0f) k = 4.0f * math::PI/6.0f;
-//				else if	(motor::rotor::phi < 7.0f * math::PI/6.0f) k = 6.0f * math::PI/6.0f;
-//				else if	(motor::rotor::phi < 9.0f * math::PI/6.0f) k = 8.0f * math::PI/6.0f;
-//				else if	(motor::rotor::phi <11.0f * math::PI/6.0f) k =10.0f * math::PI/6.0f;
-//
-//
-//				systems::sin_cos tmp;
-//				systems::SinCos(k - motor::rotor::phi, tmp);
-//
-//				motor::rotor::u.d += 4.0f/3.0f*battery::u*(settings.converter.deadtime*1e-9f)*hardware::Fc()*tmp.cos;
-//				motor::rotor::u.q += 4.0f/3.0f*battery::u*(settings.converter.deadtime*1e-9f)*hardware::Fc()*tmp.sin;
+				foc.Calculate(motor::rotor::setpoint::i);
 			}
 			else
 			{
