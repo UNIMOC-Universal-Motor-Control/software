@@ -41,7 +41,7 @@ namespace control
 	/**
 	 * generic FOC controller thread
 	 */
-	class thread : public chibios_rt::BaseStaticThread<1024>
+	class thread : public chibios_rt::BaseStaticThread<2048>
 	{
 	private:
 		static constexpr float _3by2 = 3.0f/2.0f;

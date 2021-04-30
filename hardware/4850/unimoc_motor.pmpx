@@ -19,7 +19,7 @@
 			<member name="mapfile_pre_select" type="sint32">0</member>
 			<member name="comm_params_saved" type="sint32">1</member>
 			<member name="comm_state_saved" type="sint32">0</member>
-			<member name="comm_state_enabled" type="sint32">0</member>
+			<member name="comm_state_enabled" type="sint32">1</member>
 			<member name="comm_port" type="sint32">15</member>
 			<member name="comm_port_hint" type="string">COM16</member>
 			<member name="comm_speed" type="sint32">115200</member>
@@ -389,7 +389,7 @@
 			<member name="unit" type="string">A</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">save</member>
-			<member name="last_addr" type="uint32">0x20006130</member>
+			<member name="last_addr" type="uint32">0x20006528</member>
 			<member name="byte_size" type="sint32">1</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -487,7 +487,7 @@
 			<member name="unit" type="string">A</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">settings.converter.limits.current</member>
-			<member name="last_addr" type="uint32">0x200100A4</member>
+			<member name="last_addr" type="uint32">0x200100A8</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -536,7 +536,7 @@
 			<member name="unit" type="string">&#xb0;C</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">settings.converter.limits.temperature</member>
-			<member name="last_addr" type="uint32">0x200100A8</member>
+			<member name="last_addr" type="uint32">0x200100AC</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -585,7 +585,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">settings.crc</member>
-			<member name="last_addr" type="uint32">0x200100AC</member>
+			<member name="last_addr" type="uint32">0x200100B0</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1173,7 +1173,7 @@
 			<member name="unit" type="string">A</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">settings.observer.mech.i_min</member>
-			<member name="last_addr" type="uint32">0x20010084</member>
+			<member name="last_addr" type="uint32">0x20010088</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1369,7 +1369,7 @@
 			<member name="unit" type="string">&#xb0;C</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">settings.converter.derating.temprature</member>
-			<member name="last_addr" type="uint32">0x20010098</member>
+			<member name="last_addr" type="uint32">0x2001009C</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1418,7 +1418,7 @@
 			<member name="unit" type="string">V</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">settings.converter.derating.voltage</member>
-			<member name="last_addr" type="uint32">0x2001009C</member>
+			<member name="last_addr" type="uint32">0x200100A0</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1516,7 +1516,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">_ZN10management7measure1r6enableE</member>
-			<member name="last_addr" type="uint32">0x20006119</member>
+			<member name="last_addr" type="uint32">0x20006511</member>
 			<member name="byte_size" type="sint32">1</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1565,7 +1565,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">_ZN10management7measure1r8phi_stepE</member>
-			<member name="last_addr" type="uint32">0x20006120</member>
+			<member name="last_addr" type="uint32">0x20006518</member>
 			<member name="byte_size" type="sint32">1</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1614,7 +1614,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">_ZN10management7measure1r5cycleE</member>
-			<member name="last_addr" type="uint32">0x20006114</member>
+			<member name="last_addr" type="uint32">0x2000650C</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1663,7 +1663,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">_ZN10management7measure1l6enableE</member>
-			<member name="last_addr" type="uint32">0x200060F0</member>
+			<member name="last_addr" type="uint32">0x200064E8</member>
 			<member name="byte_size" type="sint32">1</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1712,7 +1712,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">_ZN10management7measure3psi5cycleE</member>
-			<member name="last_addr" type="uint32">0x20006128</member>
+			<member name="last_addr" type="uint32">0x20006520</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1761,7 +1761,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">_ZN10management7measure3psi6enableE</member>
-			<member name="last_addr" type="uint32">0x2000612C</member>
+			<member name="last_addr" type="uint32">0x20006524</member>
 			<member name="byte_size" type="sint32">1</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1908,7 +1908,7 @@
 			<member name="unit" type="string">V</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">_ZN10management7measure1l1uE</member>
-			<member name="last_addr" type="uint32">0x200060E8</member>
+			<member name="last_addr" type="uint32">0x200064E0</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1957,7 +1957,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">settings.converter.deadtime</member>
-			<member name="last_addr" type="uint32">0x20010090</member>
+			<member name="last_addr" type="uint32">0x20010094</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2006,7 +2006,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">settings.converter.frequency</member>
-			<member name="last_addr" type="uint32">0x20010094</member>
+			<member name="last_addr" type="uint32">0x20010098</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2300,7 +2300,7 @@
 			<member name="unit" type="string">A</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::battery::i</member>
-			<member name="last_addr" type="uint32">0x200060D8</member>
+			<member name="last_addr" type="uint32">0x200064D0</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2349,7 +2349,7 @@
 			<member name="unit" type="string">V</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::battery::u</member>
-			<member name="last_addr" type="uint32">0x200060DC</member>
+			<member name="last_addr" type="uint32">0x200064D4</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2398,7 +2398,7 @@
 			<member name="unit" type="string">&#xb0;C</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::converter::temp</member>
-			<member name="last_addr" type="uint32">0x200060E0</member>
+			<member name="last_addr" type="uint32">0x200064D8</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2447,7 +2447,7 @@
 			<member name="unit" type="string">Nm</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::m_el</member>
-			<member name="last_addr" type="uint32">0x20005C20</member>
+			<member name="last_addr" type="uint32">0x20006018</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2496,7 +2496,7 @@
 			<member name="unit" type="string">Nm</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::m_l</member>
-			<member name="last_addr" type="uint32">0x20005C10</member>
+			<member name="last_addr" type="uint32">0x20006008</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2839,7 +2839,7 @@
 			<member name="unit" type="string">A</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::rotor::i.array._M_elems[0]</member>
-			<member name="last_addr" type="uint32">0x20005C28</member>
+			<member name="last_addr" type="uint32">0x20006020</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2888,7 +2888,7 @@
 			<member name="unit" type="string">A</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::rotor::i.array._M_elems[0]+4</member>
-			<member name="last_addr" type="uint32">0x20005C2C</member>
+			<member name="last_addr" type="uint32">0x20006024</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2937,7 +2937,7 @@
 			<member name="unit" type="string">rad/s</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::rotor::omega</member>
-			<member name="last_addr" type="uint32">0x2000609C</member>
+			<member name="last_addr" type="uint32">0x20006494</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2986,7 +2986,7 @@
 			<member name="unit" type="string">&#xb0;</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::rotor::phi</member>
-			<member name="last_addr" type="uint32">0x20006088</member>
+			<member name="last_addr" type="uint32">0x20006480</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3041,7 +3041,7 @@
 			<member name="unit" type="string">A</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::rotor::setpoint::i.array._M_elems[0]</member>
-			<member name="last_addr" type="uint32">0x200060A0</member>
+			<member name="last_addr" type="uint32">0x20006498</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3090,7 +3090,7 @@
 			<member name="unit" type="string">A</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::rotor::setpoint::i.array._M_elems[0]+4</member>
-			<member name="last_addr" type="uint32">0x200060A4</member>
+			<member name="last_addr" type="uint32">0x2000649C</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3139,7 +3139,7 @@
 			<member name="unit" type="string">A</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::rotor::setpoint::limit::i::max</member>
-			<member name="last_addr" type="uint32">0x200060A8</member>
+			<member name="last_addr" type="uint32">0x200064A0</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3188,7 +3188,7 @@
 			<member name="unit" type="string">A</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::rotor::setpoint::limit::i::min</member>
-			<member name="last_addr" type="uint32">0x200060AC</member>
+			<member name="last_addr" type="uint32">0x200064A4</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3237,7 +3237,7 @@
 			<member name="unit" type="string">V</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::rotor::u.array._M_elems[0]</member>
-			<member name="last_addr" type="uint32">0x20005C30</member>
+			<member name="last_addr" type="uint32">0x20006028</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3286,7 +3286,7 @@
 			<member name="unit" type="string">V</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::rotor::u.array._M_elems[0]+4</member>
-			<member name="last_addr" type="uint32">0x20005C34</member>
+			<member name="last_addr" type="uint32">0x2000602C</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3433,7 +3433,7 @@
 			<member name="unit" type="string">A</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::stator::i.array._M_elems[0]</member>
-			<member name="last_addr" type="uint32">0x200060B0</member>
+			<member name="last_addr" type="uint32">0x200064A8</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3482,7 +3482,7 @@
 			<member name="unit" type="string">A</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::stator::i.array._M_elems[0]+4</member>
-			<member name="last_addr" type="uint32">0x200060B4</member>
+			<member name="last_addr" type="uint32">0x200064AC</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3531,7 +3531,7 @@
 			<member name="unit" type="string">V</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::stator::u.array._M_elems[0]</member>
-			<member name="last_addr" type="uint32">0x200060B8</member>
+			<member name="last_addr" type="uint32">0x200064B0</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3580,7 +3580,7 @@
 			<member name="unit" type="string">V</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::stator::u.array._M_elems[0]+4</member>
-			<member name="last_addr" type="uint32">0x200060BC</member>
+			<member name="last_addr" type="uint32">0x200064B4</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3629,7 +3629,7 @@
 			<member name="unit" type="string">A/s</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::stator::y.array._M_elems[0]</member>
-			<member name="last_addr" type="uint32">0x200060C0</member>
+			<member name="last_addr" type="uint32">0x200064B8</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3678,7 +3678,7 @@
 			<member name="unit" type="string">A/s</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::stator::y.array._M_elems[0]+4</member>
-			<member name="last_addr" type="uint32">0x200060C4</member>
+			<member name="last_addr" type="uint32">0x200064BC</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3727,7 +3727,7 @@
 			<member name="unit" type="string">A/s</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::stator::yd.array._M_elems[0]</member>
-			<member name="last_addr" type="uint32">0x200060C8</member>
+			<member name="last_addr" type="uint32">0x200064C0</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3776,7 +3776,7 @@
 			<member name="unit" type="string">A/s</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::stator::yd.array._M_elems[0]+4</member>
-			<member name="last_addr" type="uint32">0x200060CC</member>
+			<member name="last_addr" type="uint32">0x200064C4</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3825,7 +3825,7 @@
 			<member name="unit" type="string">&#xb0;C</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::temp</member>
-			<member name="last_addr" type="uint32">0x20005C24</member>
+			<member name="last_addr" type="uint32">0x2000601C</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3874,7 +3874,7 @@
 			<member name="unit" type="string">rad</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::sense::angle</member>
-			<member name="last_addr" type="uint32">0x200060D0</member>
+			<member name="last_addr" type="uint32">0x200064C8</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3923,7 +3923,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::sense::position</member>
-			<member name="last_addr" type="uint32">0x200060D4</member>
+			<member name="last_addr" type="uint32">0x200064CC</member>
 			<member name="byte_size" type="sint32">2</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -4119,7 +4119,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::hall::state</member>
-			<member name="last_addr" type="uint32">0x20005C1C</member>
+			<member name="last_addr" type="uint32">0x20006014</member>
 			<member name="byte_size" type="sint32">1</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -4168,7 +4168,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">settings.observer.mech.Q</member>
-			<member name="last_addr" type="uint32">0x20010088</member>
+			<member name="last_addr" type="uint32">0x2001008C</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -4217,7 +4217,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">settings.observer.mech.R</member>
-			<member name="last_addr" type="uint32">0x2001008C</member>
+			<member name="last_addr" type="uint32">0x20010090</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -4315,7 +4315,7 @@
 			<member name="unit" type="string">A</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">_ZN10management7measure1l3CURE</member>
-			<member name="last_addr" type="uint32">0x200100B0</member>
+			<member name="last_addr" type="uint32">0x200100B4</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -4364,7 +4364,7 @@
 			<member name="unit" type="string">Hz</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">_ZN10management7measure1l4FREQE</member>
-			<member name="last_addr" type="uint32">0x200100B4</member>
+			<member name="last_addr" type="uint32">0x200100B8</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -4413,7 +4413,7 @@
 			<member name="unit" type="string">Wb</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::rotor::flux::act.array._M_elems[0]</member>
-			<member name="last_addr" type="uint32">0x2000608C</member>
+			<member name="last_addr" type="uint32">0x20006484</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -4462,7 +4462,7 @@
 			<member name="unit" type="string">Wb</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::rotor::flux::act.array._M_elems[0]+4</member>
-			<member name="last_addr" type="uint32">0x20006090</member>
+			<member name="last_addr" type="uint32">0x20006488</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -4511,7 +4511,7 @@
 			<member name="unit" type="string">Wb</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::rotor::flux::set.array._M_elems[0]</member>
-			<member name="last_addr" type="uint32">0x20006094</member>
+			<member name="last_addr" type="uint32">0x2000648C</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -4560,7 +4560,7 @@
 			<member name="unit" type="string">Wb</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">values::motor::rotor::flux::set.array._M_elems[0]+4</member>
-			<member name="last_addr" type="uint32">0x20006098</member>
+			<member name="last_addr" type="uint32">0x20006490</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>

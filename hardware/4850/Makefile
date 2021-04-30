@@ -5,7 +5,7 @@
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -O2 -g -fomit-frame-pointer -falign-functions=16 -fsingle-precision-constant -Wdouble-promotion
+  USE_OPT = -Og -g -fomit-frame-pointer -falign-functions=16 -fsingle-precision-constant -Wdouble-promotion
  #-ffast-math
 endif
 

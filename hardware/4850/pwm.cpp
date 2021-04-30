@@ -382,7 +382,7 @@ void hardware::pwm::Duty(const std::array<systems::abc, INJECTION_CYCLES>& dutys
 		}
 	}
 
-	cacheBufferFlush(duty_counts.data(), duty_counts.size()*2);
+	cacheBufferFlush(duty_counts.data(), sizeof(duty_counts));
 }
 
 

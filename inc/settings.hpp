@@ -55,7 +55,36 @@ typedef struct settings_s
 		float psi;
 
 		///< number of pole pairs
-		uint32_t P;
+		std::uint32_t P;
+
+		/**
+		 * motor throttle setting
+		 */
+		struct throttle_s
+		{
+			/**
+			 * motor throttle deadzone
+			 */
+			struct deadzone_s
+			{
+				///< low deadzone
+				float low;
+
+				///< high deadzone
+				float high;
+			}deadzone;
+
+			///< Throttle signal source selection
+			enum select_e
+			{
+				NONE = 0,		// no throttle at all
+				ANALOG = 1,		// analog input as Throttle
+				PAS = 2,		// Pedal assist power as throttle
+			} sel;
+
+		} throttle;
+
+
 
 		/**
 		 * motor limits
@@ -65,8 +94,17 @@ typedef struct settings_s
 			///< maximum coil current
 			float i;
 
-			///< maximum angular velocity
-			float omega;
+			/**
+			 * motor speed limits
+			 */
+			struct omega_s
+			{
+				///< backwards limit
+				float backwards;
+
+				///< forwards limit
+				float forwards;
+			} omega;
 
 			///< maximum motor temperature
 			float temperature;
@@ -181,6 +219,9 @@ typedef struct settings_s
 
 			///< maximum speed where hall is active
 			float omega_max;
+
+			///< flux observer feedback gains in hall mode
+			systems::dq C;
 		} hall;
 
 		/**

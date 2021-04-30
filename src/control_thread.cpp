@@ -253,9 +253,9 @@ namespace control
 						settings.converter.derating.temprature, converter::temp);
 				derate[1] = Derate(settings.battery.limits.voltage,
 						-settings.converter.derating.voltage, battery::u);
-				derate[2] = Derate(settings.motor.limits.omega,
+				derate[2] = Derate(settings.motor.limits.omega.forwards,
 										settings.converter.derating.omega, motor::rotor::omega);
-				derate[3] = Derate(-settings.motor.limits.omega,
+				derate[3] = Derate(settings.motor.limits.omega.backwards,
 										-settings.converter.derating.omega, motor::rotor::omega);
 
 				// always use the minimal derating possible

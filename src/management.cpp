@@ -462,8 +462,8 @@ namespace management
 					omega = math::_2PI * measure::l::FREQ;
 					motor::m_l = 0.0f;
 
-					measure::l::w_limit = settings.motor.limits.omega;
-					settings.motor.limits.omega = omega;
+					measure::l::w_limit = settings.motor.limits.omega.forwards;
+					settings.motor.limits.omega.forwards = omega;
 					control::current = false;
 					observer::hall = false;
 					observer::flux = false;
@@ -482,7 +482,7 @@ namespace management
 					motor::rotor::phi = 0;
 					motor::rotor::omega = 0.0f;
 					motor::m_l = 0.0f;
-					settings.motor.limits.omega =  measure::l::w_limit;
+					settings.motor.limits.omega.forwards =  measure::l::w_limit;
 					control::current = false;
 
 					observer::hall = false;
@@ -545,7 +545,7 @@ namespace management
 				motor::rotor::phi = 0;
 				motor::rotor::omega = 0.0f;
 				motor::m_l = 0.0f;
-				settings.motor.limits.omega =  measure::l::w_limit;
+				settings.motor.limits.omega.forwards =  measure::l::w_limit;
 				control::current = false;
 
 				observer::hall = false;
@@ -630,7 +630,7 @@ namespace management
 					using namespace values::motor::rotor;
 					if(	   std::fabs(u.d) > battery::u * 0.25f
 							|| std::fabs(u.q) > battery::u * 0.25f
-							|| omega > 0.5f*settings.motor.limits.omega)
+							|| omega > 0.5f*settings.motor.limits.omega.forwards)
 					{
 						sequencer = CALCULATE_PSI;
 					}

@@ -61,6 +61,27 @@ __attribute__((aligned (32))) settings_ts settings =
 		.P = 7,
 
 		/**
+		 * motor throttle setting
+		 */
+		.throttle =
+		{
+			/**
+			 * motor throttle deadzone
+			 */
+			.deadzone =
+			{
+				///< low deadzone
+				.low = 0.0f,
+
+				///< high deadzone
+				.high = 1.0f,
+			},
+
+			///< Throttle signal source selection
+			.sel = settings_ts::motor_s::throttle_s::NONE,
+		},
+
+		/**
 		 * motor limit settings
 		 */
 		.limits =
@@ -68,8 +89,17 @@ __attribute__((aligned (32))) settings_ts settings =
 			///< maximum coil current
 			.i = 40.0f,
 
-			///< maximum angular velocity
-			.omega = 1000.0f,
+			/**
+			 * motor speed limits
+			 */
+			.omega =
+			{
+				///< backwards limit
+				.backwards = -1000.0f,
+
+				///< forwards limit
+				.forwards = 1000.0f,
+			},
 
 			///< maximum motor temperature
 			.temperature = 80.0f,
@@ -182,6 +212,9 @@ __attribute__((aligned (32))) settings_ts settings =
 			},
 			///< maximum speed where hall is active
 			.omega_max = 150.0f,
+
+			///< flux observer feedback gains in hall mode
+			.C = {250.0f, 10.0f},
 		},
 
 		/**

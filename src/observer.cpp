@@ -58,9 +58,13 @@ namespace observer
         // omega
         omega += tsj * (m_el - m_l);
 
-        if(std::fabs(omega) > 2.0f * settings.motor.limits.omega)
+        if(omega > 2.0f * settings.motor.limits.omega.forwards)
         {
-        	omega = std::copysign(2.0f * settings.motor.limits.omega, omega);
+        	omega = 2.0f * settings.motor.limits.omega.forwards;
+        }
+        else if(omega < 2.0f * settings.motor.limits.omega.backwards)
+        {
+        	omega = 2.0f * settings.motor.limits.omega.backwards;
         }
 
         if(!std::isfinite(omega))

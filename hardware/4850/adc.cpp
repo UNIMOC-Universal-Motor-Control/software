@@ -473,6 +473,37 @@ float hardware::adc::input(void)
 	return (float)sum / (float)(cnt * 4096);
 }
 
+///**
+// * Angle of the crank arm
+// *
+// * @param edge_max Number of edges per revolution
+// * @return Angle in rads, range 0 - 2*PI
+// */
+//float hardware::crank::Angle(uint32_t edge_max)
+//{
+//	static float angle = 0.0f;
+//
+//	if(cadence_counter)
+//	{
+//		angle += (float)cadence_counter/(float)edge_max * math::_2PI;
+//		cadence_counter = 0;
+//	}
+//
+//	if(angle > math::_2PI) angle -= math::_2PI;
+//
+//	return angle;
+//}
+
+
+///**
+// * get cadence pin level
+// * @return true when cadence pin is high
+// */
+//bool hardware::crank::Cadence(void)
+//{
+//	return palReadLine(LINE_CADENCE);
+//}
+
 /**
  * get the angle which is represented by the hall sensors
  * @param[out] sincos angle of the halls represented as sin/cos values
