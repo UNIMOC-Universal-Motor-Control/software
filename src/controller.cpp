@@ -32,53 +32,6 @@
  */
 namespace control
 {
-
-	/**
-	 * derate control input envelope
-	 * @param limit	value to end derating
-	 * @param envelope positive value sets the envelope below the limit, negative above the limit
-	 * @param actual actual value
-	 * @return 1 when no derating active and 1 to 0 when in envelope and 0 when above limit
-	 */
-	float Derate(const float limit, const float envelope, const float actual)
-	{
-		const float start = limit - envelope;
-
-		float derating = (actual - start)/envelope;
-
-		if(derating < 0.0f) derating = 0.0f;
-		if(derating > 1.0f) derating = 1.0f;
-
-		// cut off the derating value from the maximum
-		return (1.0f - derating);
-	}
-
-	/**
-	 * limit the input value
-	 * @param[in/out] in input value
-	 * @param min minimal value
-	 * @param max maximal value
-	 * @return true when value is out of limits
-	 */
-	bool Limit(float& in, const float min, const float max)
-	{
-		bool did_trunc = false;
-
-		if (in > max)
-		{
-			in = max;
-			did_trunc = true;
-
-		}
-		else if (in < min)
-		{
-			in = min;
-			did_trunc = true;
-		}
-
-		return did_trunc;
-	}
-
 	/**
 	 * SVPWM Overmodulation modified to flat bottom.
 	 * @param u phase voltages

@@ -49,11 +49,7 @@ namespace control
 		observer::hall       	hall;
 		observer::mechanic 		mech;
 		control::foc      		foc;
-		sensor::as5048b 		as5048;
 		std::array<float, 3>   	correction;
-		filter::low_pass		uq;
-		filter::low_pass		ubat;
-		filter::low_pass		w;
 		std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> i_abc;
 		std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> i_abc_ac;
 		std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES> i_ab;
@@ -62,34 +58,9 @@ namespace control
 		std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> dutys;
 
 		/**
-		 * Limit the current setpoint according to temp, voltage, and current limits
-		 * @param setpoint[in/out] current setpoint
-		 */
-		void LimitCurrentSetpoint(systems::dq& setpoint);
-		/**
 		 * compensate the commanded voltage for the error introduced by PWM deadtime
 		 */
 		void DeadtimeCompensation(void);
-
-		/**
-		 * get the mapped throttle input signal
-		 * @param setpoint
-		 */
-		void SetThrottleSetpoint(systems::dq& setpoint);
-
-		/**
-		 * calculate analog input signal with dead zones in bidirectional manner
-		 * @param input 0-1 input
-		 * @return	-1-1 output with dead zones at 0 and +-1
-		 */
-		float BiAnalogThrottleDeadzone(const float input);
-
-		/**
-		 * calculate analog input signal with deadzones
-		 * @param input 0-1 input
-		 * @return	0-1 output with dead zones
-		 */
-		float UniAnalogThrottleDeadzone(const float input);
 
 	protected:
 		/**
@@ -98,12 +69,15 @@ namespace control
 		virtual void main(void);
 
 	public:
+		sensor::as5048b 		as5048;
 		/**
 		 * generic constructor
 		 */
 		thread();
 	};
 } /* namespace control */
+
+extern control::thread controller;
 
 #endif /* INC_CONTROL_THREAD_HPP_ */
 

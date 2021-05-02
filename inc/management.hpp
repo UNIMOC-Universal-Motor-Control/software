@@ -126,8 +126,8 @@ namespace management
 	{
 	private:
 		static constexpr systime_t CYCLE_TIME = TIME_MS2I(1);
-		systime_t deadline;
-		std::uint32_t delay;
+		systime_t 				deadline;
+		std::uint32_t			delay;
 
 		enum state_e
 		{
@@ -141,6 +141,10 @@ namespace management
 			MEASURE_PSI,
 			CALCULATE_PSI,
 		} sequencer;
+
+		filter::low_pass		uq;
+		filter::low_pass		ubat;
+		filter::low_pass		w;
 
 		/**
 		 * calculates the optimal current controller proportional gain
@@ -166,6 +170,60 @@ namespace management
 			if(resistance > 1e-9) return (inductance/resistance);
 			else return (1e3f);
 		}
+
+		/**
+		 * derate control input envelope
+		 * @param limit	value to end derating
+		 * @param envelope positive value sets the envelope below the limit, negative above the limit
+		 * @param actual actual value
+		 * @return 1 when no derating active and 1 to 0 when in envelope and 0 when above limit
+		 */
+		float Derate(const float limit, const float envelope, const float actual);
+
+		/**
+		 * limit the input value
+		 * @param[in/out] in input value
+		 * @param min minimal value
+		 * @param max maximal value
+		 * @return true when value is out of limits
+		 */
+		bool Limit(float& in, const float min, const float max);
+
+		/**
+		 * Limit the current setpoint according to temp, voltage, and current limits
+		 * @param setpoint[in/out] current setpoint
+		 */
+		void LimitCurrentSetpoint(systems::dq& setpoint);
+		/**
+		 * compensate the commanded voltage for the error introduced by PWM deadtime
+		 */
+		void DeadtimeCompensation(void);
+
+		/**
+		 * get the mapped throttle input signal
+		 * @param setpoint
+		 */
+		void SetThrottleSetpoint(systems::dq& setpoint);
+
+		/**
+		 * calculate analog input signal with dead zones in bidirectional manner
+		 * @param input 0-1 input
+		 * @return	-1-1 output with dead zones at 0 and +-1
+		 */
+		float BiAnalogThrottleDeadzone(const float input);
+
+		/**
+		 * calculate analog input signal with deadzones
+		 * @param input 0-1 input
+		 * @return	0-1 output with dead zones
+		 */
+		float UniAnalogThrottleDeadzone(const float input);
+
+		/**
+		 * Measure the angles of all Hall State transitions
+		 */
+		void MeasureHALLStates(void);
+
 
 	protected:
 		/**

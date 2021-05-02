@@ -30,7 +30,6 @@
 using namespace chibios_rt;
 
 static modules::freemaster::thread freemaster;
-static control::thread controller;
 static management::thread manager;
 
 /**
