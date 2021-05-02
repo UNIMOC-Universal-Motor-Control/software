@@ -1,5 +1,5 @@
 /*
-    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
+    UNIMOC - Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 
@@ -151,38 +151,6 @@ namespace observer
 		 * @retval stator admittance vector.
 		 */
 		static systems::alpha_beta GetVector(std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& ad);
-	};
-
-	/**
-	 * hall sensor based observer
-	 */
-	class hall
-	{
-	private:
-
-		///< current theta offset
-		float offset;
-
-		///< offsets sine cosine values for rotation
-		systems::sin_cos sc_offset;
-
-	public:
-		/**
-		 * @brief hall observers trivial constructor
-		 */
-		hall(void);
-
-		/**
-		 * Update the angle offset
-		 * @param new_offset
-		 */
-		void SetOffset(const float new_offset);
-
-	    /**
-	     * @brief Get sine and cosine values from hall for estimation in rotor frame.
-	     * @retval est hall sensor signal in rotor frame
-	     */
-	    void Calculate(systems::dq& est);
 	};
 } /* namespace observer */
 

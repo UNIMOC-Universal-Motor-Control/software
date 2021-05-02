@@ -1,5 +1,5 @@
 /*
-    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
+    UNIMOC - Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 
@@ -20,6 +20,7 @@
 #include "observer.hpp"
 #include "settings.hpp"
 #include "values.hpp"
+#include "measurement.hpp"
 #include <cstdint>
 #include <cmath>
 #include <array>
@@ -232,51 +233,6 @@ namespace observer
 
         return yd;
     }
-
-
-    /**
-     * @brief hall observers trivial constructor
-     */
-    hall::hall(void):offset(0.0f), sc_offset{0.0f, 1.0f}   {}
-
-    /**
-     * @brief Get sine and cosine values from hall for estimation in rotor frame.
-     * @retval est hall sensor signal in rotor frame
-     */
-    void hall::Calculate(systems::dq& est)
-    {
-    	systems::alpha_beta tab;
-    	systems::abc hall;
-
-    	if(values::motor::hall::state & settings.observer.hall.map.a) hall.a = 1.0f;
-    	else hall.a = -1.0f;
-
-    	if(values::motor::hall::state & settings.observer.hall.map.b) hall.b = 1.0f;
-    	else hall.b = -1.0f;
-
-    	if(values::motor::hall::state & settings.observer.hall.map.c) hall.c = 1.0f;
-    	else hall.c = -1.0f;
-
-    	tab = systems::transform::Clark(hall);
-
-    	// bring hall angle vector to rotor frame
-    	est = systems::transform::Park(tab, values::motor::rotor::sc);
-    }
-
-	/**
-	 * Update the angle offset
-	 * @param new_offset
-	 */
-	void hall::SetOffset(const float new_offset)
-	{
-		constexpr float eps = 100.0f * std::numeric_limits<float>::epsilon();
-
-		if(std::abs(new_offset-offset) > eps)
-		{
-			sc_offset = systems::SinCos(unit::Q31(new_offset));
-			offset = new_offset;
-		}
-	}
 }/* namespace observer */
 
 

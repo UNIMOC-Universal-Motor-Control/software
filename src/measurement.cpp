@@ -24,257 +24,290 @@
 #include "filter.hpp"
 #include "hal.h"
 #include "hardware_interface.hpp"
-#include "management.hpp"
+#include "measurement.hpp"
 #include "control_thread.hpp"
 
 using namespace chibios_rt;
 
-volatile bool save = false;
-
 
 /**
- * @namespace controller management classes
+ * @namespace measurement flags
  */
-namespace management
+namespace measurement
 {
+	///< measure all parameters
+	bool all = false;
+
 	/**
-	 * @namespace observer flags
+	 * calculates the optimal current controller proportional gain
+	 * @param inductance of the stator
+	 * @param t2 filter time constant
+	 * @return kp of the current controller
 	 */
-	namespace observer
+	constexpr float CalculateKp(const float inductance, const float t2)
 	{
-		///< release high frequency injection observer
-		bool hfi = false;
-
-		///< release flux observer
-		bool flux = false;
-
-		///< release hall sensor based observer
-		bool hall = false;
+		if(t2 > 1e-9) return (inductance/t2*0.5f);
+		else return (0.0f);
 	}
 
 	/**
-	 * @namespace controller flags
+	 * calculates the time constant of the pi current controller to cancel
+	 * the electrical time constant
+	 * @param inductance of the stator
+	 * @param resitance of the stator
+	 * @return tn of the current controller
 	 */
-	namespace control
+	constexpr float CalculateTn(const float inductance, const float resistance)
 	{
-		///< release current control
-		bool current = false;
-
-		///< feedforward omega
-		bool feedforward = false;
-
-		///< release speed control
-		bool speed = false;
-
-		///< release position control
-		bool position = false;
+		if(resistance > 1e-9) return (inductance/resistance);
+		else return (1e3f);
 	}
 
 	/**
-	 * @namespace measurement flags
+	 * @namespace resistance measurement values
 	 */
-	namespace measure
+	namespace r
 	{
-		///< measure all parameters
-		bool all = false;
+		///< currents (x) and voltages (y) at each sample point
+		std::array<float, PHI_STEPS.size()> x;
+		std::array<float, PHI_STEPS.size()> y;
 
-		///< measure stator resistance
-		bool resitance = false;
+		///< target current
+		float current = 0.0f;
 
-		///< measure stator inductance
-		bool inductance = false;
+		///< enable flag
+		bool enable = false;
 
-		///< measure rotor flux
-		bool flux = false;
+		///< current measurement voltage
+		float u = 0.0f;
 
-		///< measure hall sensor state positons
-		bool hall = false;
-	}
-} /* namespace management */
+		///< current phi step
+		std::uint8_t phi_step = 0;
 
-/**
- * derate control input envelope
- * @param limit	value to end derating
- * @param envelope positive value sets the envelope below the limit, negative above the limit
- * @param actual actual value
- * @return 1 when no derating active and 1 to 0 when in envelope and 0 when above limit
- */
-float management::thread::Derate(const float limit, const float envelope, const float actual)
-{
-	const float start = limit - envelope;
+		///< current measurement point
+		std::uint8_t point = 0;
 
-	float derating = (actual - start)/envelope;
-
-	if(derating < 0.0f) derating = 0.0f;
-	if(derating > 1.0f) derating = 1.0f;
-
-	// cut off the derating value from the maximum
-	return (1.0f - derating);
-}
-
-/**
- * limit the input value
- * @param[in/out] in input value
- * @param min minimal value
- * @param max maximal value
- * @return true when value is out of limits
- */
-bool management::thread::Limit(float& in, const float min, const float max)
-{
-	bool did_trunc = false;
-
-	if (in > max)
-	{
-		in = max;
-		did_trunc = true;
-
-	}
-	else if (in < min)
-	{
-		in = min;
-		did_trunc = true;
+		///< cycle counter
+		std::uint32_t cycle = 0;
 	}
 
-	return did_trunc;
-}
 
-
-/**
- * generic constructor
- */
-management::thread::thread(): deadline(0), sequencer(STARTUP), uq(1e3f, 1.0f, 10e-3f), ubat(1e3f, 1.0f, 10e-3f), w(1e3f, 1.0f, 10e-3f)
-{};
-
-/**
- * Limit the current setpoint according to temp, voltage, and current limits
- * @param setpoint[in/out] current setpoint
- */
-void management::thread::LimitCurrentSetpoint(systems::dq& setpoint)
-{
-	using namespace values::motor::rotor;
-	using namespace values;
-
-	float ratio = ubat.Calculate(battery::u) / uq.Calculate(u.q);
-	float min = -settings.motor.limits.i;
-	float max =  settings.motor.limits.i;
-
-	// deadzone for battery current limiter of 1W
-	if(std::fabs(uq.Get() * setpoint::i.q) > 1.0f)
+	/**
+	 * @namespace inductance measurement values
+	 */
+	namespace l
 	{
-		if(ratio > 1e-3f)
+		///< measurement current.
+		float CUR = 3.0f;
+
+		///< measurement frequency
+		float FREQ = 800.0f;
+
+		///< enable flag
+		bool enable = false;
+
+		///< inductance measurement voltage
+		float u = 0.0f;
+
+		///< cycle counter
+		std::uint32_t cycle = 0;
+
+		///< old omega limit
+		float w_limit = 0.0f;
+	}
+
+	/**
+	 * @namespace flux measurement values
+	 */
+	namespace psi
+	{
+		///< enable flag
+		bool enable = false;
+
+		///< old current controller kp
+		float kp = 0.0f;
+
+		///< cycle counter
+		std::uint32_t cycle = 0;
+	}
+
+	/**
+	 * @namespace hallsensor measurement values
+	 */
+	namespace hall
+	{
+
+		/**
+		 * @namespace hall sensor transition variables
+		 */
+		namespace transition
 		{
-			min = ratio * -settings.battery.limits.i.charge;
-			max = ratio * settings.battery.limits.i.drive;
-		}
-		else if(ratio < -1e-3f)
-		{
-			min = ratio * settings.battery.limits.i.drive;
-			max = ratio * -settings.battery.limits.i.charge;
+			///< hall state change edge detection
+			std::uint8_t old = 0;
+			///< previous hall state before transition
+			std::uint8_t prev = 0;
+			///< transition angle
+			std::int32_t phi = 0;
 		}
 
-		if(min < -settings.motor.limits.i) min = -settings.motor.limits.i;
-		if(max > settings.motor.limits.i) max =  settings.motor.limits.i;
+		///< cycle counter
+		std::uint32_t cycle = 0;
+
+		///< hall sensor state change angles table
+		std::array<std::array<std::int32_t, 8>, 8> map = {0};
+
+		///< measured hall states
+		std::uint8_t states_seen = 0;
+
+		///< old current controller kp
+		float kp = 0.0f;
+
+		///< statemachine states
+		enum sequence_e
+		{
+			START,
+			UPDATE_KP,
+			TURN_CW,
+			TURN_CCW,
+			STOP,
+		} sequencer = START;
+
+		/**
+		 * Measure the angles of all Hall State transitions
+		 * @param first_run if true cleanup all flags and states
+		 * @param current measurement current typically 50% of limit
+		 * @return true when finished
+		 */
+		bool Measure(const bool first_run, const float current)
+		{
+			static bool finished = false;
+
+			if(first_run)
+			{
+				sequencer = START;
+				cycle = 0;
+				states_seen = 0;
+				std::memset(map.data(), 0, sizeof(map));
+			}
+
+			switch(sequencer)
+			{
+			case START:
+				kp = settings.control.current.kp;
+				settings.control.current.kp = CalculateKp(settings.motor.l.d, hardware::Tf()) / 10.0f;
+				 // Disable current control to update KP for the controller
+				observer::hall = false;
+				observer::flux = false;
+				observer::hfi = false;
+				control::feedforward = false;
+				control::current = false;
+
+				values::motor::rotor::u.d = 0.0f;
+				values.motor.rotor.u.q = 0.0f;
+				values.motor.rotor.phi = 0;
+				values.motor.rotor.omega = 0.0f;
+				values.motor.m_l = 0.0f;
+
+				values.motor.rotor.setpoint.i.d = current;
+				values.motor.rotor.setpoint.i.q = 0.0f;
+
+				sequencer = UPDATE_KP;
+				break;
+			case UPDATE_KP:
+				control::current = true;
+				values.motor.rotor.omega = 2.0f;
+				sequencer = TURN_CW;
+				break;
+			case TURN_CW:
+				// get hall state
+				state = values.motor.rotor.hall;
+				sequencer = TURN_CW;
+				break;
+
+
+			}
+
+
+
+
+
+			// set first sector
+			if(!measure::hall::cycle)
+			{
+				measure::hall::old_state = measure::hall::state;
+			}
+
+			// new edge of a Hall sensor
+			if(measure::hall::state != measure::hall::old_state && measure::hall::cycle > 1000)
+			{
+				float* angle = &measure::hall::angles_cw[measure::hall::state];
+				if(measure::hall::direction == measure::hall::direction_te::CW) angle = &measure::hall::angles_cw[measure::hall::state];
+				if(measure::hall::direction == measure::hall::direction_te::CCW) angle = &measure::hall::angles_ccw[measure::hall::state];
+
+				if(*angle == 0.0f)
+				{
+					measure::hall::states_seen++;
+					*angle = values.motor.rotor.phi;
+				}
+			}
+			measure::hall::old_state = measure::hall::state;
+
+			measure::hall::cycle++;
+
+			// only valid hall states count
+			if(measure::hall::state < 1 || measure::hall::state > 6
+					|| (measure::hall::states_seen >= 6 && measure::hall::cycle > 10000)
+					|| measure::hall::cycle > 30000)
+			{
+				values.motor.rotor.u.d = 0.0f;
+				values.motor.rotor.u.q = 0.0f;
+				values.motor.rotor.phi = 0.0f;
+				values.motor.rotor.omega = 0.0f;
+
+				observer::hall = false;
+				observer::flux = false;
+				observer::hfi = false;
+
+				control::feedforward = false;
+				control::current = false;
+
+				values.motor.rotor.setpoint.i.d = 0.0f;
+				values.motor.rotor.setpoint.i.q = 0.0f;
+
+				if(measure::hall::direction == measure::hall::direction_te::CCW)
+				{
+					measure::hall::direction = measure::hall::direction_te::CW;
+					measure::hall::enable = false;
+					settings.control.current.kp = measure::hall::kp;
+					sequencer = RUN;
+				}
+				else
+				{
+					measure::hall::direction = measure::hall::direction_te::CCW;
+					measure::hall::states_seen = 0;
+				}
+				measure::hall::cycle = 0;
+
+				// measurement successful
+				if(measure::hall::states_seen >= 6)
+				{
+					settings.motor.hall_table_cw = measure::hall::angles_cw;
+					settings.motor.hall_table_ccw = measure::hall::angles_ccw;
+				}
+			}
+			return (finished);
+		}
 	}
 
-	// derate by temperature and voltage
-	std::array<float, 5> derate;
-	derate[0] = Derate(settings.converter.limits.temperature,
-			settings.converter.derating.temprature, converter::temp);
+} /* namespace measurement */
 
-	derate[1] = Derate(settings.battery.limits.voltage.low,
-			-settings.converter.derating.voltage, ubat.Get());
 
-	derate[2] = Derate(settings.battery.limits.voltage.high,
-					settings.converter.derating.voltage, ubat.Get());
 
-	w.Calculate(omega);
-	derate[3] = Derate(settings.motor.limits.omega.forwards,
-			settings.converter.derating.omega, w.Get());
 
-	derate[4] = Derate(settings.motor.limits.omega.backwards,
-			-settings.converter.derating.omega, w.Get());
 
-	// always use the minimal derating possible
-	float derating = *std::min_element(derate.begin(), derate.end());
-
-	// derate the limits
-	min *= derating;
-	max *= derating;
-
-	motor::rotor::setpoint::limit::i::min = min;
-	motor::rotor::setpoint::limit::i::max = max;
-
-	Limit(setpoint.q, motor::rotor::setpoint::limit::i::min, motor::rotor::setpoint::limit::i::max);
-}
-
-/**
- * calculate analog input signal with deadzones
- * @param input 0-1 input
- * @return	0-1 output with dead zones
- */
-float management::thread::UniAnalogThrottleDeadzone(const float input)
+void management::thread::MeasureHALLStates(void)
 {
-	float output = (input - settings.throttle.deadzone.low)/(settings.throttle.deadzone.high - settings.throttle.deadzone.low);
-	Limit(output, 0.0f, 1.0f);
-	return output;
-}
 
-/**
- * calculate analog input signal with dead zones in bidirectional manner
- * @param input 0-1 input
- * @return	-1-1 output with dead zones at 0 and +-1
- */
-float management::thread::BiAnalogThrottleDeadzone(const float input)
-{
-	float bi_input = (input *2.0f) - 1.0f;
-	// low dead zone bidirectional
-	if(std::fabs(bi_input) < settings.throttle.deadzone.low) bi_input = 0.0f;
-	else bi_input -= std::copysign(settings.throttle.deadzone.low, bi_input);
-	// scaling for high dead zone
-	float output = bi_input/(settings.throttle.deadzone.high - settings.throttle.deadzone.low);
-	// cut of high dead zone
-	Limit(output, -1.0f, 1.0f);
-
-	return output;
-}
-
-/**
- * get the mapped throttle input signal
- * @param setpoint
- */
-void management::thread::SetThrottleSetpoint(systems::dq& setpoint)
-{
-	using namespace values::motor::rotor;
-
-	switch(settings.throttle.sel)
-	{
-	default:
-	case settings_ts::throttle_s::NONE:
-		break;
-	case settings_ts::throttle_s::ANALOG_BIDIRECTIONAL:
-	{
-		setpoint.d = 0.0f;
-		float throttle = BiAnalogThrottleDeadzone(hardware::adc::input());
-
-		if(throttle > 0.0f) setpoint.q = throttle * setpoint::limit::i::max;
-		else setpoint.q = throttle * setpoint::limit::i::min;
-
-		break;
-	}
-
-	case settings_ts::throttle_s::ANALOG_FORWARDS:
-		setpoint.d = 0.0f;
-		setpoint.q = UniAnalogThrottleDeadzone(hardware::adc::input()) * setpoint::limit::i::max;
-		break;
-	case settings_ts::throttle_s::ANALOG_BACKWARDS:
-		setpoint.d = 0.0f;
-		setpoint.q = UniAnalogThrottleDeadzone(hardware::adc::input()) * setpoint::limit::i::min;
-		break;
-	case settings_ts::throttle_s::ANALOG_SWITCH:
-		break;
-	case settings_ts::throttle_s::PAS:
-		break;
-	}
 }
 
 

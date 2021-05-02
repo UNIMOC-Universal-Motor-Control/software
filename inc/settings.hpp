@@ -1,5 +1,5 @@
 /*
-    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
+    UNIMOC - Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 
@@ -185,18 +185,8 @@ typedef struct settings_s
 			///< enable observer switch
 			bool enable;
 
-			///< maps the hall sensor inputs to phases
-			struct map_s
-			{
-				///< mapps hall sensor to phase a
-				std::uint8_t a;
-				///< mapps hall sensor to phase a
-				std::uint8_t b;
-				///< mapps hall sensor to phase a
-				std::uint8_t c;
-
-				std::uint8_t unused;
-			} map;
+			///< maps the hall sensor inputs sequence to angles
+			std::array<std::array<std::int32_t, 8>, 8> map;
 
 			///< maximum speed where hall is active
 			float omega_max;

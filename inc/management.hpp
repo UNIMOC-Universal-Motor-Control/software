@@ -1,5 +1,5 @@
 /*
-    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
+    UNIMOC - Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 
@@ -76,47 +76,17 @@ namespace management
 		///< measure all parameters
 		extern bool all;
 
-		/**
-		 * @namespace resistance measurement values
-		 */
-		namespace r
-		{
-			///< enable flag
-			extern bool enable;
+		///< measure stator resistance
+		extern bool resitance;
 
-			///< current measurement voltage
-			extern float u;
+		///< measure stator inductance
+		extern bool inductance;
 
-			///< measure all the phases.
-			constexpr std::array<std::int32_t, 3> PHI_STEPS = {0, (std::int32_t)(unit::deg2q31 * 120.0f), (std::int32_t)(unit::deg2q31 * 240.0f)};
+		///< measure rotor flux
+		extern bool flux;
 
-			///< current phi step
-			extern std::uint8_t phi_step;
-
-			///< cycle counter
-			extern std::uint32_t cycle;
-		}
-
-		/**
-		 * @namespace inductance measurement values
-		 */
-		namespace l
-		{
-		///< measurement current.
-		extern float CUR;
-
-		///< measurement frequency
-		extern float FREQ;
-
-		///< enable flag
-		extern bool enable;
-
-		///< current measurement voltage
-		extern float u;
-
-		///< cycle counter
-		extern std::uint32_t cycle;
-		}
+		///< measure hall sensor state positons
+		extern bool hall;
 	}
 
 	/**
@@ -145,31 +115,6 @@ namespace management
 		filter::low_pass		uq;
 		filter::low_pass		ubat;
 		filter::low_pass		w;
-
-		/**
-		 * calculates the optimal current controller proportional gain
-		 * @param inductance of the stator
-		 * @param t2 filter time constant
-		 * @return kp of the current controller
-		 */
-		constexpr float CalculateKp(const float inductance, const float t2)
-		{
-			if(t2 > 1e-9) return (inductance/t2*0.5f);
-			else return (0.0f);
-		}
-
-		/**
-		 * calculates the time constant of the pi current controller to cancel
-		 * the electrical time constant
-		 * @param inductance of the stator
-		 * @param resitance of the stator
-		 * @return tn of the current controller
-		 */
-		constexpr float CalculateTn(const float inductance, const float resistance)
-		{
-			if(resistance > 1e-9) return (inductance/resistance);
-			else return (1e3f);
-		}
 
 		/**
 		 * derate control input envelope

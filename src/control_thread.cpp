@@ -1,5 +1,5 @@
 /*
-    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
+    UNIMOC - Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 
@@ -24,6 +24,7 @@
 #include "filter.hpp"
 #include "values.hpp"
 #include "settings.hpp"
+#include "hall_sensor.hpp"
 #include "freemaster_wrapper.hpp"
 #include "hardware_interface.hpp"
 
@@ -99,7 +100,7 @@ namespace control
 	/**
 	 * generic constructor
 	 */
-	thread::thread():flux(), hall(), foc(),	as5048(hardware::i2c::instance)
+	thread::thread():flux(), foc(),	as5048(hardware::i2c::instance)
 	{}
 
 	/**
@@ -174,6 +175,7 @@ namespace control
 
 			// read hall sensors
 			motor::hall::state = hardware::adc::hall::State();
+			hall::transition::Update();
 
 			// calculate the sine and cosine of the new angle
 			angle = motor::rotor::phi - unit::Q31(motor::rotor::omega * hardware::Tf());;
@@ -197,11 +199,11 @@ namespace control
 				&& (motor::hall::state != 0 && motor::hall::state != 7))
 			{
 				// calculate the hall observer
-				hall.Calculate(motor::hall::flux);
+				hall::observer::GetFluxVector(motor::hall::flux);
 
 				// calculate reference flux vector from hall sensors
-				motor::rotor::flux::set.d = motor::hall::flux.d * settings.motor.psi;
-				motor::rotor::flux::set.q = motor::hall::flux.q * settings.motor.psi;
+				motor::rotor::flux::set.d = motor::hall::flux.d;
+				motor::rotor::flux::set.q = motor::hall::flux.q;
 			}
 			else
 			{

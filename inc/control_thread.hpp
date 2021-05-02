@@ -1,5 +1,5 @@
 /*
-    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
+    UNIMOC - Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 
@@ -46,7 +46,6 @@ namespace control
 	private:
 		static constexpr float _3by2 = 3.0f/2.0f;
 		observer::flux       	flux;
-		observer::hall       	hall;
 		observer::mechanic 		mech;
 		control::foc      		foc;
 		std::array<float, 3>   	correction;

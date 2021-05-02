@@ -16,8 +16,8 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef INC_MAIN_HPP_
-#define INC_MAIN_HPP_
+#ifndef INC_MEASUREMENT_HPP_
+#define INC_MEASUREMENT_HPP_
 
 
 #include <cstdint>
@@ -25,8 +25,36 @@
 #include <climits>
 #include <array>
 #include "ch.hpp"
-#include "controller.hpp"
+#include "systems.hpp"
+#include "values.hpp"
+#include "settings.hpp"
+
+
+/**
+ * @namespace measurement data
+ */
+namespace measurement
+{
+	/**
+	 * @namespace hall sensor measurement values for control cycle update
+	 */
+	namespace hall
+	{
+		/**
+		 * @namespace hall sensor transition variables
+		 */
+		namespace transition
+		{
+			///< hall state change edge detection
+			extern std::uint8_t old;
+			///< previous hall state before transition
+			extern std::uint8_t prev;
+			///< transition angle
+			extern std::int32_t phi;
+		}
+	}
+}
 
 
 
-#endif /* INC_MAIN_HPP_ */
+#endif /* INC_MEASUREMENT_HPP_ */
