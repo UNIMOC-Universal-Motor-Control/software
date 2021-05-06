@@ -278,6 +278,28 @@ void management::thread::SetThrottleSetpoint(systems::dq& setpoint)
 	}
 }
 
+/**
+ * Switch Flag with hysteresis
+ * @param value	current values
+ * @param limit limit with hysteresis around
+ * @param hysteresis corridor of hysteresis +-
+ * @param flag current state
+ * @return new state of the flag
+ */
+bool management::thread::Hysteresis(const float value, const float limit, const float hysteresis, const bool flag)
+{
+	bool out_flag = false;
+
+		 if(value > (limit + hysteresis) && flag)
+		 {
+			 out_flag = false;
+		 }
+		 else if(value < (limit - hysteresis) && flag)
+		 {
+			 out_flag = true;
+		 }
+	return out_flag;
+}
 
 /**
  * @brief Thread main function
@@ -380,14 +402,7 @@ void management::thread::main(void)
 			// hall with hysteresis
 			if(settings.observer.hall.enable)
 			{
-				 if(observer::hall && (motor::rotor::omega > 1.2f * settings.observer.hall.omega_max))
-				 {
-					 observer::hall = false;
-				 }
-				 else if(!observer::hall && (motor::rotor::omega < settings.observer.hall.omega_max))
-				 {
-					 observer::hall = true;
-				 }
+				observer::hall = Hysteresis(motor::rotor::omega, settings.observer.hall.omega_max, 50.0f, observer::hall);
 			}
 			else
 			{
@@ -397,14 +412,7 @@ void management::thread::main(void)
 			// hfi with hysteresis
 			if(settings.observer.hfi.enable)
 			{
-				 if(observer::hfi && (motor::rotor::omega > 1.2f * settings.observer.hfi.omega_max))
-				 {
-					 observer::hfi = false;
-				 }
-				 else if(!observer::hfi && (motor::rotor::omega < settings.observer.hfi.omega_max))
-				 {
-					 observer::hfi = true;
-				 }
+				observer::hfi = Hysteresis(motor::rotor::omega, settings.observer.hfi.omega_max, 50.0f, observer::hfi);
 			}
 			else
 			{

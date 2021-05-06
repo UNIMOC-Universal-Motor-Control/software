@@ -162,9 +162,14 @@ namespace management
 		float UniAnalogThrottleDeadzone(const float input);
 
 		/**
-		 * Measure the angles of all Hall State transitions
+		 * Switch Flag with hysteresis
+		 * @param value	current values
+		 * @param limit limit with hysteresis around
+		 * @param hysteresis corridor of hysteresis +-
+		 * @param flag current state
+		 * @return new state of the flag
 		 */
-		void MeasureHALLStates(void);
+		bool Hysteresis(const float value, const float limit, const float hysteresis, const bool flag);
 
 
 	protected:
