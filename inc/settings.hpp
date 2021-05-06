@@ -185,14 +185,27 @@ typedef struct settings_s
 			///< enable observer switch
 			bool enable;
 
-			///< maps the hall sensor inputs sequence to angles
-			std::array<std::array<std::int32_t, 8>, 8> map;
+			///< maps the hall sensor inputs to phases
+			struct map_s
+			{
+				///< mapps hall sensor to phase a
+				std::uint8_t a;
+				///< mapps hall sensor to phase a
+				std::uint8_t b;
+				///< mapps hall sensor to phase a
+				std::uint8_t c;
+
+				std::uint8_t unused;
+			} map;
 
 			///< maximum speed where hall is active
 			float omega_max;
 
 			///< flux observer feedback gains in hall mode
 			systems::dq C;
+
+			///< angular offset for the hall sensor signals in q31 (-180 - 180)
+			std::int32_t offset;
 		} hall;
 
 		/**

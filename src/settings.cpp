@@ -186,24 +186,26 @@ __attribute__((aligned (32))) settings_ts settings =
 			///< enable observer switch
 			.enable = false,
 
-			///< maps the hall sensor inputs sequence to angles
-			.map = {
-			// new state 0	1						2							3						4						5						6						7	old state
-					{	0,	0,						0,							0,						0,						0,						0,						0}, // 0
-					{	0,	0,						0,							unit::deg2q31*-120.0f,	0,						unit::deg2q31*180.0f,	0,						0}, // 1
-					{	0,	0,						0,							unit::deg2q31*-60.0f,	0,						0,						1,						0},	// 2
-					{	0,	unit::deg2q31*-120.0f,	unit::deg2q31*-60.0f,		0,						0,						0,						0,						0},	// 3
-					{	0,	0,						0,							0,						0,						unit::deg2q31*120.0f,	unit::deg2q31*60.0f,	0},	// 4
-					{	0,	unit::deg2q31*180.0f,	0,							0,						unit::deg2q31*120.0f,	0,						0,						0},	// 5
-					{	0,	0,						1,							0,						unit::deg2q31*60.0f,	0,						0,						0},	// 6
-					{	0,	0,						0,							0,						0,						0,						0,						0},	// 7
-			},
+			///< maps the hall sensor inputs to phases
+			.map =
+			{
+				///< mapps hall sensor to phase a
+				.a = 0b001,
+				///< mapps hall sensor to phase a
+				.b = 0b010,
+				///< mapps hall sensor to phase a
+				.c = 0b100,
 
+				.unused = 0,
+			},
 			///< maximum speed where hall is active
 			.omega_max = 150.0f,
 
 			///< flux observer feedback gains in hall mode
 			.C = {25.0f, 25.0f},
+
+			///< angular offset for the hall sensor signals in q31 (-180 - 180)
+			.offset = 0,
 		},
 
 		/**

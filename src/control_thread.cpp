@@ -24,7 +24,6 @@
 #include "filter.hpp"
 #include "values.hpp"
 #include "settings.hpp"
-#include "hall_sensor.hpp"
 #include "freemaster_wrapper.hpp"
 #include "hardware_interface.hpp"
 
@@ -71,7 +70,7 @@ namespace control
 		systems::sin_cos sc;
 		systems::dq u_tmp = {u_ab.alpha, u_ab.beta};
 		u_ab_turn[0] = {u_tmp.d, u_tmp.q};
-		sc = systems::SinCos(unit::Q31(omega*hardware::Tc()/(float)hardware::pwm::INJECTION_CYCLES));
+		sc = systems::SinCos(unit::Q31R(omega*hardware::Tc()/(float)hardware::pwm::INJECTION_CYCLES));
 
 		for (std::uint_fast8_t i = 1; i < u_ab_turn.size(); ++i)
 		{
@@ -100,8 +99,17 @@ namespace control
 	/**
 	 * generic constructor
 	 */
-	thread::thread():flux(), foc(),	as5048(hardware::i2c::instance)
+	thread::thread():flux(), mech(), hall(), foc(),	as5048(hardware::i2c::instance)
 	{}
+
+	/**
+	 * execute slow management tasks which don't need to run in control loop
+	 */
+	void thread::Manage(void)
+	{
+		as5048.SetZero(settings.mechanics.zero_pos);
+		hall.SetOffset(settings.observer.hall.offset);
+	}
 
 	/**
 	 * compensate the commanded voltage for the error introduced by PWM deadtime
@@ -175,10 +183,9 @@ namespace control
 
 			// read hall sensors
 			motor::hall::state = hardware::adc::hall::State();
-			hall::transition::Update();
 
 			// calculate the sine and cosine of the new angle
-			angle = motor::rotor::phi - unit::Q31(motor::rotor::omega * hardware::Tf());;
+			angle = motor::rotor::phi - unit::Q31R(motor::rotor::omega * hardware::Tf());;
 
 			// calculate new sine and cosine for the reference system
 			systems::sin_cos sc = systems::SinCos(angle);
@@ -199,7 +206,7 @@ namespace control
 				&& (motor::hall::state != 0 && motor::hall::state != 7))
 			{
 				// calculate the hall observer
-				hall::observer::GetFluxVector(motor::hall::flux);
+				hall.Calculate(motor::hall::flux);
 
 				// calculate reference flux vector from hall sensors
 				motor::rotor::flux::set.d = motor::hall::flux.d;

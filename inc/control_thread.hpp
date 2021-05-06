@@ -47,7 +47,9 @@ namespace control
 		static constexpr float _3by2 = 3.0f/2.0f;
 		observer::flux       	flux;
 		observer::mechanic 		mech;
+		observer::hall       	hall;
 		control::foc      		foc;
+		sensor::as5048b 		as5048;
 		std::array<float, 3>   	correction;
 		std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> i_abc;
 		std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> i_abc_ac;
@@ -68,7 +70,11 @@ namespace control
 		virtual void main(void);
 
 	public:
-		sensor::as5048b 		as5048;
+		/**
+		 * execute slow management tasks which don't need to run in control loop
+		 */
+		void Manage(void);
+
 		/**
 		 * generic constructor
 		 */

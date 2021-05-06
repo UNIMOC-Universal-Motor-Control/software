@@ -25,6 +25,7 @@
 #include "hal.h"
 #include "hardware_interface.hpp"
 #include "management.hpp"
+#include "measurement.hpp"
 #include "control_thread.hpp"
 
 using namespace chibios_rt;
@@ -350,8 +351,8 @@ void management::thread::main(void)
 //				palSetLine(LINE_LED_RUN);
 			palClearLine(LINE_LED_MODE);
 
-			// update zero pos on the ref encoder
-			controller.as5048.SetZero(settings.mechanics.zero_pos);
+			// slow tasks of the control loop thread
+			controller.Manage();
 
 			// get throttle commands from the configured source
 			SetThrottleSetpoint(motor::rotor::setpoint::i);
@@ -415,365 +416,38 @@ void management::thread::main(void)
 			// Handling of measurement flags
 			if(measure::all)
 			{
-				measure::r::enable = true;
-				measure::l::enable = true;
-				measure::psi::enable = true;
-//					measure::hall::enable = true;
+				measure::resitance = true;
+				measure::inductance = true;
+				measure::flux = true;
 			}
 
-			if(measure::r::enable) sequencer = MEASURE_RS;
-			else if(measure::l::enable) sequencer = MEASURE_LS;
-			else if(measure::psi::enable) sequencer = MEASURE_PSI;
-//				else if(measure::hall::enable) sequencer = MEASURE_HALL;
+			if(measure::resitance) sequencer = MEASURE_RS;
+			else if(measure::inductance) sequencer = MEASURE_LS;
+			else if(measure::flux) sequencer = MEASURE_PSI;
 
 			break;
 
 		case MEASURE_RS:
-			// init the measurement
-			if(measure::r::cycle == 0 && measure::r::phi_step == 0)
-			{
-				using namespace values::motor::rotor;
-				measure::r::u = 0.0f;
-				u.d = 0.0f;
-				u.q = 0.0f;
-				phi = 0;
-				omega = 0.0f;
-				control::current = false;
-				observer::hall = false;
-				observer::flux = false;
-				observer::hfi = false;
 
-				measure::r::current = settings.motor.limits.i * 0.75;
-			}
-
-			// handle PWM led to show PWM status
-			if(hardware::pwm::output::Active() && measure::r::enable) palSetLine(LINE_LED_PWM);
-			else
+			if(measurement::Run(measure::resitance, measurement::r::Run))
 			{
-				// wait for PWM release
 				sequencer = RUN;
-
-				motor::rotor::u.d = 0.0f;
-				motor::rotor::u.q = 0.0f;
-				motor::rotor::phi = 0;
-				motor::rotor::omega = 0.0f;
-				measure::r::point = 0;
-				measure::r::u = 0.0f;
-				measure::r::enable = false;
-				measure::r::cycle = 0;
-				measure::r::phi_step = 0;
-
-				palClearLine(LINE_LED_PWM);
 			}
-//				// set Run Mode LED
-//				palClearLine(LINE_LED_RUN);
-
-			// reached current steps current target
-			if((motor::rotor::i.d > measure::r::current
-				&& measure::r::cycle > 100)
-				||	motor::rotor::u.d > battery::u * 0.50
-				||	measure::r::u > battery::u * 0.50)
-			{
-				using namespace values::motor::rotor;
-				// sample the point
-				measure::r::x[measure::r::point] = i.d;
-				measure::r::y[measure::r::point] = u.d;
-
-				// set zero position of the position sensor
-				if(measure::r::phi_step == 0)
-				{
-					settings.mechanics.zero_pos = sense::position;
-				}
-
-				measure::r::point++;
-				measure::r::phi_step++;
-				measure::r::u = 0.0f;
-
-				if(measure::r::phi_step >= measure::r::PHI_STEPS.size())
-				{
-					// finished with all phases
-					sequencer = CALCULATE_RS;
-				}
-				else
-				{
-					phi = measure::r::PHI_STEPS[measure::r::phi_step];
-				}
-
-			}	else if(std::fabs(motor::rotor::i.d) > measure::r::current
-					|| std::fabs(motor::rotor::i.q) > measure::r::current
-					|| !hardware::pwm::output::Active())
-			{
-				// error target current not reached within voltage limits
-				// or the other currents reached target current but not the main current
-				// there exists a connection problem
-				sequencer = CALCULATE_RS;
-			}
-
-			measure::r::cycle++;
-			if((measure::r::cycle % 25) == 0 && measure::r::cycle > 100)
-			{
-				measure::r::u += 100e-3f; // 100mv increase every 25ms
-			}
-			motor::rotor::u.d = measure::r::u;
-			break;
-
-		case CALCULATE_RS:
-			motor::rotor::u.d = 0.0f;
-			motor::rotor::u.q = 0.0f;
-			motor::rotor::phi = 0;
-			motor::rotor::omega = 0.0f;
-
-			if(	measure::r::phi_step >= measure::r::PHI_STEPS.size())
-			{
-				float r = 0.0f;
-				for (std::uint8_t i = 0; i < measure::r::PHI_STEPS.size(); ++i)
-				{
-					r += measure::r::y[i] / measure::r::x[i];
-				}
-				r /= (float)measure::r::PHI_STEPS.size();
-
-				settings.motor.rs = r;
-
-				settings.control.current.kp = CalculateKp(settings.motor.l.d, hardware::Tf());
-				settings.control.current.tn = CalculateTn(settings.motor.l.q, settings.motor.rs);
-			}
-			measure::r::point = 0;
-			measure::r::u = 0.0f;
-			measure::r::enable = false;
-			measure::r::cycle = 0;
-			measure::r::phi_step = 0;
-
-			sequencer = RUN;
-
 			break;
 
 		case MEASURE_LS:
-			// init the measurement
-			if(measure::l::cycle == 0)
+			if(measurement::Run(measure::inductance, measurement::l::Run))
 			{
-				using namespace values::motor::rotor;
-				measure::l::u = 0.0f;
-				u.d = 0.0f;
-				u.q = 0.0f;
-				phi = 0;
-				omega = math::_2PI * measure::l::FREQ;
-				motor::m_l = 0.0f;
-
-				measure::l::w_limit = settings.motor.limits.omega.forwards;
-				settings.motor.limits.omega.forwards = omega;
-				control::current = false;
-				observer::hall = false;
-				observer::flux = false;
-				observer::hfi = false;
-			}
-
-			// handle PWM led to show PWM status
-			if(hardware::pwm::output::Active() && measure::l::enable) palSetLine(LINE_LED_PWM);
-			else
-			{
-				// wait for PWM release
 				sequencer = RUN;
-
-				motor::rotor::u.d = 0.0f;
-				motor::rotor::u.q = 0.0f;
-				motor::rotor::phi = 0;
-				motor::rotor::omega = 0.0f;
-				motor::m_l = 0.0f;
-				settings.motor.limits.omega.forwards =  measure::l::w_limit;
-				control::current = false;
-
-				observer::hall = false;
-				observer::flux = false;
-
-				measure::l::enable = false;
-				measure::l::cycle = 0;
-
-				palClearLine(LINE_LED_PWM);
 			}
-//				// set Run Mode LED
-//				palClearLine(LINE_LED_RUN);
-
-			measure::l::cycle++;
-			if((measure::l::cycle % 50) == 0)
-			{
-
-				if(systems::Length(motor::rotor::i) > measure::l::CUR
-					||	motor::rotor::u.q > battery::u * 0.50
-					||	measure::l::u > battery::u * 0.50)
-				{
-					sequencer = CALCULATE_LS;
-				}
-				else
-				{
-					measure::l::u += 100e-3f; // 100mv increase every 25ms
-				}
-			}
-			motor::rotor::u.q = measure::l::u;
-			break;
-
-		case CALCULATE_LS:
-			// TODO needs rework: phase Lag of current vetor is motor depandent.
-			// calculate the dc levels
-			motor::rotor::gid.SetFrequency(0.0f, hardware::Fc());
-			motor::rotor::gid.Calculate();
-			{
-				using namespace values::motor::rotor;
-				// only use inductive part of the response
-				float i_len = gid.Magnitude();
-
-				if(i_len > 0.0f)
-				{
-					// get the Ld - Lq current at twice the injection frequency
-					gid.SetFrequency(2.0f * measure::l::FREQ, hardware::Fc());
-					gid.Calculate();
-					float iac = gid.Magnitude();
-
-					// assume that Ld is always lower than Lq due to Saturation
-					settings.motor.l.d = measure::l::u/(omega * (i_len + iac));
-					settings.motor.l.q = measure::l::u/(omega * (i_len - iac));
-
-					settings.control.current.kp = CalculateKp(settings.motor.l.d, hardware::Tf());
-					settings.control.current.tn = CalculateTn(settings.motor.l.q, settings.motor.rs);
-				}
-			}
-
-			motor::rotor::u.d = 0.0f;
-			motor::rotor::u.q = 0.0f;
-			motor::rotor::phi = 0;
-			motor::rotor::omega = 0.0f;
-			motor::m_l = 0.0f;
-			settings.motor.limits.omega.forwards =  measure::l::w_limit;
-			control::current = false;
-
-			observer::hall = false;
-			observer::flux = false;
-
-			measure::l::enable = false;
-			measure::l::cycle = 0;
-
-			sequencer = RUN;
 			break;
 
 		case MEASURE_PSI:
-			// init the measurement
-			if(measure::psi::cycle == 0)
+			if(measurement::Run(measure::flux, measurement::psi::Run))
 			{
-				using namespace values::motor::rotor;
-				u.d = 0.0f;
-				u.q = 0.0f;
-				phi = 0.0f;
-				omega = 0.0f;
-				motor::m_l = 0.0f;
-
-				observer::hall = false;
-				observer::flux = false;
-				observer::hfi = false;
-				control::feedforward = false;
-
-				// turn controller off to update KP
-				control::current = false;
-
-				measure::psi::kp = settings.control.current.kp;
-				settings.control.current.kp = 0.1f;
-
-				// sleep to get kp updated
-				sleepUntilWindowed(deadline, deadline + CYCLE_TIME);
-				deadline = chibios_rt::System::getTime();
-
-				control::current = true;
-
-				settings.motor.psi = 0.0f;
-				setpoint::i.d = 0.0f;
-				setpoint::i.q = settings.motor.limits.i * 0.5f;
-			}
-
-			// handle PWM led to show PWM status
-			if(hardware::pwm::output::Active() && measure::psi::enable) palSetLine(LINE_LED_PWM);
-			else
-			{
-				using namespace values::motor::rotor;
-
-				// wait for PWM release
 				sequencer = RUN;
-
-				observer::hall = false;
-				observer::flux = false;
-				observer::hfi = false;
-
-				control::feedforward = false;
-				control::current = false;
-
-				settings.control.current.kp = measure::psi::kp;
-				u.d = 0.0f;
-				u.q = 0.0f;
-				omega = 0.0f;
-				motor::m_l = 0.0f;
-
-				setpoint::i.d = 0.0f;
-				setpoint::i.q = 0.0f;
-
-
-				measure::psi::enable = false;
-				measure::psi::cycle = 0;
-
-				palClearLine(LINE_LED_PWM);
 			}
-//				// set Run Mode LED
-//				palClearLine(LINE_LED_RUN);
-
-			measure::psi::cycle++;
-			if((measure::psi::cycle % 100) == 0)
-			{
-				using namespace values::motor::rotor;
-				if(	   std::fabs(u.d) > battery::u * 0.25f
-						|| std::fabs(u.q) > battery::u * 0.25f
-						|| omega > 0.5f*settings.motor.limits.omega.forwards)
-				{
-					sequencer = CALCULATE_PSI;
-					setpoint::i.d = 0.0f;
-					setpoint::i.q = 0.0f;
-				}
-				else
-				{
-					omega += 1.0f;
-				}
-			}
-
 			break;
-
-		case CALCULATE_PSI:
-		{
-			using namespace values::motor::rotor;
-
-			float bemf_d = u.d - i.d*settings.motor.rs + omega*settings.motor.l.q*i.q;
-			float bemf_q = u.q - i.q*settings.motor.rs - omega*settings.motor.l.d*i.d;
-			systems::dq bemf = {bemf_d, bemf_q};
-			if(omega > 1.0f) settings.motor.psi = systems::Length(bemf)/omega;
-
-			observer::hall = false;
-			observer::flux = false;
-			observer::hfi = false;
-
-			control::feedforward = false;
-			control::current = false;
-
-			settings.control.current.kp = measure::psi::kp;
-			u.d = 0.0f;
-			u.q = 0.0f;
-			omega = 0.0f;
-			motor::m_l = 0.0f;
-
-			setpoint::i.d = 0.0f;
-			setpoint::i.q = 0.0f;
-
-
-			measure::psi::enable = false;
-			measure::psi::cycle = 0;
-			sequencer = RUN;
-			break;
-		}
-//			case MEASURE_HALL:
-//				break;
 		}
 
 		sleepUntilWindowed(deadline, deadline + CYCLE_TIME);

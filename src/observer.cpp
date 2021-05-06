@@ -20,7 +20,6 @@
 #include "observer.hpp"
 #include "settings.hpp"
 #include "values.hpp"
-#include "measurement.hpp"
 #include <cstdint>
 #include <cmath>
 #include <array>
@@ -74,7 +73,7 @@ namespace observer
         }
 
         // integrate omega for phi
-        phi += unit::Q31(omega * ts);
+        phi += unit::Q31R(omega * ts);
 
         // integrate load
         //values.motor.m_l += 0;
@@ -91,7 +90,7 @@ namespace observer
     	using namespace values::motor;
 
         omega += error[0];
-        phi += unit::Q31(error[1]);
+        phi += unit::Q31R(error[1]);
         m_l += error[2];
     }
 
@@ -233,6 +232,57 @@ namespace observer
 
         return yd;
     }
+
+
+    /**
+     * @brief hall observers trivial constructor
+     */
+    hall::hall(void):offset(0.0f), sc_offset{0.0f, 1.0f}   {}
+
+    /**
+     * @brief Get sine and cosine values from hall for estimation in rotor frame.
+     * @retval est hall sensor signal in rotor frame
+     */
+    void hall::Calculate(systems::dq& est)
+    {
+    	systems::alpha_beta tab;
+    	systems::dq tdq;
+    	systems::abc hall;
+
+    	if(values::motor::hall::state & settings.observer.hall.map.a) hall.a = 1.0f;
+    	else hall.a = -1.0f;
+
+    	if(values::motor::hall::state & settings.observer.hall.map.b) hall.b = 1.0f;
+    	else hall.b = -1.0f;
+
+    	if(values::motor::hall::state & settings.observer.hall.map.c) hall.c = 1.0f;
+    	else hall.c = -1.0f;
+
+    	tab = systems::transform::Clark(hall);
+
+    	// Turn the vector by the hall offset
+    	tdq = systems::transform::Park(tab, sc_offset);
+
+    	// scale the vector with the rotor flux
+    	tab.alpha = tdq.d * settings.motor.psi;
+    	tab.beta = tdq.q * settings.motor.psi;
+
+    	// bring hall angle vector to rotor frame
+    	est = systems::transform::Park(tab, values::motor::rotor::sc);
+    }
+
+	/**
+	 * Update the angle offset
+	 * @param new_offset
+	 */
+	void hall::SetOffset(const std::int32_t new_offset)
+	{
+		if(new_offset != offset)
+		{
+			sc_offset = systems::SinCos(new_offset);
+			offset = new_offset;
+		}
+	}
 }/* namespace observer */
 
 

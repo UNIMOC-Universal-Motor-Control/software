@@ -105,11 +105,8 @@ namespace management
 			CURRENT_OFFSETS,
 			RUN,
 			MEASURE_RS,
-			CALCULATE_RS,
 			MEASURE_LS,
-			CALCULATE_LS,
 			MEASURE_PSI,
-			CALCULATE_PSI,
 		} sequencer;
 
 		filter::low_pass		uq;

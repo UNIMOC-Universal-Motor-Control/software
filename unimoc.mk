@@ -21,7 +21,6 @@ UNIMOCCPPSRC := ${FREEMASTERCPPSRC} \
                 ${BASEDIR}/src/control_thread.cpp \
                 ${BASEDIR}/src/as5048b.cpp \
                 ${BASEDIR}/src/measurement.cpp \
-                ${BASEDIR}/src/hall_sensor.cpp \
 
 # Required include directories
 UNIMOCINC := ${FREEMASTERINC} \

@@ -35,23 +35,64 @@
  */
 namespace measurement
 {
+
 	/**
-	 * @namespace hall sensor measurement values for control cycle update
+	 * run any of the measurement functions with stop handling
+	 * @param enable	true if measurement is allowed to be active
+	 * @param func		function pointer to one of the run functions of the measurements
+	 * @return true if measurement finished regardless if measuement was a success or stop was true
 	 */
-	namespace hall
+	bool Run(const bool enable, bool (*func)(bool));
+
+	/**
+	 * @namespace resistance measurement values
+	 */
+	namespace r
 	{
 		/**
-		 * @namespace hall sensor transition variables
+		 * Measure the stators winding resistance.
+		 *
+		 * The function will slowly increase current in each of the 3 phases direction
+		 * until current reaches 75% of current limit.
+		 *
+		 * @param stop	if true the measurement stops in a clean manner
+		 * @return true if measurement finished regardless if measuement was a success or stop was true
 		 */
-		namespace transition
-		{
-			///< hall state change edge detection
-			extern std::uint8_t old;
-			///< previous hall state before transition
-			extern std::uint8_t prev;
-			///< transition angle
-			extern std::int32_t phi;
-		}
+		bool Run(bool stop);
+	}
+
+	/**
+	 * @namespace inductance measurement values
+	 */
+	namespace l
+	{
+		/**
+		 * Measure the stators winding inductance with axial components.
+		 *
+		 * The function will slowly increase current in a fast rotating field
+		 * until current reaches the set current limit.
+		 *
+		 * @param stop	if true the measurement stops in a clean manner
+		 * @return true if measurement finished regardless if measuement was a success or stop was true
+		 */
+		bool Run(bool stop);
+	}
+
+	/**
+	 * @namespace flux measurement values
+	 */
+	namespace psi
+	{
+		/**
+		 * Measure the rotor flux.
+		 *
+		 * The function will turn on current control and set 50% max current then slowly increases omega
+		 * until the voltages needed for the current control exceed 25% battery voltage
+		 *
+		 * @param stop	if true the measurement stops in a clean manner
+		 * @return true if measurement finished regardless if measuement was a success or stop was true
+		 */
+		bool Run(bool stop);
 	}
 }
 
