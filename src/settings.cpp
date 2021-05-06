@@ -235,6 +235,18 @@ __attribute__((aligned (32))) settings_ts settings =
 		///< pwm frequency
 		.frequency = 32000,
 
+		///< maps the phase wires to internal phases
+		.map =
+		{
+			///< mapps phase wire to internal phase a
+			.a = 0b001,
+			///< mapps phase wire to internal phase b
+			.b = 0b010,
+			///< mapps phase wire to internal phase c
+			.c = 0b100,
+			.unused = 0,
+		},
+
 		/**
 		 * converter derating settings
 		 */

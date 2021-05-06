@@ -235,6 +235,19 @@ typedef struct settings_s
 		///< pwm frequency
 		std::uint32_t frequency;
 
+		///< maps the phase wires to internal phases
+		struct map_s
+		{
+			///< mapps phase wire to internal phase a
+			std::uint8_t a;
+			///< mapps phase wire to internal phase b
+			std::uint8_t b;
+			///< mapps phase wire to internal phase c
+			std::uint8_t c;
+
+			std::uint8_t unused;
+		} map;
+
 		/**
 		 * converter derating settings
 		 */

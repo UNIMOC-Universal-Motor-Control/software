@@ -34,6 +34,8 @@ namespace control
 {
 	/**
 	 * SVPWM Overmodulation modified to flat bottom.
+	 *
+	 * @note this function does the mapping of the phase wires to internal phases
 	 * @param u phase voltages
 	 * @param ubat battery voltage
 	 * @return dutys in 0 to 1
@@ -54,7 +56,14 @@ namespace control
 
 		for (std::uint8_t i = 0; i < hardware::PHASES; ++i)
 		{
-			dutys.array[i] = (u.array[i] - mid) * scale + 0.5f;
+			uint8_t p = 0;
+
+			// Map the phase wires to internal phases
+	    		 if((1 << i) & settings.converter.map.a) p = 0;
+	    	else if((1 << i) & settings.converter.map.b) p = 1;
+	    	else if((1 << i) & settings.converter.map.c) p = 2;
+
+			dutys.array[p] = (u.array[i] - mid) * scale + 0.5f;
 		}
 	}
 
