@@ -175,7 +175,10 @@ __attribute__((aligned (32))) settings_ts settings =
 			.current = 1.5f,
 
 			///< maximum speed where hfi is active
-			.omega_max = 150.0f,
+			.omega = 150.0f,
+
+			///< hyseresis around maximum speed where observer is switched
+			.hysteresis = 50.0f,
 		},
 
 		/**
@@ -199,7 +202,10 @@ __attribute__((aligned (32))) settings_ts settings =
 				.unused = 0,
 			},
 			///< maximum speed where hall is active
-			.omega_max = 150.0f,
+			.omega = 150.0f,
+
+			///< hyseresis around maximum speed where observer is switched
+			.hysteresis = 50.0f,
 
 			///< flux observer feedback gains in hall mode
 			.C = {25.0f, 25.0f},

@@ -402,7 +402,7 @@ void management::thread::main(void)
 			// hall with hysteresis
 			if(settings.observer.hall.enable)
 			{
-				observer::hall = Hysteresis(motor::rotor::omega, settings.observer.hall.omega_max, 50.0f, observer::hall);
+				observer::hall = Hysteresis(motor::rotor::omega, settings.observer.hall.omega, settings.observer.hall.hysteresis, observer::hall);
 			}
 			else
 			{
@@ -412,7 +412,7 @@ void management::thread::main(void)
 			// hfi with hysteresis
 			if(settings.observer.hfi.enable)
 			{
-				observer::hfi = Hysteresis(motor::rotor::omega, settings.observer.hfi.omega_max, 50.0f, observer::hfi);
+				observer::hfi = Hysteresis(motor::rotor::omega, settings.observer.hfi.omega, settings.observer.hfi.hysteresis, observer::hfi);
 			}
 			else
 			{

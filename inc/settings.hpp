@@ -174,7 +174,10 @@ typedef struct settings_s
 			float current;
 
 			///< maximum speed where hfi is active
-			float omega_max;
+			float omega;
+
+			///< hyseresis around maximum speed where observer is switched
+			float hysteresis;
 		} hfi;
 
 		/**
@@ -199,7 +202,10 @@ typedef struct settings_s
 			} map;
 
 			///< maximum speed where hall is active
-			float omega_max;
+			float omega;
+
+			///< hyseresis around maximum speed where observer is switched
+			float hysteresis;
 
 			///< flux observer feedback gains in hall mode
 			systems::dq C;
