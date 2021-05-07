@@ -158,6 +158,7 @@ namespace measurement
 				observer::hfi = false;
 
 				current = settings.motor.limits.i * 0.75;
+				sequencer = MEASURE;
 				break;
 			case MEASURE:
 				// reached current steps current target
@@ -301,6 +302,7 @@ namespace measurement
 				observer::hall = false;
 				observer::flux = false;
 				observer::hfi = false;
+				sequencer = MEASURE;
 				break;
 			case MEASURE:
 				cycle++;
@@ -344,6 +346,22 @@ namespace measurement
 						settings.control.current.tn = CalculateTn(settings.motor.l.q, settings.motor.rs);
 					}
 				}
+
+				u = 0.0f;
+				rotor::u.d = 0.0f;
+				rotor::u.q = 0.0f;
+				rotor::phi = 0;
+				rotor::omega = 0.0f;
+				m_l = 0.0f;
+				settings.motor.limits.omega.forwards = w_limit;
+				control::current = false;
+				observer::hall = false;
+				observer::flux = false;
+				observer::hfi = false;
+
+				cycle = 0;
+				finished = true;
+				sequencer = START;
 				break;
 			}
 
@@ -420,6 +438,7 @@ namespace measurement
 				settings.motor.psi = 0.0f;
 				rotor::setpoint::i.d = 0.0f;
 				rotor::setpoint::i.q = settings.motor.limits.i * 0.5f;
+				sequencer = MEASURE;
 				break;
 			case MEASURE:
 				cycle++;

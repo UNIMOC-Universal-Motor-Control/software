@@ -288,16 +288,16 @@ void management::thread::SetThrottleSetpoint(systems::dq& setpoint)
  */
 bool management::thread::Hysteresis(const float value, const float limit, const float hysteresis, const bool flag)
 {
-	bool out_flag = false;
+	bool out_flag = flag;
 
-		 if(value > (limit + hysteresis) && flag)
-		 {
-			 out_flag = false;
-		 }
-		 else if(value < (limit - hysteresis) && flag)
-		 {
-			 out_flag = true;
-		 }
+	if(value > (limit + hysteresis) && flag)
+	{
+		out_flag = false;
+	}
+	else if(value < (limit - hysteresis) && !flag)
+	{
+		out_flag = true;
+	}
 	return out_flag;
 }
 
@@ -439,6 +439,7 @@ void management::thread::main(void)
 
 			if(measurement::Run(measure::resitance, measurement::r::Run))
 			{
+				measure::resitance = false;
 				sequencer = RUN;
 			}
 			break;
@@ -446,6 +447,7 @@ void management::thread::main(void)
 		case MEASURE_LS:
 			if(measurement::Run(measure::inductance, measurement::l::Run))
 			{
+				measure::inductance = false;
 				sequencer = RUN;
 			}
 			break;
@@ -453,6 +455,7 @@ void management::thread::main(void)
 		case MEASURE_PSI:
 			if(measurement::Run(measure::flux, measurement::psi::Run))
 			{
+				measure::flux = false;
 				sequencer = RUN;
 			}
 			break;
