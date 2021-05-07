@@ -153,9 +153,10 @@ namespace observer
     /**
      * @brief Get angular error from flux estimation.
      * @param set_flux expected flux vector
+     * @param C feedback gains
      * @retval out_flux estimated flux without inducted flux
      */
-    void flux::Calculate(systems::dq& set_flux, systems::dq& out_flux)
+    void flux::Calculate(systems::dq& set_flux, systems::dq& out_flux, const systems::dq C)
     {
     	using namespace values::motor::rotor;
     	using namespace values::motor;
@@ -179,8 +180,8 @@ namespace observer
     	out_flux.q -= i.q * settings.motor.l.q;
 
     	// compare actual flux with flux parameter
-    	rotor.feedback.d = settings.observer.flux.C.d * (set_flux.d - out_flux.d);
-    	rotor.feedback.q = settings.observer.flux.C.q * (set_flux.q - out_flux.q);
+    	rotor.feedback.d = C.d * (set_flux.d - out_flux.d);
+    	rotor.feedback.q = C.q * (set_flux.q - out_flux.q);
     }
 
     /**

@@ -123,15 +123,18 @@ namespace values
 			extern systems::sin_cos sc;
 
 			/**
-			 * motor stator flux values
+			 * rotor flux values
 			 */
 			namespace flux
 			{
-				///< motor rotor flux vector setpoint
+				///< rotor flux vector setpoint
 				extern systems::dq set;
 
-				///< motor rotor flux vector actual
+				///< rotor flux vector actual
 				extern systems::dq act;
+
+				///< rotor flux observer feedback
+				extern systems::dq C;
 			}
 
 			/**

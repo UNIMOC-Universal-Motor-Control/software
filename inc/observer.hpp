@@ -113,9 +113,10 @@ namespace observer
 	    /**
 	     * @brief Get angular error from flux estimation.
 	     * @param set_flux expected flux vector
+	     * @param C feedback gains
 	     * @retval out_flux estimated flux without inducted flux
 	     */
-		void Calculate(systems::dq& set_flux, systems::dq& out_flux);
+	    void Calculate(systems::dq& set_flux, systems::dq& out_flux, const systems::dq C);
 
 	};
 

@@ -125,6 +125,10 @@ namespace values
 
 				///< motor rotor flux vector actual
 				systems::dq act = {0.0f, 0.0f};
+
+				///< rotor flux observer feedback
+				systems::dq C = {500.0f, 500.0f};
+
 			}
 
 			/**

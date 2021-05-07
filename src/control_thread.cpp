@@ -211,12 +211,18 @@ namespace control
 				// calculate reference flux vector from hall sensors
 				motor::rotor::flux::set.d = motor::hall::flux.d;
 				motor::rotor::flux::set.q = motor::hall::flux.q;
+
+				// set the observer feedback accorting to observer
+				motor::rotor::flux::C = settings.observer.hall.C;
 			}
 			else
 			{
 				// calculate reference flux vector from estimated rotor position
 				motor::rotor::flux::set.d = settings.motor.psi;
 				motor::rotor::flux::set.q = 0.0f;
+
+				// set the observer feedback back to pure flux observer
+				motor::rotor::flux::C = settings.observer.flux.C;
 			}
 
 			if(management::observer::flux)
@@ -228,7 +234,7 @@ namespace control
 				mech.Predict(motor::rotor::i);
 
 				// calculate the flux observer
-				flux.Calculate(motor::rotor::flux::set, motor::rotor::flux::act);
+				flux.Calculate(motor::rotor::flux::set, motor::rotor::flux::act, motor::rotor::flux::C);
 
 		    	if(settings.motor.psi > 1e-8)
 		    	{
