@@ -41,7 +41,21 @@ namespace control
 	{
 		for (std::uint_fast8_t i = 0; i < i_abc.size(); ++i)
 		{
-			i_ab[i] = systems::transform::Clark(i_abc[i]);
+			systems::abc tmp;
+
+			for (std::uint_fast8_t j = 0; j < hardware::PHASES; ++j)
+			{
+				std::uint_fast8_t p = 0;
+
+				// Map the phase wires to internal phases
+		    		 if((1 << j) & settings.converter.map.a) p = 0;
+		    	else if((1 << j) & settings.converter.map.b) p = 1;
+		    	else if((1 << j) & settings.converter.map.c) p = 2;
+
+		    	tmp.array[p] = i_abc[i].array[j];
+			}
+
+			i_ab[i]  = systems::transform::Clark(tmp);
 		}
 	}
 
