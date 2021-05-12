@@ -1,5 +1,11 @@
 /*
-    UNIMOC - Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
+	   __  ___   ________  _______  ______
+	  / / / / | / /  _/  |/  / __ \/ ____/
+	 / / / /  |/ // // /|_/ / / / / /
+	/ /_/ / /|  // // /  / / /_/ / /___
+	\____/_/ |_/___/_/  /_/\____/\____/
+
+	Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 
@@ -216,27 +222,29 @@ namespace control
 					+ motor::rotor::u.q * motor::rotor::i.q)/battery::u;
 
 			// Handle obviously wrong hall states as pure flux observer info
-			if(management::observer::hall
-				&& (motor::hall::state != 0 && motor::hall::state != 7))
+			if((motor::hall::state != 0 && motor::hall::state != 7))
 			{
 				// calculate the hall observer
 				hall.Calculate(motor::hall::flux);
 
-				// calculate reference flux vector from hall sensors
-				motor::rotor::flux::set.d = motor::hall::flux.d;
-				motor::rotor::flux::set.q = motor::hall::flux.q;
+				if(management::observer::hall)
+				{
+					// calculate reference flux vector from hall sensors
+					motor::rotor::flux::set.d = motor::hall::flux.d;
+					motor::rotor::flux::set.q = motor::hall::flux.q;
 
-				// set the observer feedback accorting to observer
-				motor::rotor::flux::C = settings.observer.hall.C;
-			}
-			else
-			{
-				// calculate reference flux vector from estimated rotor position
-				motor::rotor::flux::set.d = settings.motor.psi;
-				motor::rotor::flux::set.q = 0.0f;
+					// set the observer feedback accorting to observer
+					motor::rotor::flux::C = settings.observer.hall.C;
+				}
+				else
+				{
+					// calculate reference flux vector from estimated rotor position
+					motor::rotor::flux::set.d = settings.motor.psi;
+					motor::rotor::flux::set.q = 0.0f;
 
-				// set the observer feedback back to pure flux observer
-				motor::rotor::flux::C = settings.observer.flux.C;
+					// set the observer feedback back to pure flux observer
+					motor::rotor::flux::C = settings.observer.flux.C;
+				}
 			}
 
 			if(management::observer::flux)

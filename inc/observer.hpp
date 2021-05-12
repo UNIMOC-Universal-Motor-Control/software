@@ -173,6 +173,10 @@ namespace observer
 		///< offsets sine cosine values for rotation
 		systems::sin_cos sc_offset;
 
+		///< filters for hall flux vector
+		filter::low_pass alpha;
+		filter::low_pass beta;
+
 	public:
 		/**
 		 * @brief hall observers trivial constructor
