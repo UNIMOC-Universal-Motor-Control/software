@@ -30,7 +30,7 @@
 #include "hardware_interface.hpp"
 #include "hal.h"
 
-using namespace hardware::adc;
+using namespace hardware::analog;
 
 static void adcerrorcallback(ADCDriver *adcp, adcerror_t err);
 static void adccallback(ADCDriver *adcp);
@@ -139,10 +139,10 @@ constexpr uint32_t ADC_SEQ_BUFFERED = hardware::pwm::INJECTION_CYCLES * 2;
 constexpr uint32_t NUM_OF_ADC = 3;
 
 ///< absolute maximum current
-constexpr float hardware::adc::current::MAX = 1.65f/(20.0f*(0.002f/3.0f));
+constexpr float hardware::analog::current::MAX = 1.65f/(20.0f*(0.002f/3.0f));
 
 ///< Three 2mR shunts in parallel with a 20V/V gain map to 2048 per 1.65V
-constexpr float ADC2CURRENT = hardware::adc::current::MAX /(2048.0f);
+constexpr float ADC2CURRENT = hardware::analog::current::MAX /(2048.0f);
 
 ///< Currents are amplified by high pass
 constexpr float ADC2DERIVATIVE = ADC2CURRENT * 44.0f;
@@ -280,7 +280,7 @@ static ADCConversionGroup adcgrpcfg3 = {
 /**
  * Initialize ADC hardware
  */
-void hardware::adc::Init(void)
+void hardware::analog::Init(void)
 {
 	/*
 	 * Fixed an errata on the STM32F7xx, the DAC clock is required for ADC
@@ -311,7 +311,7 @@ void hardware::adc::Init(void)
  * Get the current values in the last control cycle
  * @param currents references to the current samples
  */
-void hardware::adc::current::Value(std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& currents)
+void hardware::analog::current::Value(std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& currents)
 {
 	for(std::uint_fast8_t i = 0; i < PHASES; i++)
 	{
@@ -335,7 +335,7 @@ void hardware::adc::current::Value(std::array<systems::abc, hardware::pwm::INJEC
  * cycles
  * @param derivatives
  */
-void hardware::adc::current::Derivative(std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& derivatives)
+void hardware::analog::current::Derivative(std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& derivatives)
 {
 	for(std::uint_fast8_t i = 0; i < PHASES; i++)
 	{
@@ -357,7 +357,7 @@ void hardware::adc::current::Derivative(std::array<systems::abc, hardware::pwm::
 /**
  * set dc current offsets
  */
-void hardware::adc::current::SetOffset(void)
+void hardware::analog::current::SetOffset(void)
 {
 	for(std::uint_fast8_t i = 0; i < PHASES; i++)
 	{
@@ -392,7 +392,7 @@ void hardware::adc::current::SetOffset(void)
  * Read the DC Bus voltage
  * @return DC Bus voltage in Volts
  */
-float hardware::adc::voltage::DCBus(void)
+float hardware::analog::voltage::DCBus(void)
 {
 	std::int_fast32_t sum = 0;
 	std::int_fast32_t cnt = 0;
@@ -417,7 +417,7 @@ float hardware::adc::voltage::DCBus(void)
  * Get the temperature of the power electronics
  * @return Temperature of the power electronics in °C
  */
-float hardware::adc::temperature::Bridge(void)
+float hardware::analog::temperature::Bridge(void)
 {
 	std::int_fast32_t sum = 0;
 	std::int_fast32_t cnt = 0;
@@ -439,7 +439,7 @@ float hardware::adc::temperature::Bridge(void)
  * Get the temperature of the motor
  * @return Temperature of the Motor in °C
  */
-float hardware::adc::temperature::Motor(void)
+float hardware::analog::temperature::Motor(void)
 {
 //	std::int_fast32_t sum = 0;
 //	std::int_fast32_t cnt = 0;
@@ -462,7 +462,7 @@ float hardware::adc::temperature::Motor(void)
  * get analog input
  * @return analog in put 0 - 1
  */
-float hardware::adc::input(void)
+float hardware::analog::input(void)
 {
 	std::int_fast32_t sum = 0;
 	std::int_fast32_t cnt = 0;
@@ -478,48 +478,6 @@ float hardware::adc::input(void)
 
 	return (float)sum / (float)(cnt * 4096);
 }
-
-///**
-// * Angle of the crank arm
-// *
-// * @param edge_max Number of edges per revolution
-// * @return Angle in rads, range 0 - 2*PI
-// */
-//float hardware::crank::Angle(uint32_t edge_max)
-//{
-//	static float angle = 0.0f;
-//
-//	if(cadence_counter)
-//	{
-//		angle += (float)cadence_counter/(float)edge_max * math::_2PI;
-//		cadence_counter = 0;
-//	}
-//
-//	if(angle > math::_2PI) angle -= math::_2PI;
-//
-//	return angle;
-//}
-
-
-///**
-// * get cadence pin level
-// * @return true when cadence pin is high
-// */
-//bool hardware::crank::Cadence(void)
-//{
-//	return palReadLine(LINE_CADENCE);
-//}
-
-/**
- * get the angle which is represented by the hall sensors
- * @param[out] sincos angle of the halls represented as sin/cos values
- * @return true on hall signal error
- */
-uint8_t hardware::adc::hall::State(void)
-{
-	return palReadGroup(GPIOC, 0x0007, 13);
-}
-
 
 /**
  * \brief    interpolate temperature via a LUT in the range of -10°C to 150°C with an error of 0.393°C

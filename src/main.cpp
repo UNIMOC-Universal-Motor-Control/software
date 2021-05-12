@@ -59,7 +59,7 @@ int main(void)
 	 */
 	hardware::i2c::Init();
 	hardware::pwm::Init();
-	hardware::adc::Init();
+	hardware::analog::Init();
 
 	/*
 	 * Initializes two serial-over-USB CDC drivers.

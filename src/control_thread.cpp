@@ -177,10 +177,10 @@ namespace control
 			// clear Run Mode LED
 			palSetLine(LINE_LED_RUN);
 
-			battery::u = hardware::adc::voltage::DCBus();
+			battery::u = hardware::analog::voltage::DCBus();
 
-			hardware::adc::current::Value(i_abc);
-			hardware::adc::current::Derivative(i_abc_ac);
+			hardware::analog::current::Value(i_abc);
+			hardware::analog::current::Derivative(i_abc_ac);
 
 			// transform the current samples to stator frame
 			QuadClark(i_abc, i_ab);
@@ -196,7 +196,7 @@ namespace control
 			sense::angle = as5048.GetPosition(settings.motor.P);
 
 			// read hall sensors
-			motor::hall::state = hardware::adc::hall::State();
+			motor::hall::state = hardware::digital::hall::State();
 
 			// calculate the sine and cosine of the new angle
 			angle = motor::rotor::phi - unit::Q31R(motor::rotor::omega * hardware::Tf());;

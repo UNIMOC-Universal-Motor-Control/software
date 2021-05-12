@@ -137,7 +137,10 @@ namespace hardware {
 	 */
 	extern float Tf(void);
 
-	namespace adc
+	/**
+	 * analog value releated functions
+	 */
+	namespace analog
 	{
 		/*
 		 * This interface defines the functions for adc handling
@@ -203,6 +206,25 @@ namespace hardware {
 			 */
 			extern float Motor(void);
 		} /* namespace temperature */
+	} /* namespace analog */
+
+	/**
+	 * digital I/O releated functions
+	 */
+	namespace digital
+	{
+		typedef enum input_e
+		{
+			MOTOR_TEMP_DI,
+		} input_te;
+
+		/**
+		 * Get the level of a digital input
+		 * @note inputs that are not available in hardware are always false
+		 * @param in selects one of the digital inputs to read
+		 * @return level of the input: true = high
+		 */
+		bool input(const input_te in);
 
 		namespace hall {
 			/**
@@ -211,8 +233,7 @@ namespace hardware {
 			 */
 			uint8_t State(void);
 		} /* namespace hall */
-
-	} /* namespace adc */
+	}
 
 	namespace memory
 	{

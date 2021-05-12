@@ -261,7 +261,7 @@ void management::thread::SetThrottleSetpoint(systems::dq& setpoint)
 	case settings_ts::throttle_s::ANALOG_BIDIRECTIONAL:
 	{
 		setpoint.d = 0.0f;
-		float throttle = BiAnalogThrottleDeadzone(hardware::adc::input());
+		float throttle = BiAnalogThrottleDeadzone(hardware::analog::input());
 
 		if(throttle > 0.0f) setpoint.q = throttle * setpoint::limit::i::max;
 		else setpoint.q = throttle * setpoint::limit::i::min;
@@ -271,13 +271,23 @@ void management::thread::SetThrottleSetpoint(systems::dq& setpoint)
 
 	case settings_ts::throttle_s::ANALOG_FORWARDS:
 		setpoint.d = 0.0f;
-		setpoint.q = UniAnalogThrottleDeadzone(hardware::adc::input()) * setpoint::limit::i::max;
+		setpoint.q = UniAnalogThrottleDeadzone(hardware::analog::input()) * setpoint::limit::i::max;
 		break;
 	case settings_ts::throttle_s::ANALOG_BACKWARDS:
 		setpoint.d = 0.0f;
-		setpoint.q = UniAnalogThrottleDeadzone(hardware::adc::input()) * setpoint::limit::i::min;
+		setpoint.q = UniAnalogThrottleDeadzone(hardware::analog::input()) * setpoint::limit::i::min;
 		break;
 	case settings_ts::throttle_s::ANALOG_SWITCH:
+		if(hardware::digital::input(hardware::digital::MOTOR_TEMP_DI))
+		{
+			setpoint.d = 0.0f;
+			setpoint.q = UniAnalogThrottleDeadzone(hardware::analog::input()) * setpoint::limit::i::min;
+		}
+		else
+		{
+			setpoint.d = 0.0f;
+			setpoint.q = UniAnalogThrottleDeadzone(hardware::analog::input()) * setpoint::limit::i::max;
+		}
 		break;
 	case settings_ts::throttle_s::PAS:
 		break;
@@ -325,8 +335,8 @@ void management::thread::main(void)
 		using namespace values;
 		deadline = System::getTime();
 
-		converter::temp = hardware::adc::temperature::Bridge();
-		motor::temp = hardware::adc::temperature::Motor();
+		converter::temp = hardware::analog::temperature::Bridge();
+		motor::temp = hardware::analog::temperature::Motor();
 
 		if(save)
 		{
@@ -363,7 +373,7 @@ void management::thread::main(void)
 			}
 			else
 			{
-				hardware::adc::current::SetOffset();
+				hardware::analog::current::SetOffset();
 
 				sequencer = RUN;
 			}
