@@ -244,7 +244,7 @@ namespace observer
     /**
      * @brief hall observers trivial constructor
      */
-    hall::hall(void):offset(0.0f), sc_offset{0.0f, 1.0f}, alpha(1.0f/16e3f, 1.0f, 1e-4f), beta(1.0f/16e3f, 1.0f, 1e-4f)  {}
+    hall::hall(void):offset(0.0f), sc_offset{0.0f, 1.0f}, alpha(1.0f/16e3f, 1.0f, 3e-3f), beta(1.0f/16e3f, 1.0f, 3e-3f)  {}
 
     /**
      * @brief Get sine and cosine values from hall for estimation in rotor frame.
@@ -255,6 +255,7 @@ namespace observer
     	systems::alpha_beta tab;
     	systems::dq tdq;
     	systems::abc hall;
+
 
     	if(values::motor::hall::state & settings.observer.hall.map.a) hall.a = 1.0f;
     	else hall.a = -1.0f;

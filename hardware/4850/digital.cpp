@@ -53,10 +53,16 @@ uint8_t hardware::digital::hall::State(void)
  */
 bool hardware::digital::input(const input_te in)
 {
+	static bool changed = false;
 	bool level = false;
 	switch(in)
 	{
 	case MOTOR_TEMP_DI:
+		if(!changed)
+		{
+			palSetLineMode(LINE_AIN_MOT_TEMP, PAL_MODE_INPUT_PULLUP);
+			changed = true;
+		}
 		if(palReadLine(LINE_AIN_MOT_TEMP)) level = true;
 		break;
 	}
