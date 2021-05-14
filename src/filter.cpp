@@ -31,18 +31,6 @@
  */
 namespace filter
 {
-	/**
-	 * @brief low pass filter constructor with all essential parameters.
-	 *
-	 * @param ts			set sample time.
-	 * @param k				proportional gain.
-	 * @param t				time constant.
-	 */
-	low_pass::low_pass(const float ts, const float k, const float t):
-										y(0.0f), k(k), t_tmp(T(t, ts))
-	{
-	}
-
 
 	/**
 	 * @brief calculate filter equation.

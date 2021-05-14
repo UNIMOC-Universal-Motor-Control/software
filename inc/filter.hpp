@@ -47,19 +47,56 @@ private:
 	float y;
 
 	///< proportional gain
-	const float k;
+	float k;
 
 	///< filter time constant dependent coefficient
-	const float t_tmp;
+	float t_tmp;
 
 	///< internal equation to pre calculate filter time constant dependent coefficient
-	static inline float T( float t, float ts) { return 1.0/(1.0 + t/ts); }
+	static inline constexpr float T(const float t, const float ts) { return 1.0/(1.0 + t/ts); }
 
 public:
-	low_pass(const float ts, const float k, const float t);
+	/**
+	 * stock constuctor with 1/10 time constant and gain of 1
+	 */
+	low_pass():y(0.0), k(1.0), t_tmp(0.9) {};
 
+	/**
+	 * @brief low pass filter constructor with all essential parameters.
+	 *
+	 * @param ts			set sample time.
+	 * @param k				proportional gain.
+	 * @param t				time constant.
+	 */
+	low_pass(const float ts, const float k, const float t):
+										y(0.0f), k(k), t_tmp(T(t, ts))
+	{};
+
+	/**
+	 * @brief set the time constant of the filter
+	 *
+	 * @param ts sampling time for the Calculate calls
+	 * @param t time constant for the filter.
+	 */
+	constexpr void SetT(const float ts, const float t) { t_tmp = T(t, ts); };
+
+	/**
+	 * \brief set the gain of the filter
+	 * \param _k new gain of the filter
+	 */
+	constexpr void SetK(const float _k) { k = _k; };
+
+	/**
+	 * \brief calculate new filter output
+	 * \param u new input value for the filter
+	 * \return new filter output.
+	 */
 	float Calculate(const float u);
 
+	/**
+	 * \brief get the current filter output without calculating a new sample
+	 * \return current output value of the filter
+	 */
 	float Get(void) { return y; };
 };
 

@@ -289,11 +289,11 @@ namespace observer
 	 */
 	void hall::SetOffset(const std::int32_t new_offset)
 	{
-		if(new_offset != offset)
-		{
-			sc_offset = systems::SinCos(new_offset);
-			offset = new_offset;
-		}
+		float T = math::PI/(settings.observer.hall.omega + settings.observer.hall.hysteresis);
+
+		alpha.SetT(hardware::Tc(), T);
+		offset = new_offset + unit::Q31R(values::motor::rotor::omega * T);
+		sc_offset = systems::SinCos(offset);
 	}
 }/* namespace observer */
 
