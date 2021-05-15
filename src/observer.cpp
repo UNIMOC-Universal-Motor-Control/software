@@ -269,8 +269,8 @@ namespace observer
     	tab = systems::transform::Clark(hall);
 
     	// filter flux vector to reduce disturbance from hall steps.
-    	tab.alpha = alpha.Calculate(tab.alpha);
-    	tab.beta = beta.Calculate(tab.beta);
+//    	tab.alpha = alpha.Calculate(tab.alpha);
+//    	tab.beta = beta.Calculate(tab.beta);
 
     	// Turn the vector by the hall offset
     	tdq = systems::transform::Park(tab, sc_offset);
@@ -289,10 +289,11 @@ namespace observer
 	 */
 	void hall::SetOffset(const std::int32_t new_offset)
 	{
-		float T = math::PI/(settings.observer.hall.omega + settings.observer.hall.hysteresis);
+		float T = 0.0f;// math::PI/(settings.observer.hall.omega + settings.observer.hall.hysteresis);
 
 		alpha.SetT(hardware::Tc(), T);
-		offset = new_offset + unit::Q31R(values::motor::rotor::omega * T);
+		beta.SetT(hardware::Tc(), T);
+		offset = new_offset - unit::Q31R(values::motor::rotor::omega * T);
 		sc_offset = systems::SinCos(offset);
 	}
 }/* namespace observer */
