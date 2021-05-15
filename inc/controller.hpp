@@ -1,5 +1,11 @@
 /*
-    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
+	   __  ___   ________  _______  ______
+	  / / / / | / /  _/  |/  / __ \/ ____/
+	 / / / /  |/ // // /|_/ / / / / /
+	/ /_/ / /|  // // /  / / /_/ / /___
+	\____/_/ |_/___/_/  /_/\____/\____/
+
+	Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 
@@ -23,13 +29,9 @@
 #include <cmath>
 #include <climits>
 #include "ch.hpp"
-#include "filter.hpp"
-#include "systems.hpp"
 #include "systems.hpp"
 #include "values.hpp"
 #include "settings.hpp"
-#include "observer.hpp"
-#include "management.hpp"
 #include "hardware_interface.hpp"
 
 /**
@@ -71,8 +73,6 @@ namespace control
 	class pi
 	{
 	private:
-		///< sample time (call timing of controller )
-		const float ts;
 		///< integral error sum
 		float 			error_sum;
 		///< unlimited controller output
@@ -100,6 +100,7 @@ namespace control
 		 * @param new_tn                integral action time.
 		 * @param new_positive_limit    positive output limit.
 		 * @param new_negative_limit    negative output limit.
+		 * @param ts					sampling time
 		 */
 		pi(const float kp, const float tn,
 				const float positive_limit, const float negative_limit, const float ts);
@@ -118,8 +119,9 @@ namespace control
 		 *
 		 * @param new_kp				proportional gain.
 		 * @param new_tn				integral action time.
+		 * @param ts					sampling time.
 		 */
-		constexpr inline void SetParameters(const float new_kp, const float new_tn) { kp = new_kp; ki = SetKi(kp, ts, new_tn); };
+		constexpr inline void SetParameters(const float new_kp, const float new_tn, const float ts) { kp = new_kp; ki = SetKi(kp, ts, new_tn); };
 
 		///< @brief Reset controller and integral part to 0
 		constexpr inline void Reset(void) {error_sum = 0.0f;  output_unlimited = 0.0f; output = 0.0f;};
@@ -131,15 +133,6 @@ namespace control
 	class foc
 	{
 	private:
-		///< stator resistance
-		float Rs;
-
-		///< stator inductance
-		float Ls;
-
-		///< Rotor Flux Constant
-		float PsiM;
-
 		///< d axis current controller
 		pi ctrl_d;
 
@@ -156,54 +149,24 @@ namespace control
 		/**
 		 * @brief calculate foc current controller
 		 */
-		void Calculate(void);
+		void Calculate(systems::dq& setpoint);
 
 		/**
 		 * @brief set controller dynamic parameters.
 		 *
 		 *
-		 * @param rs	                series resistance of the winding
-		 * @param l                		series inductance of the winding
-		 * @param psi                	rotor flux constant
+		 * @param kp	Proportional gain of the PI controllers
+		 * @param tn	zero crossing of the PI controller (Time constant)
+		 * @param ts 	sampling time
 		 */
-		constexpr inline void SetParameters(const float rs, const systems::dq l, const float psi, const float tf)
+		constexpr inline void SetParameters(const float kp, const float tn, const float ts)
 		{
-			Rs = rs;
-			Ls = l.q;
-			PsiM = psi;
-			ctrl_d.SetParameters((Ls/Rs)/(1.0f/Rs*tf), Ls/Rs);
-			ctrl_q.SetParameters((Ls/Rs)/(1.0f/Rs*tf), Ls/Rs);
+			ctrl_d.SetParameters(kp, tn, ts);
+			ctrl_q.SetParameters(kp, tn, ts);
 		};
 
 		///< @brief Reset controller and integral part to 0
 		inline void Reset(void) { ctrl_d.Reset(); ctrl_q.Reset();};
-	};
-
-	/**
-	 * generic FOC controller thread
-	 */
-	class thread : public chibios_rt::BaseStaticThread<256>
-	{
-	private:
-		static constexpr float _3by2 = 3.0f/2.0f;
-		observer::flux       	flux;
-		observer::hfi			hfi;
-		control::foc      		foc;
-		systems::alpha_beta  	u_ab;
-		systems::alpha_beta 	i_ab;
-		std::array<float, 3>   	correction;
-		filter::moving_average<64> uq;
-	protected:
-		/**
-		 * Thread function
-		 */
-		virtual void main(void);
-
-	public:
-		/**
-		 * generic constructor
-		 */
-		thread();
 	};
 } /* namespace control */
 

@@ -1,5 +1,11 @@
 /*
-    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
+	   __  ___   ________  _______  ______
+	  / / / / | / /  _/  |/  / __ \/ ____/
+	 / / / /  |/ // // /|_/ / / / / /
+	/ /_/ / /|  // // /  / / /_/ / /___
+	\____/_/ |_/___/_/  /_/\____/\____/
+
+	Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 

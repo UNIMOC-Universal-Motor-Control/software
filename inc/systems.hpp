@@ -1,5 +1,11 @@
 /*
-    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
+	   __  ___   ________  _______  ______
+	  / / / / | / /  _/  |/  / __ \/ ____/
+	 / / / /  |/ // // /|_/ / / / / /
+	/ /_/ / /|  // // /  / / /_/ / /___
+	\____/_/ |_/___/_/  /_/\____/\____/
+
+	Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 
@@ -22,7 +28,7 @@
 #include <cstdint>
 #include <cmath>
 #include <cstring>
-#include <climits>
+#include <limits>
 #include <array>
 #include <math.h>
 
@@ -50,12 +56,26 @@ namespace unit
     constexpr float RpmV2VsRad(float m) { return 60.0f/(m * math::_2PI);}
 
     ///< conversion constant from degree to radians
-    constexpr float deg2rad = 180.0f / math::PI;
+    constexpr float deg2rad = math::PI / 180.0f;
     ///< conversion constant from radians to degree
-    constexpr float rad2deg = math::PI / 180.0f;
+    constexpr float rad2deg = 180.0f / math::PI;
+    ///< conversion constant from q31 to degree
+    constexpr float q312deg = 180.0f / (float)std::numeric_limits<std::int32_t>::max();
+    ///< conversion constant from q31 to rad
+    constexpr float q312rad = math::PI / (float)std::numeric_limits<std::int32_t>::max();
+    ///< conversion constant from rad to q31
+    constexpr float rad2q31 = (float)std::numeric_limits<std::int32_t>::max() / math::PI;
+    ///< conversion constant from deg to q31
+    constexpr float deg2q31 = (float)std::numeric_limits<std::int32_t>::max() / 180.0f;
 
-    ///< convert internal rad angle to degrees
-    constexpr float Degrees(float m) { return m * rad2deg; }
+    ///< convert internal q31 angle to degrees
+    constexpr float Degrees(std::int32_t m) { return (float)m * q312deg; }
+    ///< convert internal q31 angle to degrees
+    constexpr float Rad(std::int32_t m) { return (float)m * q312rad; }
+    ///< convert rad angle to internal q31
+    constexpr std::int32_t Q31R(float m) { return (std::int32_t)(m * rad2q31); }
+    ///< convert rad angle to internal q31
+    constexpr std::int32_t Q31D(float m) { return (std::int32_t)(m * deg2q31); }
 
     ///< scale from radians per second to rpm
     constexpr float rad_s2rpm = 60.0f / math::_2PI;
@@ -84,17 +104,10 @@ namespace systems
             float d;
             float q;
         };
-
-        /**
-         * Systems casting assignment operator
-         * @param dq dq system
-         * @return alpha beta system
-         */
-        dq_u& operator= (alpha_beta_u& ab);
     } dq;
 
     ///< rotation angle sine and cosine value.
-    typedef union sin_cos_u{
+    typedef union sin_cos_u {
         std::array<float, 2> array;
         struct {
             float sin;
@@ -109,13 +122,6 @@ namespace systems
             float alpha;
             float beta;
         };
-
-        /**
-         * Systems casting assignment operator
-         * @param dq dq system
-         * @return alpha beta system
-         */
-        alpha_beta_u& operator= (dq_u& dq);
     } alpha_beta;
 
 
@@ -148,10 +154,18 @@ namespace systems
 
     /**
       @brief         Floating-point sine and cosine function.
-      @param[in]     theta    input value in rad
-      @param[out]    out      points to processed sine cosine output
+      @param 	     theta    input value in rad
+      @retval	     out      points to processed sine cosine output
      */
-    void SinCos(const float theta, sin_cos& out);
+    sin_cos SinCos(const std::int32_t theta);
+
+    /**
+      @brief         Calculate angle difference from sin/cosine values.
+      @param 	     a    	sin/cosine of the angle a in c = a - b
+      @param 	     b    	sin/cosine of the angle b in c = a - b
+      @retval	     c      angle difference (sin(c)) but ok for small values
+     */
+    float SinCosDiff(const sin_cos& a, const sin_cos& b);
 
 
     /**

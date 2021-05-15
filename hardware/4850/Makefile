@@ -5,7 +5,7 @@
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -Og -ggdb -fomit-frame-pointer -falign-functions=16 -fsingle-precision-constant -ffunction-sections -fdata-sections -Wdouble-promotion
+  USE_OPT = -O2 -g -fomit-frame-pointer -falign-functions=16 -fsingle-precision-constant -Wdouble-promotion
  #-ffast-math
 endif
 
@@ -31,7 +31,7 @@ endif
 
 # Enable this if you want link time optimizations (LTO).
 ifeq ($(USE_LTO),)
-  USE_LTO = yes
+  USE_LTO = no
 endif
 
 # Enable this if you want to see the full log while compiling.
@@ -56,13 +56,13 @@ endif
 # Stack size to be allocated to the Cortex-M process stack. This stack is
 # the stack used by the main() thread.
 ifeq ($(USE_PROCESS_STACKSIZE),)
-  USE_PROCESS_STACKSIZE = 0x400
+  USE_PROCESS_STACKSIZE = 0x800
 endif
 
 # Stack size to the allocated to the Cortex-M main/exceptions stack. This
 # stack is used for processing interrupts and exceptions.
 ifeq ($(USE_EXCEPTIONS_STACKSIZE),)
-  USE_EXCEPTIONS_STACKSIZE = 0x400
+  USE_EXCEPTIONS_STACKSIZE = 0x800
 endif
 
 # Enables the use of FPU (no, softfp, hard).
@@ -127,7 +127,7 @@ CSRC = $(ALLCSRC) \
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
-CPPSRC = $(ALLCPPSRC) pwm.cpp adc.cpp eeprom.cpp serial.cpp
+CPPSRC = $(ALLCPPSRC) pwm.cpp analog.cpp digital.cpp eeprom.cpp serial.cpp
 
 # List ASM source files here.
 ASMSRC = $(ALLASMSRC)

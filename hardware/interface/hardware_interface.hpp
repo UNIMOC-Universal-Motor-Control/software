@@ -1,5 +1,11 @@
 /*
-    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
+	   __  ___   ________  _______  ______
+	  / / / / | / /  _/  |/  / __ \/ ____/
+	 / / / /  |/ // // /|_/ / / / / /
+	/ /_/ / /|  // // /  / / /_/ / /___
+	\____/_/ |_/___/_/  /_/\____/\____/
+
+	Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 
@@ -40,17 +46,45 @@ namespace hardware {
 
 		///< PWM Timer clock in Hz
 		extern const uint32_t TIMER_CLOCK;
-
-
-		///< deadtime in nano seconds
-		extern const uint32_t DEADTIME;
+		
+		///< current injection cycles used for low speed position estimation
+		constexpr uint32_t INJECTION_CYCLES = 4;
+		
+		/**
+		 * Get Deadtime of PWM
+		 * @return deadtime in nano seconds
+		 */
+		extern std::uint32_t Deadtime(void);
 
 		/**
-		 * PWM frequency in Hz
-		 *
-		 * With center aligned PWM this is the period of PWM half period.
+		 * Set Deadtime of PWM
+		 * @param ns set deadtime in nano seconds to this value
+		 * @return new deadtime in nano seconds
 		 */
-		extern const uint32_t PERIOD;
+		extern std::uint32_t Deadtime(const std::uint32_t ns);
+
+		/**
+		 * Get Period of PWM
+		 *
+		 * @note With center aligned PWM this is the period of PWM half period.
+		 * @return Period of PWM in timer counts
+		 */
+		extern std::uint32_t Period(void);
+
+		/**
+		 * Get Frequency of PWM
+		 *
+		 * @return PWM frequency in Hz
+		 */
+		extern std::uint32_t Frequency(void);
+
+		/**
+		 * Set Frequency of PWM
+		 *
+		 * @param freq 	new PWM frequency
+		 * @return new PWM frequency in Hz
+		 */
+		extern std::uint32_t Frequency(const std::uint32_t freq);
 
 		/**
 		 * Initialize PWM hardware with outputs disabled!
@@ -61,7 +95,8 @@ namespace hardware {
 		 * Set the normalized duty cycles for each phase
 		 * @param dutys -1 = LOW, 0 = 50%, 1=HIGH
 		 */
-		extern void Duty(const systems::abc& dutys);
+		extern void Duty(const std::array<systems::abc, INJECTION_CYCLES>& dutys);
+
 
 		namespace output {
 			/**
@@ -84,21 +119,38 @@ namespace hardware {
 
 	} /* namespace pwm */
 
-	///< Control cycle time
-	extern const float Tc;
+	/**
+	 * get control cycle time
+	 * @return control cycle frequency in s
+	 */
+	extern float Tc(void);
 
-	///< Control cycle frequency
-	extern const float Fc;
+	/**
+	 * get control cycle frequency
+	 * @return control cycle frequency in Hz
+	 */
+	extern float Fc(void);
 
-	///< Filter Group delay
-	extern const float Tf;
+	/**
+	 * Get Filters Group delay (Hardware and Software)
+	 * @return Group delay of the hole signal chain in s
+	 */
+	extern float Tf(void);
 
-	namespace adc
+	/**
+	 * analog value releated functions
+	 */
+	namespace analog
 	{
 		/*
 		 * This interface defines the functions for adc handling
 		 * which all hardware variants need to implement.
 		 */
+		/**
+		 * get analog input
+		 * @return analog in put 0 - 1
+		 */
+		float input(void);
 
 		/**
 		 * Initialize ADC hardware with outputs disabled!
@@ -112,7 +164,14 @@ namespace hardware {
 			 * cycles
 			 * @param currents
 			 */
-			extern void Value(systems::abc& currents);
+			extern void Value(std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& currents);
+
+			/**
+			 * Get current derivatives in the last control
+			 * cycles
+			 * @param derivatives
+			 */
+			extern void Derivative(std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& derivatives);
 
 			/**
 			 * set current offsets
@@ -147,51 +206,37 @@ namespace hardware {
 			 */
 			extern float Motor(void);
 		} /* namespace temperature */
+	} /* namespace analog */
+
+	/**
+	 * digital I/O releated functions
+	 */
+	namespace digital
+	{
+		typedef enum input_e
+		{
+			MOTOR_TEMP_DI,
+		} input_te;
+
+		/**
+		 * Get the level of a digital input
+		 * @note inputs that are not available in hardware are always false
+		 * @param in selects one of the digital inputs to read
+		 * @return level of the input: true = high
+		 */
+		bool input(const input_te in);
 
 		namespace hall {
 			/**
-			 * get the angle which is represented by the hall sensors
-			 * @param[out] sincos angle of the halls represented as sin/cos values
-			 * @return true on hall signal error
+			 * get the sector which is represented by the hall sensors
+			 * @return sector of the halls
 			 */
-			bool Angle(systems::sin_cos& sincos);
-		} /* namespace angle */
-	} /* namespace adc */
-
-	namespace crank {
-
-		/**
-		 * Torque on the crank arm
-		 *
-		 * @param offset in Volts
-		 * @param gain in Nm/V
-		 * @return Torque in Nm
-		 */
-		extern float Torque(const float offset, const float gain);
-
-		/**
-		 * Angle of the crank arm
-		 *
-		 * @param edge_max Number of edges per revolution
-		 * @return Angle in rads, range 0 - 2*PI
-		 */
-		extern float Angle(uint32_t edge_max);
-
-		/**
-		 * get cadence pin level
-		 * @return true when cadence pin is high
-		 */
-		extern bool Cadence(void);
-
-	} /* namespace crank */
+			uint8_t State(void);
+		} /* namespace hall */
+	}
 
 	namespace memory
 	{
-		/**
-		 * initialize non volatile memory
-		 */
-		extern void Init(void);
-
 		/**
 		 * Read buffer from non-volatile memory
 		 * @param address Start address of the read in non-volatile memory, addressing starts with 0
@@ -243,6 +288,18 @@ namespace hardware {
 		 */
 		extern void Receive(char* buffer, uint32_t length);
 	} /* namespace serial */
+
+
+	namespace i2c {
+		/**
+		 * initialize i2c driver instance
+		 */
+		extern void Init(void);
+
+		///< I2C Driver instance for external communication
+		extern I2CDriver* const instance;
+	}
+
 } /* namespace hardware */
 
 

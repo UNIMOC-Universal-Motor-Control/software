@@ -22,49 +22,49 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef INC_PAS_HPP_
-#define INC_PAS_HPP_
-
-
+#include <cstring>
 #include <cstdint>
 #include <cmath>
-#include <climits>
 #include <array>
-#include "ch.hpp"
-#include "systems.hpp"
-#include "controller.hpp"
-#include "values.hpp"
-#include "settings.hpp"
+#include <algorithm>
+#include "hardware_interface.hpp"
+#include "hal.h"
+
+using namespace hardware::digital;
+
 
 
 /**
- * @namespace pedal assist system classes
+ * get the angle which is represented by the hall sensors
+ * @param[out] sincos angle of the halls represented as sin/cos values
+ * @return true on hall signal error
  */
-namespace pas
+uint8_t hardware::digital::hall::State(void)
 {
-	/**
-	 * pedal assist system thread
-	 */
-	class thread : public chibios_rt::BaseStaticThread<128>
+	return palReadGroup(GPIOC, 0x0007, 13);
+}
+
+
+/**
+ * Get the level of a digital input
+ * @note inputs that are not available in hardware are always false
+ * @param in selects one of the digital inputs to read
+ * @return level of the input: true = high
+ */
+bool hardware::digital::input(const input_te in)
+{
+	static bool changed = false;
+	bool level = false;
+	switch(in)
 	{
-	private:
-		static constexpr systime_t 	CYCLE_TIME = TIME_MS2I(1);
-		systime_t 					deadline;
-
-	protected:
-		/**
-		 * Thread function
-		 */
-		virtual void main(void);
-
-	public:
-		/**
-		 * generic constructor
-		 */
-		thread();
-	};
-
-} /* namespace pas */
-
-
-#endif /* INC_PAS_HPP_ */
+	case MOTOR_TEMP_DI:
+		if(!changed)
+		{
+			palSetLineMode(LINE_AIN_MOT_TEMP, PAL_MODE_INPUT_PULLUP);
+			changed = true;
+		}
+		if(palReadLine(LINE_AIN_MOT_TEMP)) level = true;
+		break;
+	}
+	return level;
+}

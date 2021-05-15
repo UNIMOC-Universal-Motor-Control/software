@@ -1,5 +1,11 @@
 /*
-    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
+   	   __  ___   ________  _______  ______
+	  / / / / | / /  _/  |/  / __ \/ ____/
+	 / / / /  |/ // // /|_/ / / / / /
+	/ /_/ / /|  // // /  / / /_/ / /___
+	\____/_/ |_/___/_/  /_/\____/\____/
+
+	Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 
@@ -24,15 +30,13 @@
 #include "hardware_interface.hpp"
 #include "freemaster_wrapper.hpp"
 #include "management.hpp"
-#include "pas.hpp"
+#include "control_thread.hpp"
 #include "main.hpp"
 
 using namespace chibios_rt;
 
 static modules::freemaster::thread freemaster;
-static control::thread controller;
 static management::thread manager;
-static pas::thread pedal_assist;
 
 /**
  * Code entry point
@@ -53,9 +57,9 @@ int main(void)
 	/*
 	 * initialize hardware with no control thread
 	 */
-	hardware::memory::Init();
+	hardware::i2c::Init();
 	hardware::pwm::Init();
-	hardware::adc::Init();
+	hardware::analog::Init();
 
 	/*
 	 * Initializes two serial-over-USB CDC drivers.
@@ -73,15 +77,21 @@ int main(void)
 	usbStart(serusbcfg.usbp, &usbcfg);
 	usbConnectBus(serusbcfg.usbp);
 
-	chThdSetPriority(LOWPRIO);
+	/*
+	 * setup pwm according to config
+	 */
+	hardware::pwm::Frequency(settings.converter.frequency);
+	hardware::pwm::Deadtime(settings.converter.deadtime);
+
 
 	/*
 	 * start threads
 	 */
+	chThdSetPriority(HIGHPRIO);
 	freemaster.start(NORMALPRIO);
-	hardware::control_thread = controller.start(HIGHPRIO);
+	hardware::control_thread = controller.start(HIGHPRIO - 1);
 	manager.start(NORMALPRIO + 2);
-	pedal_assist.start(NORMALPRIO + 1);
+	chThdSetPriority(LOWPRIO);
 
 	/*
 	 * Normal main() thread activity, in this demo it does nothing except
@@ -89,7 +99,7 @@ int main(void)
 	 */
 	while (true)
 	{
-		chThdSleepSeconds(10);
+		chThdSleepMilliseconds(250);
 		if(settings.battery.limits.i.charge > settings.converter.limits.current)
 			settings.battery.limits.i.charge = settings.converter.limits.current;
 
@@ -98,5 +108,96 @@ int main(void)
 
 		if(settings.motor.limits.i > settings.converter.limits.current)
 			settings.motor.limits.i = settings.converter.limits.current;
+
+		// update pwm settings
+		if(hardware::pwm::Frequency() != settings.converter.frequency)
+		{
+			settings.converter.frequency = hardware::pwm::Frequency(settings.converter.frequency);
+		}
+
+		if(hardware::pwm::Deadtime() != settings.converter.deadtime)
+		{
+			settings.converter.deadtime = hardware::pwm::Deadtime(settings.converter.deadtime);
+		}
 	}
+}
+
+extern "C" {
+/******************************************************************************/
+/*           Cortex-M4 Processor Interruption and Exception Handlers          */
+/******************************************************************************/
+/**
+ * @brief This function handles Non maskable interrupt.
+ */
+void NMI_Handler(void)
+{
+	/* USER CODE BEGIN NonMaskableInt_IRQn 0 */
+
+	/* USER CODE END NonMaskableInt_IRQn 0 */
+	/* USER CODE BEGIN NonMaskableInt_IRQn 1 */
+	while (1)
+	{
+	}
+	/* USER CODE END NonMaskableInt_IRQn 1 */
+}
+
+/**
+ * @brief This function handles Hard fault interrupt.
+ */
+void HardFault_Handler(void)
+{
+	/* USER CODE BEGIN HardFault_IRQn 0 */
+
+	/* USER CODE END HardFault_IRQn 0 */
+	while (1)
+	{
+		/* USER CODE BEGIN W1_HardFault_IRQn 0 */
+		/* USER CODE END W1_HardFault_IRQn 0 */
+	}
+}
+
+/**
+ * @brief This function handles Memory management fault.
+ */
+void MemManage_Handler(void)
+{
+	/* USER CODE BEGIN MemoryManagement_IRQn 0 */
+
+	/* USER CODE END MemoryManagement_IRQn 0 */
+	while (1)
+	{
+		/* USER CODE BEGIN W1_MemoryManagement_IRQn 0 */
+		/* USER CODE END W1_MemoryManagement_IRQn 0 */
+	}
+}
+
+/**
+ * @brief This function handles Prefetch fault, memory access fault.
+ */
+void BusFault_Handler(void)
+{
+	/* USER CODE BEGIN BusFault_IRQn 0 */
+
+	/* USER CODE END BusFault_IRQn 0 */
+	while (1)
+	{
+		/* USER CODE BEGIN W1_BusFault_IRQn 0 */
+		/* USER CODE END W1_BusFault_IRQn 0 */
+	}
+}
+
+/**
+ * @brief This function handles Undefined instruction or illegal state.
+ */
+void UsageFault_Handler(void)
+{
+	/* USER CODE BEGIN UsageFault_IRQn 0 */
+
+	/* USER CODE END UsageFault_IRQn 0 */
+	while (1)
+	{
+		/* USER CODE BEGIN W1_UsageFault_IRQn 0 */
+		/* USER CODE END W1_UsageFault_IRQn 0 */
+	}
+}
 }

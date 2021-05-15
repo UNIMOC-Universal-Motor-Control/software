@@ -1,5 +1,11 @@
 /*
-    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
+	   __  ___   ________  _______  ______
+	  / / / / | / /  _/  |/  / __ \/ ____/
+	 / / / /  |/ // // /|_/ / / / / /
+	/ /_/ / /|  // // /  / / /_/ / /___
+	\____/_/ |_/___/_/  /_/\____/\____/
+
+	Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 
@@ -47,7 +53,7 @@ namespace management
 		extern bool hfi;
 
 		///< release mechanic observer
-		extern bool mechanic;
+		extern bool hall;
 	}
 
 	/**
@@ -76,73 +82,28 @@ namespace management
 		///< measure all parameters
 		extern bool all;
 
-		/**
-		 * @namespace resistance measurement values
-		 */
-		namespace r
-		{
-			///< currents thresholds used to sample the phase currents
-			constexpr std::array<float, 6> CUR_STEPS = {5.0f, 10.0f, 15.0f, 20.0f, 25.0f, 30.0f};
+		///< measure stator resistance
+		extern bool resitance;
 
-			///< enable flag
-			extern bool enable;
+		///< measure stator inductance
+		extern bool inductance;
 
-			///< current measurement voltage
-			extern float u;
+		///< measure rotor flux
+		extern bool flux;
 
-			///< measure all the phases.
-			constexpr std::array<float, 3> PHI_STEPS = {0.0f, 120.0f, 240.0f};
-
-			///< current current step
-			extern std::uint8_t cur_step;
-
-			///< current phi step
-			extern std::uint8_t phi_step;
-
-			///< cycle counter
-			extern std::uint32_t cycle;
-
-			///< currents (x) and voltages (y) at each sample point
-			extern std::array<float, CUR_STEPS.size() * PHI_STEPS.size()> x;
-			extern std::array<float, CUR_STEPS.size() * PHI_STEPS.size()> y;
-
-			///< current measurement point
-			extern std::uint8_t point;
-		}
-
-		/**
-		 * @namespace inductance measurement values
-		 */
-		namespace l
-		{
-		///< measurement current.
-		constexpr float CUR = 2.0f;
-
-		///< measurement frequency
-		constexpr float FREQ = 1000.0f;
-
-		///< enable flag
-		extern bool enable;
-
-		///< current measurement voltage
-		extern float u;
-
-		///< cycle counter
-		extern std::uint32_t cycle;
-		}
+		///< measure hall sensor state positons
+		extern bool hall;
 	}
 
 	/**
 	 * controller management thread
 	 */
-	class thread : public chibios_rt::BaseStaticThread<350>
+	class thread : public chibios_rt::BaseStaticThread<1024>
 	{
 	private:
 		static constexpr systime_t CYCLE_TIME = TIME_MS2I(1);
-		systime_t deadline;
-		std::uint32_t delay;
-
-
+		systime_t 				deadline;
+		std::uint32_t			delay;
 
 		enum state_e
 		{
@@ -150,12 +111,71 @@ namespace management
 			CURRENT_OFFSETS,
 			RUN,
 			MEASURE_RS,
-			CALCULATE_RS,
 			MEASURE_LS,
-			CALCULATE_LS,
 			MEASURE_PSI,
-			CALCULATE_PSI,
 		} sequencer;
+
+		filter::low_pass		uq;
+		filter::low_pass		ubat;
+		filter::low_pass		w;
+
+		/**
+		 * derate control input envelope
+		 * @param limit	value to end derating
+		 * @param envelope positive value sets the envelope below the limit, negative above the limit
+		 * @param actual actual value
+		 * @return 1 when no derating active and 1 to 0 when in envelope and 0 when above limit
+		 */
+		float Derate(const float limit, const float envelope, const float actual);
+
+		/**
+		 * limit the input value
+		 * @param[in/out] in input value
+		 * @param min minimal value
+		 * @param max maximal value
+		 * @return true when value is out of limits
+		 */
+		bool Limit(float& in, const float min, const float max);
+
+		/**
+		 * Limit the current setpoint according to temp, voltage, and current limits
+		 * @param setpoint[in/out] current setpoint
+		 */
+		void LimitCurrentSetpoint(systems::dq& setpoint);
+		/**
+		 * compensate the commanded voltage for the error introduced by PWM deadtime
+		 */
+		void DeadtimeCompensation(void);
+
+		/**
+		 * get the mapped throttle input signal
+		 * @param setpoint
+		 */
+		void SetThrottleSetpoint(systems::dq& setpoint);
+
+		/**
+		 * calculate analog input signal with dead zones in bidirectional manner
+		 * @param input 0-1 input
+		 * @return	-1-1 output with dead zones at 0 and +-1
+		 */
+		float BiAnalogThrottleDeadzone(const float input);
+
+		/**
+		 * calculate analog input signal with deadzones
+		 * @param input 0-1 input
+		 * @return	0-1 output with dead zones
+		 */
+		float UniAnalogThrottleDeadzone(const float input);
+
+		/**
+		 * Switch Flag with hysteresis
+		 * @param value	current values
+		 * @param limit limit with hysteresis around
+		 * @param hysteresis corridor of hysteresis +-
+		 * @param flag current state
+		 * @return new state of the flag
+		 */
+		bool Hysteresis(const float value, const float limit, const float hysteresis, const bool flag);
 
 
 	protected:

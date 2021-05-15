@@ -1,5 +1,11 @@
 /*
-    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
+	   __  ___   ________  _______  ______
+	  / / / / | / /  _/  |/  / __ \/ ____/
+	 / / / /  |/ // // /|_/ / / / / /
+	/ /_/ / /|  // // /  / / /_/ / /___
+	\____/_/ |_/___/_/  /_/\____/\____/
+
+	Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 
@@ -21,6 +27,9 @@
 #include <cstddef>
 #include "hardware_interface.hpp"
 
+#pragma GCC push_options
+#pragma GCC optimize ("-O0")
+
 /**
  * @namespace system settings
  *
@@ -35,6 +44,9 @@ __attribute__((aligned (32))) settings_ts settings =
 	{
 		///< inertia of of rotor and connected known mechanics
 		.J = 1e-4f,
+
+		///< feedback sensor zero position value
+		.zero_pos = 0,
 	},
 
 	/**
@@ -43,19 +55,16 @@ __attribute__((aligned (32))) settings_ts settings =
 	.motor =
 	{
 		///< Stator resistance
-		.rs = 0.243666f,
+		.rs = 0.15f,
 
 		///< anisotropic inductance vector
-		.l = {0.000246604f, 0.000335957f},
+		.l = {0.00022f, 0.00025f},
 
 		///< magnetic flux inducted voltage in rotor
-		.psi = unit::RpmV2VsRad(75.0f) / (30.0f / 2.0f),
+		.psi = 0.0019,
 
 		///< number of pole pairs
-		.P = 30 / 2,
-
-		///< starting direct current
-		.i_start = 0.0f,
+		.P = 7,
 
 		/**
 		 * motor limit settings
@@ -63,10 +72,19 @@ __attribute__((aligned (32))) settings_ts settings =
 		.limits =
 		{
 			///< maximum coil current
-			.i = 10.0f,
+			.i = 40.0f,
 
-			///< maximum angular velocity
-			.omega = 1000.0f,
+			/**
+			 * motor speed limits
+			 */
+			.omega =
+			{
+				///< backwards limit
+				.backwards = -1000.0f,
+
+				///< forwards limit
+				.forwards = 1000.0f,
+			},
 
 			///< maximum motor temperature
 			.temperature = 80.0f,
@@ -86,13 +104,22 @@ __attribute__((aligned (32))) settings_ts settings =
 		 */
 		.limits =
 		{
-			///< low voltage battery limit
-			.voltage = 29.0f,
+			/**
+			 * battery limits
+			 */
+			.voltage =
+			{
+				///< low voltage limit
+				.low = 29.0f,
+
+				///< high voltage limit
+				.high = 45.0f,
+			},
 
 			.i =
 			{
 				///< maximum drive current
-				.drive = 2.0f,
+				.drive = 15.0f,
 
 				///< maximum charge current
 				.charge = 0.0f,
@@ -115,6 +142,12 @@ __attribute__((aligned (32))) settings_ts settings =
 
 			///< feedforward omega
 			.feedforward = true,
+
+			///< proportional gain
+			.kp = 0.0f,
+
+			///< controller time constant
+			.tn = 1000.0f,
 		},
 	},
 
@@ -132,12 +165,6 @@ __attribute__((aligned (32))) settings_ts settings =
 			///< enable observer switch
 			.enable = false,
 
-			///< modell variance
-			.Q = 1e-5f,
-
-			///< measurement variance
-			.R = 1e-4f,
-
 			///< flux observer feedback gains
 			.C = {50.0f, 1.0f},
 		},
@@ -150,17 +177,47 @@ __attribute__((aligned (32))) settings_ts settings =
 			///< enable observer switch
 			.enable = false,
 
-			///< modell variance
-			.Q = 1e-5f,
-
-			///< measurement variance
-			.R = 1e5f,
-
-			///< injection frequency in rad/s
-			.frequency = 1500.0f,
-
 			///< injection current in A
 			.current = 1.5f,
+
+			///< maximum speed where hfi is active
+			.omega = 150.0f,
+
+			///< hyseresis around maximum speed where observer is switched
+			.hysteresis = 50.0f,
+		},
+
+		/**
+		 * hall observer settings
+		 */
+		.hall =
+		{
+			///< enable observer switch
+			.enable = false,
+
+			///< maps the hall sensor inputs to phases
+			.map =
+			{
+				///< mapps hall sensor to phase a
+				.a = 0b001,
+				///< mapps hall sensor to phase a
+				.b = 0b010,
+				///< mapps hall sensor to phase a
+				.c = 0b100,
+
+				.unused = 0,
+			},
+			///< maximum speed where hall is active
+			.omega = 150.0f,
+
+			///< hyseresis around maximum speed where observer is switched
+			.hysteresis = 50.0f,
+
+			///< flux observer feedback gains in hall mode
+			.C = {25.0f, 25.0f},
+
+			///< angular offset for the hall sensor signals in q31 (-180 - 180)
+			.offset = 0,
 		},
 
 		/**
@@ -170,30 +227,12 @@ __attribute__((aligned (32))) settings_ts settings =
 		{
 			///< electrical torque minimal current
 			.i_min = 2.0f,
-		},
-	},
 
-	/**
-	 * crank settings
-	 */
-	.crank =
-	{
-		///< crank torque sensor gain
-		.gain = 0.3f,
+			///< modell variance
+			.Q = 1e-5f,
 
-		///< crank torque sensor offset
-		.offset = 0.84f,
-
-		///< torque sensor command enable
-		.enable = false,
-
-		.pas =
-		{
-			///< pas counts per revolution both edges
-			.counts = 32,
-
-			///< pas mode enable
-			.enable = false,
+			///< measurement variance
+			.R = 1e-4f,
 		},
 	},
 
@@ -202,11 +241,23 @@ __attribute__((aligned (32))) settings_ts settings =
 	 */
 	.converter =
 	{
-		///< compensated dead time in PWM switching -1 represents 0 and 1 represents 1
-		.dt = 0.0f,
+		///< dead time in PWM switching in ns
+		.deadtime = 1000,
 
-		///< minimal current for full dead time compensation
-		.dt_i_min = 1.0f,
+		///< pwm frequency
+		.frequency = 32000,
+
+		///< maps the phase wires to internal phases
+		.map =
+		{
+			///< mapps phase wire to internal phase a
+			.a = 0b001,
+			///< mapps phase wire to internal phase b
+			.b = 0b010,
+			///< mapps phase wire to internal phase c
+			.c = 0b100,
+			.unused = 0,
+		},
 
 		/**
 		 * converter derating settings
@@ -236,9 +287,32 @@ __attribute__((aligned (32))) settings_ts settings =
 		},
 	},
 
+	/**
+	 * motor throttle setting
+	 */
+	.throttle =
+	{
+		/**
+		 * motor throttle deadzone
+		 */
+		.deadzone =
+		{
+			///< low deadzone
+			.low = 0.0f,
+
+			///< high deadzone
+			.high = 1.0f,
+		},
+
+		///< Throttle signal source selection
+		.sel = settings_ts::throttle_s::NONE,
+	},
+
 	///< crc32 value for the hole settings
 	.crc = 0,
 };
+
+#pragma GCC pop_options
 
 
 /**
@@ -261,7 +335,7 @@ bool settings_s::Load(void)
 	// align to cache lines for better cache handling
 	__attribute__((aligned (32))) settings_ts tmp;
 
-	hardware::memory::Read(0, &tmp, sizeof(settings_ts));
+ 	hardware::memory::Read(0, &tmp, sizeof(settings_ts));
 
 	if(tmp.crc == hardware::memory::Crc32(&tmp, offsetof(settings_ts, crc)))
 	{

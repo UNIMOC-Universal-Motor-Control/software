@@ -1,5 +1,11 @@
 /*
-    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
+	   __  ___   ________  _______  ______
+	  / / / / | / /  _/  |/  / __ \/ ____/
+	 / / / /  |/ // // /|_/ / / / / /
+	/ /_/ / /|  // // /  / / /_/ / /___
+	\____/_/ |_/___/_/  /_/\____/\____/
+
+	Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 
@@ -19,126 +25,186 @@
 #include "values.hpp"
 #include "hardware_interface.hpp"
 
+#pragma GCC push_options
+#pragma GCC optimize ("-O0")
 
-values_ts values =
+/**
+ * system global values
+ */
+namespace values
 {
-	.motor =
+	/**
+	 * motor values
+	 */
+	namespace motor
 	{
 		///< electric torque
-		.m_el = 0.0f,
+		float m_el = 0.0f;
 
 		///< external load torque
-		.m_l = 0.0f,
+		float m_l = 0.0f;
 
 		///< motor temperature
-		.temp = 0.0f,
+		float temp = 0.0f;
 
-		///< motor phase current
-		.i = {0.0f, 0.0f, 0.0f},
+		/**
+		 * motor hall values
+		 */
+		namespace hall
+		{
+			///< hall sensor states
+			std::uint8_t state = 0;
 
-		///< motor phase voltage
-		.u = {0.0f, 0.0f, 0.0f},
+			///< hall sensor flux estimate
+			systems::dq flux = {0.0f, 0.0f};
+		}
 
-		///< motor rotor system values
-		.rotor =
+		/**
+		 * motor phase system values
+		 */
+		namespace phase
+		{
+			///< Current in phases
+			systems::abc i = {0.0f, 0.0f, 0.0f};
+
+			///< motor phase current derivatives
+			systems::abc di = {0.0f, 0.0f, 0.0f};
+
+			///< motor phase voltage
+			systems::abc u = {0.0f, 0.0f, 0.0f};
+		} /* namespace phase */
+
+		/**
+		 * motor stator system values
+		 */
+		namespace stator
+		{
+			///< Current in stator frame
+			systems::alpha_beta i = {0.0f, 0.0f};
+
+			///< motor stator current derivatives
+			systems::alpha_beta di = {0.0f, 0.0f};
+
+			///< motor stator voltage
+			systems::alpha_beta u = {0.0f, 0.0f};
+
+			///< motor stator admittance
+			systems::alpha_beta y = {0.0f, 0.0f};
+
+			///< motor stator admittance vector
+			systems::alpha_beta yd = {0.0f, 0.0f};
+		} /* namespace stator */
+
+		/**
+		 * motor rotor system values
+		 */
+		namespace rotor
 		{
 			///< Current in rotor frame
-			.i = {0.0f, 0.0f},
+			systems::dq i = {0.0f, 0.0f};
 
 			///< Goertzel Frequency analysis instance for direct current
-			.gid = filter::goertzel<128>(hardware::Fc),
+			filter::goertzel<128> gid;
 
 			///< Goertzel Frequency analysis instance for quadrature current
-			.giq = filter::goertzel<128>(hardware::Fc),
+			filter::goertzel<128> giq;
 
 			///< Voltage in rotor frame
-			.u = {0.0f, 0.0f},
+			systems::dq u = {0.0f, 0.0f};
 
 			///< angular velocity in rotor frame
-			.omega = 0.0f,
+			float omega = 0.0f;
 
-			///< rotor angle
-			.phi = 0.0f,
+			///< rotor angle in q31
+			std::int32_t phi = 0;
 
-			///< rotor full rotation from start
-			.rotation = 0,
+			///< sine cosine values of phi
+			systems::sin_cos sc = {0.0f, 0.0f};
 
-			///< hfi currents
-			.i_hfi = {0.0f, 0.0f},
+			/**
+			 * motor rotor flux values
+			 */
+			namespace flux
+			{
+				///< motor rotor flux vector setpoint
+				systems::dq set = {0.0f, 0.0f};
 
-			///< motor rotor system setpoints
-			.setpoint =
+				///< motor rotor flux vector actual
+				systems::dq act = {0.0f, 0.0f};
+
+				///< rotor flux observer feedback
+				systems::dq C = {500.0f, 500.0f};
+
+			}
+
+			/**
+			 * motor rotor system setpoints
+			 */
+			namespace setpoint
 			{
 				///< Current setpoint in rotor frame
-				.i = {0.0f, 0.0f},
+				systems::dq i = {0.0f, 0.0f};
 
-				///< angular velocity setpoint in rotor frame
-				.omega = 0.0f,
+				///< electrical angular velocity setpoint in rotor frame
+				float omega = 0.0f;
 
 				///< rotor angle setpoint
-				.phi = 0.0f,
+				float phi  = 0.0f;
 
 				///< motor electrical torque in Nm
-				.torque = 0.0f,
+				float torque  = 0.0f;
 
 				/**
 				 * motor rotor system setpoint limits
 				 */
-				.limit =
+				namespace limit
 				{
 					/**
 					 * motor rotor system setpoint limits current
 					 */
-					.i =
+					namespace i
 					{
-						///< minimum current limit
-						.min = 0.0f,
+						float min  = 0.0f;
+						float max  = 0.0f;
+					} /* namespace i */
+				} /* namespace limit */
+			} /* namespace setpoint */
+		} /* namespace rotor */
+	} /* namespace stator */
 
-						///< maxium current limit
-						.max = 0.0f,
-					},
-				},
-			},
-		},
-	},
-
-	///< battery values
-	.battery =
+	/**
+	 * battery values
+	 */
+	namespace battery
 	{
 		///< Battery voltage
-		.u = 10.0f,
+		float u  = 0.0f;
 
 		///< Battery current
-		.i = 0.0f,
-	},
+		float i = 0.0f;
+	} /* namespace battery */
 
-	///< converter values
-	.converter =
-	{
-		///< power stage temperature
-		.temp = 0.0f,
-
-		///< phase dutys
-		.dutys = {0.0f, 0.0f, 0.0f},
-	},
 	/**
-	 * pedal assist system values
+	 * converter values
 	 */
-	.crank =
+	namespace converter
 	{
-		///< crank angle in rad
-		.angle = 0.0f,
+		///< powerstage temperature
+		float temp = 0.0f;
+	} /* namespace converter */
 
-		///< pedal cadence in rad/s
-		.cadence = 0.0f,
+	/**
+	 * external sensor values
+	 */
+	namespace sense
+	{
+		///< feedback sensor position value
+		std::uint16_t position = 0;
 
-		///< pedal torque in Nm
-		.torque = 0.0f,
+		///< feedback sensor rotor angle
+		float angle = 0.0f;
+	} /* namespace sense */
+} /* namespace values */
 
-		///< pedal power in W
-		.power = 0.0f,
-	},
-};
-
-
+#pragma GCC pop_options
 

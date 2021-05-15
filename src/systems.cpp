@@ -1,5 +1,11 @@
 /*
-    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
+	   __  ___   ________  _______  ______
+	  / / / / | / /  _/  |/  / __ \/ ____/
+	 / / / /  |/ // // /|_/ / / / / /
+	/ /_/ / /|  // // /  / / /_/ / /___
+	\____/_/ |_/___/_/  /_/\____/\____/
+
+	Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 
@@ -159,38 +165,14 @@ namespace systems
     }
 
     /**
-     * Systems casting assignment operator
-     * @param dq dq system
-     * @return alpha beta system
-     */
-    alpha_beta_u& alpha_beta_u::operator= (dq& dq)
-    {
-    	this->alpha = dq.d;
-    	this->beta = dq.q;
-    	return *this;
-    }
-
-    /**
-     * Systems casting assignment operator
-     * @param dq dq system
-     * @return alpha beta system
-     */
-    dq_u& dq_u::operator= (alpha_beta& ab)
-    {
-    	this->d = ab.alpha;
-    	this->q = ab.beta;
-    	return *this;
-    }
-
-
-    /**
       @brief         Floating-point sine and cosine function.
-      @param[in]     theta    input value in rad
-      @param[out]    out      points to processed sine cosine output
+      @param 	     theta   input value in q31
+      @retval	     out     points to processed sine cosine output
      */
-    void SinCos(const float theta, sin_cos& out)
+    sin_cos SinCos(const std::int32_t theta)
     {
-    	constexpr float _1by2PI = 1.0f/math::_2PI;
+    	sin_cos out = {0.0f, 0.0f};
+    	constexpr float _1by2PI = 0.5f/(float)std::numeric_limits<std::int32_t>::max();
     	float Dn = math::_2PI / FAST_MATH_TABLE_SIZE;    /* delta between the two points (fixed), in this case 2*pi/FAST_MATH_TABLE_SIZE */
     	float fract, in;                                 /* Temporary input, output variables */
     	uint16_t indexS, indexC;                         /* Index variable */
@@ -250,10 +232,22 @@ namespace systems
     	/* Calculation of sine value */
     	out.sin = fract * temp + f1;
 
-    	if (theta < 0.0f)
+    	if (theta < 0)
     	{
     		out.sin = -out.sin;
     	}
+    	return out;
+    }
+
+    /**
+      @brief         Calculate angle difference from sin/cosine values.
+      @param 	     a    	sin/cosine of the angle a in c = a - b
+      @param 	     b    	sin/cosine of the angle b in c = a - b
+      @retval	     c      angle difference (sin(c)) but ok for small values
+     */
+    float SinCosDiff(const sin_cos& a, const sin_cos& b)
+    {
+    	return a.sin * b.cos - a.cos * b.sin;
     }
 
     /**

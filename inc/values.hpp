@@ -1,5 +1,11 @@
 /*
-    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
+	   __  ___   ________  _______  ______
+	  / / / / | / /  _/  |/  / __ \/ ____/
+	 / / / /  |/ // // /|_/ / / / / /
+	/ /_/ / /|  // // /  / / /_/ / /___
+	\____/_/ |_/___/_/  /_/\____/\____/
+
+	Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 
@@ -22,139 +28,189 @@
 #include <cstdint>
 #include "systems.hpp"
 #include "filter.hpp"
+#include "as5048b.hpp"
 
 /**
  * system global values
  */
-typedef struct values_s
+namespace values
 {
 	/**
 	 * motor values
 	 */
-	struct motor_s
+	namespace motor
 	{
 		///< electric torque
-		float m_el;
+		extern float m_el;
 
 		///< external load torque
-		float m_l;
+		extern float m_l;
 
 		///< motor temperature
-		float temp;
+		extern float temp;
 
-		///< motor phase current
-		systems::abc i;
+		/**
+		 * motor hall values
+		 */
+		namespace hall
+		{
+			///< hall sensor states
+			extern std::uint8_t state;
 
-		///< motor phase voltage
-		systems::abc u;
+			///< hall sensor flux estimate
+			extern systems::dq flux;
+		} /* namespace hall */
+
+		/**
+		 * motor phase system values
+		 */
+		namespace phase
+		{
+			///< Current in phases
+			extern systems::abc i;
+
+			///< motor phase current derivatives
+			extern systems::abc di;
+
+			///< motor phase voltage
+			extern systems::abc u;
+		} /* namespace phase */
+
+		/**
+		 * motor stator system values
+		 */
+		namespace stator
+		{
+			///< Current in stator frame
+			extern systems::alpha_beta i;
+
+			///< motor stator current derivatives
+			extern systems::alpha_beta di;
+
+			///< motor stator voltage
+			extern systems::alpha_beta u;
+
+			///< motor stator admittance
+			extern systems::alpha_beta y;
+
+			///< motor stator admittance vector
+			extern systems::alpha_beta yd;
+
+
+		} /* namespace stator */
 
 		/**
 		 * motor rotor system values
 		 */
-		struct rotor_s
+		namespace rotor
 		{
 			///< Current in rotor frame
-			systems::dq i;
+			extern systems::dq i;
 
 			///< Goertzel Frequency analysis instance for direct current
-			filter::goertzel<128> gid;
+			extern filter::goertzel<128> gid;
 
 			///< Goertzel Frequency analysis instance for quadrature current
-			filter::goertzel<128> giq;
+			extern filter::goertzel<128> giq;
 
 			///< Voltage in rotor frame
-			systems::dq u;
+			extern systems::dq u;
 
 			///< angular velocity in rotor frame
-			float omega;
+			extern float omega;
 
-			///< rotor angle
-			float phi;
+			///< rotor angle in q31
+			extern std::int32_t phi;
 
-			///< rotor full rotation from start
-			std::int32_t rotation;
+			///< rotor angle in deg
+			extern float angle;
 
-			///< hfi currents
-			systems::dq i_hfi;
+			///< sine cosine values of phi
+			extern systems::sin_cos sc;
+
+			/**
+			 * rotor flux values
+			 */
+			namespace flux
+			{
+				///< rotor flux vector setpoint
+				extern systems::dq set;
+
+				///< rotor flux vector actual
+				extern systems::dq act;
+
+				///< rotor flux observer feedback
+				extern systems::dq C;
+			}
 
 			/**
 			 * motor rotor system setpoints
 			 */
-			struct setpoint_s
+			namespace setpoint
 			{
 				///< Current setpoint in rotor frame
-				systems::dq i;
+				extern systems::dq i;
 
 				///< electrical angular velocity setpoint in rotor frame
-				float omega;
+				extern float omega;
 
 				///< rotor angle setpoint
-				float phi;
+				extern float phi;
 
 				///< motor electrical torque in Nm
-				float torque;
+				extern float torque;
 
 				/**
 				 * motor rotor system setpoint limits
 				 */
-				struct limit_s
+				namespace limit
 				{
 					/**
 					 * motor rotor system setpoint limits current
 					 */
-					struct i_s
+					namespace i
 					{
-						float min;
-						float max;
-					}i;
-				} limit;
-			} setpoint;
-		} rotor;
-	} motor;
+						extern float min;
+						extern float max;
+					} /* namespace i */
+				} /* namespace limit */
+			} /* namespace setpoint */
+		} /* namespace rotor */
+	} /* namespace stator */
 
 	/**
 	 * battery values
 	 */
-	struct battery_s
+	namespace battery
 	{
 		///< Battery voltage
-		float u;
+		extern float u;
 
 		///< Battery current
-		float i;
-	} battery;
+		extern float i;
+	} /* namespace battery */
 
 	/**
 	 * converter values
 	 */
-	struct converter_s
+	namespace converter
 	{
 		///< powerstage temperature
-		float temp;
-
-		///< phase dutys
-		systems::abc dutys;
-	} converter;
+		extern float temp;
+	} /* namespace converter */
 
 	/**
-	 * pedal assist system values
+	 * external sensor values
 	 */
-	struct crank_s
+	namespace sense
 	{
-		///< crank angle in rad
-		float angle;
+		///< feedback sensor position value
+		extern std::uint16_t position;
 
-		///< pedal cadence in rad/s
-		float cadence;
+		///< feedback sensor rotor angle
+		extern float angle;
+	} /* namespace sense */
+} /* namespace values */
 
-		///< pedal torque in Nm
-		float torque;
-
-		///< pedal power in W
-		float power;
-	} crank;
-} values_ts;
-
-extern values_ts values;
 #endif /* INC_VALUES_HPP_ */
 

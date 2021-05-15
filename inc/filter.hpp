@@ -1,5 +1,11 @@
 /*
-    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
+	   __  ___   ________  _______  ______
+	  / / / / | / /  _/  |/  / __ \/ ____/
+	 / / / /  |/ // // /|_/ / / / / /
+	/ /_/ / /|  // // /  / / /_/ / /___
+	\____/_/ |_/___/_/  /_/\____/\____/
+
+	Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 
@@ -37,22 +43,61 @@ class low_pass
 {
 
 private:
-	///< filter sample time
-	const float ts;
+	///< last filter output value
+	float y;
 
 	///< proportional gain
-	const float k;
+	float k;
 
 	///< filter time constant dependent coefficient
-	const float t_tmp;
+	float t_tmp;
 
 	///< internal equation to pre calculate filter time constant dependent coefficient
-	static inline float T( float t, float ts) { return 1.0/(1.0 + t/ts); }
+	static inline constexpr float T(const float t, const float ts) { return 1.0/(1.0 + t/ts); }
 
 public:
-	low_pass(const float new_ts, const float new_k, const float new_t);
+	/**
+	 * stock constuctor with 1/10 time constant and gain of 1
+	 */
+	low_pass():y(0.0), k(1.0), t_tmp(0.9) {};
 
-	float Calculate(const float uk, const float yk_1);
+	/**
+	 * @brief low pass filter constructor with all essential parameters.
+	 *
+	 * @param ts			set sample time.
+	 * @param k				proportional gain.
+	 * @param t				time constant.
+	 */
+	low_pass(const float ts, const float k, const float t):
+										y(0.0f), k(k), t_tmp(T(t, ts))
+	{};
+
+	/**
+	 * @brief set the time constant of the filter
+	 *
+	 * @param ts sampling time for the Calculate calls
+	 * @param t time constant for the filter.
+	 */
+	constexpr void SetT(const float ts, const float t) { t_tmp = T(t, ts); };
+
+	/**
+	 * \brief set the gain of the filter
+	 * \param _k new gain of the filter
+	 */
+	constexpr void SetK(const float _k) { k = _k; };
+
+	/**
+	 * \brief calculate new filter output
+	 * \param u new input value for the filter
+	 * \return new filter output.
+	 */
+	float Calculate(const float u);
+
+	/**
+	 * \brief get the current filter output without calculating a new sample
+	 * \return current output value of the filter
+	 */
+	float Get(void) { return y; };
 };
 
 /**
@@ -68,29 +113,30 @@ private:
 
 	///< index for next input
 	std::uint32_t index;
+
+	///< sum over all buffer values
+	float sum;
 public:
-	moving_average<N>(void): buffer{0.0f}, index(0) {};
+	moving_average<N>(void): buffer{0.0f}, index(0), sum(0.0f) {};
 
 	/**
 	 * @brief insert uk to the buffer and calculate the average of all buffered uk's
 	 * @param uk new input value
 	 * @return mean of all buffered input values.
 	 */
-	float Calculate(const float uk)
+	float Calculate(const float u)
 	{
 		float mean = 0.0f;
 
-		buffer[index] = uk;
-		index++;
+		buffer[index] = u;
+		sum += buffer[index];	// add new sample
 
+		index++;
 		if(index >= N) index = 0;
 
-		for(std::uint32_t i = 0; i < N; i++)
-		{
-			mean += buffer[i];
-		}
+		sum -= buffer[index]; // remove oldest sample
 
-		mean /= N;
+		mean = sum/N;
 
 		return mean;
 	};
@@ -239,9 +285,6 @@ private:
 	///< index for latest sample in buffer.
 	std::uint32_t index;
 
-	///< sampling frequency of the source signal
-	const float Fs;
-
 	///< wave number of interest
 	std::uint32_t k;
 
@@ -262,20 +305,20 @@ private:
 public:
 	/**
 	 * Goertzel algorithm container constructor
-	 * @param Fs sampling frequency
 	 */
-	goertzel<N>(const float Fs): buffer{0.0f}, index(0), Fs(Fs), k(0),
+	goertzel<N>(void): buffer{0.0f}, index(0), k(0),
 		sc{0.0f, 1.0f}, coeff(2.0f), real(0.0f), imag(0.0f), ac(0.0f), dc(0.0f) {};
 
 	/**
 	 * set the frequency of interest.
 	 * @note frequency resolution is max Fs/N
 	 * @param F frequency to be selected
+	 * @param Fs sampling frequency of the source signal
 	 */
-	void SetFrequency(const float F)
+	void SetFrequency(const float F, const float Fs)
 	{
 		k = (uint32_t)(F/Fs*(float)N);
-		systems::SinCos(math::_2PI * (float)k/(float)N, sc);
+		sc = systems::SinCos(unit::Q31R(math::_2PI * (float)k/(float)N));
 		coeff = 2.0f*sc.cos;
 	}
 
@@ -337,35 +380,6 @@ public:
 
 	float Magnitude(void) { return std::sqrt(real*real + imag*imag);};
 	float Phase(void) { return std::atan2(imag, real); };
-
-	bool Test(void)
-	{
-		bool result = false;
-		const float limit = 1e-1f;
-		const float dc = 3.0f;
-		const float ac = 0.75f;
-		const float omega = 1000.0f*math::_2PI;
-		float phi = math::PIby2/3.0f;
-
-		for(uint32_t i = 0; i < N; i++)
-		{
-			float u = std::sin(phi)*ac + dc;
-			Sample(u);
-			phi += omega/Fs;
-			if(phi > math::_2PI) phi -= math::_2PI;
-		}
-
-		SetFrequency(0.0f);
-		Calculate();
-		this->dc = Magnitude();
-
-		SetFrequency(1000.0f);
-		Calculate();
-		this->ac = Magnitude();
-
-
-		return result;
-	}
 };
 
 

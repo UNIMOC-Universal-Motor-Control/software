@@ -18,7 +18,9 @@ UNIMOCCPPSRC := ${FREEMASTERCPPSRC} \
                 ${BASEDIR}/src/systems.cpp \
                 ${BASEDIR}/src/values.cpp \
                 ${BASEDIR}/src/management.cpp \
-                ${BASEDIR}/src/pas.cpp \
+                ${BASEDIR}/src/control_thread.cpp \
+                ${BASEDIR}/src/as5048b.cpp \
+                ${BASEDIR}/src/measurement.cpp \
 
 # Required include directories
 UNIMOCINC := ${FREEMASTERINC} \

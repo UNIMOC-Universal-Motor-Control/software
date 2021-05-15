@@ -1,5 +1,5 @@
 /*
-    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
+    UNIMOC - Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 
@@ -32,58 +32,13 @@
  */
 namespace control
 {
-
-	/**
-	 * derate control input envelope
-	 * @param limit	value to end derating
-	 * @param envelope positive value sets the envelope below the limit, negative above the limit
-	 * @param actual actual value
-	 * @return 1 when no derating active and 1 to 0 when in envelope and 0 when above limit
-	 */
-	float Derate(const float limit, const float envelope, const float actual)
-	{
-		const float start = limit - envelope;
-
-		float derating = (actual - start)/envelope;
-
-		if(derating < 0.0f) derating = 0.0f;
-		if(derating > 1.0f) derating = 1.0f;
-
-		// cut off the derating value from the maximum
-		return (1.0f - derating);
-	}
-
-	/**
-	 * limit the input value
-	 * @param[in/out] in input value
-	 * @param min minimal value
-	 * @param max maximal value
-	 * @return true when value is out of limits
-	 */
-	bool Limit(float& in, const float min, const float max)
-	{
-		bool did_trunc = false;
-
-		if (in > max)
-		{
-			in = max;
-			did_trunc = true;
-
-		}
-		else if (in < min)
-		{
-			in = min;
-			did_trunc = true;
-		}
-
-		return did_trunc;
-	}
-
 	/**
 	 * SVPWM Overmodulation modified to flat bottom.
+	 *
+	 * @note this function does the mapping of the phase wires to internal phases
 	 * @param u phase voltages
 	 * @param ubat battery voltage
-	 * @return dutys in -1 to 1
+	 * @return dutys in 0 to 1
 	 */
 	void Overmodulation(systems::abc& u, float ubat, systems::abc& dutys)
 	{
@@ -97,24 +52,18 @@ namespace control
 			ubat = 10.0f;
 		}
 		// scale voltage to -1 to 1
-		float scale = 2.0f / ubat;
+		float scale = 1.0f / ubat;
 
 		for (std::uint8_t i = 0; i < hardware::PHASES; ++i)
 		{
-			float dt = 0.0f;
+			uint8_t p = 0;
 
-//			if(settings.converter.dt > 0.0f)
-//			{
-//				dt = hardware::Fc / std::copysign(settings.converter.dt, values.motor.i.array[i]);
-//			}
+			// Map the phase wires to internal phases
+	    		 if((1 << i) & settings.converter.map.a) p = 0;
+	    	else if((1 << i) & settings.converter.map.b) p = 1;
+	    	else if((1 << i) & settings.converter.map.c) p = 2;
 
-//			// linear zone around zero to accomodate low currents and current noise
-//			if(std::fabs(values.motor.i.array[i]) < settings.converter.dt_i_min)
-//			{
-//				dt *= std::fabs(values.motor.i.array[i]) / settings.converter.dt_i_min;
-//			}
-
-			dutys.array[i] = (u.array[i] - mid) * scale + dt;
+			dutys.array[p] = (u.array[i] - mid) * scale + 0.5f;
 		}
 	}
 
@@ -125,10 +74,11 @@ namespace control
 	 * @param new_tn				integral action time.
 	 * @param new_positive_limit	positive output limit.
 	 * @param new_negative_limit	negative output limit.
+	 * @param ts					sampling time
 	 */
 	pi::pi(const float new_kp, const float new_tn,
 			const float new_positive_limit, const float new_negative_limit, const float ts):
-			ts(ts), error_sum(0.0f), output_unlimited(0.0f), output(0.0f), kp(new_kp),
+			error_sum(0.0f), output_unlimited(0.0f), output(0.0f), kp(new_kp),
 			ki(SetKi(kp, ts, new_tn)), positive_limit(new_positive_limit), negative_limit(new_negative_limit)
 	{}
 
@@ -173,29 +123,33 @@ namespace control
 	/**
 	 * @brief constructor of the foc with all essential parameters.
 	 */
-	foc::foc(void):Rs(settings.motor.rs), Ls((settings.motor.l.d + settings.motor.l.q) * 0.5f), PsiM(settings.motor.psi),
-			ctrl_d(0.0f, 0.0f, 0.0f, 0.0f, hardware::Tc),
-			ctrl_q(0.0f, 0.0f, 0.0f, 0.0f, hardware::Tc)
+	foc::foc(void):
+			ctrl_d(0.0f, 0.0f, 0.0f, 0.0f, hardware::Tc()),
+			ctrl_q(0.0f, 0.0f, 0.0f, 0.0f, hardware::Tc())
 	{}
 
 
 	/**
 	 * @brief calculate FOC current controller
+	 * @param setpoint current vector
 	 */
-	void foc::Calculate(void)
+	void foc::Calculate(systems::dq& setpoint)
 	{
-		float limit = _1bysqrt3 * values.battery.u*0.95f;
+		using namespace values;
+		using namespace values::motor;
+
+		float limit = _1bysqrt3 * battery::u*0.95f;
 
 		// Current controller is limited to 1/sqrt(3)*DC Bus Voltage due to SVM
 		// d current controller is master for voltage limit
 		ctrl_d.positive_limit = limit;
 		ctrl_d.negative_limit = -limit;
 
-		float length = systems::Length(values.motor.rotor.u);
+		float length = systems::Length(rotor::u);
 
 		if(length > ctrl_d.positive_limit)									// saturation
 		{
-			float rest = std::sqrt(length*length - values.motor.rotor.u.d * values.motor.rotor.u.d);
+			float rest = std::sqrt(length*length - rotor::u.d * rotor::u.d);
 			// q current controller is only fully free if we are not in voltage limit
 			ctrl_q.positive_limit = rest;
 			ctrl_q.negative_limit = -rest;
@@ -211,192 +165,17 @@ namespace control
 
 		if(settings.control.current.feedforward)
 		{
-			feedforward.d = Rs*values.motor.rotor.setpoint.i.d - values.motor.rotor.omega * values.motor.rotor.setpoint.i.q * Ls;
-			feedforward.q = Rs*values.motor.rotor.setpoint.i.q + values.motor.rotor.omega * values.motor.rotor.setpoint.i.d * Ls
-					+ values.motor.rotor.omega*PsiM;
+			feedforward.d = settings.motor.rs*setpoint.d - rotor::omega * setpoint.q * settings.motor.l.q;
+			feedforward.q = settings.motor.rs*setpoint.q + rotor::omega * setpoint.d * settings.motor.l.d + rotor::omega*settings.motor.psi;
 		}
 
-		values.motor.rotor.u.d = ctrl_d.Calculate(values.motor.rotor.setpoint.i.d, values.motor.rotor.i.d, feedforward.d);
-		values.motor.rotor.u.q = ctrl_q.Calculate(values.motor.rotor.setpoint.i.q, values.motor.rotor.i.q, feedforward.q);
+		rotor::u.d = ctrl_d.Calculate(setpoint.d, rotor::i.d, feedforward.d);
+		rotor::u.q = ctrl_q.Calculate(setpoint.q, rotor::i.q, feedforward.q);
 	}
 
-	/**
-	 * generic constructor
-	 */
-	thread::thread():flux(), hfi(),foc()
-	{}
-
-	/**
-	 * @brief Thread main function
-	 */
-	void thread::main(void)
-	{
-		setName("Control");
-
-
-		/*
-		 * Normal main() thread activity
-		 */
-		while (TRUE)
-		{
-			systems::sin_cos phi_sc;
-			systems::sin_cos cur_sc;
-			float angle;
-
-			/* Checks if an IRQ happened else wait.*/
-			chEvtWaitAny((eventmask_t)1);
-
-			values.battery.u = hardware::adc::voltage::DCBus();
-
-			hardware::adc::current::Value(values.motor.i);
-
-			// calculate the sine and cosine of the new angle
-			angle = values.motor.rotor.phi
-					+ values.motor.rotor.omega * hardware::Tf;
-
-			// calculate new sine and cosine for the reference system
-			systems::SinCos(values.motor.rotor.phi, phi_sc);
-
-			// calculate new sine and cosine for the current system delayed be filters
-			systems::SinCos(angle, cur_sc);
-
-			// convert 3 phase system to ortogonal
-			i_ab = systems::transform::Clark(values.motor.i);
-			// convert current samples from clark to rotor frame;
-			values.motor.rotor.i = systems::transform::Park(i_ab, cur_sc);
-
-			//sample currents for frequency analysis
-			values.motor.rotor.gid = values.motor.rotor.i.d;
-			values.motor.rotor.giq = values.motor.rotor.i.q;
-
-			// calculate battery current from power equality
-			values.battery.i = (values.motor.rotor.u.d * values.motor.rotor.i.d
-					+ values.motor.rotor.u.q * values.motor.rotor.i.q)/values.battery.u;
-
-			if(			management::observer::mechanic
-					&& 	std::fabs(values.motor.rotor.i.q) > settings.observer.mech.i_min)
-			{
-				observer::mechanic::Predict(values.motor.rotor.i);
-			}
-			else
-			{
-				systems::dq i = {0.0f, 0.0f};
-				observer::mechanic::Predict(i);
-			}
-
-			if(management::observer::flux)
-			{
-				// calculate the flux observer
-				flux.Calculate(phi_sc, correction);
-
-				// correct the prediction
-				observer::mechanic::Correct(correction);
-			}
-
-			if(management::observer::hfi)
-			{
-				// calculate the flux observer
-				hfi.Calculate(values.motor.rotor.i, correction);
-
-				// correct the prediction
-				observer::mechanic::Correct(correction);
-			}
-
-			if(management::control::current)
-			{
-				float torque_factor = _3by2 * settings.motor.psi;
-				if(settings.motor.psi < 1e-6) torque_factor = 1.0f;
-
-				values.motor.rotor.setpoint.i.d = 0.0f;
-				values.motor.rotor.setpoint.i.q =
-						values.motor.rotor.setpoint.torque/torque_factor;
-
-				// starting help for traction drives
-				if(std::fabs(values.motor.rotor.setpoint.i.q) > settings.observer.mech.i_min
-						&& settings.motor.i_start > 0.1f)
-				{
-					values.motor.rotor.setpoint.i.d +=
-							settings.motor.i_start * std::exp(- std::fabs(values.motor.rotor.omega/200.0f));
-				}
-
-				float ratio = values.battery.u / uq.Calculate(values.motor.rotor.u.q);
-				float min = -settings.motor.limits.i;
-				float max =  settings.motor.limits.i;
-
-				// deadzone for battery current limiter of 1W
-				if(std::fabs(values.motor.rotor.u.q * values.motor.rotor.setpoint.i.q) > 1.0f)
-				{
-					if(ratio > 1e-3f)
-					{
-						min = ratio * -settings.battery.limits.i.charge;
-						max = ratio * settings.battery.limits.i.drive;
-					}
-					else if(ratio < -1e-3f)
-					{
-						min = ratio * settings.battery.limits.i.drive;
-						max = ratio * -settings.battery.limits.i.charge;
-					}
-
-					if(min < -settings.motor.limits.i) min = -settings.motor.limits.i;
-					if(max > settings.motor.limits.i) max =  settings.motor.limits.i;
-				}
-
-
-				// derate by temperature and voltage
-				std::array<float, 4> derate;
-				derate[0] = Derate(settings.converter.limits.temperature,
-						settings.converter.derating.temprature, values.converter.temp);
-				derate[1] = Derate(settings.battery.limits.voltage,
-						-settings.converter.derating.voltage, values.battery.u);
-				derate[2] = Derate(settings.motor.limits.omega,
-										settings.converter.derating.omega, values.motor.rotor.omega);
-				derate[3] = Derate(-settings.motor.limits.omega,
-										-settings.converter.derating.omega, values.motor.rotor.omega);
-
-				// always use the minimal derating possible
-				float derating = *std::min_element(derate.begin(), derate.end());
-
-				// derate the limits
-				min *= derating;
-				max *= derating;
-
-				values.motor.rotor.setpoint.limit.i.min = min;
-				values.motor.rotor.setpoint.limit.i.max = max;
-
-				Limit(values.motor.rotor.setpoint.i.q, values.motor.rotor.setpoint.limit.i.min, values.motor.rotor.setpoint.limit.i.max);
-
-				// calculate the field orientated controllers
-				foc.Calculate();
-			}
-			else
-			{
-				foc.Reset();
-				foc.SetParameters(settings.motor.rs, settings.motor.l, settings.motor.psi, hardware::Tf);
-			}
-
-			systems::dq u = values.motor.rotor.u;
-
-			if(management::observer::hfi)
-			{
-				u.d += hfi.Injection();
-			}
-
-			// transform the voltages to stator frame
-			u_ab = systems::transform::InversePark(u, phi_sc);
-
-			// transform to ab system
-			values.motor.u = systems::transform::InverseClark(u_ab);
-
-			// set dutys with overmodulation
-			Overmodulation(values.motor.u, values.battery.u, values.converter.dutys);
-
-			hardware::pwm::Duty(values.converter.dutys);
-
-			modules::freemaster::Recorder();
-		}
-
-	}
 }/* namespace control */
+
+
 
 
 

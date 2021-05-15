@@ -1,5 +1,11 @@
 /*
-    UNIMOC - Universal Motor Control  2020 Alexander <tecnologic86@gmail.com> Brand
+	   __  ___   ________  _______  ______
+	  / / / / | / /  _/  |/  / __ \/ ____/
+	 / / / /  |/ // // /|_/ / / / / /
+	/ /_/ / /|  // // /  / / /_/ / /___
+	\____/_/ |_/___/_/  /_/\____/\____/
+
+	Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 
@@ -22,7 +28,6 @@
 #include <cstdint>
 #include "systems.hpp"
 
-
 /**
  * settings to be saved in non volatile memory
  */
@@ -36,6 +41,9 @@ typedef struct settings_s
 	{
 		///< inertia of of rotor and connected known mechanics
 		float J;
+
+		///< feedback sensor zero position value
+		std::uint16_t zero_pos;
 	}  mechanics;
 
 	/**
@@ -53,10 +61,7 @@ typedef struct settings_s
 		float psi;
 
 		///< number of pole pairs
-		uint32_t P;
-
-		///< starting direct current
-		float i_start;
+		std::uint32_t P;
 
 		/**
 		 * motor limits
@@ -66,8 +71,17 @@ typedef struct settings_s
 			///< maximum coil current
 			float i;
 
-			///< maximum angular velocity
-			float omega;
+			/**
+			 * motor speed limits
+			 */
+			struct omega_s
+			{
+				///< backwards limit
+				float backwards;
+
+				///< forwards limit
+				float forwards;
+			} omega;
 
 			///< maximum motor temperature
 			float temperature;
@@ -87,8 +101,18 @@ typedef struct settings_s
 		 */
 		struct limits_s
 		{
-			///< low voltage battery limit
-			float voltage;
+			/**
+			 * battery limits
+			 */
+			struct voltage_s
+			{
+				///< low voltage limit
+				float low;
+
+				///< high voltage limit
+				float high;
+			} voltage;
+
 			/**
 			 * current limits
 			 */
@@ -118,6 +142,12 @@ typedef struct settings_s
 
 			///< feedforward omega
 			bool feedforward;
+
+			///< proportional gain
+			float kp;
+
+			///< controller time constant
+			float tn;
 		}current;
 	} control;
 
@@ -134,12 +164,6 @@ typedef struct settings_s
 			///< enable observer switch
 			bool enable;
 
-			///< modell variance
-			float Q;
-
-			///< measurement variance
-			float R;
-
 			///< flux observer feedback gains
 			systems::dq C;
 		} flux;
@@ -152,18 +176,49 @@ typedef struct settings_s
 			///< enable observer switch
 			bool enable;
 
-			///< modell variance
-			float Q;
-
-			///< measurement variance
-			float R;
-
-			///< injection frequency in Hz
-			float frequency;
-
 			///< injection current in A
 			float current;
+
+			///< maximum speed where hfi is active
+			float omega;
+
+			///< hyseresis around maximum speed where observer is switched
+			float hysteresis;
 		} hfi;
+
+		/**
+		 * hall observer settings
+		 */
+		struct hall_s
+		{
+			///< enable observer switch
+			bool enable;
+
+			///< maps the hall sensor inputs to phases
+			struct map_s
+			{
+				///< mapps hall sensor to phase a
+				std::uint8_t a;
+				///< mapps hall sensor to phase a
+				std::uint8_t b;
+				///< mapps hall sensor to phase a
+				std::uint8_t c;
+
+				std::uint8_t unused;
+			} map;
+
+			///< maximum speed where hall is active
+			float omega;
+
+			///< hyseresis around maximum speed where observer is switched
+			float hysteresis;
+
+			///< flux observer feedback gains in hall mode
+			systems::dq C;
+
+			///< angular offset for the hall sensor signals in q31 (-180 - 180)
+			std::int32_t offset;
+		} hall;
 
 		/**
 		 * mechanic observer settings
@@ -172,32 +227,14 @@ typedef struct settings_s
 		{
 			///< electrical torque minimal current
 			float i_min;
+
+			///< modell variance
+			float Q;
+
+			///< measurement variance
+			float R;
 		} mech;
 	} observer;
-
-	/**
-	 * crank settings
-	 */
-	struct crank_s
-	{
-		///< crank torque sensor gain in Nm/Volts
-		float gain;
-
-		///< crank torque sensor offset in Volts
-		float offset;
-
-		///< torque sensor command enable
-		bool enable;
-
-		struct pas_s
-		{
-			///< pas counts per revolution both edges
-			std::uint32_t counts;
-
-			///< pas mode enable
-			bool enable;
-		} pas;
-	} crank;
 
 	/**
 	 * converter settings
@@ -205,10 +242,23 @@ typedef struct settings_s
 	struct converter_s
 	{
 		///< compensated dead time in PWM switching -1 represents 0 and 1 represents 1
-		float dt;
+		std::uint32_t deadtime;
 
-		///< minimal current for full dead time compensation
-		float dt_i_min;
+		///< pwm frequency
+		std::uint32_t frequency;
+
+		///< maps the phase wires to internal phases
+		struct map_s
+		{
+			///< mapps phase wire to internal phase a
+			std::uint8_t a;
+			///< mapps phase wire to internal phase b
+			std::uint8_t b;
+			///< mapps phase wire to internal phase c
+			std::uint8_t c;
+
+			std::uint8_t unused;
+		} map;
 
 		/**
 		 * converter derating settings
@@ -237,6 +287,36 @@ typedef struct settings_s
 			float temperature;
 		} limits;
 	}  converter;
+
+	/**
+	 * motor throttle setting
+	 */
+	struct throttle_s
+	{
+		/**
+		 * motor throttle deadzone
+		 */
+		struct deadzone_s
+		{
+			///< low deadzone
+			float low;
+
+			///< high deadzone
+			float high;
+		}deadzone;
+
+		///< Throttle signal source selection
+		enum select_e
+		{
+			NONE,							// no throttle at all
+			ANALOG_BIDIRECTIONAL,			// analog input as bidirectional Throttle with midpoint 0
+			ANALOG_FORWARDS,				// analog input as unidirectional Throttle running only forwards
+			ANALOG_BACKWARDS,				// analog input as unidirectional Throttle running only backwards
+			ANALOG_SWITCH,					// analog input as unidirectional Throttle with switch input to select direction
+			PAS,							// Pedal assist power as throttle
+		} sel;
+
+	} throttle;
 
 	///< crc32 value for the hole settings
 	uint32_t crc;
