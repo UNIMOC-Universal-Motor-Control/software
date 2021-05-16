@@ -188,6 +188,9 @@ namespace control
 			hardware::analog::current::Value(i_abc);
 			hardware::analog::current::Derivative(i_abc_ac);
 
+			converter::temp = hardware::analog::temperature::Bridge();
+			motor::temp = hardware::analog::temperature::Motor();
+
 			// transform the current samples to stator frame
 			QuadClark(i_abc, i_ab);
 			QuadClark(i_abc_ac, i_ab_ac);
@@ -324,6 +327,18 @@ namespace control
 			{
 				as5048.Read();
 			}
+
+			// calculate the filters for management Task
+			management::motor::torque::electric.Calculate(motor::torque::electric);
+			management::motor::torque::load.Calculate(motor::torque::load);
+			management::motor::temp.Calculate(motor::temp);
+			management::motor::rotor::i.Calculate(motor::rotor::i);
+			management::motor::rotor::u.Calculate(motor::rotor::u);
+			management::motor::rotor::omega.Calculate(motor::rotor::omega);
+			management::motor::rotor::flux.Calculate(motor::rotor::flux::act);
+			management::battery::u.Calculate(battery::u);
+			management::battery::i.Calculate(battery::i);
+			management::converter::temp.Calculate(converter::temp);
 		}
 
 	}

@@ -100,6 +100,59 @@ public:
 	float Get(void) { return y; };
 };
 
+
+/**
+ * first order iir low pass in dq system
+ */
+class low_pass_dq
+{
+
+private:
+	low_pass d;
+	low_pass q;
+
+public:
+	/**
+	 * stock constuctor with 1/10 time constant and gain of 1
+	 */
+	low_pass_dq() {};
+
+	/**
+	 * @brief low pass filter constructor with all essential parameters.
+	 *
+	 * @param ts			set sample time.
+	 * @param k				proportional gain.
+	 * @param t				time constant.
+	 */
+	low_pass_dq(const float ts, const float k, const float t):d(ts, k, t), q(ts, k, t) {};
+
+	/**
+	 * @brief set the time constant of the filter
+	 *
+	 * @param ts sampling time for the Calculate calls
+	 * @param t time constant for the filter.
+	 */
+	constexpr void SetT(const float ts, const float t) { d.SetT(ts, t); q.SetT(ts, t); };
+
+	/**
+	 * \brief set the gain of the filter
+	 * \param k new gain of the filter
+	 */
+	constexpr void SetK(const float k) { d.SetK(k); q.SetK(k); };
+
+	/**
+	 * \brief calculate new filter output
+	 * \param u new input value for the filter
+	 * \return new filter output.
+	 */
+	systems::dq Calculate(const systems::dq u) {systems::dq tmp = {d.Calculate(u.d), q.Calculate(u.q)}; return tmp; };
+
+	/**
+	 * \brief get the current filter output without calculating a new sample
+	 * \return current output value of the filter
+	 */
+	systems::dq Get(void) { systems::dq tmp = {d.Get(), q.Get()}; return tmp; };
+};
 /**
  * moving average filter
  */

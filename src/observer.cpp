@@ -50,7 +50,6 @@ namespace observer
      */
     void mechanic::Predict(const systems::dq& i)
     {
-    	using namespace values::motor::rotor;
     	using namespace values::motor;
 
         // update constants
@@ -58,31 +57,28 @@ namespace observer
         const float tsj = ts/settings.mechanics.J;
 
         // electric torque
-        m_el = _3by2 * (settings.motor.psi * i.q +
-        		(settings.motor.l.d - settings.motor.l.q) * i.d * i.q);
+        torque::electric = _3by2 * (settings.motor.psi * i.q +
+        							(settings.motor.l.d - settings.motor.l.q) * i.d * i.q);
 
         // omega
-        omega += tsj * (m_el - m_l);
+        rotor::omega += tsj * (torque::electric - torque::load);
 
-        if(omega > 2.0f * settings.motor.limits.omega.forwards)
+        if(rotor::omega > 2.0f * settings.motor.limits.omega.forwards)
         {
-        	omega = 2.0f * settings.motor.limits.omega.forwards;
+        	rotor::omega = 2.0f * settings.motor.limits.omega.forwards;
         }
-        else if(omega < 2.0f * settings.motor.limits.omega.backwards)
+        else if(rotor::omega < 2.0f * settings.motor.limits.omega.backwards)
         {
-        	omega = 2.0f * settings.motor.limits.omega.backwards;
+        	rotor::omega = 2.0f * settings.motor.limits.omega.backwards;
         }
 
-        if(!std::isfinite(omega))
+        if(!std::isfinite(rotor::omega))
         {
-        	omega = 0.0f;
+        	rotor::omega = 0.0f;
         }
 
         // integrate omega for phi
-        phi += unit::Q31R(omega * ts);
-
-        // integrate load
-        //values.motor.m_l += 0;
+        rotor::phi += unit::Q31R(rotor::omega * ts);
     }
 
     /**
@@ -92,12 +88,11 @@ namespace observer
      */
     void mechanic::Correct(const std::array<float, 3> error)
     {
-    	using namespace values::motor::rotor;
     	using namespace values::motor;
 
-        omega += error[0];
-        phi += unit::Q31R(error[1]);
-        m_l += error[2];
+        rotor::omega += error[0];
+        rotor::phi += unit::Q31R(error[1]);
+        torque::load += error[2];
     }
 
 	/**
@@ -244,7 +239,7 @@ namespace observer
     /**
      * @brief hall observers trivial constructor
      */
-    hall::hall(void):offset(0.0f), sc_offset{0.0f, 1.0f}, alpha(1.0f/16e3f, 1.0f, 3e-3f), beta(1.0f/16e3f, 1.0f, 3e-3f)  {}
+    hall::hall(void):offset(0.0f), sc_offset{0.0f, 1.0f} {}
 
     /**
      * @brief Get sine and cosine values from hall for estimation in rotor frame.
@@ -268,10 +263,6 @@ namespace observer
 
     	tab = systems::transform::Clark(hall);
 
-    	// filter flux vector to reduce disturbance from hall steps.
-//    	tab.alpha = alpha.Calculate(tab.alpha);
-//    	tab.beta = beta.Calculate(tab.beta);
-
     	// Turn the vector by the hall offset
     	tdq = systems::transform::Park(tab, sc_offset);
 
@@ -289,12 +280,11 @@ namespace observer
 	 */
 	void hall::SetOffset(const std::int32_t new_offset)
 	{
-		float T = 0.0f;// math::PI/(settings.observer.hall.omega + settings.observer.hall.hysteresis);
-
-		alpha.SetT(hardware::Tc(), T);
-		beta.SetT(hardware::Tc(), T);
-		offset = new_offset - unit::Q31R(values::motor::rotor::omega * T);
-		sc_offset = systems::SinCos(offset);
+		if(offset != new_offset)
+		{
+			offset = new_offset;
+			sc_offset = systems::SinCos(offset);
+		}
 	}
 }/* namespace observer */
 

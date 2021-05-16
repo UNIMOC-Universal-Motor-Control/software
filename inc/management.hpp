@@ -91,9 +91,72 @@ namespace management
 		///< measure rotor flux
 		extern bool flux;
 
-		///< measure hall sensor state positons
+		///< measure hall sensor state positions
 		extern bool hall;
 	}
+
+	/**
+	 * motor values
+	 */
+	namespace motor
+	{
+		/**
+		 * motor torque values
+		 */
+		namespace torque
+		{
+			///< electric torque
+			extern filter::low_pass electric;
+
+			///< external load torque
+			extern filter::low_pass load;
+		}
+
+		///< motor temperature
+		extern filter::low_pass temp;
+
+		/**
+		 * motor rotor system values
+		 */
+		namespace rotor
+		{
+			///< Current in rotor frame
+			extern filter::low_pass_dq i;
+
+			///< Voltage in rotor frame
+			extern filter::low_pass_dq u;
+
+			///< angular velocity in rotor frame
+			extern filter::low_pass omega;
+
+			///< rotor flux vector actual
+			extern filter::low_pass_dq flux;
+		} /* namespace rotor */
+	} /* namespace motor */
+
+	/**
+	 * battery values
+	 */
+	namespace battery
+	{
+		///< Battery voltage
+		extern filter::low_pass u;
+
+		///< Battery current
+		extern filter::low_pass i;
+	} /* namespace battery */
+
+	/**
+	 * converter values
+	 */
+	namespace converter
+	{
+		///< powerstage temperature
+		extern filter::low_pass temp;
+
+		///< analog input  filter
+		extern filter::low_pass input;
+	} /* namespace converter */
 
 	/**
 	 * controller management thread
@@ -102,6 +165,10 @@ namespace management
 	{
 	private:
 		static constexpr systime_t CYCLE_TIME = TIME_MS2I(1);
+
+		///< time constant for control value filters (time 10 of the CYCLE_TIME
+		static constexpr float Ts = 10e-3f;
+
 		systime_t 				deadline;
 		std::uint32_t			delay;
 
@@ -114,10 +181,6 @@ namespace management
 			MEASURE_LS,
 			MEASURE_PSI,
 		} sequencer;
-
-		filter::low_pass		uq;
-		filter::low_pass		ubat;
-		filter::low_pass		w;
 
 		/**
 		 * derate control input envelope

@@ -97,6 +97,89 @@ namespace management
 		///< measure hall sensor state positons
 		bool hall = false;
 	}
+
+	/**
+	 * motor values
+	 */
+	namespace motor
+	{
+		/**
+		 * motor torque values
+		 */
+		namespace torque
+		{
+			///< electric torque
+			filter::low_pass electric;
+
+			///< external load torque
+			filter::low_pass load;
+		}
+
+		///< motor temperature
+		filter::low_pass temp;
+
+		/**
+		 * motor rotor system values
+		 */
+		namespace rotor
+		{
+			///< Current in rotor frame
+			filter::low_pass_dq i;
+
+			///< Voltage in rotor frame
+			filter::low_pass_dq u;
+
+			///< angular velocity in rotor frame
+			filter::low_pass omega;
+
+			///< rotor flux vector actual
+			filter::low_pass_dq flux;
+		} /* namespace rotor */
+	} /* namespace motor */
+
+	/**
+	 * battery values
+	 */
+	namespace battery
+	{
+		///< Battery voltage
+		filter::low_pass u;
+
+		///< Battery current
+		filter::low_pass i;
+	} /* namespace battery */
+
+	/**
+	 * converter values
+	 */
+	namespace converter
+	{
+		///< powerstage temperature
+		filter::low_pass temp;
+
+		///< analog input  filter
+		filter::low_pass input;
+	} /* namespace converter */
+
+
+	/**
+	 * set the time constant for all the management filters of control values
+	 * @param t new time constant
+	 */
+	void InitFilters(const float t)
+	{
+		motor::torque::electric.SetT(hardware::Tc(), t);
+		motor::torque::load.SetT(hardware::Tc(), t);
+		motor::temp.SetT(hardware::Tc(), t);
+		motor::rotor::i.SetT(hardware::Tc(), t);
+		motor::rotor::u.SetT(hardware::Tc(), t);
+		motor::rotor::omega.SetT(hardware::Tc(), t);
+		motor::rotor::flux.SetT(hardware::Tc(), t);
+		battery::u.SetT(hardware::Tc(), t);
+		battery::i.SetT(hardware::Tc(), t);
+		converter::temp.SetT(hardware::Tc(), t);
+		converter::input.SetT(hardware::Tc(), t);
+	}
 } /* namespace management */
 
 /**
@@ -149,7 +232,7 @@ bool management::thread::Limit(float& in, const float min, const float max)
 /**
  * generic constructor
  */
-management::thread::thread(): deadline(0), sequencer(STARTUP), uq(1e3f, 1.0f, 10e-3f), ubat(1e3f, 1.0f, 10e-3f), w(1e3f, 1.0f, 10e-3f)
+management::thread::thread(): deadline(0), sequencer(STARTUP)
 {};
 
 /**
@@ -158,15 +241,14 @@ management::thread::thread(): deadline(0), sequencer(STARTUP), uq(1e3f, 1.0f, 10
  */
 void management::thread::LimitCurrentSetpoint(systems::dq& setpoint)
 {
-	using namespace values::motor::rotor;
-	using namespace values;
-
-	float ratio = ubat.Calculate(battery::u) / uq.Calculate(u.q);
+	float v = systems::Length(motor::rotor::u.Get());
+	float ubat = battery::u.Get() + battery::i.Get()* settings.battery.Ri; // battery voltage including internal resistance
+	float ratio = battery::u.Get() / v; // voltage vector length to battery voltage gives effective duty of PWM
 	float min = -settings.motor.limits.i;
 	float max =  settings.motor.limits.i;
 
-	// deadzone for battery current limiter of 1W
-	if(std::fabs(uq.Get() * setpoint::i.q) > 1.0f)
+	// deadzone for battery current limiter of 1W real power
+	if(std::fabs(motor::rotor::u.Get().q * values::motor::rotor::setpoint::i.q) > 1.0f)
 	{
 		if(ratio > 1e-3f)
 		{
@@ -186,20 +268,19 @@ void management::thread::LimitCurrentSetpoint(systems::dq& setpoint)
 	// derate by temperature and voltage
 	std::array<float, 5> derate;
 	derate[0] = Derate(settings.converter.limits.temperature,
-			settings.converter.derating.temprature, converter::temp);
+			settings.converter.derating.temprature, converter::temp.Get());
 
 	derate[1] = Derate(settings.battery.limits.voltage.low,
-			-settings.converter.derating.voltage, ubat.Get());
+			-settings.converter.derating.voltage, ubat);
 
 	derate[2] = Derate(settings.battery.limits.voltage.high,
-					settings.converter.derating.voltage, ubat.Get());
+					settings.converter.derating.voltage, ubat);
 
-	w.Calculate(omega);
 	derate[3] = Derate(settings.motor.limits.omega.forwards,
-			settings.converter.derating.omega, w.Get());
+			settings.converter.derating.omega, motor::rotor::omega.Get());
 
 	derate[4] = Derate(settings.motor.limits.omega.backwards,
-			-settings.converter.derating.omega, w.Get());
+			-settings.converter.derating.omega, motor::rotor::omega.Get());
 
 	// always use the minimal derating possible
 	float derating = *std::min_element(derate.begin(), derate.end());
@@ -208,10 +289,10 @@ void management::thread::LimitCurrentSetpoint(systems::dq& setpoint)
 	min *= derating;
 	max *= derating;
 
-	motor::rotor::setpoint::limit::i::min = min;
-	motor::rotor::setpoint::limit::i::max = max;
+	values::motor::rotor::setpoint::limit::i::min = min;
+	values::motor::rotor::setpoint::limit::i::max = max;
 
-	Limit(setpoint.q, motor::rotor::setpoint::limit::i::min, motor::rotor::setpoint::limit::i::max);
+	Limit(setpoint.q, values::motor::rotor::setpoint::limit::i::min, values::motor::rotor::setpoint::limit::i::max);
 }
 
 /**
@@ -327,16 +408,14 @@ void management::thread::main(void)
 
 	deadline = System::getTime();
 
+	InitFilters(Ts);
+
 	/*
 	 * Normal main() thread activity
 	 */
 	while (TRUE)
 	{
-		using namespace values;
 		deadline = System::getTime();
-
-		converter::temp = hardware::analog::temperature::Bridge();
-		motor::temp = hardware::analog::temperature::Motor();
 
 		if(save)
 		{
@@ -385,28 +464,26 @@ void management::thread::main(void)
 			// handle PWM led to show PWM status
 			if(hardware::pwm::output::Active()) palSetLine(LINE_LED_PWM);
 			else palClearLine(LINE_LED_PWM);
-//				// set Run Mode LED
-//				palSetLine(LINE_LED_RUN);
 			palClearLine(LINE_LED_MODE);
 
 			// slow tasks of the control loop thread
 			controller.Manage();
 
 			// get throttle commands from the configured source
-			SetThrottleSetpoint(motor::rotor::setpoint::i);
+			SetThrottleSetpoint(values::motor::rotor::setpoint::i);
 
 			// calculate the limits of the current setpoint an apply them
-			LimitCurrentSetpoint(motor::rotor::setpoint::i);
+			LimitCurrentSetpoint(values::motor::rotor::setpoint::i);
 
 			// activate control and observers
 			if(hardware::pwm::output::Active())
 			{
 				if(control::current != settings.control.current.active && control::current)
 				{
-					motor::rotor::u.d = 0.0f;
-					motor::rotor::u.q = 0.0f;
-					motor::rotor::setpoint::i.d = 0.0f;
-					motor::rotor::setpoint::i.q = 0.0f;
+					values::motor::rotor::u.d = 0.0f;
+					values::motor::rotor::u.q = 0.0f;
+					values::motor::rotor::setpoint::i.d = 0.0f;
+					values::motor::rotor::setpoint::i.q = 0.0f;
 				}
 				control::current = settings.control.current.active;
 			}
@@ -418,7 +495,7 @@ void management::thread::main(void)
 			// hall with hysteresis
 			if(settings.observer.hall.enable)
 			{
-				observer::hall = Hysteresis(motor::rotor::omega, settings.observer.hall.omega, settings.observer.hall.hysteresis, observer::hall);
+				observer::hall = Hysteresis(motor::rotor::omega.Get(), settings.observer.hall.omega, settings.observer.hall.hysteresis, observer::hall);
 			}
 			else
 			{
@@ -428,7 +505,7 @@ void management::thread::main(void)
 			// hfi with hysteresis
 			if(settings.observer.hfi.enable)
 			{
-				observer::hfi = Hysteresis(motor::rotor::omega, settings.observer.hfi.omega, settings.observer.hfi.hysteresis, observer::hfi);
+				observer::hfi = Hysteresis(motor::rotor::omega.Get(), settings.observer.hfi.omega, settings.observer.hfi.hysteresis, observer::hfi);
 			}
 			else
 			{

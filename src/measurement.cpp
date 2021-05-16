@@ -300,7 +300,7 @@ namespace measurement
 				rotor::u.q = 0.0f;
 				rotor::phi = 0;
 				rotor::omega = math::_2PI * FREQ;
-				m_l = 0.0f;
+				torque::load = 0.0f;
 
 				w_limit = settings.motor.limits.omega.forwards;
 				settings.motor.limits.omega.forwards = rotor::omega;
@@ -358,7 +358,7 @@ namespace measurement
 				rotor::u.q = 0.0f;
 				rotor::phi = 0;
 				rotor::omega = 0.0f;
-				m_l = 0.0f;
+				torque::load = 0.0f;
 				settings.motor.limits.omega.forwards = w_limit;
 				control::current = false;
 				observer::hall = false;
@@ -425,7 +425,7 @@ namespace measurement
 				rotor::u.q = 0.0f;
 				rotor::phi = 0.0f;
 				rotor::omega = 0.0f;
-				m_l = 0.0f;
+				torque::load = 0.0f;
 
 				observer::hall = false;
 				observer::flux = false;
@@ -500,7 +500,7 @@ namespace measurement
 				rotor::u.d = 0.0f;
 				rotor::u.q = 0.0f;
 				rotor::omega = 0.0f;
-				m_l = 0.0f;
+				torque::load = 0.0f;
 
 				cycle = 0;
 				sequencer = START;

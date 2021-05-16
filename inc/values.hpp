@@ -40,11 +40,17 @@ namespace values
 	 */
 	namespace motor
 	{
-		///< electric torque
-		extern float m_el;
+		/**
+		 * motor torque values
+		 */
+		namespace torque
+		{
+			///< electric torque
+			extern float electric;
 
-		///< external load torque
-		extern float m_l;
+			///< external load torque
+			extern float load;
+		}
 
 		///< motor temperature
 		extern float temp;
