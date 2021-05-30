@@ -99,6 +99,24 @@ namespace management
 	}
 
 	/**
+	 * @namespace double pulse test data
+	 */
+	namespace double_pulse
+	{
+		///< rising edge starts the test
+		bool enable = false;
+
+		///< selected phase
+		std::uint8_t phase = 0;
+
+		///< set load time
+		float load_time = 0.0f;
+
+		///< actual on time
+		float ontime = 0.0f;
+	}
+
+	/**
 	 * motor values
 	 */
 	namespace motor
@@ -549,6 +567,13 @@ void management::thread::main(void)
 			if(measurement::Run(measure::flux, measurement::psi::Run))
 			{
 				measure::flux = false;
+				sequencer = RUN;
+			}
+			break;
+		case DOUBLE_PULSE:
+			if(!double_pulse::enable)
+			{
+				double_pulse::ontime = 0.0f;
 				sequencer = RUN;
 			}
 			break;

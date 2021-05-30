@@ -316,6 +316,35 @@ namespace control
 			// set dutys with overmodulation
 			QuadOvermodulation(u_ab, battery::u, dutys);
 
+			// double pulse test automation
+			if(management::double_pulse::enable)
+			{
+				for(std::uint8_t i = 0; i < hardware::pwm::INJECTION_CYCLES; i++)
+				{
+					dutys[i].array.fill(0.0f);
+
+					if(management::double_pulse::load_time - management::double_pulse::ontime > hardware::Tc()*0.45f)
+					{
+						dutys[i].array[management::double_pulse::phase] = 0.9f;
+
+						management::double_pulse::ontime += hardware::Tc()*0.45f;
+					}
+					else if(management::double_pulse::ontime == management::double_pulse::load_time)
+					{
+						dutys[i].array[management::double_pulse::phase] = 0.05f;	// add the test pulse
+
+						management::double_pulse::enable = false;
+					}
+					else // loading time is nearly finished
+					{
+						dutys[i].array[management::double_pulse::phase] =
+								(management::double_pulse::load_time - management::double_pulse::ontime) / hardware::Tc()*0.5f;
+
+						management::double_pulse::ontime = management::double_pulse::load_time;
+					}
+				}
+			}
+
 			hardware::pwm::Duty(dutys);
 
 			modules::freemaster::Recorder();

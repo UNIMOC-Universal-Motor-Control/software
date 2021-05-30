@@ -96,6 +96,24 @@ namespace management
 	}
 
 	/**
+	 * @namespace double pulse test data
+	 */
+	namespace double_pulse
+	{
+		///< rising edge starts the test
+		extern bool enable;
+
+		///< selected phase
+		extern std::uint8_t phase;
+
+		///< set load time
+		extern float load_time;
+
+		///< actual on time
+		extern float ontime;
+	}
+
+	/**
 	 * motor values
 	 */
 	namespace motor
@@ -180,6 +198,7 @@ namespace management
 			MEASURE_RS,
 			MEASURE_LS,
 			MEASURE_PSI,
+			DOUBLE_PULSE,
 		} sequencer;
 
 		/**
