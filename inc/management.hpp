@@ -100,8 +100,11 @@ namespace management
 	 */
 	namespace double_pulse
 	{
-		///< rising edge starts the test
+		///< when true all pwm is 0% and trigger is handled
 		extern bool enable;
+
+		///< rising edge starts the test
+		extern bool trigger;
 
 		///< selected phase
 		extern std::uint8_t phase;

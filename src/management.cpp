@@ -103,8 +103,11 @@ namespace management
 	 */
 	namespace double_pulse
 	{
-		///< rising edge starts the test
+		///< when true all pwm is 0% and trigger is handled
 		bool enable = false;
+
+		///< rising edge starts the test
+		bool trigger = false;
 
 		///< selected phase
 		std::uint8_t phase = 0;
@@ -543,6 +546,8 @@ void management::thread::main(void)
 			if(measure::resitance) sequencer = MEASURE_RS;
 			else if(measure::inductance) sequencer = MEASURE_LS;
 			else if(measure::flux) sequencer = MEASURE_PSI;
+
+			if(double_pulse::enable) sequencer = DOUBLE_PULSE;
 
 			break;
 
