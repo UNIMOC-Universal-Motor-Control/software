@@ -10103,6 +10103,8 @@
 			<member name="item5" type="CObject_ptr">ObjId2674</member>
 			<member name="item6" type="CObject_ptr">ObjId2675</member>
 			<member name="item7" type="CObject_ptr">ObjId2676</member>
+			<member name="item8" type="CObject_ptr">ObjId1379</member>
+			<member name="item9" type="CObject_ptr">ObjId1376</member>
 		</object>
 		<object name="ObjId2680" type="CObList"/>
 		<object name="ObjId2681" type="CObList"/>
@@ -10118,55 +10120,69 @@
 			<member name="forecolor" type="uint32">0x0</member>
 		</object>
 		<object name="ObjId2683" type="CObArray" length="5">
-			<member name="index0" type="CObject_ptr">ObjId2684</member>
-			<member name="index1" type="CObject_ptr">ObjId2685</member>
-			<member name="index2" type="CObject_ptr">ObjId2686</member>
-			<member name="index3" type="CObject_ptr">ObjId2687</member>
-			<member name="index4" type="CObject_ptr">ObjId2688</member>
+			<member name="index0" type="CObject_ptr">ObjId2706</member>
+			<member name="index1" type="CObject_ptr">ObjId2707</member>
+			<member name="index2" type="CObject_ptr">ObjId2708</member>
+			<member name="index3" type="CObject_ptr">ObjId2709</member>
+			<member name="index4" type="CObject_ptr">ObjId2710</member>
 		</object>
-		<object name="ObjId2684" type="CPrjItemBlock_ColInfo">
+		<object name="ObjId2706" type="CPrjItemBlock_ColInfo">
 			<member name="column_visible" type="sint32">1</member>
 			<member name="column_width" type="sint32">220</member>
 			<member name="column_ix" type="sint32">0</member>
 		</object>
-		<object name="ObjId2685" type="CPrjItemBlock_ColInfo">
+		<object name="ObjId2707" type="CPrjItemBlock_ColInfo">
 			<member name="column_visible" type="sint32">1</member>
 			<member name="column_width" type="sint32">206</member>
 			<member name="column_ix" type="sint32">1</member>
 		</object>
-		<object name="ObjId2686" type="CPrjItemBlock_ColInfo">
+		<object name="ObjId2708" type="CPrjItemBlock_ColInfo">
 			<member name="column_visible" type="sint32">0</member>
 			<member name="column_width" type="sint32">37</member>
 			<member name="column_ix" type="sint32">2</member>
 		</object>
-		<object name="ObjId2687" type="CPrjItemBlock_ColInfo">
+		<object name="ObjId2709" type="CPrjItemBlock_ColInfo">
 			<member name="column_visible" type="sint32">0</member>
 			<member name="column_width" type="sint32">70</member>
 			<member name="column_ix" type="sint32">3</member>
 		</object>
-		<object name="ObjId2688" type="CPrjItemBlock_ColInfo">
+		<object name="ObjId2710" type="CPrjItemBlock_ColInfo">
 			<member name="column_visible" type="sint32">0</member>
 			<member name="column_width" type="sint32">200</member>
 			<member name="column_ix" type="sint32">4</member>
 		</object>
 		<object name="ObjId2689" type="CMapObToObEx">
-			<member name="key0" type="CObject_ptr">ObjId1748</member>
-			<member name="value0" type="CObject_ptr">ObjId2690</member>
-			<member name="key1" type="CObject_ptr">ObjId1919</member>
-			<member name="value1" type="CObject_ptr">ObjId2692</member>
-			<member name="key2" type="CObject_ptr">ObjId2361</member>
-			<member name="value2" type="CObject_ptr">ObjId2694</member>
-			<member name="key3" type="CObject_ptr">ObjId2672</member>
-			<member name="value3" type="CObject_ptr">ObjId2696</member>
-			<member name="key4" type="CObject_ptr">ObjId2673</member>
-			<member name="value4" type="CObject_ptr">ObjId2698</member>
-			<member name="key5" type="CObject_ptr">ObjId2674</member>
-			<member name="value5" type="CObject_ptr">ObjId2700</member>
-			<member name="key6" type="CObject_ptr">ObjId2675</member>
-			<member name="value6" type="CObject_ptr">ObjId2702</member>
-			<member name="key7" type="CObject_ptr">ObjId2676</member>
-			<member name="value7" type="CObject_ptr">ObjId2704</member>
+			<member name="key0" type="CObject_ptr">ObjId1376</member>
+			<member name="value0" type="CObject_ptr">ObjId2711</member>
+			<member name="key1" type="CObject_ptr">ObjId1379</member>
+			<member name="value1" type="CObject_ptr">ObjId2713</member>
+			<member name="key2" type="CObject_ptr">ObjId1748</member>
+			<member name="value2" type="CObject_ptr">ObjId2690</member>
+			<member name="key3" type="CObject_ptr">ObjId1919</member>
+			<member name="value3" type="CObject_ptr">ObjId2692</member>
+			<member name="key4" type="CObject_ptr">ObjId2361</member>
+			<member name="value4" type="CObject_ptr">ObjId2694</member>
+			<member name="key5" type="CObject_ptr">ObjId2672</member>
+			<member name="value5" type="CObject_ptr">ObjId2696</member>
+			<member name="key6" type="CObject_ptr">ObjId2673</member>
+			<member name="value6" type="CObject_ptr">ObjId2698</member>
+			<member name="key7" type="CObject_ptr">ObjId2674</member>
+			<member name="value7" type="CObject_ptr">ObjId2700</member>
+			<member name="key8" type="CObject_ptr">ObjId2675</member>
+			<member name="value8" type="CObject_ptr">ObjId2702</member>
+			<member name="key9" type="CObject_ptr">ObjId2676</member>
+			<member name="value9" type="CObject_ptr">ObjId2704</member>
 		</object>
+		<object name="ObjId2711" type="CPrjItemBlock_VarInfo">
+			<member name="row_height" type="sint32">15</member>
+			<member name="row_cell_formats" type="CObArrayEx">ObjId2712</member>
+		</object>
+		<object name="ObjId2712" type="CObArray" length="0"/>
+		<object name="ObjId2713" type="CPrjItemBlock_VarInfo">
+			<member name="row_height" type="sint32">15</member>
+			<member name="row_cell_formats" type="CObArrayEx">ObjId2714</member>
+		</object>
+		<object name="ObjId2714" type="CObArray" length="0"/>
 		<object name="ObjId2690" type="CPrjItemBlock_VarInfo">
 			<member name="row_height" type="sint32">15</member>
 			<member name="row_cell_formats" type="CObArrayEx">ObjId2691</member>
