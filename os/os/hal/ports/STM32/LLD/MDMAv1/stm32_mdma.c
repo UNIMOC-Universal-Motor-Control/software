@@ -165,7 +165,7 @@ OSAL_IRQ_HANDLER(STM32_MDMA_HANDLER) {
  * @init
  */
 void mdmaInit(void) {
-  static MDMA_Channel_TypeDef * const ch[STM32_MDMA_CHANNELS] = {
+  static MDMA_Channel_TypeDef * const channels[STM32_MDMA_CHANNELS] = {
     MDMA_Channel0,  MDMA_Channel1,  MDMA_Channel2,  MDMA_Channel3,
     MDMA_Channel4,  MDMA_Channel5,  MDMA_Channel6,  MDMA_Channel7,
     MDMA_Channel8,  MDMA_Channel9,  MDMA_Channel10, MDMA_Channel11,
@@ -175,7 +175,7 @@ void mdmaInit(void) {
 
   mdma.allocated_mask = 0U;
   for (i = 0U; i < STM32_MDMA_CHANNELS; i++) {
-    MDMA_Channel_TypeDef *cp = ch[i];
+    MDMA_Channel_TypeDef *cp = channels[i];
     mdma.channels[i].channel        = cp;
     mdma.channels[i].func           = NULL;
     mdma.channels[i].channel->CCR   = STM32_MDMA_CCR_RESET_VALUE;
@@ -205,7 +205,7 @@ void mdmaInit(void) {
  *
  * @iclass
  */
-const stm32_mdma_channel_t *dmaChannelAllocI(uint32_t id,
+const stm32_mdma_channel_t *mdmaChannelAllocI(uint32_t id,
                                              stm32_mdmaisr_t func,
                                              void *param) {
   uint32_t i, startid, endid;
@@ -264,7 +264,7 @@ const stm32_mdma_channel_t *dmaChannelAllocI(uint32_t id,
  *
  * @api
  */
-const stm32_mdma_channel_t *dmaChannelAlloc(uint32_t id,
+const stm32_mdma_channel_t *mdmaChannelAlloc(uint32_t id,
                                             stm32_mdmaisr_t func,
                                             void *param) {
   const stm32_mdma_channel_t *mdmachp;

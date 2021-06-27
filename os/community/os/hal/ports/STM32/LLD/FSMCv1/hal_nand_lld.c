@@ -15,8 +15,8 @@
 */
 
 /**
- * @file    hal_nand_lld.c
- * @brief   NAND Driver subsystem low level driver source.
+ * @file    hal_fsmc_nand_lld.c
+ * @brief   FSMC NAND Driver subsystem low level driver source.
  *
  * @addtogroup NAND
  * @{
@@ -25,6 +25,8 @@
 #include "hal.h"
 
 #if (HAL_USE_NAND == TRUE) || defined(__DOXYGEN__)
+
+#include "hal_nand_lld.h"
 
 /*===========================================================================*/
 /* Driver local definitions.                                                 */
@@ -53,14 +55,14 @@
 /**
  * @brief   NAND1 driver identifier.
  */
-#if STM32_NAND_USE_FSMC_NAND1 || defined(__DOXYGEN__)
+#if STM32_NAND_USE_NAND1 || defined(__DOXYGEN__)
 NANDDriver NANDD1;
 #endif
 
 /**
  * @brief   NAND2 driver identifier.
  */
-#if STM32_NAND_USE_FSMC_NAND2 || defined(__DOXYGEN__)
+#if STM32_NAND_USE_NAND2 || defined(__DOXYGEN__)
 NANDDriver NANDD2;
 #endif
 
@@ -280,35 +282,35 @@ static void nand_lld_serve_transfer_end_irq(NANDDriver *nandp, uint32_t flags) {
  */
 void nand_lld_init(void) {
 
-  fsmc_init();
+  fsmcInit();
 
-#if STM32_NAND_USE_FSMC_NAND1
+#if STM32_NAND_USE_NAND1
   /* Driver initialization.*/
   nandObjectInit(&NANDD1);
   NANDD1.rxdata   = NULL;
   NANDD1.datalen  = 0;
   NANDD1.thread   = NULL;
-  NANDD1.dma      = STM32_DMA_STREAM(STM32_NAND_DMA_STREAM);
+  NANDD1.dma      = NULL;
   NANDD1.nand     = FSMCD1.nand1;
   NANDD1.map_data = (void *)FSMC_Bank2_MAP_COMMON_DATA;
-  NANDD1.map_cmd  = (uint16_t *)FSMC_Bank2_MAP_COMMON_CMD;
-  NANDD1.map_addr = (uint16_t *)FSMC_Bank2_MAP_COMMON_ADDR;
+  NANDD1.map_cmd  = (uint8_t *)FSMC_Bank2_MAP_COMMON_CMD;
+  NANDD1.map_addr = (uint8_t *)FSMC_Bank2_MAP_COMMON_ADDR;
   NANDD1.bb_map   = NULL;
-#endif /* STM32_NAND_USE_FSMC_NAND1 */
+#endif /* STM32_NAND_USE_NAND1 */
 
-#if STM32_NAND_USE_FSMC_NAND2
+#if STM32_NAND_USE_NAND2
   /* Driver initialization.*/
   nandObjectInit(&NANDD2);
   NANDD2.rxdata   = NULL;
   NANDD2.datalen  = 0;
   NANDD2.thread   = NULL;
-  NANDD2.dma      = STM32_DMA_STREAM(STM32_NAND_DMA_STREAM);
+  NANDD2.dma      = NULL;
   NANDD2.nand     = FSMCD1.nand2;
   NANDD2.map_data = (void *)FSMC_Bank3_MAP_COMMON_DATA;
-  NANDD2.map_cmd  = (uint16_t *)FSMC_Bank3_MAP_COMMON_CMD;
-  NANDD2.map_addr = (uint16_t *)FSMC_Bank3_MAP_COMMON_ADDR;
+  NANDD2.map_cmd  = (uint8_t *)FSMC_Bank3_MAP_COMMON_CMD;
+  NANDD2.map_addr = (uint8_t *)FSMC_Bank3_MAP_COMMON_ADDR;
   NANDD2.bb_map   = NULL;
-#endif /* STM32_NAND_USE_FSMC_NAND2 */
+#endif /* STM32_NAND_USE_NAND2 */
 }
 
 /**
@@ -320,19 +322,18 @@ void nand_lld_init(void) {
  */
 void nand_lld_start(NANDDriver *nandp) {
 
-  bool b;
   uint32_t dmasize;
   uint32_t pcr_bus_width;
 
   if (FSMCD1.state == FSMC_STOP)
-    fsmc_start(&FSMCD1);
+    fsmcStart(&FSMCD1);
 
   if (nandp->state == NAND_STOP) {
-    b = dmaStreamAllocate(nandp->dma,
-                          STM32_EMC_FSMC1_IRQ_PRIORITY,
-                          (stm32_dmaisr_t)nand_lld_serve_transfer_end_irq,
-                          (void *)nandp);
-    osalDbgAssert(!b, "stream already allocated");
+    nandp->dma = dmaStreamAlloc(STM32_NAND_DMA_STREAM,
+                       STM32_EMC_FSMC1_IRQ_PRIORITY,
+                       (stm32_dmaisr_t)nand_lld_serve_transfer_end_irq,
+                       (void *)nandp);
+    osalDbgAssert(nandp->dma != NULL, "stream already allocated");
 
 #if AHB_TRANSACTION_WIDTH == 4
     dmasize = STM32_DMA_CR_PSIZE_WORD | STM32_DMA_CR_MSIZE_WORD;
@@ -345,7 +346,7 @@ void nand_lld_start(NANDDriver *nandp) {
 #endif
 
     nandp->dmamode = STM32_DMA_CR_CHSEL(NAND_DMA_CHANNEL) |
-                     STM32_DMA_CR_PL(STM32_NAND_NAND1_DMA_PRIORITY) |
+                     STM32_DMA_CR_PL(STM32_NAND_DMA_PRIORITY) |
                      dmasize |
                      STM32_DMA_CR_DMEIE |
                      STM32_DMA_CR_TEIE |
@@ -377,7 +378,7 @@ void nand_lld_start(NANDDriver *nandp) {
 void nand_lld_stop(NANDDriver *nandp) {
 
   if (nandp->state == NAND_READY) {
-    dmaStreamRelease(nandp->dma);
+    dmaStreamFree(nandp->dma);
     nandp->nand->PCR &= ~FSMC_PCR_PBKEN;
     nand_ready_isr_disable(nandp);
     nandp->isr_handler = NULL;
@@ -407,9 +408,12 @@ void nand_lld_read_data(NANDDriver *nandp, uint16_t *data, size_t datalen,
 
   set_16bit_bus(nandp);
   nand_lld_write_cmd(nandp, NAND_CMD_READ0);
+  __DSB();
   nand_lld_write_addr(nandp, addr, addrlen);
+  __DSB();
   osalSysLock();
   nand_lld_write_cmd(nandp, NAND_CMD_READ0_CONFIRM);
+  __DSB();
   set_8bit_bus(nandp);
 
   /* Here NAND asserts busy signal and starts transferring from memory
@@ -457,8 +461,10 @@ uint8_t nand_lld_write_data(NANDDriver *nandp, const uint16_t *data,
 
   set_16bit_bus(nandp);
   nand_lld_write_cmd(nandp, NAND_CMD_WRITE);
+  __DSB();
   osalSysLock();
   nand_lld_write_addr(nandp, addr, addrlen);
+  __DSB();
   set_8bit_bus(nandp);
 
   /* Now start DMA transfer to NAND buffer and put thread in sleep state.
@@ -524,9 +530,12 @@ uint8_t nand_lld_erase(NANDDriver *nandp, uint8_t *addr, size_t addrlen) {
 
   set_16bit_bus(nandp);
   nand_lld_write_cmd(nandp, NAND_CMD_ERASE);
+  __DSB();
   nand_lld_write_addr(nandp, addr, addrlen);
+  __DSB();
   osalSysLock();
   nand_lld_write_cmd(nandp, NAND_CMD_ERASE_CONFIRM);
+  __DSB();
   set_8bit_bus(nandp);
 
   nand_lld_suspend_thread(nandp);
@@ -578,10 +587,37 @@ uint8_t nand_lld_read_status(NANDDriver *nandp) {
 
   set_16bit_bus(nandp);
   nand_lld_write_cmd(nandp, NAND_CMD_STATUS);
+  __DSB();
   set_8bit_bus(nandp);
   status = nandp->map_data[0];
 
   return status & 0xFF;
+}
+
+/**
+ * @brief   Read ID of the nand flash
+ *
+ * @param[in] nandp         pointer to the @p NANDDriver object
+ *
+ * @return    4 bytes ID of the nandflash
+ *
+ * @notapi
+ */
+uint32_t nand_lld_read_id(NANDDriver *nandp) {
+
+  uint8_t addr;
+  uint32_t data;
+
+  //set_16bit_bus(nandp);
+  nand_lld_write_cmd(nandp, NAND_CMD_READID);
+  /* Address sent to read ID based on ONFI code */
+  addr = 0x20;
+  nand_lld_write_addr(nandp, &addr, 1);
+  //set_8bit_bus(nandp);
+  __DSB();
+  data = *(uint32_t *)(&nandp->map_data[0]);
+
+  return data;
 }
 
 #endif /* HAL_USE_NAND */

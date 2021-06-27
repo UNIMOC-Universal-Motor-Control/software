@@ -30,6 +30,69 @@
 /* Driver local definitions.                                                 */
 /*===========================================================================*/
 
+/* Filter Standard Element Size in bytes.*/
+#define SRAMCAN_FLS_SIZE                (1U * 4U)
+
+/* Filter Extended Element Size in bytes.*/
+#define SRAMCAN_FLE_SIZE                (2U * 4U)
+
+/* RX FIFO 0 Elements Size in bytes.*/
+#define SRAMCAN_RF0_SIZE                (18U * 4U)
+
+/* RX FIFO 1 Elements Size in bytes.*/
+#define SRAMCAN_RF1_SIZE                (18U * 4U)
+
+/* RX Buffer Size in bytes.*/
+#define SRAMCAN_RB_SIZE                 (18U * 4U)
+
+/* TX Event FIFO Elements Size in bytes.*/
+#define SRAMCAN_TEF_SIZE                (2U * 4U)
+
+/* TX FIFO/Queue Elements Size in bytes.*/
+#define SRAMCAN_TB_SIZE                 (18U * 4U)
+
+/* Trigger Memory Size in bytes.*/
+#define SRAMCAN_TM_SIZE                 (2U * 4U)
+
+/* Filter List Standard Start Address.*/
+#define SRAMCAN_FLSSA ((uint32_t)0)
+
+/* Filter List Extended Start Address.*/
+#define SRAMCAN_FLESA ((uint32_t)(SRAMCAN_FLSSA +                           \
+                                  (STM32_FDCAN_FLS_NBR * SRAMCAN_FLS_SIZE)))
+
+/* RX FIFO 0 Start Address.*/
+#define SRAMCAN_RF0SA ((uint32_t)(SRAMCAN_FLESA +                           \
+                                  (STM32_FDCAN_FLE_NBR * SRAMCAN_FLE_SIZE)))
+
+/* RX FIFO 1 Start Address.*/
+#define SRAMCAN_RF1SA ((uint32_t)(SRAMCAN_RF0SA +                           \
+                                  (STM32_FDCAN_RF0_NBR * SRAMCAN_RF0_SIZE)))
+
+/* RX Buffer Start Address.*/
+#define SRAMCAN_RBSA  ((uint32_t)(SRAMCAN_RF1SA +                           \
+                                  (STM32_FDCAN_RF1_NBR * SRAMCAN_RF1_SIZE)))
+
+/* TX Event FIFO Start Address.*/
+#define SRAMCAN_TEFSA ((uint32_t)(SRAMCAN_RBSA +                            \
+                                  (STM32_FDCAN_RB_NBR * SRAMCAN_RB_SIZE)))
+
+/* TX Buffers Start Address.*/
+#define SRAMCAN_TBSA  ((uint32_t)(SRAMCAN_TEFSA +                           \
+                                  (STM32_FDCAN_TEF_NBR * SRAMCAN_TEF_SIZE)))
+
+/* Trigger Memory Start Address.*/
+#define SRAMCAN_TMSA  ((uint32_t)(SRAMCAN_TBSA +                            \
+                                  (STM32_FDCAN_TB_NBR * SRAMCAN_TB_SIZE)))
+
+/* Message RAM size.*/
+#define SRAMCAN_SIZE  ((uint32_t)(SRAMCAN_TMSA +                            \
+                                  (STM32_FDCAN_TM_NBR * SRAMCAN_TM_SIZE)))
+
+
+#define TIMEOUT_INIT_MS                 250U
+#define TIMEOUT_CSA_MS                  250U
+
 /*===========================================================================*/
 /* Driver exported variables.                                                */
 /*===========================================================================*/
@@ -44,551 +107,80 @@ CANDriver CAND1;
 CANDriver CAND2;
 #endif
 
+/** @brief CAN3 driver identifier.*/
+#if STM32_CAN_USE_FDCAN3 || defined(__DOXYGEN__)
+CANDriver CAND3;
+#endif
+
 /*===========================================================================*/
 /* Driver local variables and types.                                         */
 /*===========================================================================*/
+
+static const uint8_t dlc_to_bytes[] = {
+  0U,  1U,  2U,  3U,  4U,  5U,  6U,  7U,
+  8U, 12U, 16U, 20U, 24U, 32U, 48U, 64U
+};
+
+static uint32_t canclk;
 
 /*===========================================================================*/
 /* Driver local functions.                                                   */
 /*===========================================================================*/
 
-/**
- * @brief   Programs the filters of CAN 1 and CAN 2.
- *
- * @param[in] canp      pointer to the @p CANDriver object
- * @param[in] can2sb    number of the first filter assigned to CAN2
- * @param[in] num       number of entries in the filters array, if zero then
- *                      a default filter is programmed
- * @param[in] cfp       pointer to the filters array, can be @p NULL if
- *                      (num == 0)
- *
- * @notapi
- */
-static void can_lld_set_filters(CANDriver* canp,
-                                uint32_t can2sb,
-                                uint32_t num,
-                                const CANFilter *cfp) {
+static bool fdcan_clock_stop(CANDriver *canp) {
+  systime_t start, end;
 
-#if STM32_CAN_USE_CAN2
-  if (canp == &CAND2) {
-    /* Set handle to CAN1, because CAN1 manages the filters of CAN2.*/
-    canp = &CAND1;
-  }
-#endif
-
-  /* Temporarily enabling CAN clock.*/
-#if STM32_CAN_USE_CAN1
-  if (canp == &CAND1) {
-    rccEnableCAN1(true);
-    /* Filters initialization.*/
-    canp->can->FMR = (canp->can->FMR & 0xFFFF0000) | CAN_FMR_FINIT;
-    canp->can->FMR = (canp->can->FMR & 0xFFFF0000) | (can2sb << 8) | CAN_FMR_FINIT;
-  }
-#endif
-
-#if STM32_CAN_USE_CAN3
-  if (canp == &CAND3) {
-    rccEnableCAN3(true);
-    /* Filters initialization.*/
-    canp->can->FMR = (canp->can->FMR & 0xFFFF0000) | CAN_FMR_FINIT;
-  }
-#endif
-
-  if (num > 0) {
-    uint32_t i, fmask;
-
-    /* All filters cleared.*/
-    canp->can->FA1R = 0;
-    canp->can->FM1R = 0;
-    canp->can->FS1R = 0;
-    canp->can->FFA1R = 0;
-
-#if STM32_CAN_USE_CAN1
-    if (canp == &CAND1) {
-      for (i = 0; i < STM32_CAN_MAX_FILTERS; i++) {
-        canp->can->sFilterRegister[i].FR1 = 0;
-        canp->can->sFilterRegister[i].FR2 = 0;
-      }
+  /* Requesting clock stop then waiting for it to happen.*/
+  canp->fdcan->CCCR |= FDCAN_CCCR_CSR;
+  start = osalOsGetSystemTimeX();
+  end = osalTimeAddX(start, TIME_MS2I(TIMEOUT_INIT_MS));
+  while ((canp->fdcan->CCCR & FDCAN_CCCR_CSA) != 0U) {
+    if (!osalTimeIsInRangeX(osalOsGetSystemTimeX(), start, end)) {
+      return true;
     }
-#endif
+    osalThreadSleepS(1);
+  }
 
-#if STM32_CAN_USE_CAN3
-    if (canp == &CAND3) {
-      for (i = 0; i < STM32_CAN3_MAX_FILTERS; i++) {
-        canp->can->sFilterRegister[i].FR1 = 0;
-        canp->can->sFilterRegister[i].FR2 = 0;
-      }
-    }
-#endif
-
-    /* Scanning the filters array.*/
-    for (i = 0; i < num; i++) {
-      fmask = 1 << cfp->filter;
-      if (cfp->mode)
-        canp->can->FM1R |= fmask;
-      if (cfp->scale)
-        canp->can->FS1R |= fmask;
-      if (cfp->assignment)
-        canp->can->FFA1R |= fmask;
-      canp->can->sFilterRegister[cfp->filter].FR1 = cfp->register1;
-      canp->can->sFilterRegister[cfp->filter].FR2 = cfp->register2;
-      canp->can->FA1R |= fmask;
-      cfp++;
-    }
-  }
-  else {
-    /* Setting up a single default filter that enables everything for both
-       CANs.*/
-    canp->can->sFilterRegister[0].FR1 = 0;
-    canp->can->sFilterRegister[0].FR2 = 0;
-#if STM32_CAN_USE_CAN2
-    if (canp == &CAND1) {
-      canp->can->sFilterRegister[can2sb].FR1 = 0;
-      canp->can->sFilterRegister[can2sb].FR2 = 0;
-    }
-#endif
-    canp->can->FM1R = 0;
-    canp->can->FFA1R = 0;
-    canp->can->FS1R = 1;
-    canp->can->FA1R = 1;
-#if STM32_CAN_USE_CAN2
-    if (canp == &CAND1) {
-      canp->can->FS1R |= 1 << can2sb;
-      canp->can->FA1R |= 1 << can2sb;
-    }
-#endif
-  }
-  canp->can->FMR &= ~CAN_FMR_FINIT;
-
-  /* Clock disabled, it will be enabled again in can_lld_start().*/
-  /* Temporarily enabling CAN clock.*/
-#if STM32_CAN_USE_CAN1
-  if (canp == &CAND1) {
-    rccDisableCAN1();
-  }
-#endif
-#if STM32_CAN_USE_CAN3
-  if (canp == &CAND3) {
-    rccDisableCAN3();
-  }
-#endif
+  return false;
 }
 
-/**
- * @brief   Common TX ISR handler.
- *
- * @param[in] canp      pointer to the @p CANDriver object
- *
- * @notapi
- */
-static void can_lld_tx_handler(CANDriver *canp) {
-  uint32_t tsr;
-  eventflags_t flags;
+static bool fdcan_init_mode(CANDriver *canp) {
+  systime_t start, end;
 
-  /* Clearing IRQ sources.*/
-  tsr = canp->can->TSR;
-  canp->can->TSR = tsr;
-
-  /* Flags to be signaled through the TX event source.*/
-  flags = 0U;
-
-  /* Checking mailbox 0.*/
-  if ((tsr & CAN_TSR_RQCP0) != 0U) {
-    if ((tsr & (CAN_TSR_ALST0 | CAN_TSR_TERR0)) != 0U) {
-      flags |= CAN_MAILBOX_TO_MASK(1U) << 16U;
+  /* Going in initialization mode then waiting for it to happen.*/
+  canp->fdcan->CCCR |= FDCAN_CCCR_INIT;
+  start = osalOsGetSystemTimeX();
+  end = osalTimeAddX(start, TIME_MS2I(TIMEOUT_INIT_MS));
+  while ((canp->fdcan->CCCR & FDCAN_CCCR_INIT) == 0U) {
+    if (!osalTimeIsInRangeX(osalOsGetSystemTimeX(), start, end)) {
+      return true;
     }
-    else {
-      flags |= CAN_MAILBOX_TO_MASK(1U);
-    }
+    osalThreadSleepS(1);
   }
 
-  /* Checking mailbox 1.*/
-  if ((tsr & CAN_TSR_RQCP1) != 0U) {
-    if ((tsr & (CAN_TSR_ALST1 | CAN_TSR_TERR1)) != 0U) {
-      flags |= CAN_MAILBOX_TO_MASK(2U) << 16U;
-    }
-    else {
-      flags |= CAN_MAILBOX_TO_MASK(2U);
-    }
-  }
-
-  /* Checking mailbox 2.*/
-  if ((tsr & CAN_TSR_RQCP2) != 0U) {
-    if ((tsr & (CAN_TSR_ALST2 | CAN_TSR_TERR2)) != 0U) {
-      flags |= CAN_MAILBOX_TO_MASK(3U) << 16U;
-    }
-    else {
-      flags |= CAN_MAILBOX_TO_MASK(3U);
-    }
-  }
-
-  /* Signaling flags and waking up threads waiting for a transmission slot.*/
-  _can_tx_empty_isr(canp, flags);
+  return false;
 }
 
-/**
- * @brief   Common RX0 ISR handler.
- *
- * @param[in] canp      pointer to the @p CANDriver object
- *
- * @notapi
- */
-static void can_lld_rx0_handler(CANDriver *canp) {
-  uint32_t rf0r;
+static bool fdcan_active_mode(CANDriver *canp) {
+  systime_t start, end;
 
-  rf0r = canp->can->RF0R;
-  if ((rf0r & CAN_RF0R_FMP0) > 0) {
-    /* No more receive events until the queue 0 has been emptied.*/
-    canp->can->IER &= ~CAN_IER_FMPIE0;
-    _can_rx_full_isr(canp, CAN_MAILBOX_TO_MASK(1U));
+  /* Going in initialization mode then waiting for it to happen.*/
+  canp->fdcan->CCCR &= ~FDCAN_CCCR_INIT;
+  start = osalOsGetSystemTimeX();
+  end = osalTimeAddX(start, TIME_MS2I(TIMEOUT_INIT_MS));
+  while ((canp->fdcan->CCCR & FDCAN_CCCR_INIT) != 0U) {
+    if (!osalTimeIsInRangeX(osalOsGetSystemTimeX(), start, end)) {
+      return true;
+    }
+    osalThreadSleepS(1);
   }
-  if ((rf0r & CAN_RF0R_FOVR0) > 0) {
-    /* Overflow events handling.*/
-    canp->can->RF0R = CAN_RF0R_FOVR0;
-    _can_error_isr(canp, CAN_OVERFLOW_ERROR);
-  }
-}
 
-/**
- * @brief   Common RX1 ISR handler.
- *
- * @param[in] canp      pointer to the @p CANDriver object
- *
- * @notapi
- */
-static void can_lld_rx1_handler(CANDriver *canp) {
-  uint32_t rf1r;
-
-  rf1r = canp->can->RF1R;
-  if ((rf1r & CAN_RF1R_FMP1) > 0) {
-    /* No more receive events until the queue 0 has been emptied.*/
-    canp->can->IER &= ~CAN_IER_FMPIE1;
-    _can_rx_full_isr(canp, CAN_MAILBOX_TO_MASK(2U));
-  }
-  if ((rf1r & CAN_RF1R_FOVR1) > 0) {
-    /* Overflow events handling.*/
-    canp->can->RF1R = CAN_RF1R_FOVR1;
-    _can_error_isr(canp, CAN_OVERFLOW_ERROR);
-  }
-}
-
-/**
- * @brief   Common SCE ISR handler.
- *
- * @param[in] canp      pointer to the @p CANDriver object
- *
- * @notapi
- */
-static void can_lld_sce_handler(CANDriver *canp) {
-  uint32_t msr;
-
-  /* Clearing IRQ sources.*/
-  msr = canp->can->MSR;
-  canp->can->MSR = msr;
-
-  /* Wakeup event.*/
-#if CAN_USE_SLEEP_MODE
-  if (msr & CAN_MSR_WKUI) {
-    canp->state = CAN_READY;
-    canp->can->MCR &= ~CAN_MCR_SLEEP;
-    _can_wakeup_isr(canp);
-  }
-#endif /* CAN_USE_SLEEP_MODE */
-  /* Error event.*/
-  if (msr & CAN_MSR_ERRI) {
-    eventflags_t flags;
-    uint32_t esr = canp->can->ESR;
-
-#if STM32_CAN_REPORT_ALL_ERRORS
-    flags = (eventflags_t)(esr & 7);
-    if ((esr & CAN_ESR_LEC) > 0)
-      flags |= CAN_FRAMING_ERROR;
-#else
-    flags = 0;
-#endif
-
-    /* The content of the ESR register is copied unchanged in the upper
-       half word of the listener flags mask.*/
-    _can_error_isr(canp, flags | (eventflags_t)(esr << 16U));
-  }
+  return false;
 }
 
 /*===========================================================================*/
 /* Driver interrupt handlers.                                                */
 /*===========================================================================*/
-
-#if STM32_CAN_USE_CAN1 || defined(__DOXYGEN__)
-#if defined(STM32_CAN1_UNIFIED_HANDLER)
-/**
- * @brief   CAN1 unified interrupt handler.
- *
- * @isr
- */
-OSAL_IRQ_HANDLER(STM32_CAN1_UNIFIED_HANDLER) {
-
-  OSAL_IRQ_PROLOGUE();
-
-  can_lld_tx_handler(&CAND1);
-  can_lld_rx0_handler(&CAND1);
-  can_lld_rx1_handler(&CAND1);
-  can_lld_sce_handler(&CAND1);
-
-  OSAL_IRQ_EPILOGUE();
-}
-#else /* !defined(STM32_CAN1_UNIFIED_HANDLER) */
-
-#if !defined(STM32_CAN1_TX_HANDLER)
-#error "STM32_CAN1_TX_HANDLER not defined"
-#endif
-#if !defined(STM32_CAN1_RX0_HANDLER)
-#error "STM32_CAN1_RX0_HANDLER not defined"
-#endif
-#if !defined(STM32_CAN1_RX1_HANDLER)
-#error "STM32_CAN1_RX1_HANDLER not defined"
-#endif
-#if !defined(STM32_CAN1_SCE_HANDLER)
-#error "STM32_CAN1_SCE_HANDLER not defined"
-#endif
-
-/**
- * @brief   CAN1 TX interrupt handler.
- *
- * @isr
- */
-OSAL_IRQ_HANDLER(STM32_CAN1_TX_HANDLER) {
-
-  OSAL_IRQ_PROLOGUE();
-
-  can_lld_tx_handler(&CAND1);
-
-  OSAL_IRQ_EPILOGUE();
-}
-
-/**
- * @brief   CAN1 RX0 interrupt handler.
- *
- * @isr
- */
-OSAL_IRQ_HANDLER(STM32_CAN1_RX0_HANDLER) {
-
-  OSAL_IRQ_PROLOGUE();
-
-  can_lld_rx0_handler(&CAND1);
-
-  OSAL_IRQ_EPILOGUE();
-}
-
-/**
- * @brief   CAN1 RX1 interrupt handler.
- *
- * @isr
- */
-OSAL_IRQ_HANDLER(STM32_CAN1_RX1_HANDLER) {
-
-  OSAL_IRQ_PROLOGUE();
-
-  can_lld_rx1_handler(&CAND1);
-
-  OSAL_IRQ_EPILOGUE();
-}
-
-/**
- * @brief   CAN1 SCE interrupt handler.
- *
- * @isr
- */
-OSAL_IRQ_HANDLER(STM32_CAN1_SCE_HANDLER) {
-
-  OSAL_IRQ_PROLOGUE();
-
-  can_lld_sce_handler(&CAND1);
-
-  OSAL_IRQ_EPILOGUE();
-}
-#endif /* !defined(STM32_CAN1_UNIFIED_HANDLER) */
-#endif /* STM32_CAN_USE_CAN1 */
-
-#if STM32_CAN_USE_CAN2 || defined(__DOXYGEN__)
-#if defined(STM32_CAN2_UNIFIED_HANDLER)
-/**
- * @brief   CAN1 unified interrupt handler.
- *
- * @isr
- */
-OSAL_IRQ_HANDLER(STM32_CAN2_UNIFIED_HANDLER) {
-
-  OSAL_IRQ_PROLOGUE();
-
-  can_lld_tx_handler(&CAND2);
-  can_lld_rx0_handler(&CAND2);
-  can_lld_rx1_handler(&CAND2);
-  can_lld_sce_handler(&CAND2);
-
-  OSAL_IRQ_EPILOGUE();
-}
-#else /* !defined(STM32_CAN2_UNIFIED_HANDLER) */
-
-#if !defined(STM32_CAN1_TX_HANDLER)
-#error "STM32_CAN1_TX_HANDLER not defined"
-#endif
-#if !defined(STM32_CAN1_RX0_HANDLER)
-#error "STM32_CAN1_RX0_HANDLER not defined"
-#endif
-#if !defined(STM32_CAN1_RX1_HANDLER)
-#error "STM32_CAN1_RX1_HANDLER not defined"
-#endif
-#if !defined(STM32_CAN1_SCE_HANDLER)
-#error "STM32_CAN1_SCE_HANDLER not defined"
-#endif
-
-/**
- * @brief   CAN2 TX interrupt handler.
- *
- * @isr
- */
-OSAL_IRQ_HANDLER(STM32_CAN2_TX_HANDLER) {
-
-  OSAL_IRQ_PROLOGUE();
-
-  can_lld_tx_handler(&CAND2);
-
-  OSAL_IRQ_EPILOGUE();
-}
-
-/**
- * @brief   CAN2 RX0 interrupt handler.
- *
- * @isr
- */
-OSAL_IRQ_HANDLER(STM32_CAN2_RX0_HANDLER) {
-
-  OSAL_IRQ_PROLOGUE();
-
-  can_lld_rx0_handler(&CAND2);
-
-  OSAL_IRQ_EPILOGUE();
-}
-
-/**
- * @brief   CAN2 RX1 interrupt handler.
- *
- * @isr
- */
-OSAL_IRQ_HANDLER(STM32_CAN2_RX1_HANDLER) {
-
-  OSAL_IRQ_PROLOGUE();
-
-  can_lld_rx1_handler(&CAND2);
-
-  OSAL_IRQ_EPILOGUE();
-}
-
-/**
- * @brief   CAN2 SCE interrupt handler.
- *
- * @isr
- */
-OSAL_IRQ_HANDLER(STM32_CAN2_SCE_HANDLER) {
-
-  OSAL_IRQ_PROLOGUE();
-
-  can_lld_sce_handler(&CAND2);
-
-  OSAL_IRQ_EPILOGUE();
-}
-#endif /* !defined(STM32_CAN2_UNIFIED_HANDLER) */
-#endif /* STM32_CAN_USE_CAN2 */
-
-#if STM32_CAN_USE_CAN3 || defined(__DOXYGEN__)
-#if defined(STM32_CAN3_UNIFIED_HANDLER)
-/**
- * @brief   CAN1 unified interrupt handler.
- *
- * @isr
- */
-OSAL_IRQ_HANDLER(STM32_CAN3_UNIFIED_HANDLER) {
-
-  OSAL_IRQ_PROLOGUE();
-
-  can_lld_tx_handler(&CAND3);
-  can_lld_rx0_handler(&CAND3);
-  can_lld_rx1_handler(&CAND3);
-  can_lld_sce_handler(&CAND3);
-
-  OSAL_IRQ_EPILOGUE();
-}
-#else /* !defined(STM32_CAN3_UNIFIED_HANDLER) */
-
-#if !defined(STM32_CAN3_TX_HANDLER)
-#error "STM32_CAN3_TX_HANDLER not defined"
-#endif
-#if !defined(STM32_CAN3_RX0_HANDLER)
-#error "STM32_CAN3_RX0_HANDLER not defined"
-#endif
-#if !defined(STM32_CAN3_RX1_HANDLER)
-#error "STM32_CAN3_RX1_HANDLER not defined"
-#endif
-#if !defined(STM32_CAN3_SCE_HANDLER)
-#error "STM32_CAN3_SCE_HANDLER not defined"
-#endif
-
-/**
- * @brief   CAN3 TX interrupt handler.
- *
- * @isr
- */
-OSAL_IRQ_HANDLER(STM32_CAN3_TX_HANDLER) {
-
-  OSAL_IRQ_PROLOGUE();
-
-  can_lld_tx_handler(&CAND3);
-
-  OSAL_IRQ_EPILOGUE();
-}
-
-/**
- * @brief   CAN3 RX0 interrupt handler.
- *
- * @isr
- */
-OSAL_IRQ_HANDLER(STM32_CAN3_RX0_HANDLER) {
-
-  OSAL_IRQ_PROLOGUE();
-
-  can_lld_rx0_handler(&CAND3);
-
-  OSAL_IRQ_EPILOGUE();
-}
-
-/**
- * @brief   CAN1 RX3 interrupt handler.
- *
- * @isr
- */
-OSAL_IRQ_HANDLER(STM32_CAN3_RX1_HANDLER) {
-
-  OSAL_IRQ_PROLOGUE();
-
-  can_lld_rx1_handler(&CAND3);
-
-  OSAL_IRQ_EPILOGUE();
-}
-
-/**
- * @brief   CAN1 SCE interrupt handler.
- *
- * @isr
- */
-OSAL_IRQ_HANDLER(STM32_CAN3_SCE_HANDLER) {
-
-  OSAL_IRQ_PROLOGUE();
-
-  can_lld_sce_handler(&CAND3);
-
-  OSAL_IRQ_EPILOGUE();
-}
-#endif /* !defined(STM32_CAN1_UNIFIED_HANDLER) */
-#endif /* STM32_CAN_USE_CAN1 */
 
 /*===========================================================================*/
 /* Driver exported functions.                                                */
@@ -601,61 +193,30 @@ OSAL_IRQ_HANDLER(STM32_CAN3_SCE_HANDLER) {
  */
 void can_lld_init(void) {
 
-#if STM32_CAN_USE_CAN1
+  canclk = 0U;
+
+  /* Unit reset.*/
+  rccResetFDCAN();
+
+#if STM32_CAN_USE_FDCAN1
   /* Driver initialization.*/
   canObjectInit(&CAND1);
-  CAND1.can = CAN1;
-#if defined(STM32_CAN1_UNIFIED_NUMBER)
-    nvicEnableVector(STM32_CAN1_UNIFIED_NUMBER, STM32_CAN_CAN1_IRQ_PRIORITY);
-#else
-    nvicEnableVector(STM32_CAN1_TX_NUMBER, STM32_CAN_CAN1_IRQ_PRIORITY);
-    nvicEnableVector(STM32_CAN1_RX0_NUMBER, STM32_CAN_CAN1_IRQ_PRIORITY);
-    nvicEnableVector(STM32_CAN1_RX1_NUMBER, STM32_CAN_CAN1_IRQ_PRIORITY);
-    nvicEnableVector(STM32_CAN1_SCE_NUMBER, STM32_CAN_CAN1_IRQ_PRIORITY);
-#endif
+  CAND1.fdcan = FDCAN1;
+  CAND1.ram_base = (uint32_t *)(SRAMCAN_BASE + 0U * SRAMCAN_SIZE);
 #endif
 
-#if STM32_CAN_USE_CAN2
+#if STM32_CAN_USE_FDCAN2
   /* Driver initialization.*/
   canObjectInit(&CAND2);
-  CAND2.can = CAN2;
-#if defined(STM32_CAN2_UNIFIED_NUMBER)
-    nvicEnableVector(STM32_CAN2_UNIFIED_NUMBER, STM32_CAN_CAN2_IRQ_PRIORITY);
-#else
-    nvicEnableVector(STM32_CAN2_TX_NUMBER, STM32_CAN_CAN2_IRQ_PRIORITY);
-    nvicEnableVector(STM32_CAN2_RX0_NUMBER, STM32_CAN_CAN2_IRQ_PRIORITY);
-    nvicEnableVector(STM32_CAN2_RX1_NUMBER, STM32_CAN_CAN2_IRQ_PRIORITY);
-    nvicEnableVector(STM32_CAN2_SCE_NUMBER, STM32_CAN_CAN2_IRQ_PRIORITY);
-#endif
+  CAND2.fdcan = FDCAN2;
+  CAND2.ram_base = (uint32_t *)(SRAMCAN_BASE + 1U * SRAMCAN_SIZE);
 #endif
 
-#if STM32_CAN_USE_CAN3
+#if STM32_CAN_USE_FDCAN3
   /* Driver initialization.*/
   canObjectInit(&CAND3);
-  CAND3.can = CAN3;
-#if defined(STM32_CAN3_UNIFIED_NUMBER)
-    nvicEnableVector(STM32_CAN3_UNIFIED_NUMBER, STM32_CAN_CAN3_IRQ_PRIORITY);
-#else
-    nvicEnableVector(STM32_CAN3_TX_NUMBER, STM32_CAN_CAN3_IRQ_PRIORITY);
-    nvicEnableVector(STM32_CAN3_RX0_NUMBER, STM32_CAN_CAN3_IRQ_PRIORITY);
-    nvicEnableVector(STM32_CAN3_RX1_NUMBER, STM32_CAN_CAN3_IRQ_PRIORITY);
-    nvicEnableVector(STM32_CAN3_SCE_NUMBER, STM32_CAN_CAN3_IRQ_PRIORITY);
-#endif
-#endif
-
-  /* Filters initialization.*/
-#if STM32_CAN_USE_CAN1
-#if STM32_HAS_CAN2
-  can_lld_set_filters(&CAND1, STM32_CAN_MAX_FILTERS / 2, 0, NULL);
-#else
-  can_lld_set_filters(&CAND1, STM32_CAN_MAX_FILTERS, 0, NULL);
-#endif
-#endif
-
-#if STM32_HAS_CAN3
-#if STM32_CAN_USE_CAN3
-  can_lld_set_filters(&CAND3, STM32_CAN3_MAX_FILTERS, 0, NULL);
-#endif
+  CAND3.fdcan = FDCAN3;
+  CAND3.ram_base = (uint32_t *)(SRAMCAN_BASE + 2U * SRAMCAN_SIZE);
 #endif
 }
 
@@ -663,50 +224,83 @@ void can_lld_init(void) {
  * @brief   Configures and activates the CAN peripheral.
  *
  * @param[in] canp      pointer to the @p CANDriver object
+ * @return              The operation result.
+ * @retval false        if the operation succeeded.
+ * @retval true         if the operation failed.
  *
  * @notapi
  */
-void can_lld_start(CANDriver *canp) {
+bool can_lld_start(CANDriver *canp) {
 
   /* Clock activation.*/
-#if STM32_CAN_USE_CAN1
+  rccEnableFDCAN(true);
+
+  /* If it is the first activation then performing some extra
+     initializations.*/
+  if (canclk == 0U) {
+    for (uint32_t *wp = canp->ram_base;
+         wp < canp->ram_base + SRAMCAN_SIZE;
+         wp += 1U) {
+      *wp = (uint32_t)0U;
+    }
+  }
+
+#if STM32_CAN_USE_FDCAN1
   if (&CAND1 == canp) {
-    rccEnableCAN1(true);
+    canclk |= 1U;
   }
 #endif
 
-#if STM32_CAN_USE_CAN2
+#if STM32_CAN_USE_FDCAN2
   if (&CAND2 == canp) {
-    rccEnableCAN1(true);    /* CAN 2 requires CAN1, so enabling it first.*/
-    rccEnableCAN2(true);
+    canclk |= 2U;
   }
 #endif
 
-#if STM32_CAN_USE_CAN3
+#if STM32_CAN_USE_FDCAN3
   if (&CAND3 == canp) {
-    rccEnableCAN3(true);
+    canclk |= 4U;
   }
 #endif
 
-  /* Configuring CAN. */
-  canp->can->MCR = CAN_MCR_INRQ;
-  while ((canp->can->MSR & CAN_MSR_INAK) == 0)
-    osalThreadSleepS(1);
-  canp->can->BTR = canp->config->btr;
-  canp->can->MCR = canp->config->mcr;
+  /* Requesting clock stop.*/
+  if (fdcan_clock_stop(canp)) {
+    osalDbgAssert(false, "CAN clock stop failed, check clocks and pin config");
+    return true;
+  }
 
-  /* Interrupt sources initialization.*/
-#if STM32_CAN_REPORT_ALL_ERRORS
-  canp->can->IER = CAN_IER_TMEIE  | CAN_IER_FMPIE0 | CAN_IER_FMPIE1 |
-                   CAN_IER_WKUIE  | CAN_IER_ERRIE  | CAN_IER_LECIE  |
-                   CAN_IER_BOFIE  | CAN_IER_EPVIE  | CAN_IER_EWGIE  |
-                   CAN_IER_FOVIE0 | CAN_IER_FOVIE1;
-#else
-  canp->can->IER = CAN_IER_TMEIE  | CAN_IER_FMPIE0 | CAN_IER_FMPIE1 |
-                   CAN_IER_WKUIE  | CAN_IER_ERRIE  |
-                   CAN_IER_BOFIE  | CAN_IER_EPVIE  | CAN_IER_EWGIE  |
-                   CAN_IER_FOVIE0 | CAN_IER_FOVIE1;
-#endif
+  /* Going in initialization mode.*/
+  if (fdcan_init_mode(canp)) {
+    osalDbgAssert(false, "CAN initialization failed, check clocks and pin config");
+    return true;
+  }
+
+  /* Configuration can be performed now.*/
+  canp->fdcan->CCCR   = FDCAN_CCCR_CCE;
+
+  /* Setting up operation mode except driver-controlled bits.*/
+  canp->fdcan->NBTP   = canp->config->NBTP;
+  canp->fdcan->DBTP   = canp->config->DBTP;
+  canp->fdcan->CCCR  |= canp->config->CCCR & ~(FDCAN_CCCR_CSR | FDCAN_CCCR_CSA |
+                                               FDCAN_CCCR_CCE | FDCAN_CCCR_INIT);
+  canp->fdcan->TEST   = canp->config->TEST;
+  canp->fdcan->RXGFC  = canp->config->RXGFC;
+
+  /* Enabling interrupts, only using interrupt zero.*/
+  canp->fdcan->IR     = (uint32_t)-1;
+  canp->fdcan->IE     = FDCAN_IE_RF1NE | FDCAN_IE_RF1LE |
+                        FDCAN_IE_RF0NE | FDCAN_IE_RF0LE |
+                        FDCAN_IE_TCE;
+  canp->fdcan->TXBTIE = FDCAN_TXBTIE_TIE;
+  canp->fdcan->ILE    = FDCAN_ILE_EINT0;
+
+  /* Going in active mode.*/
+  if (fdcan_active_mode(canp)) {
+    osalDbgAssert(false, "CAN initialization failed, check clocks and pin config");
+    return true;
+  }
+
+  return false;
 }
 
 /**
@@ -720,42 +314,36 @@ void can_lld_stop(CANDriver *canp) {
 
   /* If in ready state then disables the CAN peripheral.*/
   if (canp->state == CAN_READY) {
-#if STM32_CAN_USE_CAN1
+    /* Disabling and clearing interrupts.*/
+    canp->fdcan->IE  = 0U;
+    canp->fdcan->IR  = (uint32_t)-1;
+    canp->fdcan->ILE = 0U;
+    canp->fdcan->TXBTIE = 0U;
+
+    /* Disables the peripheral.*/
+    (void) fdcan_clock_stop(canp);
+
+#if STM32_CAN_USE_FDCAN1
     if (&CAND1 == canp) {
-      CAN1->MCR = 0x00010002;                   /* Register reset value.    */
-      CAN1->IER = 0x00000000;                   /* All sources disabled.    */
-#if STM32_CAN_USE_CAN2
-      /* If CAND2 is stopped then CAN1 clock is stopped here.*/
-      if (CAND2.state == CAN_STOP)
-#endif
-      {
-        rccDisableCAN1();
-      }
+      canclk &= ~1U;
     }
 #endif
 
-#if STM32_CAN_USE_CAN2
+#if STM32_CAN_USE_FDCAN2
     if (&CAND2 == canp) {
-      CAN2->MCR = 0x00010002;                   /* Register reset value.    */
-      CAN2->IER = 0x00000000;                   /* All sources disabled.    */
-#if STM32_CAN_USE_CAN1
-      /* If CAND1 is stopped then CAN1 clock is stopped here.*/
-      if (CAND1.state == CAN_STOP)
-#endif
-      {
-        rccDisableCAN1();
-      }
-      rccDisableCAN2();
+      canclk &= ~2U;
     }
 #endif
 
-#if STM32_CAN_USE_CAN3
+#if STM32_CAN_USE_FDCAN3
     if (&CAND3 == canp) {
-      CAN3->MCR = 0x00010002;                   /* Register reset value.    */
-      CAN3->IER = 0x00000000;                   /* All sources disabled.    */
-      rccDisableCAN3();
+      canclk &= ~4U;
     }
 #endif
+
+    if (canclk == 0U) {
+      rccDisableFDCAN();
+    }
   }
 }
 
@@ -773,18 +361,9 @@ void can_lld_stop(CANDriver *canp) {
  */
 bool can_lld_is_tx_empty(CANDriver *canp, canmbx_t mailbox) {
 
-  switch (mailbox) {
-  case CAN_ANY_MAILBOX:
-    return (canp->can->TSR & CAN_TSR_TME) != 0;
-  case 1:
-    return (canp->can->TSR & CAN_TSR_TME0) != 0;
-  case 2:
-    return (canp->can->TSR & CAN_TSR_TME1) != 0;
-  case 3:
-    return (canp->can->TSR & CAN_TSR_TME2) != 0;
-  default:
-    return false;
-  }
+  (void)mailbox;
+
+  return (bool)((canp->fdcan->TXFQS & FDCAN_TXFQS_TFQF) == 0U);
 }
 
 /**
@@ -796,40 +375,29 @@ bool can_lld_is_tx_empty(CANDriver *canp, canmbx_t mailbox) {
  *
  * @notapi
  */
-void can_lld_transmit(CANDriver *canp,
-                      canmbx_t mailbox,
-                      const CANTxFrame *ctfp) {
-  uint32_t tir;
-  CAN_TxMailBox_TypeDef *tmbp;
+void can_lld_transmit(CANDriver *canp, canmbx_t mailbox, const CANTxFrame *ctfp) {
+  uint32_t put_index;
+  uint32_t *tx_address;
 
-  /* Pointer to a free transmission mailbox.*/
-  switch (mailbox) {
-  case CAN_ANY_MAILBOX:
-    tmbp = &canp->can->sTxMailBox[(canp->can->TSR & CAN_TSR_CODE) >> 24];
-    break;
-  case 1:
-    tmbp = &canp->can->sTxMailBox[0];
-    break;
-  case 2:
-    tmbp = &canp->can->sTxMailBox[1];
-    break;
-  case 3:
-    tmbp = &canp->can->sTxMailBox[2];
-    break;
-  default:
-    return;
+  (void)mailbox;
+
+  osalDbgCheck(dlc_to_bytes[ctfp->DLC] <= CAN_MAX_DLC_BYTES);
+
+  /* Retrieve the TX FIFO put index.*/
+  put_index = ((canp->fdcan->TXFQS & FDCAN_TXFQS_TFQPI) >> FDCAN_TXFQS_TFQPI_Pos);
+
+  /* Writing frame.*/
+  tx_address = canp->ram_base +
+               ((SRAMCAN_TBSA + (put_index * SRAMCAN_TB_SIZE)) / sizeof (uint32_t));
+  
+  *tx_address++ = ctfp->header32[0];
+  *tx_address++ = ctfp->header32[1];
+  for (unsigned i = 0U; i < dlc_to_bytes[ctfp->DLC]; i += 4U) {
+    *tx_address++ = ctfp->data32[i / 4U];
   }
 
-  /* Preparing the message.*/
-  if (ctfp->IDE)
-    tir = ((uint32_t)ctfp->EID << 3) | ((uint32_t)ctfp->RTR << 1) |
-          CAN_TI0R_IDE;
-  else
-    tir = ((uint32_t)ctfp->SID << 21) | ((uint32_t)ctfp->RTR << 1);
-  tmbp->TDTR = ctfp->DLC;
-  tmbp->TDLR = ctfp->data32[0];
-  tmbp->TDHR = ctfp->data32[1];
-  tmbp->TIR  = tir | CAN_TI0R_TXRQ;
+  /* Starting transmission.*/
+  canp->fdcan->TXBAR = ((uint32_t)1 << put_index);
 }
 
 /**
@@ -847,15 +415,15 @@ void can_lld_transmit(CANDriver *canp,
 bool can_lld_is_rx_nonempty(CANDriver *canp, canmbx_t mailbox) {
 
   switch (mailbox) {
-  case CAN_ANY_MAILBOX:
-    return ((canp->can->RF0R & CAN_RF0R_FMP0) != 0 ||
-            (canp->can->RF1R & CAN_RF1R_FMP1) != 0);
-  case 1:
-    return (canp->can->RF0R & CAN_RF0R_FMP0) != 0;
-  case 2:
-    return (canp->can->RF1R & CAN_RF1R_FMP1) != 0;
-  default:
-    return false;
+    case CAN_ANY_MAILBOX:
+      return can_lld_is_rx_nonempty(canp, 1U) ||
+             can_lld_is_rx_nonempty(canp, 2U);
+    case 1:
+      return (bool)((canp->fdcan->RXF0S & FDCAN_RXF0S_F0FL) != 0U);
+    case 2:
+      return (bool)((canp->fdcan->RXF1S & FDCAN_RXF1S_F1FL) != 0U);
+    default:
+      return false;
   }
 }
 
@@ -868,67 +436,68 @@ bool can_lld_is_rx_nonempty(CANDriver *canp, canmbx_t mailbox) {
  *
  * @notapi
  */
-void can_lld_receive(CANDriver *canp,
-                     canmbx_t mailbox,
-                     CANRxFrame *crfp) {
-  uint32_t rir, rdtr;
+void can_lld_receive(CANDriver *canp, canmbx_t mailbox, CANRxFrame *crfp) {
+  uint32_t get_index;
+  uint32_t *rx_address;
 
   if (mailbox == CAN_ANY_MAILBOX) {
-    if ((canp->can->RF0R & CAN_RF0R_FMP0) != 0)
-      mailbox = 1;
-    else if ((canp->can->RF1R & CAN_RF1R_FMP1) != 0)
-      mailbox = 2;
+    if (can_lld_is_rx_nonempty(canp, 1U)) {
+      mailbox = 1U;
+    }
+    else if (can_lld_is_rx_nonempty(canp, 2U)) {
+      mailbox = 2U;
+    }
     else {
-      /* Should not happen, do nothing.*/
       return;
     }
   }
-  switch (mailbox) {
-  case 1:
-    /* Fetches the message.*/
-    rir  = canp->can->sFIFOMailBox[0].RIR;
-    rdtr = canp->can->sFIFOMailBox[0].RDTR;
-    crfp->data32[0] = canp->can->sFIFOMailBox[0].RDLR;
-    crfp->data32[1] = canp->can->sFIFOMailBox[0].RDHR;
+  
+  if (mailbox == 1U) {
+     /* GET index RXF0, add it and the length to the rx_address.*/
+     get_index = (canp->fdcan->RXF0S & FDCAN_RXF0S_F0GI_Msk) >> FDCAN_RXF0S_F0GI_Pos;
+     rx_address = canp->ram_base + (SRAMCAN_RF0SA +
+                                    (get_index * SRAMCAN_RF0_SIZE)) / sizeof (uint32_t);
+  }
+  else {
+     /* GET index RXF1, add it and the length to the rx_address.*/
+     get_index = (canp->fdcan->RXF1S & FDCAN_RXF1S_F1GI_Msk) >> FDCAN_RXF1S_F1GI_Pos;
+     rx_address = canp->ram_base + (SRAMCAN_RF1SA +
+                                    (get_index * SRAMCAN_RF1_SIZE)) / sizeof (uint32_t);
+  }
+  crfp->header32[0] = *rx_address++;
+  crfp->header32[1] = *rx_address++;
 
-    /* Releases the mailbox.*/
-    canp->can->RF0R = CAN_RF0R_RFOM0;
-
-    /* If the queue is empty re-enables the interrupt in order to generate
-       events again.*/
-    if ((canp->can->RF0R & CAN_RF0R_FMP0) == 0)
-      canp->can->IER |= CAN_IER_FMPIE0;
-    break;
-  case 2:
-    /* Fetches the message.*/
-    rir  = canp->can->sFIFOMailBox[1].RIR;
-    rdtr = canp->can->sFIFOMailBox[1].RDTR;
-    crfp->data32[0] = canp->can->sFIFOMailBox[1].RDLR;
-    crfp->data32[1] = canp->can->sFIFOMailBox[1].RDHR;
-
-    /* Releases the mailbox.*/
-    canp->can->RF1R = CAN_RF1R_RFOM1;
-
-    /* If the queue is empty re-enables the interrupt in order to generate
-       events again.*/
-    if ((canp->can->RF1R & CAN_RF1R_FMP1) == 0)
-      canp->can->IER |= CAN_IER_FMPIE1;
-    break;
-  default:
-    /* Should not happen, do nothing.*/
-    return;
+  /* Copy message from FDCAN peripheral's SRAM to structure. RAM is restricted
+     to word aligned accesses, so up to 3 extra bytes may be copied.*/
+  for (unsigned i = 0U; i < dlc_to_bytes[crfp->DLC]; i += 4U) {
+    crfp->data32[i / 4U] = *rx_address++;
   }
 
-  /* Decodes the various fields in the RX frame.*/
-  crfp->RTR = (rir & CAN_RI0R_RTR) >> 1;
-  crfp->IDE = (rir & CAN_RI0R_IDE) >> 2;
-  if (crfp->IDE)
-    crfp->EID = rir >> 3;
-  else
-    crfp->SID = rir >> 21;
-  crfp->DLC = rdtr & CAN_RDT0R_DLC;
-  crfp->FMI = (uint8_t)(rdtr >> 8);
-  crfp->TIME = (uint16_t)(rdtr >> 16);
+  /* Acknowledge receipt by writing the get-index to the acknowledge
+     register RXFxA then re-enable RX FIFO message arrived interrupt once
+     the FIFO is emptied.*/
+  if (mailbox == 1U) {
+    uint32_t rxf0a = canp->fdcan->RXF0A;
+    rxf0a &= ~FDCAN_RXF0A_F0AI_Msk;
+    rxf0a |= get_index << FDCAN_RXF0A_F0AI_Pos;
+    canp->fdcan->RXF0A = rxf0a;
+
+    if (!can_lld_is_rx_nonempty(canp, mailbox)) {
+//      canp->fdcan->IR  = FDCAN_IR_RF0N;
+      canp->fdcan->IE |= FDCAN_IE_RF0NE;
+    }
+  }
+  else {
+    uint32_t rxf1a = canp->fdcan->RXF1A;
+    rxf1a &= ~FDCAN_RXF1A_F1AI_Msk;
+    rxf1a |= get_index << FDCAN_RXF1A_F1AI_Pos;
+    canp->fdcan->RXF1A = rxf1a;
+
+    if (!can_lld_is_rx_nonempty(canp, mailbox)) {
+//      canp->fdcan->IR  = FDCAN_IR_RF1N;
+      canp->fdcan->IE |= FDCAN_IE_RF1NE;
+    }
+  }
 }
 
 /**
@@ -939,10 +508,10 @@ void can_lld_receive(CANDriver *canp,
  *
  * @notapi
  */
-void can_lld_abort(CANDriver *canp,
-                   canmbx_t mailbox) {
+void can_lld_abort(CANDriver *canp, canmbx_t mailbox) {
 
-  canp->can->TSR = 128U << ((mailbox - 1U) * 8U);
+  (void)canp;
+  (void)mailbox;
 }
 
 #if CAN_USE_SLEEP_MODE || defined(__DOXYGEN__)
@@ -955,7 +524,7 @@ void can_lld_abort(CANDriver *canp,
  */
 void can_lld_sleep(CANDriver *canp) {
 
-  canp->can->MCR |= CAN_MCR_SLEEP;
+  (void)canp;
 }
 
 /**
@@ -967,51 +536,48 @@ void can_lld_sleep(CANDriver *canp) {
  */
 void can_lld_wakeup(CANDriver *canp) {
 
-  canp->can->MCR &= ~CAN_MCR_SLEEP;
+  (void)canp;
 }
 #endif /* CAN_USE_SLEEP_MODE */
 
 /**
- * @brief   Programs the filters.
- * @note    This is an STM32-specific API.
+ * @brief   FDCAN IRQ0 service routine.
  *
  * @param[in] canp      pointer to the @p CANDriver object
- * @param[in] can2sb    number of the first filter assigned to CAN2
- * @param[in] num       number of entries in the filters array, if zero then
- *                      a default filter is programmed
- * @param[in] cfp       pointer to the filters array, can be @p NULL if
- *                      (num == 0)
  *
- * @api
+ * @notapi
  */
-void canSTM32SetFilters(CANDriver *canp, uint32_t can2sb,
-                        uint32_t num, const CANFilter *cfp) {
+void can_lld_serve_interrupt(CANDriver *canp) {
+  uint32_t ir;
 
-#if STM32_CAN_USE_CAN2
-  osalDbgCheck((can2sb <= STM32_CAN_MAX_FILTERS) &&
-               (num <= STM32_CAN_MAX_FILTERS));
-#endif
+  /* Getting and clearing active IRQs.*/
+  ir = canp->fdcan->IR;
+  canp->fdcan->IR = ir;
 
-#if STM32_CAN_USE_CAN1
-  osalDbgAssert(CAND1.state == CAN_STOP, "invalid state");
-#endif
-#if STM32_CAN_USE_CAN2
-  osalDbgAssert(CAND2.state == CAN_STOP, "invalid state");
-#endif
-#if STM32_CAN_USE_CAN3
-  osalDbgAssert(CAND3.state == CAN_STOP, "invalid state");
-#endif
-
-#if STM32_CAN_USE_CAN1
-  if (canp == &CAND1) {
-    can_lld_set_filters(canp, can2sb, num, cfp);
+  /* RX events.*/
+  if ((ir & FDCAN_IR_RF0N) != 0U) {
+    /* Disabling this source until the queue is emptied.*/
+    canp->fdcan->IE &= ~FDCAN_IE_RF0NE;
+    _can_rx_full_isr(canp, CAN_MAILBOX_TO_MASK(1U));
   }
-#endif
-#if STM32_CAN_USE_CAN3
-  if (canp == &CAND3) {
-    can_lld_set_filters(canp, can2sb, num, cfp);
+  if ((ir & FDCAN_IR_RF1N) != 0U) {
+    /* Disabling this source until the queue is emptied.*/
+    canp->fdcan->IE &= ~FDCAN_IE_RF1NE;
+    _can_rx_full_isr(canp, CAN_MAILBOX_TO_MASK(2U));
   }
-#endif
+
+  /* Overflow events.*/
+  if (((ir & FDCAN_IR_RF0L) != 0U) || ((ir & FDCAN_IR_RF1L) != 0U) ) {
+    _can_error_isr(canp, CAN_OVERFLOW_ERROR);
+  }
+
+  /* TX events.*/
+  if ((ir & FDCAN_IR_TC) != 0U) {
+    eventflags_t flags = 0U;
+
+    flags |= 1U;
+    _can_tx_empty_isr(canp, flags);
+  }
 }
 
 #endif /* HAL_USE_CAN */

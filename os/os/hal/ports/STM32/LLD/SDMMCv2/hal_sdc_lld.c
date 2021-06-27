@@ -57,21 +57,10 @@ SDCDriver SDCD2;
 /* Driver local variables and types.                                         */
 /*===========================================================================*/
 
-#if STM32_SDC_SDMMC_UNALIGNED_SUPPORT
-/**
- * @brief   Buffer for temporary storage during unaligned transfers.
- */
-static union {
-  uint32_t  alignment;
-  uint8_t   buf[MMCSD_BLOCK_SIZE];
-} u;
-#endif /* STM32_SDC_SDMMC_UNALIGNED_SUPPORT */
-
 /**
  * @brief   SDIO default configuration.
  */
 static const SDCConfig sdc_default_cfg = {
-  NULL,
   SDC_MODE_4BIT
 };
 
@@ -420,7 +409,7 @@ void sdc_lld_stop(SDCDriver *sdcp) {
 void sdc_lld_start_clk(SDCDriver *sdcp) {
 
   /* Initial clock setting: 400kHz, 1bit mode.*/
-  sdcp->sdmmc->CLKCR  = sdc_lld_clkdiv(sdcp, 4000000);
+  sdcp->sdmmc->CLKCR  = sdc_lld_clkdiv(sdcp, 400000);
   sdcp->sdmmc->POWER |= SDMMC_POWER_PWRCTRL_0 | SDMMC_POWER_PWRCTRL_1;
 /* TODO sdcp->sdmmc->CLKCR |= SDMMC_CLKCR_CLKEN;*/
 
@@ -746,17 +735,16 @@ bool sdc_lld_write_aligned(SDCDriver *sdcp, uint32_t startblk,
                        SDMMC_MASK_DATAENDIE;
   sdcp->sdmmc->DLEN  = blocks * MMCSD_BLOCK_SIZE;
 
-  /* Talk to card what we want from it.*/
-  if (sdc_lld_prepare_write(sdcp, startblk, blocks, resp) == true)
-    goto error;
-
-  /* Transaction starts just after DTEN bit setting.*/
+  /* Transfer modes.*/
   sdcp->sdmmc->DCTRL = SDMMC_DCTRL_DBLOCKSIZE_3 |
                        SDMMC_DCTRL_DBLOCKSIZE_0;
 
   /* Prepares IDMA.*/
   sdcp->sdmmc->IDMABASE0 = (uint32_t)buf;
   sdcp->sdmmc->IDMACTRL  = SDMMC_IDMA_IDMAEN;
+
+  if (sdc_lld_prepare_write(sdcp, startblk, blocks, resp) == true)
+    goto error;
 
   if (sdc_lld_wait_transaction_end(sdcp, blocks, resp) == true)
     goto error;
@@ -789,9 +777,9 @@ bool sdc_lld_read(SDCDriver *sdcp, uint32_t startblk,
   if (((unsigned)buf & 3) != 0) {
     uint32_t i;
     for (i = 0; i < blocks; i++) {
-      if (sdc_lld_read_aligned(sdcp, startblk, u.buf, 1))
+      if (sdc_lld_read_aligned(sdcp, startblk, sdcp->buf, 1))
         return HAL_FAILED;
-      memcpy(buf, u.buf, MMCSD_BLOCK_SIZE);
+      memcpy(buf, sdcp->buf, MMCSD_BLOCK_SIZE);
       buf += MMCSD_BLOCK_SIZE;
       startblk++;
     }
@@ -824,9 +812,9 @@ bool sdc_lld_write(SDCDriver *sdcp, uint32_t startblk,
   if (((unsigned)buf & 3) != 0) {
     uint32_t i;
     for (i = 0; i < blocks; i++) {
-      memcpy(u.buf, buf, MMCSD_BLOCK_SIZE);
+      memcpy(sdcp->buf, buf, MMCSD_BLOCK_SIZE);
       buf += MMCSD_BLOCK_SIZE;
-      if (sdc_lld_write_aligned(sdcp, startblk, u.buf, 1))
+      if (sdc_lld_write_aligned(sdcp, startblk, sdcp->buf, 1))
         return HAL_FAILED;
       startblk++;
     }
@@ -867,7 +855,9 @@ void sdc_lld_serve_interrupt(SDCDriver *sdcp) {
      read/write functions needs to check them.*/
   sdcp->sdmmc->MASK = 0;
 
+  osalSysLockFromISR();
   osalThreadResumeI(&sdcp->thread, MSG_OK);
+  osalSysUnlockFromISR();
 }
 
 #endif /* HAL_USE_SDC */

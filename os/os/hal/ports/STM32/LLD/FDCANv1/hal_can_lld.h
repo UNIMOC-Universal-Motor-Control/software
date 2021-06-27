@@ -69,6 +69,14 @@
 #if !defined(STM32_CAN_USE_FDCAN2) || defined(__DOXYGEN__)
 #define STM32_CAN_USE_FDCAN2                FALSE
 #endif
+
+/**
+ * @brief   CAN3 driver enable switch.
+ * @details If set to @p TRUE the support for FDCAN3 is included.
+ */
+#if !defined(STM32_CAN_USE_FDCAN3) || defined(__DOXYGEN__)
+#define STM32_CAN_USE_FDCAN3                FALSE
+#endif
 /** @} */
 
 /*===========================================================================*/
@@ -83,6 +91,10 @@
 #error "STM32_HAS_FDCAN2 not defined in registry"
 #endif
 
+#if !defined(STM32_HAS_FDCAN3)
+#error "STM32_HAS_FDCAN3 not defined in registry"
+#endif
+
 #if STM32_CAN_USE_FDCAN1 && !STM32_HAS_FDCAN1
 #error "FDCAN1 not present in the selected device"
 #endif
@@ -91,8 +103,44 @@
 #error "FDCAN2 not present in the selected device"
 #endif
 
-#if !STM32_CAN_USE_FDCAN1 && !STM32_CAN_USE_FDCAN2
+#if STM32_CAN_USE_FDCAN3 && !STM32_HAS_FDCAN3
+#error "FDCAN3 not present in the selected device"
+#endif
+
+#if !STM32_CAN_USE_FDCAN1 && !STM32_CAN_USE_FDCAN2 && !STM32_CAN_USE_FDCAN3
 #error "CAN driver activated but no FDCAN peripheral assigned"
+#endif
+
+#if !defined(STM32_FDCAN_FLS_NBR)
+#error "STM32_FDCAN_FLS_NBR not defined in registry"
+#endif
+
+#if !defined(STM32_FDCAN_FLE_NBR)
+#error "STM32_FDCAN_FLE_NBR not defined in registry"
+#endif
+
+#if !defined(STM32_FDCAN_RF0_NBR)
+#error "STM32_FDCAN_RF0_NBR not defined in registry"
+#endif
+
+#if !defined(STM32_FDCAN_RF1_NBR)
+#error "STM32_FDCAN_RF1_NBR not defined in registry"
+#endif
+
+#if !defined(STM32_FDCAN_RB_NBR)
+#error "STM32_FDCAN_RB_NBR not defined in registry"
+#endif
+
+#if !defined(STM32_FDCAN_TEF_NBR)
+#error "STM32_FDCAN_TEF_NBR not defined in registry"
+#endif
+
+#if !defined(STM32_FDCAN_TB_NBR)
+#error "STM32_FDCAN_TB_NBR not defined in registry"
+#endif
+
+#if !defined(STM32_FDCAN_TM_NBR)
+#error "STM32_FDCAN_TM_NBR not defined in registry"
 #endif
 
 /*===========================================================================*/
@@ -133,14 +181,19 @@ typedef struct {
   union {
     struct {
       union {
-        uint32_t            EID:29;     /**< @brief Extended identifier.    */
+        struct {
+          uint32_t          EID:29;     /**< @brief Extended identifier.    */
+        } ext;
         struct {
           uint32_t          _R1:18;     /**< @brief Reserved for offset.    */
           uint32_t          SID:11;     /**< @brief Standard identifier.    */
+        } std;
+        struct {
+          uint32_t          _R1:29;     /**< @brief Reserved for offset.    */
           uint32_t          RTR:1;      /**< @brief Remote transmit request.*/
           uint32_t          XTD:1;      /**< @brief Extended identifier.    */
           uint32_t          ESI:1;      /**< @brief Error state indicator.  */
-        };
+        } common;
       };
       uint32_t              _R2:16;
       uint32_t              DLC:4;      /**< @brief Data length code.       */
@@ -173,27 +226,34 @@ typedef struct {
   /**
    * @brief   Frame header.
    */
-  struct {
-    union {
-      uint32_t              EID:29;     /**< @brief Extended Identifier.    */
-      struct {
-        uint32_t            _R1:18;
-        uint32_t            SID:11;     /**< @brief Standard identifier.    */
-        uint32_t            RTR:1;      /**< @brief Remote transmit request.*/
-        uint32_t            XTD:1;      /**< @brief Extended identifier.    */
-        uint32_t            ESI:1;      /**< @brief Error state indicator.  */
+  union {
+    struct {
+      union {
+        struct {
+          uint32_t          EID:29;     /**< @brief Extended identifier.    */
+        } ext;
+        struct {
+          uint32_t          _R1:18;
+          uint32_t          SID:11;     /**< @brief Standard identifier.    */
+        } std;
+        struct {
+          uint32_t          _R1:29;     /**< @brief Reserved for offset.    */
+          uint32_t          RTR:1;      /**< @brief Remote transmit request.*/
+          uint32_t          XTD:1;      /**< @brief Extended identifier.    */
+          uint32_t          ESI:1;      /**< @brief Error state indicator.  */
+        } common;
       };
-    };
-    uint16_t                RXTS:16;    /**< @brief TX time stamp.          */
-    uint8_t                 DLC:4;      /**< @brief Data length code.       */
-    uint8_t                 BRS:1;      /**< @brief Bit rate switch.        */
-    uint8_t                 FDF:1;      /**< @brief FDCAN frame format.     */
-    uint8_t                 _R2:2;
-    uint8_t                 FIDX:7;     /**< @brief Filter index.           */
-    uint8_t                 ANMF:1;     /**< @brief Accepted non-matching
+      uint32_t              RXTS:16;    /**< @brief TX time stamp.          */
+      uint32_t              DLC:4;      /**< @brief Data length code.       */
+      uint32_t              BRS:1;      /**< @brief Bit rate switch.        */
+      uint32_t              FDF:1;      /**< @brief FDCAN frame format.     */
+      uint32_t              _R2:2;
+      uint32_t              FIDX:7;     /**< @brief Filter index.           */
+      uint32_t              ANMF:1;     /**< @brief Accepted non-matching
                                                     frame.                  */
+    };
+    uint32_t                header32[2];
   };
-  uint32_t                  header32[2];
   /**
    * @brief   Frame data.
    */
@@ -257,13 +317,25 @@ typedef struct {
  */
 typedef struct {
   /**
-   * @brief   Global filter configuration register.
+   * @brief   Nominal bit timing and prescaler register.
    */
-  uint32_t                  RXGFC;
+  uint32_t                  NBTP;
+  /**
+   * @brief   Data bit timing and prescaler register.
+   */
+  uint32_t                  DBTP;
+  /**
+   * @brief   CC control register.
+   */
+  uint32_t                  CCCR;
   /**
    * @brief   Test configuration register.
    */
   uint32_t                  TEST;
+  /**
+   * @brief   Global filter configuration register.
+   */
+  uint32_t                  RXGFC;
 } CANConfig;
 
 /**
@@ -382,11 +454,15 @@ extern CANDriver CAND1;
 extern CANDriver CAND2;
 #endif
 
+#if STM32_CAN_USE_FDCAN3 && !defined(__DOXYGEN__)
+extern CANDriver CAND3;
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
   void can_lld_init(void);
-  void can_lld_start(CANDriver *canp);
+  bool can_lld_start(CANDriver *canp);
   void can_lld_stop(CANDriver *canp);
   bool can_lld_is_tx_empty(CANDriver *canp, canmbx_t mailbox);
   void can_lld_transmit(CANDriver *canp,
@@ -402,6 +478,7 @@ extern "C" {
   void can_lld_sleep(CANDriver *canp);
   void can_lld_wakeup(CANDriver *canp);
 #endif /* CAN_USE_SLEEP_MODE */
+  void can_lld_serve_interrupt(CANDriver *canp);
 #ifdef __cplusplus
 }
 #endif

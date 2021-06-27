@@ -34,11 +34,15 @@
   STM32_DMA_GETCHANNEL(STM32_ADC_ADC1_DMA_STREAM, STM32_ADC1_DMA_CHN)
 
 /* Headers differences patches.*/
-#if defined(ADC_IER_AWDIE)
+#if defined(ADC_IER_AWDIE) && !defined(ADC_IER_AWD1IE)
 #define ADC_IER_AWD1IE      ADC_IER_AWDIE
-#define ADC_ISR_AWD1        ADC_ISR_AWD
-#define TR1                 TR
 #endif
+
+#if defined(ADC_ISR_AWD) && !defined(ADC_ISR_AWD1)
+#define ADC_ISR_AWD1        ADC_ISR_AWD
+#endif
+
+#define TR1                 TR
 
 /*===========================================================================*/
 /* Driver exported variables.                                                */
@@ -63,15 +67,17 @@ ADCDriver ADCD1;
  * @param[in] adc       pointer to the ADC registers block
  */
 NOINLINE static void adc_lld_vreg_on(ADC_TypeDef *adc) {
-  volatile uint32_t loop;
 
   osalDbgAssert(adc->CR == 0, "invalid register state");
 
+#if defined(ADC_CR_ADVREGEN)
   adc->CR = ADC_CR_ADVREGEN;
-  loop = (STM32_HCLK >> 20) << 4;
+  volatile uint32_t loop = (STM32_HCLK >> 20) << 4;
   do {
     loop--;
   } while (loop > 0);
+#else
+#endif
 }
 
 /**
@@ -90,7 +96,7 @@ static void adc_lld_stop_adc(ADC_TypeDef *adc) {
 }
 
 /**
- * @brief   ADC DMA ISR service routine.
+ * @brief   ADC DMA service routine.
  *
  * @param[in] adcp      pointer to the @p ADCDriver object
  * @param[in] flags     pre-shifted content of the ISR register
@@ -355,17 +361,22 @@ void adc_lld_serve_interrupt(ADCDriver *adcp) {
   /* It could be a spurious interrupt caused by overflows after DMA disabling,
      just ignore it in this case.*/
   if (adcp->grpp != NULL) {
-    /* Note, an overflow may occur after the conversion ended before the driver
+    adcerror_t emask = 0U;
+
+   /* Note, an overflow may occur after the conversion ended before the driver
        is able to stop the ADC, this is why the DMA channel is checked too.*/
     if ((isr & ADC_ISR_OVR) &&
         (dmaStreamGetTransactionSize(adcp->dmastp) > 0)) {
       /* ADC overflow condition, this could happen only if the DMA is unable
          to read data fast enough.*/
-      _adc_isr_error_code(adcp, ADC_ERR_OVERFLOW);
+      emask |= ADC_ERR_OVERFLOW;
     }
     if (isr & ADC_ISR_AWD1) {
       /* Analog watchdog error.*/
-      _adc_isr_error_code(adcp, ADC_ERR_AWD);
+      emask |= ADC_ERR_AWD1;
+    }
+    if (emask != 0U) {
+      _adc_isr_error_code(adcp, emask);
     }
   }
 }

@@ -10,8 +10,17 @@ endif
 HALCONF := $(strip $(shell cat $(CONFDIR)/halconf.h $(CONFDIR)/halconf_community.h | egrep -e "\#define"))
 
 HALSRC_CONTRIB := ${CHIBIOS_CONTRIB}/os/hal/src/hal_community.c
+ifneq ($(findstring HAL_USE_FSMC TRUE,$(HALCONF)),)
+HALSRC_CONTRIB += ${CHIBIOS_CONTRIB}/os/hal/src/hal_fsmc.c
+endif
 ifneq ($(findstring HAL_USE_NAND TRUE,$(HALCONF)),)
 HALSRC_CONTRIB += ${CHIBIOS_CONTRIB}/os/hal/src/hal_nand.c
+endif
+ifneq ($(findstring HAL_USE_SRAM TRUE,$(HALCONF)),)
+HALSRC_CONTRIB += ${CHIBIOS_CONTRIB}/os/hal/src/hal_sram.c
+endif
+ifneq ($(findstring HAL_USE_SDRAM TRUE,$(HALCONF)),)
+HALSRC_CONTRIB += ${CHIBIOS_CONTRIB}/os/hal/src/hal_sdram.c
 endif
 ifneq ($(findstring HAL_USE_ONEWIRE TRUE,$(HALCONF)),)
 HALSRC_CONTRIB += ${CHIBIOS_CONTRIB}/os/hal/src/hal_onewire.c
@@ -28,10 +37,8 @@ endif
 ifneq ($(findstring HAL_USE_USBH TRUE,$(HALCONF)),)
 HALSRC_CONTRIB += ${CHIBIOS_CONTRIB}/os/hal/src/hal_usbh.c \
                   ${CHIBIOS_CONTRIB}/os/hal/src/usbh/hal_usbh_debug.c \
-                  ${CHIBIOS_CONTRIB}/os/hal/src/usbh/hal_usbh_desciter.c
-endif
-ifneq ($(findstring HAL_USBH_USE_HUB TRUE,$(HALCONF)),)
-HALSRC_CONTRIB += ${CHIBIOS_CONTRIB}/os/hal/src/usbh/hal_usbh_hub.c
+                  ${CHIBIOS_CONTRIB}/os/hal/src/usbh/hal_usbh_desciter.c \
+                  ${CHIBIOS_CONTRIB}/os/hal/src/usbh/hal_usbh_hub.c
 endif
 ifneq ($(findstring HAL_USBH_USE_MSD TRUE,$(HALCONF)),)
 HALSRC_CONTRIB += ${CHIBIOS_CONTRIB}/os/hal/src/usbh/hal_usbh_msd.c
@@ -77,7 +84,10 @@ HALSRC_CONTRIB += ${CHIBIOS_CONTRIB}/os/hal/src/hal_opamp.c
 endif
 else
 HALSRC_CONTRIB := ${CHIBIOS_CONTRIB}/os/hal/src/hal_community.c \
+                  ${CHIBIOS_CONTRIB}/os/hal/src/hal_fsmc.c \
                   ${CHIBIOS_CONTRIB}/os/hal/src/hal_nand.c \
+                  ${CHIBIOS_CONTRIB}/os/hal/src/hal_sram.c \
+                  ${CHIBIOS_CONTRIB}/os/hal/src/hal_sdram.c \
                   ${CHIBIOS_CONTRIB}/os/hal/src/hal_onewire.c \
                   ${CHIBIOS_CONTRIB}/os/hal/src/hal_eicu.c \
                   ${CHIBIOS_CONTRIB}/os/hal/src/hal_crc.c \

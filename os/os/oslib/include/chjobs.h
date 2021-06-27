@@ -1,12 +1,12 @@
 /*
-    ChibiOS - Copyright (C) 2006..2018 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006,2007,2008,2009,2010,2011,2012,2013,2014,
+              2015,2016,2017,2018,2019,2020,2021 Giovanni Di Sirio.
 
     This file is part of ChibiOS.
 
     ChibiOS is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+    the Free Software Foundation version 3 of the License.
 
     ChibiOS is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -18,7 +18,7 @@
 */
 
 /**
- * @file    chjobs.h
+ * @file    oslib/include/chjobs.h
  * @brief   Jobs Queues structures and macros.
  * @details This module implements queues of generic jobs to be delegated
  *          asynchronously to a pool of dedicated threads.
@@ -152,14 +152,7 @@ static inline void chJobObjectInit(jobs_queue_t *jqp,
  * @brief   Allocates a free job object.
  *
  * @param[in] jqp       pointer to a @p jobs_queue_t structure
- * @param[in] timeout   the number of ticks before the operation timeouts,
- *                      the following special values are allowed:
- *                      - @a TIME_IMMEDIATE immediate timeout.
- *                      - @a TIME_INFINITE no timeout.
- *                      .
  * @return              The pointer to the allocated job object.
- * @retval NULL         if a job object is not available within the specified
- *                      timeout.
  *
  * @api
  */
@@ -359,6 +352,11 @@ static inline msg_t chJobDispatch(jobs_queue_t *jqp) {
  * @brief   Waits for a job then executes it.
  *
  * @param[in] jqp       pointer to a @p jobs_queue_t structure
+ * @param[in] timeout   the number of ticks before the operation timeouts,
+ *                      the following special values are allowed:
+ *                      - @a TIME_IMMEDIATE immediate timeout.
+ *                      - @a TIME_INFINITE no timeout.
+ *                      .
  * @return              The function outcome.
  * @retval MSG_OK       if a job has been executed.
  * @retval MSG_TIMEOUT  if a timeout occurred.

@@ -105,7 +105,7 @@ include $(CHIBIOS)/os/hal/boards/ST_NUCLEO144_H743ZI/board.mk
 include $(CHIBIOS)/os/hal/osal/rt-nil/osal.mk
 # RTOS files (optional).
 include $(CHIBIOS)/os/rt/rt.mk
-include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/port_v7m.mk
+include $(CHIBIOS)/os/common/ports/ARMv7-M/compilers/GCC/mk/port.mk
 # Auto-build files in ./source recursively.
 include $(CHIBIOS)/tools/mk/autobuild.mk
 # Other files (optional).
@@ -152,7 +152,7 @@ CPPWARN = -Wall -Wextra -Wundef
 #
 
 # List all user C define here, like -D_DEBUG=1
-UDEFS = -DSTM32_ENFORCE_H7_REV_V     # Must be removed for non-Rev-V devices.
+UDEFS = -DSTM32_ENFORCE_H7_REV_XY    # Remove for non revision X or Y devices.
 
 # Define ASM defines here
 UADEFS =

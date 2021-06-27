@@ -32,6 +32,15 @@
 /*===========================================================================*/
 
 /**
+ * @name    Possible ADC errors mask bits.
+ * @{
+ */
+#define ADC_ERR_DMAFAILURE      1U  /**< DMA operations failure.            */
+#define ADC_ERR_OVERFLOW        2U  /**< ADC overflow condition.            */
+#define ADC_ERR_AWD1            4U  /**< Watchdog triggered.                */
+/** @} */
+
+/**
  * @name    Sampling rates
  * @{
  */
@@ -44,7 +53,7 @@
 #define ADC_SMPR_SMP_55P5       5U  /**< @brief 68 cycles conversion time.  */
 #define ADC_SMPR_SMP_71P5       6U  /**< @brief 84 cycles conversion time.  */
 #define ADC_SMPR_SMP_239P5      7U  /**< @brief 252 cycles conversion time. */
-#elif defined(STM32L0XX) || defined(STM32G0XX)
+#elif defined(STM32L0XX)
 #define ADC_SMPR_SMP_1P5        0U  /**< @brief 14 cycles conversion time   */
 #define ADC_SMPR_SMP_3P5        1U  /**< @brief 16 cycles conversion time.  */
 #define ADC_SMPR_SMP_7P5        2U  /**< @brief 20 cycles conversion time.  */
@@ -172,12 +181,11 @@
 /*===========================================================================*/
 
 /* Supported devices checks.*/
-#if !defined(STM32F0XX) && !defined(STM32L0XX) && !defined(STM32G0XX)
-#error "ADCv1 only supports F0, L0 and G0 STM32 devices"
+#if !defined(STM32F0XX) && !defined(STM32L0XX)
+#error "ADCv1 only supports F0 and L0 STM32 devices"
 #endif
 
-#if defined(STM32L0XX) || defined(STM32G0XX) ||                             \
-    defined(__DOXYGEN__)
+#if defined(STM32L0XX) || defined(__DOXYGEN__)
 #define STM32_ADCV1_OVERSAMPLING            TRUE
 #else
 #define STM32_ADCV1_OVERSAMPLING            FALSE
@@ -296,15 +304,9 @@ typedef uint16_t adcsample_t;
 typedef uint16_t adc_channels_num_t;
 
 /**
- * @brief   Possible ADC failure causes.
- * @note    Error codes are architecture dependent and should not relied
- *          upon.
+ * @brief   Type of an ADC error mask.
  */
-typedef enum {
-  ADC_ERR_DMAFAILURE = 0,                   /**< DMA operations failure.    */
-  ADC_ERR_OVERFLOW = 1,                     /**< ADC overflow condition.    */
-  ADC_ERR_AWD = 2                           /**< Analog watchdog triggered. */
-} adcerror_t;
+typedef uint32_t adcerror_t;
 
 /*===========================================================================*/
 /* Driver macros.                                                            */

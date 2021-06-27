@@ -56,6 +56,7 @@
 #define STM32_USART6_SUPPRESS_ISR
 #define STM32_UART7_SUPPRESS_ISR
 #define STM32_UART8_SUPPRESS_ISR
+#define STM32_LPUART1_SUPPRESS_ISR
 /** @} */
 
 /**
@@ -173,6 +174,19 @@
 #define STM32_EXTI2021_NUMBER               137
 
 /*
+ * FDCAN units.
+ */
+#define STM32_FDCAN1_IT0_HANDLER            Vector8C
+#define STM32_FDCAN1_IT1_HANDLER            Vector94
+#define STM32_FDCAN2_IT0_HANDLER            Vector90
+#define STM32_FDCAN2_IT1_HANDLER            Vector98
+
+#define STM32_FDCAN1_IT0_NUMBER             19
+#define STM32_FDCAN1_IT1_NUMBER             21
+#define STM32_FDCAN2_IT0_NUMBER             20
+#define STM32_FDCAN2_IT1_NUMBER             22
+
+/*
  * I2C units.
  */
 #define STM32_I2C1_EVENT_HANDLER            VectorBC
@@ -276,6 +290,7 @@
 #define STM32_USART6_HANDLER                Vector15C
 #define STM32_UART7_HANDLER                 Vector188
 #define STM32_UART8_HANDLER                 Vector18C
+#define STM32_LPUART1_HANDLER               Vector278
 
 #define STM32_USART1_NUMBER                 37
 #define STM32_USART2_NUMBER                 38
@@ -285,6 +300,7 @@
 #define STM32_USART6_NUMBER                 71
 #define STM32_UART7_NUMBER                  82
 #define STM32_UART8_NUMBER                  83
+#define STM32_LPUART1_NUMBER                142
 
 /*
  * USB/OTG units.

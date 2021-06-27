@@ -137,7 +137,7 @@
             <DriverSelection>4104</DriverSelection>
           </Flash1>
           <bUseTDR>1</bUseTDR>
-          <Flash2>STLink\ST-LINKIII-KEIL_SWO.dll</Flash2>
+          <Flash2>BIN\UL2CM3.DLL</Flash2>
           <Flash3>"" ()</Flash3>
           <Flash4></Flash4>
           <pFcarmOut></pFcarmOut>
@@ -335,10 +335,10 @@
             <v6WtE>0</v6WtE>
             <v6Rtti>0</v6Rtti>
             <VariousControls>
-              <MiscControls>-USTM32F303xC -DTEST_CFG_SIZE_REPORT=0</MiscControls>
-              <Define>CORTEX_USE_FPU=0 __heap_base__=Image$$$$RW_IRAM1$$$$ZI$$$$Limit __heap_end__=Image$$$$RW_IRAM2$$$$Base</Define>
+              <MiscControls>-USTM32F303xC</MiscControls>
+              <Define>CORTEX_USE_FPU=0 TEST_CFG_SIZE_REPORT=0 __heap_base__=Image$$$$RW_IRAM1$$$$ZI$$$$Limit __heap_end__=Image$$$$RW_IRAM2$$$$Base</Define>
               <Undefine></Undefine>
-              <IncludePath>..\;..\cfg;..\..\..\..\os\license;..\..\..\..\os\common\startup\ARMCMx\devices\STM32F3xx;..\..\..\..\os\common\ext\ARM\CMSIS\Core\Include;..\..\..\..\os\common\ext\ST\STM32F3xx;..\..\..\..\os\common\ports\ARMCMx;..\..\..\..\os\common\ports\ARMCMx\compilers\RVCT;..\..\..\..\os\rt\include;..\..\..\..\os\oslib\include;..\..\..\..\os\hal\osal\rt-nil;..\..\..\..\os\hal\include;..\..\..\..\os\hal\boards\ST_STM32F3_DISCOVERY;..\..\..\..\os\hal\ports\common\ARMCMx;..\..\..\..\os\hal\ports\STM32\STM32F3xx;..\..\..\..\os\hal\ports\STM32\LLD\ADCv3;..\..\..\..\os\hal\ports\STM32\LLD\CANv1;..\..\..\..\os\hal\ports\STM32\LLD\DACv1;..\..\..\..\os\hal\ports\STM32\LLD\DMAv1;..\..\..\..\os\hal\ports\STM32\LLD\EXTIv1;..\..\..\..\os\hal\ports\STM32\LLD\GPIOv2;..\..\..\..\os\hal\ports\STM32\LLD\I2Cv2;..\..\..\..\os\hal\ports\STM32\LLD\RTCv2;..\..\..\..\os\hal\ports\STM32\LLD\SPIv2;..\..\..\..\os\hal\ports\STM32\LLD\TIMv1;..\..\..\..\os\hal\ports\STM32\LLD\USARTv2;..\..\..\..\os\hal\ports\STM32\LLD\USBv1;..\..\..\..\os\hal\ports\STM32\LLD\xWDGv1;..\..\..\..\test\lib;..\..\..\..\test\rt\source\test;..\..\..\..\test\oslib\source\test</IncludePath>
+              <IncludePath>..\;..\cfg;..\..\..\..\os\license;..\..\..\..\os\common\startup\ARMCMx\devices\STM32F3xx;..\..\..\..\os\common\ext\ARM\CMSIS\Core\Include;..\..\..\..\os\common\ext\ST\STM32F3xx;..\..\..\..\os\common\portability\Keil;..\..\..\..\os\common\ports\ARM-common;..\..\..\..\os\common\ports\ARMv7-M;..\..\..\..\os\rt\include;..\..\..\..\os\oslib\include;..\..\..\..\os\hal\osal\rt-nil;..\..\..\..\os\hal\include;..\..\..\..\os\hal\boards\ST_STM32F3_DISCOVERY;..\..\..\..\os\hal\ports\common\ARMCMx;..\..\..\..\os\hal\ports\STM32\STM32F3xx;..\..\..\..\os\hal\ports\STM32\LLD\ADCv3;..\..\..\..\os\hal\ports\STM32\LLD\CANv1;..\..\..\..\os\hal\ports\STM32\LLD\DACv1;..\..\..\..\os\hal\ports\STM32\LLD\DMAv1;..\..\..\..\os\hal\ports\STM32\LLD\EXTIv1;..\..\..\..\os\hal\ports\STM32\LLD\GPIOv2;..\..\..\..\os\hal\ports\STM32\LLD\I2Cv2;..\..\..\..\os\hal\ports\STM32\LLD\RTCv2;..\..\..\..\os\hal\ports\STM32\LLD\SPIv2;..\..\..\..\os\hal\ports\STM32\LLD\SYSTICKv1;..\..\..\..\os\hal\ports\STM32\LLD\TIMv1;..\..\..\..\os\hal\ports\STM32\LLD\USART;..\..\..\..\os\hal\ports\STM32\LLD\USARTv2;..\..\..\..\os\hal\ports\STM32\LLD\USBv1;..\..\..\..\os\hal\ports\STM32\LLD\xWDGv1;..\..\..\..\test\lib;..\..\..\..\test\rt\source\test;..\..\..\..\test\oslib\source\test</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -353,10 +353,10 @@
             <useXO>0</useXO>
             <uClangAs>0</uClangAs>
             <VariousControls>
-              <MiscControls>--cpreproc --cpreproc_opts=-D,CORTEX_USE_FPU=0</MiscControls>
-              <Define></Define>
+              <MiscControls>--cpreproc</MiscControls>
+              <Define>CORTEX_USE_FPU=0</Define>
               <Undefine></Undefine>
-              <IncludePath>..\;..\cfg;..\..\..\..\os\license;..\..\..\..\os\common\startup\ARMCMx\devices\STM32F3xx;..\..\..\..\os\common\ports\ARMCMx;..\..\..\..\os\hal\boards\ST_STM32F3_DISCOVERY</IncludePath>
+              <IncludePath>..\;..\cfg;..\..\..\..\os\license;..\..\..\..\os\common\startup\ARMCMx\devices\STM32F3xx;..\..\..\..\os\common\ports\ARMv7-M;..\..\..\..\os\hal\boards\ST_STM32F3_DISCOVERY</IncludePath>
             </VariousControls>
           </Aads>
           <LDads>
@@ -440,42 +440,22 @@
             <File>
               <FileName>chcore.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\..\os\common\ports\ARMCMx\chcore.c</FilePath>
+              <FilePath>..\..\..\..\os\common\ports\ARMv7-M\chcore.c</FilePath>
             </File>
             <File>
               <FileName>chcore.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\..\..\..\os\common\ports\ARMCMx\chcore.h</FilePath>
-            </File>
-            <File>
-              <FileName>chcore_timer.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\..\os\common\ports\ARMCMx\chcore_timer.h</FilePath>
-            </File>
-            <File>
-              <FileName>chcore_v7m.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\..\os\common\ports\ARMCMx\chcore_v7m.h</FilePath>
-            </File>
-            <File>
-              <FileName>chcore_v7m.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\..\os\common\ports\ARMCMx\chcore_v7m.c</FilePath>
+              <FilePath>..\..\..\..\os\common\ports\ARMv7-M\chcore.h</FilePath>
             </File>
             <File>
               <FileName>mpu.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\..\..\..\os\common\ports\ARMCMx\mpu.h</FilePath>
+              <FilePath>..\..\..\..\os\common\ports\ARMv7-M\mpu.h</FilePath>
             </File>
             <File>
-              <FileName>chcoreasm_v7m.s</FileName>
+              <FileName>chcoreasm.s</FileName>
               <FileType>2</FileType>
-              <FilePath>..\..\..\..\os\common\ports\ARMCMx\compilers\RVCT\chcoreasm_v7m.s</FilePath>
-            </File>
-            <File>
-              <FileName>chtypes.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\..\os\common\ports\ARMCMx\compilers\RVCT\chtypes.h</FilePath>
+              <FilePath>..\..\..\..\os\common\ports\ARMv7-M\compilers\RVCT\chcoreasm.s</FilePath>
             </File>
           </Files>
         </Group>
@@ -633,14 +613,19 @@
               <FilePath>..\..\..\..\os\rt\src\chvt.c</FilePath>
             </File>
             <File>
+              <FileName>chrfcu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\..\os\rt\src\chrfcu.c</FilePath>
+            </File>
+            <File>
+              <FileName>chinstances.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\..\os\rt\src\chinstances.c</FilePath>
+            </File>
+            <File>
               <FileName>chchecks.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\..\..\os\rt\include\chchecks.h</FilePath>
-            </File>
-            <File>
-              <FileName>chsystypes.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\..\os\rt\include\chsystypes.h</FilePath>
             </File>
             <File>
               <FileName>chtrace.h</FileName>
@@ -1230,7 +1215,7 @@
             <File>
               <FileName>hal_st_lld.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\..\os\hal\ports\STM32\LLD\TIMv1\hal_st_lld.c</FilePath>
+              <FilePath>..\..\..\..\os\hal\ports\STM32\LLD\SYSTICKv1\hal_st_lld.c</FilePath>
             </File>
             <File>
               <FileName>nvic.c</FileName>
@@ -1321,6 +1306,11 @@
               <FileName>rt_test_sequence_011.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\..\test\rt\source\test\rt_test_sequence_011.c</FilePath>
+            </File>
+            <File>
+              <FileName>rt_test_sequence_012.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\..\test\rt\source\test\rt_test_sequence_012.c</FilePath>
             </File>
             <File>
               <FileName>oslib_test_root.c</FileName>

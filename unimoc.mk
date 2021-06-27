@@ -2,15 +2,14 @@
 BASEDIR := ../../
 
 # included modules
-include ${BASEDIR}/modules/freemaster/freemaster.mk
+include ${BASEDIR}/uavcan/uavcan.mk
 
 # List of all the Project related hardware independent files.
 # C code
-UNIMOCSRC := ${FREEMASTERSRC} \
+UNIMOCSRC := ${UAVCANSRC}
 
 # Cpp code
-UNIMOCCPPSRC := ${FREEMASTERCPPSRC} \
-                ${BASEDIR}/src/main.cpp \
+UNIMOCCPPSRC := ${BASEDIR}/src/main.cpp \
                 ${BASEDIR}/src/controller.cpp \
                 ${BASEDIR}/src/filter.cpp \
                 ${BASEDIR}/src/observer.cpp \
@@ -21,11 +20,12 @@ UNIMOCCPPSRC := ${FREEMASTERCPPSRC} \
                 ${BASEDIR}/src/control_thread.cpp \
                 ${BASEDIR}/src/as5048b.cpp \
                 ${BASEDIR}/src/measurement.cpp \
+                ${UAVCANCPPSRC} \
 
 # Required include directories
-UNIMOCINC := ${FREEMASTERINC} \
-             ${BASEDIR}/inc \
+UNIMOCINC := ${BASEDIR}/inc \
              ${BASEDIR}/hardware/interface \
+             ${UAVCANINC} \
 
 # Shared variables
 ALLCPPSRC += ${UNIMOCCPPSRC}

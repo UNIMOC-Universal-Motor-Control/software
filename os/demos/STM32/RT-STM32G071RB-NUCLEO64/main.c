@@ -50,6 +50,17 @@ int main(void) {
   halInit();
   chSysInit();
 
+#if STM32_CLOCK_DYNAMIC
+  /* Clock switching example.*/
+  if (halClockSwitchMode(&hal_clkcfg_reset)) {
+    chSysHalt("switch to reset failed");
+  }
+
+  if (halClockSwitchMode(&hal_clkcfg_default)) {
+    chSysHalt("switch to default failed");
+  }
+#endif
+
   /*
    * Activates the serial driver 2 using the driver default configuration.
    */
@@ -70,5 +81,5 @@ int main(void) {
       test_execute((BaseSequentialStream *)&SD2, &oslib_test_suite);
     }
     chThdSleepMilliseconds(500);
- }
+  }
 }

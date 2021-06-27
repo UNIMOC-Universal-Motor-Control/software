@@ -1,6 +1,6 @@
 /*
     ChibiOS - Copyright (C) 2006..2017 Giovanni Di Sirio
-              Copyright (C) 2015..2017 Diego Ismirlian, (dismirlian (at) google's mail)
+              Copyright (C) 2015..2019 Diego Ismirlian, (dismirlian(at)google's mail)
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -408,9 +408,9 @@ extern "C" {
 			const uint8_t *framedesc, uint32_t dwFrameInterval);
 
 #if	USBH_DEBUG_ENABLE && USBHUVC_DEBUG_ENABLE_INFO
-	void usbhuvcPrintProbeCommit(const usbh_uvc_ctrl_vs_probecommit_data_t *pc);
+	void usbhuvcPrintProbeCommit(USBHUVCDriver *uvcdp, const usbh_uvc_ctrl_vs_probecommit_data_t *pc);
 #else
-#	define usbhuvcPrintProbeCommit(pc) do {} while(0)
+#	define usbhuvcPrintProbeCommit(uvcdp, pc) do {} while(0)
 #endif
 	bool usbhuvcProbe(USBHUVCDriver *uvcdp);
 	bool usbhuvcCommit(USBHUVCDriver *uvcdp);

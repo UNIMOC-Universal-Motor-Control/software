@@ -1,6 +1,6 @@
 /*
     ChibiOS - Copyright (C) 2006..2017 Giovanni Di Sirio
-              Copyright (C) 2015..2017 Diego Ismirlian, (dismirlian (at) google's mail)
+              Copyright (C) 2015..2019 Diego Ismirlian, (dismirlian(at)google's mail)
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ typedef struct stm32_hc_management {
 	bool check_ls_activity;											\
 	/* channels */													\
 	uint8_t channels_number;										\
-	stm32_hc_management_t channels[STM32_OTG2_CHANNELS_NUMBER];		\
+	stm32_hc_management_t channels[STM32_OTG_HS_CHANNELS_NUMBER];		\
 	struct list_head ch_free[2];									\
 	/* Enpoints being processed */									\
 	struct list_head ep_active_lists[4];							\
@@ -83,6 +83,7 @@ typedef struct stm32_hc_management {
 		uint32_t 			hcintmsk;													\
 		uint32_t			hcchar;														\
 		uint32_t 			dt_mask;			/* data-toggle mask */					\
+		int32_t				trace_level;		/* enable tracing */					\
 		/* current transfer */															\
 		struct {																		\
 			stm32_hc_management_t *hcm;				/* assigned channel */				\
@@ -131,6 +132,7 @@ typedef struct stm32_hc_management {
 
 void usbh_lld_init(void);
 void usbh_lld_start(USBHDriver *usbh);
+void usbh_lld_stop(USBHDriver *usbh);
 void usbh_lld_ep_object_init(usbh_ep_t *ep);
 void usbh_lld_ep_open(usbh_ep_t *ep);
 void usbh_lld_ep_close(usbh_ep_t *ep);
@@ -150,7 +152,6 @@ uint8_t usbh_lld_roothub_get_statuschange_bitmap(USBHDriver *usbh);
 #define USBH_LLD_DEFINE_BUFFER(var) var __attribute__((aligned(4)))
 #define USBH_LLD_DECLARE_STRUCT_MEMBER(member) member __attribute__((aligned(4)))
 #endif
-
 
 #if STM32_USBH_USE_OTG1
 extern USBHDriver USBHD1;

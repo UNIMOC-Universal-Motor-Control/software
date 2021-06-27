@@ -5,7 +5,7 @@
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -O2 -g -fomit-frame-pointer -falign-functions=16 -fsingle-precision-constant -Wdouble-promotion
+  USE_OPT = -O2 -ggdb -fomit-frame-pointer -falign-functions=16 -fsingle-precision-constant -Wdouble-promotion
  #-ffast-math
 endif
 
@@ -108,7 +108,7 @@ include $(CHIBIOS)/os/hal/osal/rt-nil/osal.mk
 include $(CHIBIOS)/os/various/cpp_wrappers/chcpp.mk
 # RTOS files (optional).
 include $(CHIBIOS)/os/rt/rt.mk
-include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/port_v7m.mk
+include $(CHIBIOS)/os/common/ports/ARMv7-M/compilers/GCC/mk/port.mk
 # Auto-build files in ./source recursively.
 include $(CHIBIOS)/tools/mk/autobuild.mk
 
@@ -186,7 +186,6 @@ include $(RULESPATH)/rules.mk
 ##############################################################################
 # Custom rules
 #
-# This rule hook is defined in the ChibiOS build system
 
 #
 # Custom rules

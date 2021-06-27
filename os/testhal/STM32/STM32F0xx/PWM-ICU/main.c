@@ -40,6 +40,7 @@ static PWMConfig pwmcfg = {
    {PWM_OUTPUT_DISABLED, NULL}
   },
   0,
+  0,
   0
 };
 
@@ -69,7 +70,8 @@ static ICUConfig icucfg = {
   icuperiodcb,
   icuoverflowcb,
   ICU_CHANNEL_1,
-  0
+  0U,
+  0xFFFFFFFFU
 };
 
 /*

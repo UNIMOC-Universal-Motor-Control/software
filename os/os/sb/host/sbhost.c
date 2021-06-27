@@ -1,12 +1,12 @@
 /*
-    ChibiOS - Copyright (C) 2006..2019 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006,2007,2008,2009,2010,2011,2012,2013,2014,
+              2015,2016,2017,2018,2019,2020,2021 Giovanni Di Sirio.
 
     This file is part of ChibiOS.
 
     ChibiOS is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+    the Free Software Foundation version 3 of the License.
 
     ChibiOS is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -142,5 +142,52 @@ void sbStart(sb_class_t *sbcp, const sb_config_t *config) {
   /* Must never happen condition.*/
   chSysHalt("returned");
 }
+
+#if (CH_CFG_USE_MESSAGES == TRUE) || defined(__DOXYGEN__)
+/**
+ * @brief   Sends a message to a sandboxed thread.
+ *
+ * @param[in] sbcp      pointer to the sandbox object
+ * @param[in] msg       message to be sent
+ * @param[in] timeout   the number of ticks before the operation timeouts,
+ *                      the following special values are allowed:
+ *                      - @a TIME_INFINITE no timeout.
+ *                      .
+ * @return              The returned message.
+ * @retval MSG_TIMEOUT  if a timeout occurred.
+ * @retval MSG_RESET    if the exchange aborted, sandboxed thread API usage
+ *                      error.
+ *
+ * @api
+ */
+msg_t sbSendMessageTimeout(sb_class_t *sbcp,
+                           msg_t msg,
+                           sysinterval_t timeout) {
+  thread_t *ctp = __sch_get_currthread();
+
+  chDbgCheck(sbcp != NULL);
+
+  chSysLock();
+
+  /* Sending the message.*/
+  ctp->u.sentmsg = msg;
+  __ch_msg_insert(&sbcp->tp->msgqueue, ctp);
+  if (sbcp->tp->state == CH_STATE_WTMSG) {
+    (void) chSchReadyI(sbcp->tp);
+  }
+  msg = chSchGoSleepTimeoutS(CH_STATE_SNDMSGQ, timeout);
+
+  /* If a timeout occurred while the boxed thread already received the message
+     then this thread needs to "unregister" as sender, the boxed error will
+     get SB_ERR_EBUSY when/if trying to reply.*/
+  if (sbcp->msg_tp == ctp) {
+    sbcp->msg_tp = NULL;
+  }
+
+  chSysUnlock();
+
+  return msg;
+}
+#endif /* CH_CFG_USE_MESSAGES == TRUE */
 
 /** @} */

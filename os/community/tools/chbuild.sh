@@ -7,22 +7,9 @@
 #
 
 renice +10 $$
-JOBS=$(grep -c ^processor /proc/cpuinfo)
+JOBS=$(nproc)
 SKIP_ARRAY=(Win32)
 RETCODE=0
-
-function test_skip {
-    Array=$1
-    SKIP=0
-    for var in "${SKIP_ARRAY[@]}"
-    do
-      if [[ $1 == *"${var}"* ]]; then
-        SKIP=1
-        break
-      fi
-    done
-    return $SKIP
-}
 
 function chbuild {
   projects=$(find $1 -name Makefile -printf '%h ')
@@ -33,15 +20,18 @@ function chbuild {
   SKIPPED=()
   for t in $projects
   do
-    test_skip $t
-    if [ $? -ne 0 ]; then
+    if [[ -f "${t}/.skip" ]]; then
       printf "SKIPPING: ${t}\n"
       SKIPPED+=($t)
       continue
     fi
     pushd $t > /dev/null
+    if [[ ! -z ${CH_CLEAN+x} ]]; then
+        printf "CLEANING: ${t}\n"
+        make clean
+    fi
     printf "BUILDING: ${t}\n"
-    if [[ -z "$CH_PATH" && -z "$CHC_PATH" ]]; then
+    if [[ -z "${CH_PATH+x}" || -z "${CHC_PATH+x}" ]]; then
         make --quiet -j $JOBS > /dev/null
     else
         make CHIBIOS=$CH_PATH CHIBIOS_CONTRIB=$CHC_PATH --quiet -j $JOBS > /dev/null
@@ -57,7 +47,6 @@ function chbuild {
     popd > /dev/null
   done
   printf "\n${1}: ${OK} builds ok, ${NOK} builds failed\n"
-#  printf 'SUCCESS: %s\n' "${SUCCESS[@]}"
   printf 'FAIL: %s\n' "${FAIL[@]}"
   printf 'SKIPPED: %s\n' "${SKIPPED[@]}"
   printf "\n"

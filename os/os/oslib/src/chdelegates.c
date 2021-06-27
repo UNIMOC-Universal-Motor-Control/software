@@ -1,12 +1,12 @@
 /*
-    ChibiOS - Copyright (C) 2006..2018 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006,2007,2008,2009,2010,2011,2012,2013,2014,
+              2015,2016,2017,2018,2019,2020,2021 Giovanni Di Sirio.
 
     This file is part of ChibiOS.
 
     ChibiOS is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+    the Free Software Foundation version 3 of the License.
 
     ChibiOS is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -18,7 +18,7 @@
 */
 
 /**
- * @file    chdelegates.c
+ * @file    oslib/src/chdelegates.c
  * @brief   Delegate threads code.
  * @details Delegate threads.
  *          <h2>Operation mode</h2>
@@ -77,6 +77,8 @@ typedef struct {
 /* Module exported functions.                                                */
 /*===========================================================================*/
 
+/*lint -save -e586 [17.1] Required by design.*/
+
 /**
  * @brief   Veneer for functions with no parameters.
  *
@@ -84,7 +86,7 @@ typedef struct {
  * @return              The function return value.
  */
 msg_t __ch_delegate_fn0(va_list *argsp) {
-  delegate_fn0_t fn0 = va_arg(*argsp, delegate_fn0_t);
+  delegate_fn0_t fn0 = (delegate_fn0_t)va_arg(*argsp, delegate_fn0_t);
   return fn0();
 }
 
@@ -95,8 +97,8 @@ msg_t __ch_delegate_fn0(va_list *argsp) {
  * @return              The function return value.
  */
 msg_t __ch_delegate_fn1(va_list *argsp) {
-  delegate_fn1_t fn1 = va_arg(*argsp, delegate_fn1_t);
-  msg_t p1 = va_arg(*argsp, msg_t);
+  delegate_fn1_t fn1 = (delegate_fn1_t)va_arg(*argsp, delegate_fn1_t);
+  msg_t p1 = (msg_t)va_arg(*argsp, msg_t);
   return fn1(p1);
 }
 
@@ -107,9 +109,9 @@ msg_t __ch_delegate_fn1(va_list *argsp) {
  * @return              The function return value.
  */
 msg_t __ch_delegate_fn2(va_list *argsp) {
-  delegate_fn2_t fn2 = va_arg(*argsp, delegate_fn2_t);
-  msg_t p1 = va_arg(*argsp, msg_t);
-  msg_t p2 = va_arg(*argsp, msg_t);
+  delegate_fn2_t fn2 = (delegate_fn2_t)va_arg(*argsp, delegate_fn2_t);
+  msg_t p1 = (msg_t)va_arg(*argsp, msg_t);
+  msg_t p2 = (msg_t)va_arg(*argsp, msg_t);
   return fn2(p1, p2);
 }
 
@@ -120,10 +122,10 @@ msg_t __ch_delegate_fn2(va_list *argsp) {
  * @return              The function return value.
  */
 msg_t __ch_delegate_fn3(va_list *argsp) {
-  delegate_fn3_t fn3 = va_arg(*argsp, delegate_fn3_t);
-  msg_t p1 = va_arg(*argsp, msg_t);
-  msg_t p2 = va_arg(*argsp, msg_t);
-  msg_t p3 = va_arg(*argsp, msg_t);
+  delegate_fn3_t fn3 = (delegate_fn3_t)va_arg(*argsp, delegate_fn3_t);
+  msg_t p1 = (msg_t)va_arg(*argsp, msg_t);
+  msg_t p2 = (msg_t)va_arg(*argsp, msg_t);
+  msg_t p3 = (msg_t)va_arg(*argsp, msg_t);
   return fn3(p1, p2, p3);
 }
 
@@ -134,11 +136,11 @@ msg_t __ch_delegate_fn3(va_list *argsp) {
  * @return              The function return value.
  */
 msg_t __ch_delegate_fn4(va_list *argsp) {
-  delegate_fn4_t fn4 = va_arg(*argsp, delegate_fn4_t);
-  msg_t p1 = va_arg(*argsp, msg_t);
-  msg_t p2 = va_arg(*argsp, msg_t);
-  msg_t p3 = va_arg(*argsp, msg_t);
-  msg_t p4 = va_arg(*argsp, msg_t);
+  delegate_fn4_t fn4 = (delegate_fn4_t)va_arg(*argsp, delegate_fn4_t);
+  msg_t p1 = (msg_t)va_arg(*argsp, msg_t);
+  msg_t p2 = (msg_t)va_arg(*argsp, msg_t);
+  msg_t p3 = (msg_t)va_arg(*argsp, msg_t);
+  msg_t p4 = (msg_t)va_arg(*argsp, msg_t);
   return fn4(p1, p2, p3, p4);
 }
 
@@ -148,8 +150,7 @@ msg_t __ch_delegate_fn4(va_list *argsp) {
  *          order to have the functions called.
  *
  * @param[in] tp        pointer to the delegate thread
- * @param[in] func      pointer to the function to be called
- * @param[in] argc      number of parameters
+ * @param[in] veneer    pointer to the veneer function to be called
  * @param[in] ...       variable number of parameters
  * @return              The function return value casted to msg_t. It is
  *                      garbage for functions returning @p void.
@@ -164,6 +165,7 @@ msg_t chDelegateCallVeneer(thread_t *tp, delegate_veneer_t veneer, ...) {
   /* Preparing the call message.*/
   cm.veneer = veneer;
   cm.argsp  = &args;
+  (void)cm; /* Suppresses a lint warning.*/
 
   /* Sending the message to the dispatcher thread, the return value is
      contained in the returned message.*/
@@ -173,6 +175,8 @@ msg_t chDelegateCallVeneer(thread_t *tp, delegate_veneer_t veneer, ...) {
 
   return msg;
 }
+
+/*lint -restore*/
 
 /**
  * @brief   Call messages dispatching.

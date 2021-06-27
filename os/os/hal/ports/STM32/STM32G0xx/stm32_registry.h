@@ -84,6 +84,23 @@
 #define STM32_HAS_CRYP1                     FALSE
 #endif
 
+/* RCC attributes (common).*/
+#define STM32_RCC_HAS_HSI16                 TRUE
+#define STM32_RCC_HAS_HSI48                 FALSE
+#define STM32_RCC_HAS_MSI                   FALSE
+#define STM32_RCC_HAS_LSI                   TRUE
+#define STM32_RCC_HAS_LSI_PRESCALER         FALSE
+#define STM32_RCC_HAS_LSE                   TRUE
+#define STM32_RCC_HAS_HSE                   TRUE
+
+#define STM32_RCC_HAS_PLL                   TRUE
+#define STM32_RCC_PLL_HAS_P                 TRUE
+/*#define STM32_RCC_PLL_HAS_Q                 TRUE*/ /* Varies, see below.*/
+#define STM32_RCC_PLL_HAS_R                 TRUE
+
+#define STM32_RCC_HAS_PLLSAI1               FALSE
+#define STM32_RCC_HAS_PLLSAI2               FALSE
+
 /*===========================================================================*/
 /* STM32G070xx.                                                              */
 /*===========================================================================*/
@@ -92,9 +109,6 @@
 
 /* ADC attributes.*/
 #define STM32_HAS_ADC1                      TRUE
-#define STM32_ADC_SUPPORTS_PRESCALER        TRUE
-#define STM32_ADC_SUPPORTS_OVERSAMPLING     TRUE
-
 #define STM32_HAS_ADC2                      FALSE
 #define STM32_HAS_ADC3                      FALSE
 #define STM32_HAS_ADC4                      FALSE
@@ -121,7 +135,8 @@
 #define STM32_HAS_ETH                       FALSE
 
 /* EXTI attributes.*/
-#define STM32_EXTI_TYPE                     1
+#define STM32_EXTI_HAS_CR                   TRUE
+#define STM32_EXTI_SEPARATE_RF              TRUE
 #define STM32_EXTI_HAS_GROUP2               FALSE
 #define STM32_EXTI_NUM_LINES                16
 #define STM32_EXTI_IMR1_MASK                0xFFF80000U
@@ -159,6 +174,9 @@
 
 /* QUADSPI attributes.*/
 #define STM32_HAS_QUADSPI1                  FALSE
+
+/* RCC attributes.*/
+#define STM32_RCC_PLL_HAS_Q                 FALSE
 
 /* SDMMC attributes.*/
 #define STM32_HAS_SDMMC1                    FALSE
@@ -271,9 +289,6 @@
 
 /* ADC attributes.*/
 #define STM32_HAS_ADC1                      TRUE
-#define STM32_ADC_SUPPORTS_PRESCALER        TRUE
-#define STM32_ADC_SUPPORTS_OVERSAMPLING     TRUE
-
 #define STM32_HAS_ADC2                      FALSE
 #define STM32_HAS_ADC3                      FALSE
 #define STM32_HAS_ADC4                      FALSE
@@ -300,7 +315,8 @@
 #define STM32_HAS_ETH                       FALSE
 
 /* EXTI attributes.*/
-#define STM32_EXTI_TYPE                     1
+#define STM32_EXTI_HAS_CR                   TRUE
+#define STM32_EXTI_SEPARATE_RF              TRUE
 #define STM32_EXTI_HAS_GROUP2               FALSE
 #define STM32_EXTI_NUM_LINES                33
 #define STM32_EXTI_IMR1_MASK                0xFFF80000U
@@ -339,6 +355,9 @@
 
 /* QUADSPI attributes.*/
 #define STM32_HAS_QUADSPI1                  FALSE
+
+/* RCC attributes.*/
+#define STM32_RCC_PLL_HAS_Q                 TRUE
 
 /* SDMMC attributes.*/
 #define STM32_HAS_SDMMC1                    FALSE

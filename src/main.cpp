@@ -31,11 +31,10 @@
 #include "management.hpp"
 #include "control_thread.hpp"
 #include "main.hpp"
-#include "../uavcan/uavcan.hpp"
+#include "uavcan.hpp"
 
 using namespace chibios_rt;
 
-static modules::freemaster::thread freemaster;
 static management::thread manager;
 
 /**
@@ -88,7 +87,6 @@ int main(void)
 	 * start threads
 	 */
 	chThdSetPriority(HIGHPRIO);
-	freemaster.start(NORMALPRIO);
 	hardware::control_thread = controller.start(HIGHPRIO - 1);
 	manager.start(NORMALPRIO + 2);
 	chThdSetPriority(LOWPRIO);

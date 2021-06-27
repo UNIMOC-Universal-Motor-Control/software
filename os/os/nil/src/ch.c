@@ -1,12 +1,12 @@
 /*
-    ChibiOS - Copyright (C) 2006..2018 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006,2007,2008,2009,2010,2011,2012,2013,2014,
+              2015,2016,2017,2018,2019,2020,2021 Giovanni Di Sirio.
 
     This file is part of ChibiOS.
 
     ChibiOS is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+    the Free Software Foundation version 3 of the License.
 
     ChibiOS is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -38,7 +38,7 @@
 /**
  * @brief   System data structures.
  */
-nil_system_t nil;
+os_instance_t nil;
 
 /*===========================================================================*/
 /* Module local variables.                                                   */
@@ -88,6 +88,7 @@ thread_t *nil_find_thread(tstate_t state, void *p) {
  * @param[in] cnt       number of threads to be readied as a negative number,
  *                      non negative numbers are ignored
  * @param[in] msg       the wakeup message
+ * @return              The number of readied threads.
  *
  * @notapi
  */
@@ -116,7 +117,7 @@ cnt_t nil_ready_all(void *p, cnt_t cnt, msg_t msg) {
  *
  * @notapi
  */
-void _dbg_check_disable(void) {
+void __dbg_check_disable(void) {
 
   if ((nil.isr_cnt != (cnt_t)0) || (nil.lock_cnt != (cnt_t)0)) {
     chSysHalt("SV#1");
@@ -128,7 +129,7 @@ void _dbg_check_disable(void) {
  *
  * @notapi
  */
-void _dbg_check_suspend(void) {
+void __dbg_check_suspend(void) {
 
   if ((nil.isr_cnt != (cnt_t)0) || (nil.lock_cnt != (cnt_t)0)) {
     chSysHalt("SV#2");
@@ -140,7 +141,7 @@ void _dbg_check_suspend(void) {
  *
  * @notapi
  */
-void _dbg_check_enable(void) {
+void __dbg_check_enable(void) {
 
   if ((nil.isr_cnt != (cnt_t)0) || (nil.lock_cnt != (cnt_t)0)) {
     chSysHalt("SV#3");
@@ -152,7 +153,7 @@ void _dbg_check_enable(void) {
  *
  * @notapi
  */
-void _dbg_check_lock(void) {
+void __dbg_check_lock(void) {
 
   if ((nil.isr_cnt != (cnt_t)0) || (nil.lock_cnt != (cnt_t)0)) {
     chSysHalt("SV#4");
@@ -165,7 +166,7 @@ void _dbg_check_lock(void) {
  *
  * @notapi
  */
-void _dbg_check_unlock(void) {
+void __dbg_check_unlock(void) {
 
   if ((nil.isr_cnt != (cnt_t)0) || (nil.lock_cnt <= (cnt_t)0)) {
     chSysHalt("SV#5");
@@ -178,7 +179,7 @@ void _dbg_check_unlock(void) {
  *
  * @notapi
  */
-void _dbg_check_lock_from_isr(void) {
+void __dbg_check_lock_from_isr(void) {
 
   if ((nil.isr_cnt <= (cnt_t)0) || (nil.lock_cnt != (cnt_t)0)) {
     chSysHalt("SV#6");
@@ -191,7 +192,7 @@ void _dbg_check_lock_from_isr(void) {
  *
  * @notapi
  */
-void _dbg_check_unlock_from_isr(void) {
+void __dbg_check_unlock_from_isr(void) {
 
   if ((nil.isr_cnt <= (cnt_t)0) || (nil.lock_cnt <= (cnt_t)0)) {
     chSysHalt("SV#7");
@@ -204,7 +205,7 @@ void _dbg_check_unlock_from_isr(void) {
  *
  * @notapi
  */
-void _dbg_check_enter_isr(void) {
+void __dbg_check_enter_isr(void) {
 
   port_lock_from_isr();
   if ((nil.isr_cnt < (cnt_t)0) || (nil.lock_cnt != (cnt_t)0)) {
@@ -219,7 +220,7 @@ void _dbg_check_enter_isr(void) {
  *
  * @notapi
  */
-void _dbg_check_leave_isr(void) {
+void __dbg_check_leave_isr(void) {
 
   port_lock_from_isr();
   if ((nil.isr_cnt <= (cnt_t)0) || (nil.lock_cnt != (cnt_t)0)) {
@@ -275,10 +276,10 @@ void chSysInit(void) {
   const thread_descriptor_t *tdp;
 
   /* Optional library modules.*/
-  _oslib_init();
+  __oslib_init();
 
   /* Architecture layer initialization.*/
-  port_init();
+  port_init(&nil);
 
   /* System initialization hook.*/
   CH_CFG_SYSTEM_INIT_HOOK();
@@ -369,10 +370,13 @@ void chSysTimerHandlerI(void) {
         /* Timeout on queues/semaphores requires a special handling because
            the counter must be incremented.*/
         /*lint -save -e9013 [15.7] There is no else because it is not needed.*/
+#if CH_CFG_USE_SEMAPHORES == TRUE
         if (NIL_THD_IS_WTQUEUE(tp)) {
           tp->u1.semp->cnt++;
         }
-        else if (NIL_THD_IS_SUSPENDED(tp)) {
+        else
+#endif
+        if (NIL_THD_IS_SUSPENDED(tp)) {
           *tp->u1.trp = NULL;
         }
         /*lint -restore*/
@@ -615,7 +619,7 @@ bool chSchIsPreemptionRequired(void) {
  *
  * @special
  */
-void chSchDoReschedule(void) {
+void chSchDoPreemption(void) {
   thread_t *otp = nil.current;
 
   nil.current = nil.next;
@@ -635,7 +639,7 @@ void chSchRescheduleS(void) {
   chDbgCheckClassS();
 
   if (chSchIsRescRequiredI()) {
-    chSchDoReschedule();
+    chSchDoPreemption();
   }
 }
 

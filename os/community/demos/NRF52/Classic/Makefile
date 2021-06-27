@@ -96,7 +96,7 @@ include $(CHIBIOS_CONTRIB)/os/common/startup/ARMCMx/compilers/GCC/mk/startup_nrf
 include $(CHIBIOS_CONTRIB)/os/hal/hal.mk
 include $(CHIBIOS_CONTRIB)/os/hal/ports/NRF5/NRF52832/platform.mk
 include $(CHIBIOS_CONTRIB)/os/hal/boards/NRF52-DK/board.mk
-include $(CHIBIOS)/os/hal/osal/rt/osal.mk
+include $(CHIBIOS)/os/hal/osal/rt-nil/osal.mk
 include $(CHIBIOS)/os/hal/lib/streams/streams.mk
 # RTOS files (optional).
 include $(CHIBIOS)/os/rt/rt.mk
@@ -108,7 +108,7 @@ include $(CHIBIOS)/test/oslib/oslib_test.mk
 include $(CHIBIOS)/os/various/shell/shell.mk
 
 # Define linker script file here
-LDSCRIPT= $(STARTUPLD)/NRF52832.ld
+LDSCRIPT= $(STARTUPLD_CONTRIB)/NRF52832.ld
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -213,7 +213,7 @@ ULIBS =
 # End of user defines
 ##############################################################################
 
-RULESPATH = $(CHIBIOS)/os/common/startup/ARMCMx/compilers/GCC/
+RULESPATH = $(CHIBIOS)/os/common/startup/ARMCMx/compilers/GCC/mk/
 include $(RULESPATH)/rules.mk
 
 OHEX = $(BUILDDIR)/$(PROJECT).hex

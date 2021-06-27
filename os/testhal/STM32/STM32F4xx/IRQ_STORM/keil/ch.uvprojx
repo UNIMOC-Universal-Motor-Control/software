@@ -133,12 +133,12 @@
             <UseExternalTool>0</UseExternalTool>
             <RunIndependent>0</RunIndependent>
             <UpdateFlashBeforeDebugging>1</UpdateFlashBeforeDebugging>
-            <Capability>0</Capability>
-            <DriverSelection>4100</DriverSelection>
+            <Capability>1</Capability>
+            <DriverSelection>4096</DriverSelection>
           </Flash1>
           <bUseTDR>1</bUseTDR>
-          <Flash2>STLink\ST-LINKIII-KEIL.dll</Flash2>
-          <Flash3></Flash3>
+          <Flash2>BIN\UL2CM3.DLL</Flash2>
+          <Flash3>"" ()</Flash3>
           <Flash4></Flash4>
           <pFcarmOut></pFcarmOut>
           <pFcarmGrp></pFcarmGrp>
@@ -312,7 +312,7 @@
           </ArmAdsMisc>
           <Cads>
             <interw>1</interw>
-            <Optim>3</Optim>
+            <Optim>1</Optim>
             <oTime>1</oTime>
             <SplitLS>0</SplitLS>
             <OneElfS>0</OneElfS>
@@ -321,14 +321,14 @@
             <PlainCh>0</PlainCh>
             <Ropi>0</Ropi>
             <Rwpi>0</Rwpi>
-            <wLevel>0</wLevel>
+            <wLevel>2</wLevel>
             <uThumb>0</uThumb>
             <uSurpInc>0</uSurpInc>
             <uC99>1</uC99>
             <uGnu>0</uGnu>
             <useXO>0</useXO>
-            <v6Lang>1</v6Lang>
-            <v6LangP>1</v6LangP>
+            <v6Lang>3</v6Lang>
+            <v6LangP>3</v6LangP>
             <vShortEn>1</vShortEn>
             <vShortWch>1</vShortWch>
             <v6Lto>0</v6Lto>
@@ -338,7 +338,7 @@
               <MiscControls>-USTM32F407xx</MiscControls>
               <Define>CORTEX_USE_FPU=0 __heap_base__=Image$$$$RW_IRAM1$$$$ZI$$$$Limit __heap_end__=Image$$$$RW_IRAM2$$$$Base</Define>
               <Undefine></Undefine>
-              <IncludePath>..\;..\cfg;..\..\..\..\..\os\license;..\..\..\..\..\os\common\startup\ARMCMx\devices\STM32F4xx;..\..\..\..\..\os\common\ext\ARM\CMSIS\Core\Include;..\..\..\..\..\os\common\ext\ST\STM32F4xx;..\..\..\..\..\os\common\ports\ARMCMx;..\..\..\..\..\os\common\ports\ARMCMx\compilers\RVCT;..\..\..\..\..\os\rt\include;..\..\..\..\..\os\oslib\include;..\..\..\..\..\os\hal\osal\rt-nil;..\..\..\..\..\os\hal\include;..\..\..\..\..\os\hal\lib\streams;..\..\..\..\..\os\hal\boards\ST_STM32F4_DISCOVERY;..\..\..\..\..\os\hal\ports\common\ARMCMx;..\..\..\..\..\os\hal\ports\common\ARMCMx;..\..\..\..\..\os\hal\ports\STM32\STM32F4xx;..\..\..\..\..\os\hal\ports\STM32\LLD\ADCv2;..\..\..\..\..\os\hal\ports\STM32\LLD\CANv1;..\..\..\..\..\os\hal\ports\STM32\LLD\CRYPv1;..\..\..\..\..\os\hal\ports\STM32\LLD\DACv1;..\..\..\..\..\os\hal\ports\STM32\LLD\DMAv2;..\..\..\..\..\os\hal\ports\STM32\LLD\EXTIv1;..\..\..\..\..\os\hal\ports\STM32\LLD\GPIOv2;..\..\..\..\..\os\hal\ports\STM32\LLD\I2Cv1;..\..\..\..\..\os\hal\ports\STM32\LLD\MACv1;..\..\..\..\..\os\hal\ports\STM32\LLD\OTGv1;..\..\..\..\..\os\hal\ports\STM32\LLD\QUADSPIv1;..\..\..\..\..\os\hal\ports\STM32\LLD\RTCv2;..\..\..\..\..\os\hal\ports\STM32\LLD\SPIv2;..\..\..\..\..\os\hal\ports\STM32\LLD\SDIOv1;..\..\..\..\..\os\hal\ports\STM32\LLD\TIMv1;..\..\..\..\..\os\hal\ports\STM32\LLD\USARTv1;..\..\..\..\..\os\hal\ports\STM32\LLD\xWDGv1;..\..\..\..\..\testhal\common</IncludePath>
+              <IncludePath>..\;..\cfg;..\..\..\..\..\os\license;..\..\..\..\..\os\common\startup\ARMCMx\devices\STM32F4xx;..\..\..\..\..\os\common\ext\ARM\CMSIS\Core\Include;..\..\..\..\..\os\common\ext\ST\STM32F4xx;..\..\..\..\..\os\common\portability\Keil;..\..\..\..\..\os\common\ports\ARM-common;..\..\..\..\..\os\common\ports\ARMv7-M;..\..\..\..\..\os\rt\include;..\..\..\..\..\os\oslib\include;..\..\..\..\..\os\hal\osal\rt-nil;..\..\..\..\..\os\hal\include;..\..\..\..\..\os\hal\lib\streams;..\..\..\..\..\os\hal\boards\ST_STM32F4_DISCOVERY;..\..\..\..\..\os\hal\ports\common\ARMCMx;..\..\..\..\..\os\hal\ports\STM32\STM32F4xx;..\..\..\..\..\os\hal\ports\STM32\LLD\ADCv2;..\..\..\..\..\os\hal\ports\STM32\LLD\CANv1;..\..\..\..\..\os\hal\ports\STM32\LLD\DACv1;..\..\..\..\..\os\hal\ports\STM32\LLD\DMAv2;..\..\..\..\..\os\hal\ports\STM32\LLD\EXTIv1;..\..\..\..\..\os\hal\ports\STM32\LLD\GPIOv2;..\..\..\..\..\os\hal\ports\STM32\LLD\I2Cv1;..\..\..\..\..\os\hal\ports\STM32\LLD\RTCv2;..\..\..\..\..\os\hal\ports\STM32\LLD\SPIv1;..\..\..\..\..\os\hal\ports\STM32\LLD\SYSTICKv1;..\..\..\..\..\os\hal\ports\STM32\LLD\TIMv1;..\..\..\..\..\os\hal\ports\STM32\LLD\USART;..\..\..\..\..\os\hal\ports\STM32\LLD\USARTv1;..\..\..\..\..\os\hal\ports\STM32\LLD\OTGv1;..\..\..\..\..\os\hal\ports\STM32\LLD\xWDGv1;..\..\..\..\..\testhal\common</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -356,7 +356,7 @@
               <MiscControls>--cpreproc --cpreproc_opts=-D,CORTEX_USE_FPU=0</MiscControls>
               <Define></Define>
               <Undefine></Undefine>
-              <IncludePath>..\;..\cfg;..\..\..\..\..\os\license;..\..\..\..\..\os\common\startup\ARMCMx\devices\STM32F4xx;..\..\..\..\..\os\common\ports\ARMCMx;..\..\..\..\..\os\hal\boards\ST_STM32F4_DISCOVERY</IncludePath>
+              <IncludePath>..\;..\cfg;..\..\..\..\..\os\license;..\..\..\..\..\os\common\startup\ARMCMx\devices\STM32F4xx;..\..\..\..\..\os\common\ports\ARMv7-M;..\..\..\..\..\os\hal\boards\ST_STM32F4_DISCOVERY</IncludePath>
             </VariousControls>
           </Aads>
           <LDads>
@@ -472,6 +472,16 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\..\..\os\rt\src\chtrace.c</FilePath>
             </File>
+            <File>
+              <FileName>chinstances.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\..\..\os\rt\src\chinstances.c</FilePath>
+            </File>
+            <File>
+              <FileName>chrfcu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\..\..\os\rt\src\chrfcu.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -480,17 +490,12 @@
             <File>
               <FileName>chcore.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\..\..\os\common\ports\ARMCMx\chcore.c</FilePath>
+              <FilePath>..\..\..\..\..\os\common\ports\ARMv7-M\chcore.c</FilePath>
             </File>
             <File>
-              <FileName>chcore_v7m.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\..\..\os\common\ports\ARMCMx\chcore_v7m.c</FilePath>
-            </File>
-            <File>
-              <FileName>chcoreasm_v7m.s</FileName>
+              <FileName>chcoreasm.s</FileName>
               <FileType>2</FileType>
-              <FilePath>..\..\..\..\..\os\common\ports\ARMCMx\compilers\RVCT\chcoreasm_v7m.s</FilePath>
+              <FilePath>..\..\..\..\..\os\common\ports\ARMv7-M\compilers\RVCT\chcoreasm.s</FilePath>
             </File>
           </Files>
         </Group>
@@ -815,7 +820,7 @@
             <File>
               <FileName>hal_st_lld.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\..\..\os\hal\ports\STM32\LLD\TIMv1\hal_st_lld.c</FilePath>
+              <FilePath>..\..\..\..\..\os\hal\ports\STM32\LLD\SYSTICKv1\hal_st_lld.c</FilePath>
             </File>
             <File>
               <FileName>hal_serial_lld.c</FileName>

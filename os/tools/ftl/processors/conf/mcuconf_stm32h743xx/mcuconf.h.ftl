@@ -50,6 +50,7 @@
 #define STM32H755_MCUCONF
 #define STM32H747_MCUCONF
 #define STM32H757_MCUCONF
+#define STM32H750_MCUCONF
 
 /*
  * General settings.
@@ -195,6 +196,9 @@
 #define STM32_IRQ_EXTI19_PRIORITY           ${doc.STM32_IRQ_EXTI19_PRIORITY!"6"}
 #define STM32_IRQ_EXTI20_21_PRIORITY        ${doc.STM32_IRQ_EXTI20_21_PRIORITY!"6"}
 
+#define STM32_IRQ_FDCAN1_PRIORITY           ${doc.STM32_IRQ_FDCAN1_PRIORITY!"10"}
+#define STM32_IRQ_FDCAN2_PRIORITY           ${doc.STM32_IRQ_FDCAN2_PRIORITY!"10"}
+
 #define STM32_IRQ_MDMA_PRIORITY             ${doc.STM32_IRQ_MDMA_PRIORITY!"9"}
 
 #define STM32_IRQ_QUADSPI1_PRIORITY         ${doc.STM32_IRQ_QUADSPI1_PRIORITY!"10"}
@@ -226,12 +230,13 @@
 #define STM32_IRQ_USART6_PRIORITY           ${doc.STM32_IRQ_USART6_PRIORITY!"12"}
 #define STM32_IRQ_UART7_PRIORITY            ${doc.STM32_IRQ_UART7_PRIORITY!"12"}
 #define STM32_IRQ_UART8_PRIORITY            ${doc.STM32_IRQ_UART8_PRIORITY!"12"}
+#define STM32_IRQ_LPUART1_PRIORITY          ${doc.STM32_IRQ_LPUART1_PRIORITY!"12"}
 
 /*
  * ADC driver system settings.
  */
 #define STM32_ADC_DUAL_MODE                 ${doc.STM32_ADC_DUAL_MODE!"FALSE"}
-#define STM32_ADC_COMPACT_SAMPLES           ${doc.STM32_ADC_COMPACT_SAMPLES!"FALSE"}
+#define STM32_ADC_SAMPLES_SIZE              ${doc.STM32_ADC_SAMPLES_SIZE!"16"}
 #define STM32_ADC_USE_ADC12                 ${doc.STM32_ADC_USE_ADC12!"TRUE"}
 #define STM32_ADC_USE_ADC3                  ${doc.STM32_ADC_USE_ADC3!"FALSE"}
 #define STM32_ADC_ADC12_DMA_STREAM          ${doc.STM32_ADC_ADC12_DMA_STREAM!"STM32_DMA_STREAM_ID_ANY"}
@@ -336,7 +341,6 @@
 /*
  * PWM driver system settings.
  */
-#define STM32_PWM_USE_ADVANCED              ${doc.STM32_PWM_USE_ADVANCED!"FALSE"}
 #define STM32_PWM_USE_TIM1                  ${doc.STM32_PWM_USE_TIM1!"FALSE"}
 #define STM32_PWM_USE_TIM2                  ${doc.STM32_PWM_USE_TIM2!"FALSE"}
 #define STM32_PWM_USE_TIM3                  ${doc.STM32_PWM_USE_TIM3!"FALSE"}
@@ -380,6 +384,20 @@
 #define STM32_SERIAL_USE_USART6             ${doc.STM32_SERIAL_USE_USART6!"FALSE"}
 #define STM32_SERIAL_USE_UART7              ${doc.STM32_SERIAL_USE_UART7!"FALSE"}
 #define STM32_SERIAL_USE_UART8              ${doc.STM32_SERIAL_USE_UART8!"FALSE"}
+#define STM32_SERIAL_USE_LPUART1            ${doc.STM32_SERIAL_USE_LPUART1!"FALSE"}
+
+/*
+ * SIO driver system settings.
+ */
+#define STM32_SIO_USE_USART1                ${doc.STM32_SIO_USE_USART1!"FALSE"}
+#define STM32_SIO_USE_USART2                ${doc.STM32_SIO_USE_USART2!"FALSE"}
+#define STM32_SIO_USE_USART3                ${doc.STM32_SIO_USE_USART3!"FALSE"}
+#define STM32_SIO_USE_UART4                 ${doc.STM32_SIO_USE_UART4!"FALSE"}
+#define STM32_SIO_USE_UART5                 ${doc.STM32_SIO_USE_UART5!"FALSE"}
+#define STM32_SIO_USE_USART6                ${doc.STM32_SIO_USE_USART6!"FALSE"}
+#define STM32_SIO_USE_UART7                 ${doc.STM32_SIO_USE_UART7!"FALSE"}
+#define STM32_SIO_USE_UART8                 ${doc.STM32_SIO_USE_UART8!"FALSE"}
+#define STM32_SIO_USE_LPUART1               ${doc.STM32_SIO_USE_LPUART1!"FALSE"}
 
 /*
  * SPI driver system settings.
@@ -485,6 +503,7 @@
  */
 #define STM32_WSPI_USE_QUADSPI1             ${doc.STM32_WSPI_USE_QUADSPI1!"FALSE"}
 #define STM32_WSPI_QUADSPI1_PRESCALER_VALUE ${doc.STM32_WSPI_QUADSPI1_PRESCALER_VALUE!"1"}
+#define STM32_WSPI_SET_CR_SSHIFT            ${doc.STM32_WSPI_SET_CR_SSHIFT!"TRUE"}
 #define STM32_WSPI_QUADSPI1_MDMA_CHANNEL    ${doc.STM32_WSPI_QUADSPI1_MDMA_CHANNEL!"STM32_MDMA_CHANNEL_ID_ANY"}
 #define STM32_WSPI_QUADSPI1_MDMA_PRIORITY   ${doc.STM32_WSPI_QUADSPI1_MDMA_PRIORITY!"1"}
 #define STM32_WSPI_MDMA_ERROR_HOOK(qspip)   ${doc.STM32_WSPI_MDMA_ERROR_HOOK!"osalSysHalt(\"MDMA failure\")"}

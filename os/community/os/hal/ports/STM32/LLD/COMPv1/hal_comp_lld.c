@@ -34,6 +34,18 @@
 /* Driver local definitions.                                                 */
 /*===========================================================================*/
 
+#ifndef COMP_CSR_EN
+  #define COMP_CSR_EN COMP_CSR_COMPxEN
+#endif
+
+#ifndef COMP_CSR_POLARITY
+  #ifdef COMP_CSR_COMPxPOL
+    #define COMP_CSR_POLARITY COMP_CSR_COMPxPOL
+  #else
+    #define COMP_CSR_POLARITY COMP_CSR_COMPxPOLARITY // L0
+  #endif
+#endif
+
 /*===========================================================================*/
 /* Driver exported variables.                                                */
 /*===========================================================================*/
@@ -122,10 +134,10 @@ void comp_lld_init(void) {
 #if STM32_COMP_USE_COMP1
   /* Driver initialization.*/
   compObjectInit(&COMPD1);
-  COMPD1.reg = COMP;
+  COMPD1.reg = COMP1;
   COMPD1.reg->CSR = 0;
 #if STM32_COMP_USE_INTERRUPTS
-  nvicEnableVector(COMP1_2_3_IRQn, STM32_COMP_1_2_3_IRQ_PRIORITY);
+  nvicEnableVector(STM32_COMP1_IRQn, STM32_COMP_1_2_3_IRQ_PRIORITY);
 #endif
 #endif
 
@@ -135,7 +147,7 @@ void comp_lld_init(void) {
   COMPD2.reg = COMP2;
   COMPD2.reg->CSR = 0;
 #if STM32_COMP_USE_INTERRUPTS
-  nvicEnableVector(COMP1_2_3_IRQn, STM32_COMP_1_2_3_IRQ_PRIORITY);
+  nvicEnableVector(STM32_COMP2_IRQn, STM32_COMP_1_2_3_IRQ_PRIORITY);
 #endif
 #endif
 
@@ -145,7 +157,7 @@ void comp_lld_init(void) {
   COMPD3.reg = COMP3;
   COMPD3.reg->CSR = 0;
 #if STM32_COMP_USE_INTERRUPTS
-  nvicEnableVector(COMP1_2_3_IRQn, STM32_COMP_1_2_3_IRQ_PRIORITY);
+  nvicEnableVector(STM32_COMP3_IRQn, STM32_COMP_1_2_3_IRQ_PRIORITY);
 #endif
 #endif
 
@@ -155,7 +167,7 @@ void comp_lld_init(void) {
   COMPD4.reg = COMP4;
   COMPD4.reg->CSR = 0;
 #if STM32_COMP_USE_INTERRUPTS
-  nvicEnableVector(COMP4_5_6_IRQn, STM32_COMP_1_2_3_IRQ_PRIORITY);
+  nvicEnableVector(STM32_COMP4_IRQn, STM32_COMP_4_5_6_IRQ_PRIORITY);
 #endif
 #endif
 
@@ -165,7 +177,7 @@ void comp_lld_init(void) {
   COMPD5.reg = COMP5;
   COMPD5.reg->CSR = 0;
 #if STM32_COMP_USE_INTERRUPTS
-  nvicEnableVector(COMP4_5_6_IRQn, STM32_COMP_1_2_3_IRQ_PRIORITY);
+  nvicEnableVector(STM32_COMP5_IRQn, STM32_COMP_4_5_6_IRQ_PRIORITY);
 #endif
 #endif
 
@@ -175,7 +187,7 @@ void comp_lld_init(void) {
   COMPD6.reg = COMP6;
   COMPD6.reg->CSR = 0;
 #if STM32_COMP_USE_INTERRUPTS
-  nvicEnableVector(COMP4_5_6_IRQn, STM32_COMP_1_2_3_IRQ_PRIORITY);
+  nvicEnableVector(STM32_COMP6_IRQn, STM32_COMP_4_5_6_IRQ_PRIORITY);
 #endif
 #endif
 
@@ -185,18 +197,21 @@ void comp_lld_init(void) {
   COMPD7.reg = COMP7;
   COMPD7.reg->CSR = 0;
 #if STM32_COMP_USE_INTERRUPTS
-  nvicEnableVector(COMP7_IRQn, STM32_COMP_7_IRQ_PRIORITY);
+  nvicEnableVector(STM32_COMP7_IRQn, STM32_COMP_7_IRQ_PRIORITY);
 #endif
 #endif
 
 }
 
+#if STM32_COMP_USE_INTERRUPTS
+
+#if STM32_COMP_USE_COMP1 || STM32_COMP_USE_COMP2 || STM32_COMP_USE_COMP3
 /**
  * @brief  COMP1, COMP2, COMP3 interrupt handler.
  *
  * @isr
  */
-OSAL_IRQ_HANDLER(Vector140) {
+OSAL_IRQ_HANDLER(COMP1_2_3_IRQHandler) {
   uint32_t pr;
 
   OSAL_IRQ_PROLOGUE();
@@ -219,13 +234,15 @@ OSAL_IRQ_HANDLER(Vector140) {
 
   OSAL_IRQ_EPILOGUE();
 }
+#endif
 
+#if STM32_COMP_USE_COMP4 || STM32_COMP_USE_COMP5 || STM32_COMP_USE_COMP6
 /**
  * @brief   COMP4, COMP5, COMP6 interrupt handler.
  *
  * @isr
  */
-OSAL_IRQ_HANDLER(Vector144) {
+OSAL_IRQ_HANDLER(COMP4_5_6_IRQHandler) {
   uint32_t pr;
 
   OSAL_IRQ_PROLOGUE();
@@ -251,13 +268,15 @@ OSAL_IRQ_HANDLER(Vector144) {
 
   OSAL_IRQ_EPILOGUE();
 }
+#endif
 
+#if STM32_COMP_USE_COMP7
 /**
  * @brief   COMP7 interrupt handler.
  *
  * @isr
  */
-OSAL_IRQ_HANDLER(Vector148) {
+OSAL_IRQ_HANDLER(COMP7_IRQHandler) {
   uint32_t pr2;
 
   OSAL_IRQ_PROLOGUE();
@@ -265,13 +284,13 @@ OSAL_IRQ_HANDLER(Vector148) {
   pr2 = EXTI->PR2;
   pr2 = EXTI->IMR & (1U << 1);
   EXTI->PR2 = pr2;
-#if STM32_COMP_USE_COMP7
+
   if (pr2 & (1U << 1) && COMPD7.config->cb != NULL)
     COMPD7.config->cb(&COMPD7);
-#endif
 
   OSAL_IRQ_EPILOGUE();
 }
+#endif
 
 /**
  * @brief   Configures and activates an EXT channel (used by comp)
@@ -293,7 +312,7 @@ void comp_ext_lld_channel_enable(COMPDriver *compp, uint32_t channel) {
   if (channel < 32) {
 #endif
     /* Masked out lines must not be touched by this driver.*/
-    if ((cmask & STM32_EXTI_IMR_MASK) != 0U) {
+    if ((cmask & STM32_EXTI_IMR1_MASK) != 0U) {
       return;
     }
 
@@ -369,6 +388,8 @@ void comp_ext_lld_channel_disable(COMPDriver *compp, uint32_t channel) {
 #endif
 }
 
+#endif
+
 /**
  * @brief   Configures and activates the COMP peripheral.
  *
@@ -379,11 +400,11 @@ void comp_ext_lld_channel_disable(COMPDriver *compp, uint32_t channel) {
 void comp_lld_start(COMPDriver *compp) {
 
   // Apply CSR Execpt the enable bit.
-  compp->reg->CSR = compp->config->csr & ~COMP_CSR_COMPxEN;
+  compp->reg->CSR = compp->config->csr & ~COMP_CSR_EN;
 
   // Inverted output
   if (compp->config->output_mode == COMP_OUTPUT_INVERTED)
-    compp->reg->CSR |= COMP_CSR_COMPxPOL;
+    compp->reg->CSR |= COMP_CSR_POLARITY;
 
 #if STM32_COMP_USE_INTERRUPTS
 #if STM32_COMP_USE_COMP1
@@ -500,7 +521,7 @@ void comp_lld_stop(COMPDriver *compp) {
  */
 void comp_lld_enable(COMPDriver *compp) {
 
-   compp->reg->CSR |= COMP_CSR_COMPxEN; /* Enable */
+   compp->reg->CSR |= COMP_CSR_EN; /* Enable */
 }
 
 /**
@@ -512,7 +533,7 @@ void comp_lld_enable(COMPDriver *compp) {
  */
 void comp_lld_disable(COMPDriver *compp) {
 
-  compp->reg->CSR &= ~COMP_CSR_COMPxEN; /* Disable */
+  compp->reg->CSR &= ~COMP_CSR_EN; /* Disable */
 }
 
 #endif /* HAL_USE_COMP */

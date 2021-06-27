@@ -35,6 +35,7 @@
 #include "rt_test_sequence_009.h"
 #include "rt_test_sequence_010.h"
 #include "rt_test_sequence_011.h"
+#include "rt_test_sequence_012.h"
 
 #if !defined(__DOXYGEN__)
 
@@ -58,7 +59,11 @@ extern "C" {
 /*
  * Allowed delay in timeout checks.
  */
-#define ALLOWED_DELAY TIME_MS2I(2)
+#if CH_CFG_ST_TIMEDELTA == 0
+#define ALLOWED_DELAY           2
+#else
+#define ALLOWED_DELAY           TIME_MS2I(2)
+#endif
 
 /*
  * Maximum number of test threads.

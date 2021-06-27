@@ -32,6 +32,20 @@
 #endif
 
 /**
+ * @brief   Enables the SDRAM subsystem.
+ */
+#if !defined(HAL_USE_SDRAM) || defined(__DOXYGEN__)
+#define HAL_USE_SDRAM               FALSE
+#endif
+
+/**
+ * @brief   Enables the SRAM subsystem.
+ */
+#if !defined(HAL_USE_SRAM) || defined(__DOXYGEN__)
+#define HAL_USE_SRAM                FALSE
+#endif
+
+/**
  * @brief   Enables the NAND subsystem.
  */
 #if !defined(HAL_USE_NAND) || defined(__DOXYGEN__)
@@ -167,24 +181,6 @@
  * @note    Disabling this option saves both code and data space.
  */
 #define EEPROM_USE_EE25XX FALSE
-
-/*===========================================================================*/
-/* QEI driver related settings.                                              */
-/*===========================================================================*/
-
-/**
- * @brief   Enables discard of overlow
- */
-#if !defined(QEI_USE_OVERFLOW_DISCARD) || defined(__DOXYGEN__)
-#define QEI_USE_OVERFLOW_DISCARD    FALSE
-#endif
-
-/**
- * @brief   Enables min max of overlow
- */
-#if !defined(QEI_USE_OVERFLOW_MINMAX) || defined(__DOXYGEN__)
-#define QEI_USE_OVERFLOW_MINMAX     FALSE
-#endif
 
 #endif /* HALCONF_COMMUNITY_H */
 

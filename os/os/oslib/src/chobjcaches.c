@@ -1,12 +1,12 @@
 /*
-    ChibiOS - Copyright (C) 2006..2019 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006,2007,2008,2009,2010,2011,2012,2013,2014,
+              2015,2016,2017,2018,2019,2020,2021 Giovanni Di Sirio.
 
     This file is part of ChibiOS.
 
     ChibiOS is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+    the Free Software Foundation version 3 of the License.
 
     ChibiOS is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -18,7 +18,7 @@
 */
 
 /**
- * @file    chobjcaches.c
+ * @file    oslib/src/chobjcaches.c
  * @brief   Objects Caches code.
  * @details Objects caches.
  *          <h2>Operation mode</h2>
@@ -435,6 +435,7 @@ void chCacheReleaseObjectI(objects_cache_t *ocp,
  *          reported by this function.
  *
  * @param[in] ocp       pointer to the @p objects_cache_t structure
+ * @param[in] objp      pointer to the @p oc_object_t structure
  * @param[in] async     requests an asynchronous operation if supported, the
  *                      function is then responsible for releasing the
  *                      object
@@ -463,6 +464,7 @@ bool chCacheReadObject(objects_cache_t *ocp,
  *          reported by this function.
  *
  * @param[in] ocp       pointer to the @p objects_cache_t structure
+ * @param[in] objp      pointer to the @p oc_object_t structure
  * @param[in] async     requests an asynchronous operation if supported, the
  *                      function is then responsible for releasing the
  *                      object

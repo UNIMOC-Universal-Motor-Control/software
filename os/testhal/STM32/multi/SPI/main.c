@@ -23,8 +23,8 @@
 /*
  * SPI TX and RX buffers.
  */
-CC_ALIGN(32) static uint8_t txbuf[512];
-CC_ALIGN(32) static uint8_t rxbuf[512];
+CC_ALIGN_DATA(32) static uint8_t txbuf[512];
+CC_ALIGN_DATA(32) static uint8_t rxbuf[512];
 
 #if SPI_SUPPORTS_CIRCULAR == TRUE
 /*
@@ -73,8 +73,8 @@ static THD_FUNCTION(spi_thread_1, p) {
     spiExchange(&PORTAB_SPI1, 1,
                 txbuf, rxbuf);          /* Atomic transfer operations.      */
     spiUnselect(&PORTAB_SPI1);          /* Slave Select de-assertion.       */
-    cacheBufferInvalidate(&txbuf[0],    /* Cache invalidation over the      */
-                          sizeof txbuf);/* buffer.                          */
+    cacheBufferInvalidate(&rxbuf[0],    /* Cache invalidation over the      */
+                          sizeof rxbuf);/* buffer.                          */
     spiReleaseBus(&PORTAB_SPI1);        /* Ownership release.               */
   }
 }
@@ -101,8 +101,8 @@ static THD_FUNCTION(spi_thread_2, p) {
     spiExchange(&PORTAB_SPI1, 1,
                 txbuf, rxbuf);          /* Atomic transfer operations.      */
     spiUnselect(&PORTAB_SPI1);          /* Slave Select de-assertion.       */
-    cacheBufferInvalidate(&txbuf[0],    /* Cache invalidation over the      */
-                          sizeof txbuf);/* buffer.                          */
+    cacheBufferInvalidate(&rxbuf[0],    /* Cache invalidation over the      */
+                          sizeof rxbuf);/* buffer.                          */
     spiReleaseBus(&PORTAB_SPI1);        /* Ownership release.               */
   }
 }
@@ -166,8 +166,8 @@ int main(void) {
   spiExchange(&PORTAB_SPI1, 512,
               txbuf, rxbuf);          /* Atomic transfer operations.      */
   spiUnselect(&PORTAB_SPI1);          /* Slave Select de-assertion.       */
-  cacheBufferInvalidate(&txbuf[0],    /* Cache invalidation over the      */
-                        sizeof txbuf);/* buffer.                          */
+  cacheBufferInvalidate(&rxbuf[0],    /* Cache invalidation over the      */
+                        sizeof rxbuf);/* buffer.                          */
 #endif
 
   /*

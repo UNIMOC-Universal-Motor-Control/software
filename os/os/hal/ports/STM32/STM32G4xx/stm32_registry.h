@@ -94,6 +94,23 @@
 #define STM32_HAS_CRYP1                     FALSE
 #endif
 
+/* RCC attributes.*/
+#define STM32_RCC_HAS_HSI16                 TRUE
+#define STM32_RCC_HAS_HSI48                 TRUE
+#define STM32_RCC_HAS_MSI                   FALSE
+#define STM32_RCC_HAS_LSI                   TRUE
+#define STM32_RCC_HAS_LSI_PRESCALER         FALSE
+#define STM32_RCC_HAS_LSE                   TRUE
+#define STM32_RCC_HAS_HSE                   TRUE
+
+#define STM32_RCC_HAS_PLL                   TRUE
+#define STM32_RCC_PLL_HAS_P                 TRUE
+#define STM32_RCC_PLL_HAS_Q                 TRUE
+#define STM32_RCC_PLL_HAS_R                 TRUE
+
+#define STM32_RCC_HAS_PLLSAI1               FALSE
+#define STM32_RCC_HAS_PLLSAI2               FALSE
+
 /*===========================================================================*/
 /* STM32G473xx, STM32G4843xx, STM32G474xx, STM32G484xx.                      */
 /*===========================================================================*/
@@ -113,6 +130,14 @@
 #define STM32_HAS_FDCAN1                    TRUE
 #define STM32_HAS_FDCAN2                    TRUE
 #define STM32_HAS_FDCAN3                    TRUE
+#define STM32_FDCAN_FLS_NBR                 28U
+#define STM32_FDCAN_FLE_NBR                 8U
+#define STM32_FDCAN_RF0_NBR                 3U
+#define STM32_FDCAN_RF1_NBR                 3U
+#define STM32_FDCAN_RB_NBR                  0U
+#define STM32_FDCAN_TEF_NBR                 3U
+#define STM32_FDCAN_TB_NBR                  3U
+#define STM32_FDCAN_TM_NBR                  0U
 
 /* DAC attributes.*/
 #define STM32_HAS_DAC1_CH1                  TRUE
@@ -135,10 +160,11 @@
 #define STM32_HAS_ETH                       FALSE
 
 /* EXTI attributes.*/
-#define STM32_EXTI_TYPE                     0
-#define STM32_EXTI_NUM_LINES                41
+#define STM32_EXTI_HAS_CR                   FALSE
+#define STM32_EXTI_SEPARATE_RF              FALSE
+#define STM32_EXTI_NUM_LINES                44
 #define STM32_EXTI_IMR1_MASK                0x1F840000U
-#define STM32_EXTI_IMR2_MASK                0xFFFFFCF3U
+#define STM32_EXTI_IMR2_MASK                0xFFFFFF3CU
 
 
 /* Flash attributes.*/
@@ -315,11 +341,18 @@
 #define STM32_HAS_ADC4                      FALSE
 #define STM32_HAS_ADC5                      FALSE
 
-
 /* CAN attributes.*/
 #define STM32_HAS_FDCAN1                    TRUE
 #define STM32_HAS_FDCAN2                    FALSE
 #define STM32_HAS_FDCAN3                    FALSE
+#define STM32_FDCAN_FLS_NBR                 28U
+#define STM32_FDCAN_FLE_NBR                 8U
+#define STM32_FDCAN_RF0_NBR                 3U
+#define STM32_FDCAN_RF1_NBR                 3U
+#define STM32_FDCAN_RB_NBR                  0U
+#define STM32_FDCAN_TEF_NBR                 3U
+#define STM32_FDCAN_TB_NBR                  3U
+#define STM32_FDCAN_TM_NBR                  0U
 
 /* DAC attributes.*/
 #define STM32_HAS_DAC1_CH1                  TRUE
@@ -342,10 +375,11 @@
 #define STM32_HAS_ETH                       FALSE
 
 /* EXTI attributes.*/
-#define STM32_EXTI_TYPE                     0
-#define STM32_EXTI_NUM_LINES                41
+#define STM32_EXTI_HAS_CR                   FALSE
+#define STM32_EXTI_SEPARATE_RF              FALSE
+#define STM32_EXTI_NUM_LINES                44
 #define STM32_EXTI_IMR1_MASK                0x1F840000U
-#define STM32_EXTI_IMR2_MASK                0xFFFFFCF3U
+#define STM32_EXTI_IMR2_MASK                0xFFFFFF3CU
 
 
 /* Flash attributes.*/

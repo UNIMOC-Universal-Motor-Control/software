@@ -1,12 +1,12 @@
 /*
-    ChibiOS - Copyright (C) 2006..2018 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006,2007,2008,2009,2010,2011,2012,2013,2014,
+              2015,2016,2017,2018,2019,2020,2021 Giovanni Di Sirio.
 
     This file is part of ChibiOS.
 
     ChibiOS is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+    the Free Software Foundation version 3 of the License.
 
     ChibiOS is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -18,7 +18,7 @@
 */
 
 /**
- * @file    chregistry.c
+ * @file    rt/src/chregistry.c
  * @brief   Threads registry code.
  *
  * @addtogroup registry
@@ -67,12 +67,6 @@
 /* Module local functions.                                                   */
 /*===========================================================================*/
 
-#define _offsetof(st, m)                                                    \
-  /*lint -save -e9005 -e9033 -e413 [11.8, 10.8 1.3] Normal pointers
-    arithmetic, it is safe.*/                                               \
-  ((size_t)((char *)&((st *)0)->m - (char *)0))                             \
-  /*lint -restore*/
-
 /*===========================================================================*/
 /* Module exported functions.                                                */
 /*===========================================================================*/
@@ -90,30 +84,30 @@ ROMCONST chdebug_t ch_debug = {
   (uint8_t)sizeof (void *),
   (uint8_t)sizeof (systime_t),
   (uint8_t)sizeof (thread_t),
-  (uint8_t)_offsetof(thread_t, prio),
-  (uint8_t)_offsetof(thread_t, ctx),
-  (uint8_t)_offsetof(thread_t, newer),
-  (uint8_t)_offsetof(thread_t, older),
-  (uint8_t)_offsetof(thread_t, name),
+  (uint8_t)__CH_OFFSETOF(thread_t, hdr.pqueue.prio),
+  (uint8_t)__CH_OFFSETOF(thread_t, ctx),
+  (uint8_t)__CH_OFFSETOF(thread_t, rqueue.next),
+  (uint8_t)__CH_OFFSETOF(thread_t, rqueue.prev),
+  (uint8_t)__CH_OFFSETOF(thread_t, name),
 #if (CH_DBG_ENABLE_STACK_CHECK == TRUE) || (CH_CFG_USE_DYNAMIC == TRUE)
-  (uint8_t)_offsetof(thread_t, wabase),
+  (uint8_t)__CH_OFFSETOF(thread_t, wabase),
 #else
   (uint8_t)0,
 #endif
-  (uint8_t)_offsetof(thread_t, state),
-  (uint8_t)_offsetof(thread_t, flags),
+  (uint8_t)__CH_OFFSETOF(thread_t, state),
+  (uint8_t)__CH_OFFSETOF(thread_t, flags),
 #if CH_CFG_USE_DYNAMIC == TRUE
-  (uint8_t)_offsetof(thread_t, refs),
+  (uint8_t)__CH_OFFSETOF(thread_t, refs),
 #else
   (uint8_t)0,
 #endif
 #if CH_CFG_TIME_QUANTUM > 0
-  (uint8_t)_offsetof(thread_t, ticks),
+  (uint8_t)__CH_OFFSETOF(thread_t, ticks),
 #else
   (uint8_t)0,
 #endif
 #if CH_DBG_THREADS_PROFILING == TRUE
-  (uint8_t)_offsetof(thread_t, time)
+  (uint8_t)__CH_OFFSETOF(thread_t, time)
 #else
   (uint8_t)0
 #endif
@@ -133,9 +127,13 @@ ROMCONST chdebug_t ch_debug = {
  */
 thread_t *chRegFirstThread(void) {
   thread_t *tp;
+  uint8_t *p;
 
   chSysLock();
-  tp = ch.rlist.newer;
+  p = (uint8_t *)REG_HEADER(currcore)->next;
+  /*lint -save -e413 [1.3] Safe to subtract a calculated offset.*/
+  tp = (thread_t *)(p - __CH_OFFSETOF(thread_t, rqueue));
+  /*lint -restore*/
 #if CH_CFG_USE_DYNAMIC == TRUE
   tp->refs++;
 #endif
@@ -157,17 +155,24 @@ thread_t *chRegFirstThread(void) {
  */
 thread_t *chRegNextThread(thread_t *tp) {
   thread_t *ntp;
+  ch_queue_t *nqp;
 
   chSysLock();
-  ntp = tp->newer;
-  /*lint -save -e9087 -e740 [11.3, 1.3] Cast required by list handling.*/
-  if (ntp == (thread_t *)&ch.rlist) {
-  /*lint -restore*/
+
+  /* Next element in the registry queue.*/
+  nqp = tp->rqueue.next;
+  if (nqp == REG_HEADER(currcore)) {
     ntp = NULL;
   }
 #if CH_CFG_USE_DYNAMIC == TRUE
   else {
+    uint8_t *p = (uint8_t *)nqp;
+    /*lint -save -e413 [1.3] Safe to subtract a calculated offset.*/
+    ntp = (thread_t *)(p - __CH_OFFSETOF(thread_t, rqueue));
+    /*lint -restore*/
+
     chDbgAssert(ntp->refs < (trefs_t)255, "too many references");
+
     ntp->refs++;
   }
 #endif

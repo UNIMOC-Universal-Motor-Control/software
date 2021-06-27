@@ -1,6 +1,6 @@
 /*
     ChibiOS - Copyright (C) 2006..2017 Giovanni Di Sirio
-              Copyright (C) 2015..2017 Diego Ismirlian, (dismirlian (at) google's mail)
+              Copyright (C) 2015..2019 Diego Ismirlian, (dismirlian(at)google's mail)
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -29,39 +29,12 @@
 
 //#pragma GCC optimize("Og")
 
-
-#if USBHAOA_DEBUG_ENABLE_TRACE
-#define udbgf(f, ...)  usbDbgPrintf(f, ##__VA_ARGS__)
-#define udbg(f, ...)  usbDbgPuts(f, ##__VA_ARGS__)
-#else
-#define udbgf(f, ...)  do {} while(0)
-#define udbg(f, ...)   do {} while(0)
-#endif
-
-#if USBHAOA_DEBUG_ENABLE_INFO
-#define uinfof(f, ...)  usbDbgPrintf(f, ##__VA_ARGS__)
-#define uinfo(f, ...)  usbDbgPuts(f, ##__VA_ARGS__)
-#else
-#define uinfof(f, ...)  do {} while(0)
-#define uinfo(f, ...)   do {} while(0)
-#endif
-
-#if USBHAOA_DEBUG_ENABLE_WARNINGS
-#define uwarnf(f, ...)  usbDbgPrintf(f, ##__VA_ARGS__)
-#define uwarn(f, ...)  usbDbgPuts(f, ##__VA_ARGS__)
-#else
-#define uwarnf(f, ...)  do {} while(0)
-#define uwarn(f, ...)   do {} while(0)
-#endif
-
-#if USBHAOA_DEBUG_ENABLE_ERRORS
-#define uerrf(f, ...)  usbDbgPrintf(f, ##__VA_ARGS__)
-#define uerr(f, ...)  usbDbgPuts(f, ##__VA_ARGS__)
-#else
-#define uerrf(f, ...)  do {} while(0)
-#define uerr(f, ...)   do {} while(0)
-#endif
-
+#define _USBH_DEBUG_HELPER_CLASS_DRIVER		container_of(aoacp, USBHAOADriver, channel)
+#define _USBH_DEBUG_HELPER_ENABLE_TRACE		USBHAOA_DEBUG_ENABLE_TRACE
+#define _USBH_DEBUG_HELPER_ENABLE_INFO		USBHAOA_DEBUG_ENABLE_INFO
+#define _USBH_DEBUG_HELPER_ENABLE_WARNINGS	USBHAOA_DEBUG_ENABLE_WARNINGS
+#define _USBH_DEBUG_HELPER_ENABLE_ERRORS	USBHAOA_DEBUG_ENABLE_ERRORS
+#include "usbh/debug_helpers.h"
 
 /*===========================================================================*/
 /* Constants													 		 	 */
@@ -161,7 +134,12 @@ static usbh_baseclassdriver_t *_aoa_load(usbh_device_t *dev, const uint8_t *desc
 			}
 		};
 
-		uinfo("AOA: Unrecognized VID");
+		if (descriptor[1] != USBH_DT_DEVICE) {
+			udevinfo("AOA: Won't try to detect Android device at interface level");
+			return NULL;
+		}
+
+		udevinfo("AOA: Unrecognized VID");
 
 #if defined(HAL_USBHAOA_FILTER_CALLBACK)
 		if (!HAL_USBHAOA_FILTER_CALLBACK(dev, descriptor, rem, &config)) {
@@ -169,11 +147,12 @@ static usbh_baseclassdriver_t *_aoa_load(usbh_device_t *dev, const uint8_t *desc
 		}
 #endif
 
-		uinfo("AOA: Try if it's an Android device");
+		udevinfo("AOA: Try if it's an Android device");
 		if (_get_protocol(dev, &protocol) != HAL_SUCCESS) {
+			udevinfo("AOA: not an Android device");
 			return NULL;
 		}
-		uinfof("AOA: Possible Android device found (protocol=%d)", protocol);
+		udevinfof("AOA: Possible Android device found (protocol=%d)", protocol);
 
 		if (config.channel.manufacturer != NULL) {
 			if ((_send_string(dev, USBHAOA_ACCESSORY_STRING_MANUFACTURER, config.channel.manufacturer) != HAL_SUCCESS)
@@ -182,20 +161,22 @@ static usbh_baseclassdriver_t *_aoa_load(usbh_device_t *dev, const uint8_t *desc
 				|| (_send_string(dev, USBHAOA_ACCESSORY_STRING_VERSION, config.channel.version) != HAL_SUCCESS)
 				|| (_send_string(dev, USBHAOA_ACCESSORY_STRING_URI, config.channel.uri) != HAL_SUCCESS)
 				|| (_send_string(dev, USBHAOA_ACCESSORY_STRING_SERIAL, config.channel.serial) != HAL_SUCCESS)) {
-				uerr("AOA: Can't send string; abort start");
+				udeverr("AOA: Can't send string; abort start");
 				return NULL;
 			}
 		}
 
 		if (protocol > 1) {
 			if (_set_audio_mode(dev, (uint16_t)(config.audio.mode)) != HAL_SUCCESS) {
-				uerr("AOA: Can't set audio mode; abort channel start");
+				udeverr("AOA: Can't set audio mode; abort channel start");
 				return NULL;
 			}
 		}
 
 		if (_accessory_start(dev) != HAL_SUCCESS) {
-			uerr("AOA: Can't start accessory; abort channel start");
+			udeverr("AOA: Can't start accessory; abort channel start");
+		} else {
+			udevinfo("AOA: Accessory started");
 		}
 
 		return NULL;
@@ -219,18 +200,18 @@ static usbh_baseclassdriver_t *_aoa_load(usbh_device_t *dev, const uint8_t *desc
 	case AOA_GOOGLE_PID_ACCESSORY_AUDIO_ABD:
 		break;
 	default:
-		uerr("AOA: Unrecognized PID");
+		udeverr("AOA: Unrecognized PID");
 		return NULL;
 	}
 
 	const usbh_interface_descriptor_t * const ifdesc = (const usbh_interface_descriptor_t *)descriptor;
 	if ((_usbh_match_descriptor(descriptor, rem, USBH_DT_INTERFACE, 0xFF, 0xFF, 0x00) != HAL_SUCCESS)
 			|| (ifdesc->bNumEndpoints < 2)) {
-		uerr("AOA: This IF is not the Accessory IF");
+		udeverr("AOA: This IF is not the Accessory IF");
 		return NULL;
 	}
 
-	uinfof("AOA: Found Accessory Interface #%d", ifdesc->bInterfaceNumber);
+	udevinfof("AOA: Found Accessory Interface #%d", ifdesc->bInterfaceNumber);
 
 	for (i = 0; i < HAL_USBHAOA_MAX_INSTANCES; i++) {
 		if (USBHAOAD[i].dev == NULL) {
@@ -239,7 +220,7 @@ static usbh_baseclassdriver_t *_aoa_load(usbh_device_t *dev, const uint8_t *desc
 		}
 	}
 
-	uwarn("AOA: Can't alloc driver");
+	udevwarn("AOA: Can't alloc driver");
 
 	/* can't alloc */
 	return NULL;
@@ -261,30 +242,30 @@ alloc_ok:
 	for (ep_iter_init(&iep, &iif); iep.valid; ep_iter_next(&iep)) {
 		const usbh_endpoint_descriptor_t *const epdesc = ep_get(&iep);
 		if ((epdesc->bEndpointAddress & 0x80) && (epdesc->bmAttributes == USBH_EPTYPE_BULK)) {
-			uinfof("AOA: BULK IN endpoint found: bEndpointAddress=%02x", epdesc->bEndpointAddress);
+			udevinfof("AOA: BULK IN endpoint found: bEndpointAddress=%02x", epdesc->bEndpointAddress);
 			usbhEPObjectInit(&aoap->channel.epin, dev, epdesc);
 			usbhEPSetName(&aoap->channel.epin, "AOA[BIN ]");
 		} else if (((epdesc->bEndpointAddress & 0x80) == 0)
 				&& (epdesc->bmAttributes == USBH_EPTYPE_BULK)) {
-			uinfof("AOA: BULK OUT endpoint found: bEndpointAddress=%02x", epdesc->bEndpointAddress);
+			udevinfof("AOA: BULK OUT endpoint found: bEndpointAddress=%02x", epdesc->bEndpointAddress);
 			usbhEPObjectInit(&aoap->channel.epout, dev, epdesc);
 			usbhEPSetName(&aoap->channel.epout, "AOA[BOUT]");
 		} else {
-			uinfof("AOA: unsupported endpoint found: bEndpointAddress=%02x, bmAttributes=%02x",
+			udevinfof("AOA: unsupported endpoint found: bEndpointAddress=%02x, bmAttributes=%02x",
 				epdesc->bEndpointAddress, epdesc->bmAttributes);
 		}
 	}
 
 	if ((aoap->channel.epin.status != USBH_EPSTATUS_CLOSED)
 		|| (aoap->channel.epout.status != USBH_EPSTATUS_CLOSED)) {
-		uwarn("AOA: Couldn't find endpoints");
+		udevwarn("AOA: Couldn't find endpoints");
 		aoap->state = USBHAOA_STATE_STOP;
 		return NULL;
 	}
 
 	aoap->state = USBHAOA_STATE_READY;
 	aoap->channel.state = USBHAOA_CHANNEL_STATE_ACTIVE;
-	uwarn("AOA: Ready");
+	udevwarn("AOA: Ready");
 	return (usbh_baseclassdriver_t *)aoap;
 }
 
@@ -303,7 +284,7 @@ static void _aoa_unload(usbh_baseclassdriver_t *drv) {
 /* ------------------------------------ */
 
 static void _submitOutI(USBHAOAChannel *aoacp, uint32_t len) {
-	udbgf("AOA: Submit OUT %d", len);
+	uclassdrvdbgf("AOA: Submit OUT %d", len);
 	aoacp->oq_urb.requestedLength = len;
 	usbhURBObjectResetI(&aoacp->oq_urb);
 	usbhURBSubmitI(&aoacp->oq_urb);
@@ -319,12 +300,12 @@ static void _out_cb(usbh_urb_t *urb) {
 		chnAddFlagsI(aoacp, CHN_OUTPUT_EMPTY | CHN_TRANSMISSION_END);
 		return;
 	case USBH_URBSTATUS_DISCONNECTED:
-		uwarn("AOA: URB OUT disconnected");
-		chThdDequeueNextI(&aoacp->oq_waiting, Q_RESET);
+		uclassdrvwarn("AOA: URB OUT disconnected");
+		chThdDequeueAllI(&aoacp->oq_waiting, Q_RESET);
 		chnAddFlagsI(aoacp, CHN_OUTPUT_EMPTY);
 		return;
 	default:
-		uerrf("AOA: URB OUT status unexpected = %d", urb->status);
+		uclassdrverrf("AOA: URB OUT status unexpected = %d", urb->status);
 		break;
 	}
 	usbhURBObjectResetI(&aoacp->oq_urb);
@@ -398,7 +379,7 @@ static msg_t _put(USBHAOAChannel *aoacp, uint8_t b) {
 }
 
 static void _submitInI(USBHAOAChannel *aoacp) {
-	udbg("AOA: Submit IN");
+	uclassdrvdbg("AOA: Submit IN");
 	usbhURBObjectResetI(&aoacp->iq_urb);
 	usbhURBSubmitI(&aoacp->iq_urb);
 }
@@ -408,9 +389,9 @@ static void _in_cb(usbh_urb_t *urb) {
 	switch (urb->status) {
 	case USBH_URBSTATUS_OK:
 		if (urb->actualLength == 0) {
-			udbgf("AOA: URB IN no data");
+			uurbdbgf("AOA: URB IN no data");
 		} else {
-			udbgf("AOA: URB IN data len=%d", urb->actualLength);
+			uurbdbgf("AOA: URB IN data len=%d", urb->actualLength);
 			aoacp->iq_ptr = aoacp->iq_buff;
 			aoacp->iq_counter = urb->actualLength;
 			chThdDequeueNextI(&aoacp->iq_waiting, Q_OK);
@@ -418,11 +399,14 @@ static void _in_cb(usbh_urb_t *urb) {
 		}
 		break;
 	case USBH_URBSTATUS_DISCONNECTED:
-		uwarn("AOA: URB IN disconnected");
-		chThdDequeueNextI(&aoacp->iq_waiting, Q_RESET);
+		uurbwarn("AOA: URB IN disconnected");
+		chThdDequeueAllI(&aoacp->iq_waiting, Q_RESET);
+		chnAddFlagsI(aoacp, CHN_DISCONNECTED);
+		aoacp->state = USBHAOA_CHANNEL_STATE_ACTIVE;
+		container_of(aoacp, USBHAOADriver, channel)->state = USBHAOA_STATE_ACTIVE;
 		break;
 	default:
-		uerrf("AOA: URB IN status unexpected = %d", urb->status);
+		uurberrf("AOA: URB IN status unexpected = %d", urb->status);
 		_submitInI(aoacp);
 		break;
 	}
@@ -521,7 +505,7 @@ static const struct AOADriverVMT async_channel_vmt = {
 static void _stop_channelS(USBHAOAChannel *aoacp) {
 	if (aoacp->state != USBHAOA_CHANNEL_STATE_READY)
 		return;
-	uwarn("AOA: Stop channel");
+	uclassdrvwarn("AOA: Stop channel");
 	chVTResetI(&aoacp->vt);
 	usbhEPCloseS(&aoacp->epin);
 	usbhEPCloseS(&aoacp->epout);
@@ -535,14 +519,16 @@ static void _stop_channelS(USBHAOAChannel *aoacp) {
 static void _vt(void *p) {
 	USBHAOAChannel *const aoacp = (USBHAOAChannel *)p;
 	osalSysLockFromISR();
-	uint32_t len = aoacp->oq_ptr - aoacp->oq_buff;
-	if (len && !usbhURBIsBusy(&aoacp->oq_urb)) {
-		_submitOutI(aoacp, len);
+	if (aoacp->state == USBHAOA_CHANNEL_STATE_READY) {
+		uint32_t len = aoacp->oq_ptr - aoacp->oq_buff;
+		if (len && !usbhURBIsBusy(&aoacp->oq_urb)) {
+			_submitOutI(aoacp, len);
+		}
+		if ((aoacp->iq_counter == 0) && !usbhURBIsBusy(&aoacp->iq_urb)) {
+			_submitInI(aoacp);
+		}
+		chVTSetI(&aoacp->vt, OSAL_MS2I(16), _vt, aoacp);
 	}
-	if ((aoacp->iq_counter == 0) && !usbhURBIsBusy(&aoacp->iq_urb)) {
-		_submitInI(aoacp);
-	}
-	chVTSetI(&aoacp->vt, OSAL_MS2I(16), _vt, aoacp);
 	osalSysUnlockFromISR();
 }
 

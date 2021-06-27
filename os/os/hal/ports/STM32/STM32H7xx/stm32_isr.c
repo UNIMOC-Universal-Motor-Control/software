@@ -64,10 +64,13 @@
 #include "stm32_exti19.inc"
 #include "stm32_exti20_21.inc"
 
-#include <stm32_quadspi1.inc>
+#include "stm32_fdcan1.inc"
+#include "stm32_fdcan2.inc"
 
-#include <stm32_sdmmc1.inc>
-#include <stm32_sdmmc2.inc>
+#include "stm32_quadspi1.inc"
+
+#include "stm32_sdmmc1.inc"
+#include "stm32_sdmmc2.inc"
 
 #include <stm32_usart1.inc>
 #include "stm32_usart2.inc"
@@ -112,6 +115,9 @@ void irqInit(void) {
   exti19_irq_init();
   exti20_exti21_irq_init();
 
+  fdcan1_irq_init();
+  fdcan2_irq_init();
+
   mdma_irq_init();
 
   quadspi1_irq_init();
@@ -135,7 +141,8 @@ void irqInit(void) {
   uart5_irq_init();
   usart6_irq_init();
   uart7_irq_init();
-  uart5_irq_init();
+  uart8_irq_init();
+  lpuart1_irq_init();
 }
 
 /**
@@ -157,6 +164,9 @@ void irqDeinit(void) {
   exti18_irq_deinit();
   exti19_irq_deinit();
   exti20_exti21_irq_deinit();
+
+  fdcan1_irq_deinit();
+  fdcan2_irq_deinit();
 
   mdma_irq_deinit();
 
@@ -181,7 +191,8 @@ void irqDeinit(void) {
   uart5_irq_deinit();
   usart6_irq_deinit();
   uart7_irq_deinit();
-  uart5_irq_deinit();
+  uart8_irq_deinit();
+  lpuart1_irq_deinit();
 }
 
 /** @} */

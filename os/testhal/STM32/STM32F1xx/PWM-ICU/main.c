@@ -41,9 +41,7 @@ static PWMConfig pwmcfg = {
   },
   0,
   0,
-#if STM32_PWM_USE_ADVANCED
   0
-#endif
 };
 
 icucnt_t last_width, last_period;
@@ -65,7 +63,8 @@ static ICUConfig icucfg = {
   icuperiodcb,
   NULL,
   ICU_CHANNEL_1,
-  0
+  0U,
+  0xFFFFFFFFU
 };
 
 /*

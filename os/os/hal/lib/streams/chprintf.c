@@ -172,8 +172,10 @@ int chvprintf(BaseSequentialStream *chp, const char *fmt, va_list ap) {
     }
     
     /* Width modifier.*/
-    if (c == '*') {
+    if ( *fmt == '*') {
       width = va_arg(ap, int);
+      ++fmt;
+      c = *fmt++;
     }
     else {
       width = 0;
@@ -281,6 +283,8 @@ int chvprintf(BaseSequentialStream *chp, const char *fmt, va_list ap) {
 #endif
     case 'X':
     case 'x':
+    case 'P':
+    case 'p':
       c = 16;
       goto unsigned_common;
     case 'U':
@@ -311,7 +315,7 @@ unsigned_common:
       width = -width;
     }
     if (width < 0) {
-      if (*s == '-' && filler == '0') {
+      if ((*s == '-' || *s == '+') && filler == '0') {
         streamPut(chp, (uint8_t)*s++);
         n++;
         i--;

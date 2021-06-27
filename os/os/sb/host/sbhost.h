@@ -1,12 +1,12 @@
 /*
-    ChibiOS - Copyright (C) 2006..2019 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006,2007,2008,2009,2010,2011,2012,2013,2014,
+              2015,2016,2017,2018,2019,2020,2021 Giovanni Di Sirio.
 
     This file is part of ChibiOS.
 
     ChibiOS is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+    the Free Software Foundation version 3 of the License.
 
     ChibiOS is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -176,6 +176,9 @@ extern "C" {
   bool sb_is_valid_write_range(sb_class_t *sbcp, void *start, size_t size);
   void sbObjectInit(sb_class_t *sbcp);
   void sbStart(sb_class_t *sbcp, const sb_config_t *config);
+  msg_t sbSendMessageTimeout(sb_class_t *sbcp,
+                             msg_t msg,
+                             sysinterval_t timeout);
 #ifdef __cplusplus
 }
 #endif
@@ -209,13 +212,14 @@ static inline msg_t sbWait(sb_class_t *sbcp) {
  * @param[in] sbcp      pointer to the sandbox object
  * @param[in] msg       message to be sent
  * @return              The returned message.
- * @retval MSG_RESET    Sandboxed thread API usage error, exchange aborted.
+ * @retval MSG_RESET    if the exchange aborted, sandboxed thread API usage
+ *                      error.
  *
  * @api
  */
 static inline msg_t sbSendMessage(sb_class_t *sbcp, msg_t msg) {
 
-  return chMsgSend(sbcp->tp, msg);
+  return sbSendMessageTimeout(sbcp, msg, TIME_INFINITE);
 }
 #endif /* CH_CFG_USE_MESSAGES == TRUE */
 

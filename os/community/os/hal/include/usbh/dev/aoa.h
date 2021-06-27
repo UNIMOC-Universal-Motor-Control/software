@@ -1,6 +1,6 @@
 /*
     ChibiOS - Copyright (C) 2006..2017 Giovanni Di Sirio
-              Copyright (C) 2015..2017 Diego Ismirlian, (dismirlian (at) google's mail)
+              Copyright (C) 2015..2019 Diego Ismirlian, (dismirlian(at)google's mail)
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -130,6 +130,7 @@ typedef bool (*usbhaoa_filter_callback_t)(usbh_device_t *dev, const uint8_t *des
 #define usbhaoaGetState(aoap) ((aoap)->state)
 
 #define usbhaoaGetChannelState(aoap) ((aoap)->channel.state)
+#define usbhaoaGetHost(aoap) ((aoap)->dev->host)
 
 /*===========================================================================*/
 /* External declarations.                                                    */

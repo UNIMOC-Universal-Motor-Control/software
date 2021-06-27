@@ -14,6 +14,8 @@
     limitations under the License.
 */
 
+#define STM32_USE_DMA
+
 /*
  * FSMC driver system settings.
  */
@@ -24,8 +26,8 @@
 /*
  * FSMC NAND driver system settings.
  */
-#define STM32_NAND_USE_FSMC_NAND1           FALSE
-#define STM32_NAND_USE_FSMC_NAND2           FALSE
+#define STM32_NAND_USE_NAND1                FALSE
+#define STM32_NAND_USE_NAND2                FALSE
 #define STM32_NAND_USE_EXT_INT              FALSE
 #define STM32_NAND_DMA_STREAM               STM32_DMA_STREAM_ID(2, 7)
 #define STM32_NAND_DMA_PRIORITY             0
@@ -34,18 +36,16 @@
 /*
  * FSMC SRAM driver system settings.
  */
-#define STM32_USE_FSMC_SRAM                 FALSE
-#define STM32_SRAM_USE_FSMC_SRAM1           FALSE
-#define STM32_SRAM_USE_FSMC_SRAM2           FALSE
-#define STM32_SRAM_USE_FSMC_SRAM3           FALSE
-#define STM32_SRAM_USE_FSMC_SRAM4           FALSE
+#define STM32_SRAM_USE_SRAM1                FALSE
+#define STM32_SRAM_USE_SRAM2                FALSE
+#define STM32_SRAM_USE_SRAM3                FALSE
+#define STM32_SRAM_USE_SRAM4                FALSE
 
 /*
  * FSMC SDRAM driver system settings.
  */
-#define STM32_USE_FSMC_SDRAM                TRUE
-#define STM32_SDRAM_USE_FSMC_SDRAM1         FALSE
-#define STM32_SDRAM_USE_FSMC_SDRAM2         TRUE
+#define STM32_SDRAM_USE_SDRAM1              FALSE
+#define STM32_SDRAM_USE_SDRAM2              TRUE
 
 /*
  * TIMCAP driver system settings.
@@ -90,18 +90,18 @@
 /*
  * USBH driver system settings.
  */
-#define STM32_OTG1_CHANNELS_NUMBER          8
-#define STM32_OTG2_CHANNELS_NUMBER          12
+#define STM32_OTG_FS_CHANNELS_NUMBER          8
+#define STM32_OTG_HS_CHANNELS_NUMBER          12
 
 #define STM32_USBH_USE_OTG1                 1
-#define STM32_OTG1_RXFIFO_SIZE              1024
-#define STM32_OTG1_PTXFIFO_SIZE             128
-#define STM32_OTG1_NPTXFIFO_SIZE            128
+#define STM32_OTG_FS_RXFIFO_SIZE              1024
+#define STM32_OTG_FS_PTXFIFO_SIZE             128
+#define STM32_OTG_FS_NPTXFIFO_SIZE            128
 
 #define STM32_USBH_USE_OTG2                 0
-#define STM32_OTG2_RXFIFO_SIZE              2048
-#define STM32_OTG2_PTXFIFO_SIZE             1024
-#define STM32_OTG2_NPTXFIFO_SIZE            1024
+#define STM32_OTG_HS_RXFIFO_SIZE              2048
+#define STM32_OTG_HS_PTXFIFO_SIZE             1024
+#define STM32_OTG_HS_NPTXFIFO_SIZE            1024
 
 #define STM32_USBH_MIN_QSPACE               4
 #define STM32_USBH_CHANNELS_NP              4
