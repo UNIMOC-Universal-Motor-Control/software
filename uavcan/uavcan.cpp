@@ -30,7 +30,7 @@
 /**
  * @brief Thread main function
  */
-void thread::main(void)
+void uavcan::thread::main(void)
 {
 	setName("UAVCAN");
 
@@ -47,7 +47,7 @@ void thread::main(void)
 /**
  * @brief constructor of UAVCAN thread
  */
-thread::thread(void){}
+uavcan::thread::thread(void){}
 
 
 /** \} **/ /* end of doxygen group */

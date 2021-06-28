@@ -24,7 +24,6 @@
 #include "filter.hpp"
 #include "values.hpp"
 #include "settings.hpp"
-#include "freemaster_wrapper.hpp"
 #include "hardware_interface.hpp"
 
 /**

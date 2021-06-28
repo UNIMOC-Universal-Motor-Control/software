@@ -30,7 +30,6 @@
 #include "filter.hpp"
 #include "values.hpp"
 #include "settings.hpp"
-#include "freemaster_wrapper.hpp"
 #include "hardware_interface.hpp"
 
 /**
@@ -357,8 +356,6 @@ namespace control
 			}
 
 			hardware::pwm::Duty(dutys);
-
-			modules::freemaster::Recorder();
 
 			// read as 5048 every 4th cycle
 			static std::uint8_t cnt = 0;

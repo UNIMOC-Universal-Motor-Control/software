@@ -122,7 +122,6 @@ LDSCRIPT= $(STARTUPLD)/STM32F730x8.ld
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
 CSRC = $(ALLCSRC) \
-       $(CHIBIOS)/os/various/syscalls.c \
        usbcfg.c \
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global

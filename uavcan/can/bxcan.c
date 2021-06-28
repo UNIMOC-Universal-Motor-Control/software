@@ -2,6 +2,7 @@
 /// Copyright (c) 2016-2020 UAVCAN Development Team.
 /// Authors: Pavel Kirienko <pavel.kirienko@zubax.com>, Tom De Rybel <tom.derybel@robocow.be>
 
+#include "hal.h"
 #include "bxcan.h"
 #include "bxcan_registers.h"
 #include <assert.h>
@@ -10,20 +11,16 @@
 /// Configure the maximum interface index for the bxCAN hardware available in your MCU.
 /// Must be set to either 0 (only CAN1) or 1 (CAN1 and CAN2).
 #if !defined(BXCAN_MAX_IFACE_INDEX)
-#    error "Please set BXCAN_MAX_IFACE_INDEX to the maximum index of the available bxCAN hardware in your MCU."
+#define BXCAN_MAX_IFACE_INDEX 		(0)
+//#    error "Please set BXCAN_MAX_IFACE_INDEX to the maximum index of the available bxCAN hardware in your MCU."
 #endif
 
 /// Configure the system core clock frequency in Hz.
 /// Only used by the busy wait in waitMSRINAKBitStateChange().
 /// If using official HAL from ST, set to global variable SystemCoreClock
-#if defined(USE_HAL_DRIVER) && USE_HAL_DRIVER
+/// chibios uses SystemCoreClock as well
 extern uint32_t SystemCoreClock;
-#    define BXCAN_BUSYWAIT_DELAY_SYSTEM_CORE_CLOCK SystemCoreClock
-#else
-#    if !defined(BXCAN_BUSYWAIT_DELAY_SYSTEM_CORE_CLOCK)
-#        error "Please set BXCAN_BUSYWAIT_DELAY_SYSTEM_CORE_CLOCK to the current system core clock."
-#    endif
-#endif
+#define BXCAN_BUSYWAIT_DELAY_SYSTEM_CORE_CLOCK SystemCoreClock
 
 /// By default, this macro resolves to the standard assert(). The user can redefine this if necessary.
 /// To disable assertion checks completely, make it expand into `(void)(0)`.
