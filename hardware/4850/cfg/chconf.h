@@ -31,6 +31,9 @@
 #define _CHIBIOS_RT_CONF_
 #define _CHIBIOS_RT_CONF_VER_7_0_
 
+/// FIXME why is this needed in a release version
+#define CH_VT_RFCU_DISABLED
+
 /*===========================================================================*/
 /**
  * @name System settings
