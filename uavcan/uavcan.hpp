@@ -30,6 +30,8 @@
 #include <stdarg.h>
 #include "ch.hpp"
 #include "hal.h"
+#include "canard.h"
+#include "o1heap.h"
 
 namespace uavcan
 {
@@ -37,6 +39,36 @@ namespace uavcan
 	class thread : public chibios_rt::BaseStaticThread<1024>
 	{
 	private:
+
+		///< heap size for the o1heap instance for UAVCAN frames
+		static constexpr size_t O1HEAP_SIZE = 4096;
+
+		///< heap buffer for o1heap instance
+		static char o1heap[O1HEAP_SIZE];
+
+		///< o1heap allocator instance pointer
+		static O1HeapInstance* o1allocator;
+
+		///> libcanard instance for UAVCAN communication
+		static CanardInstance canard;
+
+		/**
+		 * @fn void O1Allocate*(CanardInstance* const, const size_t)
+		 * @brief o1heap allocation wrapper for libcanard
+		 *
+		 * @param ins		libcanard instance
+		 * @param amount	size to allocate
+		 */
+		static void* O1Allocate(CanardInstance* const ins, const size_t amount);
+
+		/**
+		 * @fn void O1Free(CanardInstance* const, void* const)
+		 * @brief o1heap free memory wrapper for libcanard
+		 *
+		 * @param ins		libcanard instance
+		 * @param pointer	size to allocate
+		 */
+		static void O1Free(CanardInstance* const ins, void* const pointer);
 
 
 	protected:

@@ -24,8 +24,40 @@
  */
 #include "uavcan.hpp"
 
-#include <string.h>
+///< heap buffer for o1heap instance
+char uavcan::thread::o1heap[O1HEAP_SIZE];
 
+///< o1heap allocator instance pointer
+O1HeapInstance* uavcan::thread::o1allocator;
+
+///> libcanard instance for UAVCAN communication
+CanardInstance uavcan::thread::canard;
+
+/**
+ * @fn void O1Allocate*(CanardInstance* const, const size_t)
+ * @brief o1heap allocation wrapper for libcanard
+ *
+ * @param ins		libcanard instance
+ * @param amount	size to allocate
+ */
+void* uavcan::thread::O1Allocate(CanardInstance* const ins, const size_t amount)
+{
+    (void) ins;
+    return o1heapAllocate(o1allocator, amount);
+}
+
+/**
+ * @fn void O1Free(CanardInstance* const, void* const)
+ * @brief o1heap free memory wrapper for libcanard
+ *
+ * @param ins		libcanard instance
+ * @param pointer	size to allocate
+ */
+void uavcan::thread::O1Free(CanardInstance* const ins, void* const pointer)
+{
+    (void) ins;
+    o1heapFree(o1allocator, pointer);
+}
 
 /**
  * @brief Thread main function
@@ -33,6 +65,14 @@
 void uavcan::thread::main(void)
 {
 	setName("UAVCAN");
+
+	// initialize heap for lib canard
+	o1allocator = o1heapInit(o1heap, O1HEAP_SIZE, nullptr, nullptr);
+
+	// map o1heap to canard instance
+	canard = canardInit(O1Allocate, O1Free);
+	canard.mtu_bytes = CANARD_MTU_CAN_CLASSIC;  // Defaults to 64 (CAN FD); here select Classic CAN.
+	canard.node_id   = 42;                      // Defaults to anonymous; can be set up later at any point.
 
 	/*
 	 * Normal main() thread activity, sleeping in a loop.
