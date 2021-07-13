@@ -8,7 +8,7 @@
 // are named with an underscore at the end, like foo_bar_().
 //
 // Generator:     nunavut-1.2.1 (serialization was enabled)
-// Source file:   C:\Projekte\unimoc\public_regulated_data_types\uavcan\node\Mode.1.0.uavcan
+// Source file:   C:\\Projekte\\unimoc\\public_regulated_data_types\\uavcan\\node\\Mode.1.0.uavcan
 // Generated at:  2021-06-16 19:00:18.411799 UTC
 // Is deprecated: no
 // Fixed port-ID: None
@@ -39,16 +39,16 @@
 #include <stdlib.h>
 
 static_assert( NUNAVUT_SUPPORT_LANGUAGE_OPTION_TARGET_ENDIANNESS == 434322821,
-              "C:\Projekte\unimoc\public_regulated_data_types\uavcan\node\Mode.1.0.uavcan is trying to use a serialization library that was compiled with "
+              "C:\\Projekte\\unimoc\\public_regulated_data_types\\uavcan\\node\\Mode.1.0.uavcan is trying to use a serialization library that was compiled with "
               "different language options. This is dangerous and therefore not allowed." );
 static_assert( NUNAVUT_SUPPORT_LANGUAGE_OPTION_OMIT_FLOAT_SERIALIZATION_SUPPORT == 0,
-              "C:\Projekte\unimoc\public_regulated_data_types\uavcan\node\Mode.1.0.uavcan is trying to use a serialization library that was compiled with "
+              "C:\\Projekte\\unimoc\\public_regulated_data_types\\uavcan\\node\\Mode.1.0.uavcan is trying to use a serialization library that was compiled with "
               "different language options. This is dangerous and therefore not allowed." );
 static_assert( NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_SERIALIZATION_ASSERTS == 1,
-              "C:\Projekte\unimoc\public_regulated_data_types\uavcan\node\Mode.1.0.uavcan is trying to use a serialization library that was compiled with "
+              "C:\\Projekte\\unimoc\\public_regulated_data_types\\uavcan\\node\\Mode.1.0.uavcan is trying to use a serialization library that was compiled with "
               "different language options. This is dangerous and therefore not allowed." );
 static_assert( NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_OVERRIDE_VARIABLE_ARRAY_CAPACITY == 0,
-              "C:\Projekte\unimoc\public_regulated_data_types\uavcan\node\Mode.1.0.uavcan is trying to use a serialization library that was compiled with "
+              "C:\\Projekte\\unimoc\\public_regulated_data_types\\uavcan\\node\\Mode.1.0.uavcan is trying to use a serialization library that was compiled with "
               "different language options. This is dangerous and therefore not allowed." );
 
 #ifdef __cplusplus

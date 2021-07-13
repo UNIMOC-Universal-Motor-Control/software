@@ -33,6 +33,8 @@
 #include "canard.h"
 #include "o1heap.h"
 
+#define NUNAVUT_ASSERT(x) osalDbgAssert(x, "NUNAVUT");
+
 namespace uavcan
 {
 
@@ -51,6 +53,23 @@ namespace uavcan
 
 		///> libcanard instance for UAVCAN communication
 		static CanardInstance canard;
+
+		///> uptime counter in seconds
+		static std::uint32_t uptime;
+
+	    /// A transfer-ID is an integer that is incremented whenever a new message is published on a given subject.
+	    /// It is used by the protocol for deduplication, message loss detection, and other critical things.
+	    /// For CAN, each value can be of type uint8_t, but we use larger types for genericity and for statistical purposes,
+	    /// as large values naturally contain the number of times each subject was published to.
+	    static struct next_transfer_id_s
+	    {
+	        uint32_t uavcan_node_heartbeat;
+	        uint32_t uavcan_node_port_list;
+	        uint32_t uavcan_pnp_allocation;
+	        // Messages published synchronously can share the same transfer-ID:
+	        uint32_t servo_fast_loop;
+	        uint32_t servo_1Hz_loop;
+	    } next_transfer_id;
 
 		/**
 		 * @fn void O1Allocate*(CanardInstance* const, const size_t)

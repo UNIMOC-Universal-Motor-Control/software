@@ -1,5 +1,6 @@
 # Required include directories
-UAVCANTYPESINC = ../../uavcan/types/nonavut/support \
+UAVCANTYPESINC = ../../uavcan/types \
+                 ../../uavcan/types/nonavut/support \
                  ../../uavcan/types/reg/drone/pyhsics/acoustics \
                  ../../uavcan/types/reg/drone/pyhsics/dynamics/rotation \
                  ../../uavcan/types/reg/drone/pyhsics/dynamics/translation \
