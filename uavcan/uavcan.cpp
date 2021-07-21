@@ -28,23 +28,35 @@
 #include "Heartbeat_1_0.h"
 #include "NodeIDAllocationData_1_0.h"
 
+
+///< heap size for the o1heap instance for UAVCAN frames
+static constexpr size_t O1HEAP_SIZE = 4096;
+
 ///< heap buffer for o1heap instance
-char uavcan::thread::o1heap[O1HEAP_SIZE];
+static char o1heap[O1HEAP_SIZE];
 
 ///< o1heap allocator instance pointer
-O1HeapInstance* uavcan::thread::o1allocator;
+static O1HeapInstance* o1allocator;
 
 ///> libcanard instance for UAVCAN communication
-CanardInstance uavcan::thread::canard;
+static CanardInstance canard;
 
 ///> uptime counter in seconds
-std::uint32_t uavcan::thread::uptime = 0;
+static std::uint32_t uptime;
 
 /// A transfer-ID is an integer that is incremented whenever a new message is published on a given subject.
 /// It is used by the protocol for deduplication, message loss detection, and other critical things.
 /// For CAN, each value can be of type uint8_t, but we use larger types for genericity and for statistical purposes,
 /// as large values naturally contain the number of times each subject was published to.
-struct uavcan::thread::next_transfer_id_s uavcan::thread::next_transfer_id;
+static struct next_transfer_id_s
+{
+	uint32_t uavcan_node_heartbeat;
+	uint32_t uavcan_node_port_list;
+	uint32_t uavcan_pnp_allocation;
+	// Messages published synchronously can share the same transfer-ID:
+	uint32_t servo_fast_loop;
+	uint32_t servo_1Hz_loop;
+} next_transfer_id;
 
 /**
  * @fn void O1Allocate*(CanardInstance* const, const size_t)
@@ -53,7 +65,7 @@ struct uavcan::thread::next_transfer_id_s uavcan::thread::next_transfer_id;
  * @param ins		libcanard instance
  * @param amount	size to allocate
  */
-void* uavcan::thread::O1Allocate(CanardInstance* const ins, const size_t amount)
+static void* O1Allocate(CanardInstance* const ins, const size_t amount)
 {
     (void) ins;
     return o1heapAllocate(o1allocator, amount);
@@ -66,7 +78,7 @@ void* uavcan::thread::O1Allocate(CanardInstance* const ins, const size_t amount)
  * @param ins		libcanard instance
  * @param pointer	size to allocate
  */
-void uavcan::thread::O1Free(CanardInstance* const ins, void* const pointer)
+static void O1Free(CanardInstance* const ins, void* const pointer)
 {
     (void) ins;
     o1heapFree(o1allocator, pointer);
