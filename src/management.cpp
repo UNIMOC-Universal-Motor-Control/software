@@ -453,10 +453,10 @@ void management::thread::main(void)
 			settings.Load();
 
 			// clear all leds
-			palClearLine(LINE_LED_RUN);
-			palClearLine(LINE_LED_MODE);
-			palClearLine(LINE_LED_ERROR);
-			palClearLine(LINE_LED_PWM);
+//			palClearLine(LINE_LED_RUN);
+//			palClearLine(LINE_LED_MODE);
+//			palClearLine(LINE_LED_ERROR);
+//			palClearLine(LINE_LED_PWM);
 
 			sequencer = CURRENT_OFFSETS;
 			delay = 100; // wait 100ms before taking current samples
@@ -483,9 +483,9 @@ void management::thread::main(void)
 			hardware::pwm::output::Enable();
 
 			// handle PWM led to show PWM status
-			if(hardware::pwm::output::Active()) palSetLine(LINE_LED_PWM);
-			else palClearLine(LINE_LED_PWM);
-			palClearLine(LINE_LED_MODE);
+//			if(hardware::pwm::output::Active()) palSetLine(LINE_LED_PWM);
+//			else palClearLine(LINE_LED_PWM);
+//			palClearLine(LINE_LED_MODE);
 
 			// slow tasks of the control loop thread
 			controller.Manage();

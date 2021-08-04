@@ -29,6 +29,7 @@
 #include "ch.hpp"
 #include "hal.h"
 #include "systems.hpp"
+#include "hardware.hpp"
 
 
 namespace hardware {

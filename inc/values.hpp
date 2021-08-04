@@ -28,7 +28,6 @@
 #include <cstdint>
 #include "systems.hpp"
 #include "filter.hpp"
-#include "as5048b.hpp"
 
 /**
  * system global values

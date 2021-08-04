@@ -41,7 +41,7 @@ endif
 # If enabled, this option makes the build process faster by not compiling
 # modules not used in the current configuration.
 ifeq ($(USE_SMART_BUILD),)
-  USE_SMART_BUILD = no
+  USE_SMART_BUILD = yes
 endif
 
 #
@@ -71,7 +71,7 @@ endif
 
 # FPU-related options.
 ifeq ($(USE_FPU_OPT),)
-  USE_FPU_OPT = -mfloat-abi=$(USE_FPU) -mfpu=fpv4-sp-d16
+  USE_FPU_OPT = -mfloat-abi=$(USE_FPU) -mfpu=fpv5-sp-d16
 endif
 
 #
@@ -83,10 +83,10 @@ endif
 #
 
 # Define project name here
-PROJECT = unimoc_4850
+PROJECT = unimoc_4850r1
 
 # Target settings.
-MCU  = cortex-m4
+MCU  = cortex-m7
 
 # Imported source files and paths.
 CHIBIOS  := ../../os
@@ -98,11 +98,11 @@ PROJECTDIR := ../..
 # Licensing files.
 include $(CHIBIOS)/os/license/license.mk
 # Startup files.
-include $(CHIBIOS)/os/common/startup/ARMCMx/compilers/GCC/mk/startup_stm32g4xx.mk
+include $(CHIBIOS)/os/common/startup/ARMCMx/compilers/GCC/mk/startup_stm32f7xx.mk
 # HAL-OSAL files (optional).
 include $(CHIBIOS)/os/hal/hal.mk
 include $(CHIBIOS)/os/hal/lib/streams/streams.mk
-include $(CHIBIOS)/os/hal/ports/STM32/STM32G4xx/platform.mk
+include $(CHIBIOS)/os/hal/ports/STM32/STM32F7xx/platform.mk
 include $(CHIBIOS)/os/hal/osal/rt-nil/osal.mk
 include $(CHIBIOS)/os/various/cpp_wrappers/chcpp.mk
 # RTOS files (optional).
@@ -116,7 +116,7 @@ include ./board/board.mk
 include ${PROJECTDIR}/unimoc.mk
 
 # Define linker script file here
-LDSCRIPT= $(STARTUPLD)/STM32G474xE.ld
+LDSCRIPT= $(STARTUPLD)/STM32F730x8.ld
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -125,7 +125,8 @@ CSRC = $(ALLCSRC) \
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
-CPPSRC = $(ALLCPPSRC) 
+CPPSRC = $(ALLCPPSRC) pwm.cpp analog.cpp digital.cpp eeprom.cpp serial.cpp
+
 # List ASM source files here.
 ASMSRC = $(ALLASMSRC)
 

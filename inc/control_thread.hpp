@@ -55,7 +55,6 @@ namespace control
 		observer::mechanic 		mech;
 		observer::hall       	hall;
 		control::foc      		foc;
-		sensor::as5048b 		as5048;
 		std::array<float, 3>   	correction;
 		std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> i_abc;
 		std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> i_abc_ac;

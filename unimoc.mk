@@ -18,7 +18,6 @@ UNIMOCCPPSRC := ${BASEDIR}/src/main.cpp \
                 ${BASEDIR}/src/values.cpp \
                 ${BASEDIR}/src/management.cpp \
                 ${BASEDIR}/src/control_thread.cpp \
-                ${BASEDIR}/src/as5048b.cpp \
                 ${BASEDIR}/src/measurement.cpp \
                 ${UAVCANCPPSRC} \
 

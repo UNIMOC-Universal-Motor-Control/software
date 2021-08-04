@@ -22,17 +22,11 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef INC_MAIN_HPP_
-#define HARDWARE_CONFIG_HPP_
-
-
 #include <cstdint>
-#include <cmath>
-#include <climits>
-#include <array>
-#include "ch.hpp"
-#include "controller.hpp"
+#include "hardware_interface.hpp"
+#include "systems.hpp"
+
+using namespace hardware;
 
 
 
-#endif /* INC_MAIN_HPP_ */

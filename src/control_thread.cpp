@@ -118,7 +118,7 @@ namespace control
 	/**
 	 * generic constructor
 	 */
-	thread::thread():flux(), mech(), hall(), foc(),	as5048(hardware::i2c::instance)
+	thread::thread():flux(), mech(), hall(), foc()
 	{}
 
 	/**
@@ -126,7 +126,6 @@ namespace control
 	 */
 	void thread::Manage(void)
 	{
-		as5048.SetZero(settings.mechanics.zero_pos);
 		hall.SetOffset(settings.observer.hall.offset);
 	}
 
@@ -162,10 +161,6 @@ namespace control
 	{
 		using namespace values;
 		setName("Control");
-
-		// worker thread for as5048 read
-		as5048.start(NORMALPRIO + 3);
-
 		/*
 		 * Normal main() thread activity
 		 */
@@ -174,13 +169,13 @@ namespace control
 			std::int32_t angle;
 
 			// set Run Mode LED
-			palClearLine(LINE_LED_RUN);
+//			palClearLine(LINE_LED_RUN);
 
 			/* Checks if an IRQ happened else wait.*/
 			chEvtWaitAny((eventmask_t)1);
 
 			// clear Run Mode LED
-			palSetLine(LINE_LED_RUN);
+//			palSetLine(LINE_LED_RUN);
 
 			battery::u = hardware::analog::voltage::DCBus();
 
@@ -198,10 +193,6 @@ namespace control
 			motor::stator::i = MeanAlphaBeta(i_ab);
 			motor::stator::y = observer::hfi::GetMean(i_ab);
 			motor::stator::yd = observer::hfi::GetVector(i_ab);
-
-			// Get angle from as5048b
-			sense::position = as5048.GetPosition();
-			sense::angle = as5048.GetPosition(settings.motor.P);
 
 			// read hall sensors
 			motor::hall::state = hardware::digital::hall::State();
@@ -357,13 +348,13 @@ namespace control
 
 			hardware::pwm::Duty(dutys);
 
-			// read as 5048 every 4th cycle
-			static std::uint8_t cnt = 0;
-			cnt++;
-			if(!(cnt % 4))
-			{
-				as5048.Read();
-			}
+//			// read as 5048 every 4th cycle
+//			static std::uint8_t cnt = 0;
+//			cnt++;
+//			if(!(cnt % 4))
+//			{
+//				as5048.Read();
+//			}
 
 			// calculate the filters for management Task
 			management::motor::torque::electric.Calculate(motor::torque::electric);

@@ -79,13 +79,13 @@ namespace measurement
 		// handle PWM led to show PWM status
 		if(!hardware::pwm::output::Active() || !enable)
 		{
-			palClearLine(LINE_LED_PWM);
+//			palClearLine(LINE_LED_PWM);
 
 			stop = true;
 		}
 		else
 		{
-			palSetLine(LINE_LED_PWM);
+//			palSetLine(LINE_LED_PWM);
 		}
 
 		return func(stop);

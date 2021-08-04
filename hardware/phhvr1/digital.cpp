@@ -22,17 +22,36 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef INC_MAIN_HPP_
-#define HARDWARE_CONFIG_HPP_
-
-
+#include <cstring>
 #include <cstdint>
 #include <cmath>
-#include <climits>
 #include <array>
-#include "ch.hpp"
-#include "controller.hpp"
+#include <algorithm>
+#include "hardware_interface.hpp"
+#include "hal.h"
+
+using namespace hardware::digital;
 
 
 
-#endif /* INC_MAIN_HPP_ */
+/**
+ * get the angle which is represented by the hall sensors
+ * @param[out] sincos angle of the halls represented as sin/cos values
+ * @return true on hall signal error
+ */
+uint8_t hardware::digital::hall::State(void)
+{
+	return 0;
+}
+
+
+/**
+ * Get the level of a digital input
+ * @note inputs that are not available in hardware are always false
+ * @param in selects one of the digital inputs to read
+ * @return level of the input: true = high
+ */
+bool hardware::digital::input(const input_te in)
+{
+	return false;
+}
