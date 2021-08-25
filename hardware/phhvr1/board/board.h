@@ -191,6 +191,8 @@
 #define LINE_LED_GREEN              PAL_LINE(GPIOE, 7U)
 #define LINE_RES_NSTANDBY           PAL_LINE(GPIOA, 3U)
 #define LINE_RES_NFAULT             PAL_LINE(GPIOA, 10U)
+#define LINE_GATE_EN                PAL_LINE(GPIOB, 11U)
+
 
 /*===========================================================================*/
 /* Driver pre-compile time settings.                                         */

@@ -181,8 +181,9 @@ void hardware::pwm::Init(void)
 	/*
 	 * Set Debug register to stop TIM1 and TIM5 in DebugMode
 	 */
-//	DBGMCU->APB2FZ |= DBGMCU_APB2_FZ_DBG_TIM1_STOP;
-//	DBGMCU->APB1FZ |= DBGMCU_APB1_FZ_DBG_TIM5_STOP;
+	DBGMCU->APB2FZ |= DBGMCU_APB2FZ_DBG_TIM1_STOP;
+	DBGMCU->APB1FZR1 |= DBGMCU_APB1FZR1_DBG_TIM5_STOP;
+
 
 	/* Start the PWM timer */
 	pwmStart(PWMP, &pwmcfg);
@@ -343,7 +344,7 @@ float hardware::Tf(void)
  */
 void hardware::pwm::output::Enable(void)
 {
-//	palSetLine(LINE_EN_PWM_OUT);
+	palSetLine(LINE_GATE_EN);
 
 	// reset the break state
 	PWMP->tim->BDTR |= STM32_TIM_BDTR_AOE;
@@ -354,7 +355,7 @@ void hardware::pwm::output::Enable(void)
  */
 void hardware::pwm::output::Disable(void)
 {
-//	palClearLine(LINE_EN_PWM_OUT);
+	palSetLine(LINE_GATE_EN);
 }
 
 /**
