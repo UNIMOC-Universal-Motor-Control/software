@@ -53,5 +53,6 @@ uint8_t hardware::digital::hall::State(void)
  */
 bool hardware::digital::input(const input_te in)
 {
+	(void)in;
 	return false;
 }

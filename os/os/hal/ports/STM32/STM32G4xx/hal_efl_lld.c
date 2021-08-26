@@ -63,11 +63,11 @@ static const flash_descriptor_t efl_lld_desc = {
                            FLASH_ATTR_ECC_CAPABLE   |
                            FLASH_ATTR_ECC_ZERO_LINE_CAPABLE,
       .page_size         = STM32_FLASH_LINE_SIZE,
-      .sectors_count     = STM32_FLASH_SECTORS_PER_BANK,
+      .sectors_count     = STM32_FLASH_SECTORS_PER_BANK * STM32_FLASH_NUMBER_OF_BANKS,
       .sectors           = NULL,
       .sectors_size      = STM32_FLASH_SECTOR_SIZE,
       .address           = (uint8_t *)FLASH_BASE,
-      .size              = STM32_FLASH_SECTORS_PER_BANK * STM32_FLASH_SECTOR_SIZE
+      .size              = STM32_FLASH_NUMBER_OF_BANKS * STM32_FLASH_SECTORS_PER_BANK * STM32_FLASH_SECTOR_SIZE
 };
 
 /*===========================================================================*/

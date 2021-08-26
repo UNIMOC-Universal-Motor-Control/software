@@ -452,12 +452,6 @@ void management::thread::main(void)
 
 			settings.Load();
 
-			// clear all leds
-//			palClearLine(LINE_LED_RUN);
-//			palClearLine(LINE_LED_MODE);
-//			palClearLine(LINE_LED_ERROR);
-//			palClearLine(LINE_LED_PWM);
-
 			sequencer = CURRENT_OFFSETS;
 			delay = 100; // wait 100ms before taking current samples
 

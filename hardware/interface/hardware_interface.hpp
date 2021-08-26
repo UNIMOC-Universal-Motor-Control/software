@@ -240,24 +240,20 @@ namespace hardware {
 	{
 		/**
 		 * Read buffer from non-volatile memory
-		 * @param address Start address of the read in non-volatile memory, addressing starts with 0
 		 * @param buffer Pointer to the buffer to read data to
 		 * @param length Length of the buffer to read to
-		 * @return 0 = success
+		 * @return false = success
 		 */
-		extern uint8_t Read(const uint32_t address, const void* const buffer, const uint32_t length);
+		extern bool Read(const void* const buffer, const uint32_t length);
 
 		/**
 		 * Write buffer to non-volatile memory
 		 *
-		 * @note EEPROM may need 5ms to write a page
-		 *
-		 * @param address Start address of the read in non-volatile memory, addressing starts with 0
 		 * @param buffer Pointer to the buffer to write to
 		 * @param length Length of the buffer to write to
-		 * @return 0 = success
+		 * @return false = success
 		 */
-		extern uint8_t Write(const uint32_t address, void const * buffer, const uint32_t length);
+		extern bool Write(void const * buffer, const uint32_t length);
 
 		/**
 		 * Get the size of the non-volatile memory

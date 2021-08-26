@@ -26,9 +26,24 @@
 #include <cstring>
 #include "hardware_interface.hpp"
 #include "hal.h"
+#include "hal_mfs.h"
 
-
+///< CRC seed
 constexpr uint32_t CRC32MASK   		= 0x04C11DB7;
+
+///< embedded flash eeprom driver config
+const MFSConfig mfscfg1 = {
+  .flashp           = (BaseFlash *)&EFLD1,
+  .erased           = 0xFFFFFFFFU,
+  .bank_size        = 2048U,
+  .bank0_start      = 254U,
+  .bank0_sectors    = 1U,
+  .bank1_start      = 255U,
+  .bank1_sectors    = 1U
+};
+
+///< Managed flash driver instance for embedded flash eeprom emulation
+MFSDriver mfs1;
 
 /**
  * Calculate CRC32 checksum of a buffer.
@@ -67,14 +82,30 @@ void hardware::i2c::Init(void)
 
 /**
  * Read buffer from non-volatile memory
- * @param address Start address of the read in non-volatile memory, addressing starts with 0
  * @param buffer Pointer to the buffer to read data to
  * @param length Length of the buffer to read to
  * @return 0 = success
  */
-std::uint8_t hardware::memory::Read(const uint32_t address, const void* const buffer, const uint32_t length)
+bool hardware::memory::Read(const void* const buffer, const uint32_t length)
 {
-	return 0;
+	bool result = false;
+	mfs_error_t error = MFS_NO_ERROR;
+	size_t size = length;
+
+	/* Starting EFL driver.*/
+	eflStart(&EFLD1, NULL);
+
+	error = mfsStart(&mfs1, &mfscfg1);
+
+	if(!error) error = mfsReadRecord(&mfs1, 1, &size, (std::uint8_t*)buffer);
+
+	mfsStop(&mfs1);
+
+	eflStop(&EFLD1);
+
+	if(error || size != length) result = true;
+
+	return result;
 }
 
 /**
@@ -82,14 +113,29 @@ std::uint8_t hardware::memory::Read(const uint32_t address, const void* const bu
  *
  * @note EEPROM may need 5ms to write a page
  *
- * @param address Start address of the read in non-volatile memory, addressing starts with 0
  * @param buffer Pointer to the buffer to write to
  * @param length Length of the buffer to write to
- * @return 0 = success
+ * @return false = success
  */
-std::uint8_t hardware::memory::Write(const std::uint32_t address, void const * buffer, const std::uint32_t length)
+bool hardware::memory::Write(void const * buffer, const std::uint32_t length)
 {
-	return 0;
+	bool result = false;
+	mfs_error_t error = MFS_NO_ERROR;
+
+	/* Starting EFL driver.*/
+	eflStart(&EFLD1, NULL);
+
+	error = mfsStart(&mfs1, &mfscfg1);
+
+	if(!error) error = mfsWriteRecord(&mfs1, 1, length, (std::uint8_t*)buffer);
+
+	mfsStop(&mfs1);
+
+	eflStop(&EFLD1);
+
+	if(error) result = true;
+
+	return result;
 }
 
 /**
@@ -98,7 +144,7 @@ std::uint8_t hardware::memory::Write(const std::uint32_t address, void const * b
  */
 uint32_t hardware::memory::Size(void)
 {
-	return 0;
+	return mfscfg1.bank_size;
 }
 
 

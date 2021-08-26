@@ -91,24 +91,22 @@ void hardware::i2c::Init(void)
 
 /**
  * Read buffer from non-volatile memory
- * @param address Start address of the read in non-volatile memory, addressing starts with 0
  * @param buffer Pointer to the buffer to read data to
  * @param length Length of the buffer to read to
  * @return 0 = success
  */
-std::uint8_t hardware::memory::Read(const uint32_t address, const void* const buffer, const uint32_t length)
+std::uint8_t hardware::memory::Read(const void* const buffer, const uint32_t length)
 {
 	std::uint8_t result = 0;
 	std::uint16_t wordaddr = 0;
 	std::uint32_t read_length = 0;
 	msg_t status = MSG_OK;
 
-	osalDbgAssert((address + length) < SIZE, "EEPROM: Read out of bounds");
+	osalDbgAssert((length) < SIZE, "EEPROM: Read out of bounds");
 	osalDbgAssert(buffer != NULL, "EEPROM: Read buffer not existing");
 
 	i2cAcquireBus(i2c::instance);
 
-	wordaddr = address;
 	read_length = length;
 
 	status |= i2cMasterTransmitTimeout(i2c::instance, RW_ADDRESS,
@@ -139,12 +137,11 @@ std::uint8_t hardware::memory::Read(const uint32_t address, const void* const bu
  *
  * @note EEPROM may need 5ms to write a page
  *
- * @param address Start address of the read in non-volatile memory, addressing starts with 0
  * @param buffer Pointer to the buffer to write to
  * @param length Length of the buffer to write to
  * @return 0 = success
  */
-std::uint8_t hardware::memory::Write(const std::uint32_t address, void const * buffer, const std::uint32_t length)
+std::uint8_t hardware::memory::Write(void const * buffer, const std::uint32_t length)
 {
 	std::uint8_t result = 0;
 	std::uint16_t write_addr = address;
@@ -155,14 +152,14 @@ std::uint8_t hardware::memory::Write(const std::uint32_t address, void const * b
 	// is accessed via dma and needs to be flushed
 	__attribute__((aligned (32))) std::array<std::uint8_t, PAGE_SIZE + sizeof(write_addr)> write_buffer = {0};
 
-	osalDbgAssert((address + length) < SIZE, "EEPROM: Write out of bounds");
+	osalDbgAssert((length) < SIZE, "EEPROM: Write out of bounds");
 	osalDbgAssert(buffer != NULL, "EEPROM: Write buffer not existing");
 
 	i2cAcquireBus(i2c::instance);
 
 	while (written_bytes < length && status == MSG_OK)
 	{
-		write_addr = address + written_bytes;
+		write_addr = written_bytes;
 		write_length = length - written_bytes;
 
 		// In case address is within the first page to write.

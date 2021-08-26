@@ -32,9 +32,6 @@
 
 using namespace hardware::analog;
 
-
-
-
 ///< absolute maximum current
 constexpr float hardware::analog::current::MAX = 1.65f/(20.0f*(0.002f/3.0f));
 
@@ -56,7 +53,7 @@ void hardware::analog::Init(void)
  */
 void hardware::analog::current::Value(std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& currents)
 {
-
+	(void)currents;
 }
 
 /**
@@ -66,7 +63,7 @@ void hardware::analog::current::Value(std::array<systems::abc, hardware::pwm::IN
  */
 void hardware::analog::current::Derivative(std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& derivatives)
 {
-
+	(void)derivatives;
 }
 
 /**
