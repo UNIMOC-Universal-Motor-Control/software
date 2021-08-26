@@ -134,24 +134,12 @@ namespace control
 	 */
 	void thread::DeadtimeCompensation(void)
 	{
-//		using namespace values;
-//		using namespace values::motor::rotor;
-//		using namespace math;
-//
-//		// Deadtime Compensation, runs but needs some more ifs and else
-//		std::int32_t k = 0;
-//		if		(phi < std::numeric_limits<std::int32_t>::max()/6) 		k = 0;
-//		else if	(phi < std::numeric_limits<std::int32_t>::max()/2)	 	k = std::numeric_limits<std::int32_t>::max()/3;
-//		else if	(phi < std::numeric_limits<std::int32_t>::max()/6*5) 	k = std::numeric_limits<std::int32_t>::max()/3*2;
-//		else if	(phi > -std::numeric_limits<std::int32_t>::max()/6*5)	k = std::numeric_limits<std::int32_t>::max();
-//		else if	(phi < std::numeric_limits<std::int32_t>::max()/6*9) 	k = std::numeric_limits<std::int32_t>::max()/6*8;
-//		else if	(phi < std::numeric_limits<std::int32_t>::max()/6*11) 	k = std::numeric_limits<std::int32_t>::max()/6*11;
-//
-//
-//		systems::sin_cos tmp = systems::SinCos(k - phi);
-//
-//		u.d += 4.0f/3.0f*battery::u*(settings.converter.deadtime*1e-9f)*hardware::Fc()*tmp.cos;
-//		u.q += 4.0f/3.0f*battery::u*(settings.converter.deadtime*1e-9f)*hardware::Fc()*tmp.sin;
+		using namespace values;
+
+		systems::sin_cos tmp = systems::SinCos(motor::rotor::phi);
+
+		motor::rotor::u.d += 4.0f/3.0f*battery::u*(settings.converter.deadtime*1e-9f)*hardware::Fc()*tmp.sin;
+		motor::rotor::u.q += 4.0f/3.0f*battery::u*(settings.converter.deadtime*1e-9f)*hardware::Fc()*tmp.cos;
 	}
 
 	/**
@@ -168,14 +156,8 @@ namespace control
 		{
 			std::int32_t angle;
 
-			// set Run Mode LED
-//			palClearLine(LINE_LED_RUN);
-
 			/* Checks if an IRQ happened else wait.*/
 			chEvtWaitAny((eventmask_t)1);
-
-			// clear Run Mode LED
-//			palSetLine(LINE_LED_RUN);
 
 			battery::u = hardware::analog::voltage::DCBus();
 
@@ -288,6 +270,9 @@ namespace control
 				foc.SetParameters(settings.control.current.kp, settings.control.current.tn, hardware::Tc());
 			}
 
+			// Compensate for Deadtime
+			DeadtimeCompensation();
+
 			// calculate new sine and cosine for the reference system
 			motor::rotor::sc = systems::SinCos(motor::rotor::phi);
 
@@ -347,14 +332,6 @@ namespace control
 			}
 
 			hardware::pwm::Duty(dutys);
-
-//			// read as 5048 every 4th cycle
-//			static std::uint8_t cnt = 0;
-//			cnt++;
-//			if(!(cnt % 4))
-//			{
-//				as5048.Read();
-//			}
 
 			// calculate the filters for management Task
 			management::motor::torque::electric.Calculate(motor::torque::electric);
