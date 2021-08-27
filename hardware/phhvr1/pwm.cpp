@@ -182,7 +182,7 @@ void hardware::pwm::Init(void)
 	 * Set Debug register to stop TIM1 and TIM5 in DebugMode
 	 */
 	DBGMCU->APB2FZ |= DBGMCU_APB2FZ_DBG_TIM1_STOP;
-	DBGMCU->APB1FZR1 |= DBGMCU_APB1FZR1_DBG_TIM5_STOP;
+	DBGMCU->APB1FZR1 |= DBGMCU_APB1FZR1_DBG_TIM4_STOP;
 
 
 	/* Start the PWM timer */

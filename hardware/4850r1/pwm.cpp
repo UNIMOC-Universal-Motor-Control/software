@@ -179,10 +179,10 @@ static void pwm_serve_dma_interrupt(PWMDriver *pwmp, uint32_t flags)
 void hardware::pwm::Init(void)
 {
 	/*
-	 * Set Debug register to stop TIM1 and TIM5 in DebugMode
+	 * Set Debug register to stop TIM1 and TIM4 in DebugMode
 	 */
 	DBGMCU->APB2FZ |= DBGMCU_APB2_FZ_DBG_TIM1_STOP;
-	DBGMCU->APB1FZ |= DBGMCU_APB1_FZ_DBG_TIM5_STOP;
+	DBGMCU->APB1FZ |= DBGMCU_APB1_FZ_DBG_TIM4_STOP;
 
 	/* Start the PWM timer */
 	pwmStart(PWMP, &pwmcfg);
