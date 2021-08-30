@@ -221,9 +221,15 @@ static void adc_lld_analog_on(ADCDriver *adcp) {
   while ((adcp->adcm->ISR & ADC_ISR_ADRDY) == 0)
     ;
 #if STM32_ADC_DUAL_MODE
+#if STM32_ADC_USE_ADC5
+  if (&ADCD5 != adcp) {
+#endif
   adcp->adcs->CR |= ADC_CR_ADEN;
   while ((adcp->adcs->ISR & ADC_ISR_ADRDY) == 0)
     ;
+#if STM32_ADC_USE_ADC5
+  }
+#endif
 #endif
 }
 
@@ -238,9 +244,15 @@ static void adc_lld_analog_off(ADCDriver *adcp) {
   while ((adcp->adcm->CR & ADC_CR_ADDIS) != 0)
     ;
 #if STM32_ADC_DUAL_MODE
+#if STM32_ADC_USE_ADC5
+  if (&ADCD5 != adcp) {
+#endif
   adcp->adcs->CR |= ADC_CR_ADDIS;
   while ((adcp->adcs->CR & ADC_CR_ADDIS) != 0)
     ;
+#if STM32_ADC_USE_ADC5
+  }
+#endif
 #endif
 }
 

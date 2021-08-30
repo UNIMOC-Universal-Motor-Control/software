@@ -301,10 +301,6 @@ void hardware::analog::Init(void)
 	adcStartConversion(&ADCD1, &adcgrpcfg1, &samples[0][0][0], ADC_SEQ_BUFFERED);
 	adcStartConversion(&ADCD2, &adcgrpcfg2, &samples[1][0][0], ADC_SEQ_BUFFERED);
 	adcStartConversion(&ADCD3, &adcgrpcfg3, &samples[2][0][0], ADC_SEQ_BUFFERED);
-
-//	/* Enabling events on both edges of the button line.*/
-//	palEnableLineEvent(LINE_CADENCE, PAL_EVENT_MODE_BOTH_EDGES);
-//	palSetLineCallback(LINE_CADENCE, palcallback, NULL);
 }
 
 /**

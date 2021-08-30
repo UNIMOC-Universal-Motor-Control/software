@@ -192,6 +192,9 @@ namespace hardware {
 			 */
 			extern float DCBus(void);
 
+			///< absolute maximum voltage
+			extern const float MAX;
+
 		} /* namespace voltage */
 
 		namespace temperature {
