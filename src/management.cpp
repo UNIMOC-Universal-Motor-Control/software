@@ -476,11 +476,6 @@ void management::thread::main(void)
 			// software release for PWM
 			hardware::pwm::output::Enable();
 
-			// handle PWM led to show PWM status
-//			if(hardware::pwm::output::Active()) palSetLine(LINE_LED_PWM);
-//			else palClearLine(LINE_LED_PWM);
-//			palClearLine(LINE_LED_MODE);
-
 			// slow tasks of the control loop thread
 			controller.Manage();
 

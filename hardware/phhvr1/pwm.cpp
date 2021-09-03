@@ -111,7 +111,7 @@ PWMConfig pwmcfg =
 		 * Break and Deadtime Register
 		 * Break input enabled with filter of 8 clock cycles
 		 */
-		STM32_TIM_BDTR_DTG(250) | STM32_TIM_BDTR_BKE | STM32_TIM_BDTR_BKF(3),
+		STM32_TIM_BDTR_DTG(250) /*| STM32_TIM_BDTR_BKE | STM32_TIM_BDTR_BKF(3)*/,
 		/*
 		 * DIER Register
 		 */
@@ -344,10 +344,13 @@ float hardware::Tf(void)
  */
 void hardware::pwm::output::Enable(void)
 {
-	palSetLine(LINE_GATE_EN);
+//	if(palReadLine(LINE_PWM_HWBREAK))
+	{
+		// reset the break state
+		PWMP->tim->BDTR |= STM32_TIM_BDTR_AOE;
 
-	// reset the break state
-	PWMP->tim->BDTR |= STM32_TIM_BDTR_AOE;
+		palSetLine(LINE_GATE_EN);
+	}
 }
 
 /**
@@ -355,7 +358,9 @@ void hardware::pwm::output::Enable(void)
  */
 void hardware::pwm::output::Disable(void)
 {
-	palSetLine(LINE_GATE_EN);
+	palClearLine(LINE_GATE_EN);
+	// break pwm
+	PWMP->tim->BDTR &= ~STM32_TIM_BDTR_AOE;
 }
 
 /**
@@ -364,7 +369,16 @@ void hardware::pwm::output::Disable(void)
  */
 bool hardware::pwm::output::Active(void)
 {
-	return (PWMP->tim->BDTR & STM32_TIM_BDTR_MOE);
+	if (PWMP->tim->BDTR & STM32_TIM_BDTR_MOE)
+	{
+		palSetLine(LINE_GATE_EN);
+		return true;
+	}
+	else
+	{
+		palClearLine(LINE_GATE_EN);
+		return false;
+	}
 }
 
 /**
@@ -388,8 +402,6 @@ void hardware::pwm::Duty(const std::array<systems::abc, INJECTION_CYCLES>& dutys
 			duty_counts[p + 3*(i + (INJECTION_CYCLES * duty_index))] = new_duty;
 		}
 	}
-
-	cacheBufferFlush(duty_counts.data(), sizeof(duty_counts));
 }
 
 

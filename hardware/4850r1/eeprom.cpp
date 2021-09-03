@@ -93,11 +93,11 @@ void hardware::i2c::Init(void)
  * Read buffer from non-volatile memory
  * @param buffer Pointer to the buffer to read data to
  * @param length Length of the buffer to read to
- * @return 0 = success
+ * @return false = success
  */
-std::uint8_t hardware::memory::Read(const void* const buffer, const uint32_t length)
+bool hardware::memory::Read(const void* const buffer, const uint32_t length)
 {
-	std::uint8_t result = 0;
+	bool result = 0;
 	std::uint16_t wordaddr = 0;
 	std::uint32_t read_length = 0;
 	msg_t status = MSG_OK;
@@ -119,12 +119,12 @@ std::uint8_t hardware::memory::Read(const void* const buffer, const uint32_t len
 
 	if(status == MSG_OK)
 	{
-		result = 0;
+		result = false;
 	}
 	else
 	{
 		i2c_error = i2cGetErrors(i2c::instance);
-		result = 0xFF;
+		result = true;
 	}
 
 	i2cReleaseBus(i2c::instance);
@@ -139,12 +139,12 @@ std::uint8_t hardware::memory::Read(const void* const buffer, const uint32_t len
  *
  * @param buffer Pointer to the buffer to write to
  * @param length Length of the buffer to write to
- * @return 0 = success
+ * @return false = success
  */
-std::uint8_t hardware::memory::Write(void const * buffer, const std::uint32_t length)
+bool hardware::memory::Write(void const * buffer, const std::uint32_t length)
 {
-	std::uint8_t result = 0;
-	std::uint16_t write_addr = address;
+	bool result = 0;
+	std::uint16_t write_addr = 0;
 	std::uint8_t* buffer_addr = (std::uint8_t*)buffer;
 	std::uint32_t written_bytes = 0;
 	std::uint32_t write_length = 0;
@@ -197,12 +197,12 @@ std::uint8_t hardware::memory::Write(void const * buffer, const std::uint32_t le
 
 	if(status == MSG_OK)
 	{
-		result = 0;
+		result = false;
 	}
 	else
 	{
 		i2c_error = i2cGetErrors(i2c::instance);
-		result = 0xFF;
+		result = true;
 	}
 
 	i2cReleaseBus(i2c::instance);

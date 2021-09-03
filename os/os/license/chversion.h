@@ -42,7 +42,7 @@
 /**
  * @brief   Stable release flag.
  */
-#define CH_VERSION_STABLE       1
+#define CH_VERSION_STABLE       0
 
 /**
  * @name    ChibiOS version identification
@@ -51,17 +51,17 @@
 /**
  * @brief   ChibiOS version string.
  */
-#define CH_VERSION              "21.6.0"
+#define CH_VERSION              "2012.1.0"
 
 /**
  * @brief   ChibiOS version release year.
  */
-#define CH_VERSION_YEAR         21
+#define CH_VERSION_YEAR         12
 
 /**
  * @brief   ChibiOS version release month.
  */
-#define CH_VERSION_MONTH        6
+#define CH_VERSION_MONTH        1
 
 /**
  * @brief   ChibiOS version patch number.
@@ -71,7 +71,7 @@
 /**
  * @brief   ChibiOS version nickname.
  */
-#define CH_VERSION_NICKNAME     "Atrani"
+#define CH_VERSION_NICKNAME     "Lasagna"
 /** @} */
 
 /*===========================================================================*/

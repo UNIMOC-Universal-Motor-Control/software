@@ -16,13 +16,13 @@
 */
 
 /**
- * @file    STM32L4xx/cmparams.h
- * @brief   ARM Cortex-M4 parameters for the STM32L4xx.
+ * @file    STM32WLxx/cmparams.h
+ * @brief   ARM Cortex-M4 parameters for the STM32WLxx.
  *
- * @defgroup ARMCMx_STM32L4xx STM32L4xx Specific Parameters
+ * @defgroup ARMCMx_STM32WLxx STM32WLxx Specific Parameters
  * @ingroup ARMCMx_SPECIFIC
  * @details This file contains the Cortex-M4 specific parameters for the
- *          STM32L4xx platform.
+ *          STM32WLxx platform.
  * @{
  */
 
@@ -47,8 +47,8 @@
 /* If the device type is not externally defined, for example from the Makefile,
    then a file named board.h is included. This file must contain a device
    definition compatible with the vendor include file.*/
-#if !defined(STM32WLE5Cx) && !defined(STM32WLE5Jx) && !defined(STM32WLE5Ux) && \
-    !defined(STM32WLE4Cx) && !defined(STM32WLE4Jx) && !defined(STM32WLE4Ux)
+#if !defined (STM32WL55xx) && !defined (STM32WL54xx) && \
+    !defined (STM32WLE5xx) && !defined (STM32WLE4xx)
 #include "board.h"
 #endif
 

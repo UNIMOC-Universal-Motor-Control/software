@@ -29,7 +29,7 @@
 /**
  * @brief   HSE32 clock frequency.
  */
-#define STM32_HSE32CLK          32000000
+#define STM32_HSE32CLK          32000000U
 
 /*===========================================================================*/
 /* Derived constants and error checks.                                       */
@@ -53,25 +53,18 @@
 #error "STM32_HSE_ENABLED should not be defined in mcuconf.h"
 #endif
 
-#if STM32_HSE32_ENABLED
-
 /* HSE clock frequency.*/
-#if STM32_HSE32PRE == STM32_HSE32PRE_DIV1
-#define STM32_HSECLK                STM32_HSE32CLK
-#elif STM32_HSE32PRE == STM32_HSE32PRE_DIV2
-#define STM32_HSECLK                (STM32_HSE32CLK / 2)
+#if STM32_HSE32_ENABLED
+  #if STM32_HSE32PRE == STM32_HSE32PRE_DIV1
+    #define STM32_HSECLK                STM32_HSE32CLK
+  #elif STM32_HSE32PRE == STM32_HSE32PRE_DIV2
+    #define STM32_HSECLK                (STM32_HSE32CLK / 2U)
+  #else
+    #error "invalid STM32_HSE32PRE value specified"
+  #endif
 #else
-#error "invalid STM32_HSE32PRE value specified"
-#endif
-
-#if !defined(STM32_HSE32SRC) ||                                         \
-  (STM32_HSE32SRC != STM32_HSE32_XTAL &&                                \
-   STM32_HSE32SRC != STM32_HSE32_TCXO &&                                \
-   STM32_HSE32SRC != STM32_HSE32_EXTS)
-#error "STM32_HSE32SRC should by defined in mcuconf.h with correct value"
-#endif
-
-#endif
+  #define STM32_HSECLK          0U
+#endif /* STM32_HSE32_ENABLED */
 
 /*===========================================================================*/
 /* Driver exported variables.                                                */
@@ -86,10 +79,6 @@
 /*===========================================================================*/
 
 __STATIC_INLINE void hse32_enable(void) {
-#if STM32_HSE32SRC == STM32_HSE32_TCXO
-  /* Enable PB0-VDDTCXO.*/
-  RCC->CR |= RCC_CR_HSEBYPPWR;
-#endif /* STM32_HSESRC == STM32_HSE_TCXO */
 
   /* Set HSE32 SYSCLK prescaler.*/
   RCC->CR |= STM32_HSE32PRE;
@@ -97,7 +86,7 @@ __STATIC_INLINE void hse32_enable(void) {
   /* HSE32 activation.*/
   RCC->CR |= RCC_CR_HSEON;
 
-  while ((RCC->CR & RCC_CR_HSERDY) == 0) {
+  while ((RCC->CR & RCC_CR_HSERDY) == 0U) {
     /* Wait until HSE32 is stable.    */
   }
 }

@@ -192,6 +192,7 @@
 #define LINE_RES_NSTANDBY           PAL_LINE(GPIOA, 3U)
 #define LINE_RES_NFAULT             PAL_LINE(GPIOA, 10U)
 #define LINE_GATE_EN                PAL_LINE(GPIOB, 11U)
+#define LINE_PWM_HWBREAK            PAL_LINE(GPIOB, 10U)
 
 
 /*===========================================================================*/
