@@ -38,16 +38,16 @@
 #include <stdlib.h>
 
 static_assert( NUNAVUT_SUPPORT_LANGUAGE_OPTION_TARGET_ENDIANNESS == 434322821,
-              "C:\Projekte\unimoc\public_regulated_data_types\uavcan\primitive\array\Real16.1.0.uavcan is trying to use a serialization library that was compiled with "
+              "Real16.1.0.uavcan is trying to use a serialization library that was compiled with "
               "different language options. This is dangerous and therefore not allowed." );
 static_assert( NUNAVUT_SUPPORT_LANGUAGE_OPTION_OMIT_FLOAT_SERIALIZATION_SUPPORT == 0,
-              "C:\Projekte\unimoc\public_regulated_data_types\uavcan\primitive\array\Real16.1.0.uavcan is trying to use a serialization library that was compiled with "
+              "Real16.1.0.uavcan is trying to use a serialization library that was compiled with "
               "different language options. This is dangerous and therefore not allowed." );
 static_assert( NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_SERIALIZATION_ASSERTS == 1,
-              "C:\Projekte\unimoc\public_regulated_data_types\uavcan\primitive\array\Real16.1.0.uavcan is trying to use a serialization library that was compiled with "
+              "Real16.1.0.uavcan is trying to use a serialization library that was compiled with "
               "different language options. This is dangerous and therefore not allowed." );
 static_assert( NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_OVERRIDE_VARIABLE_ARRAY_CAPACITY == 0,
-              "C:\Projekte\unimoc\public_regulated_data_types\uavcan\primitive\array\Real16.1.0.uavcan is trying to use a serialization library that was compiled with "
+              "Real16.1.0.uavcan is trying to use a serialization library that was compiled with "
               "different language options. This is dangerous and therefore not allowed." );
 
 #ifdef __cplusplus

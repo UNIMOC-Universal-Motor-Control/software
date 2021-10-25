@@ -2,7 +2,6 @@
 /// Copyright (c) 2016-2020 UAVCAN Development Team.
 /// Authors: Pavel Kirienko <pavel.kirienko@zubax.com>, Tom De Rybel <tom.derybel@robocow.be>
 
-#include "hal.h"
 #include "bxcan.h"
 #include "bxcan_registers.h"
 #include <assert.h>
@@ -11,7 +10,7 @@
 /// Configure the maximum interface index for the bxCAN hardware available in your MCU.
 /// Must be set to either 0 (only CAN1) or 1 (CAN1 and CAN2).
 #if !defined(BXCAN_MAX_IFACE_INDEX)
-#define BXCAN_MAX_IFACE_INDEX 		(0)
+#define BXCAN_MAX_IFACE_INDEX 		(2)
 //#    error "Please set BXCAN_MAX_IFACE_INDEX to the maximum index of the available bxCAN hardware in your MCU."
 #endif
 
@@ -575,7 +574,7 @@ bool bxCANPush(const uint8_t     iface_index,      //
             {
                 // All TX mailboxes are busy (this is highly unlikely); at the same time we know that there is no
                 // higher or equal priority frame that is currently pending. Therefore, priority inversion has just
-                // happend (sic!), because we can't enqueue the higher priority frame due to all TX mailboxes being
+                // happened (sic!), because we can't enqueue the higher priority frame due to all TX mailboxes being
                 // busy. This scenario is extremely unlikely, because in order for it to happen, the application would
                 // need to transmit 4 (four) or more CAN frames with different CAN ID ordered from high ID to low ID
                 // nearly at the same time. For example:
@@ -597,16 +596,13 @@ bool bxCANPush(const uint8_t     iface_index,      //
         {
             tx_mailbox = 0U;
         }
-
-        BXCAN_ASSERT(tx_mailbox < 3U);  // Index check - the value must be correct here
     }
 
     // By this time we've proven that:
     // - The input is valid.                                                        (input_ok    == true)
     // - There are no mailboxes with priority >= the priority of the new frame.     (prio_higher == false)
     // - A priority inversion would not occur.                                      (tx_mailbox  != 0xFF)
-    // - A free TX mailbox is available.                                            (tx_mailbox   < 3U)
-    // Therefore it is safe to enqueue the frame now.
+    // Therefore it is safe to enqueue the frame now if a free mailbox is available.
     if (input_ok && !prio_higher && (tx_mailbox < 3U))
     {
         volatile BxCANTxMailboxType* const mb = &bxcan_base->TxMailbox[tx_mailbox];

@@ -38,7 +38,6 @@ using namespace chibios_rt;
 
 volatile bool save = false;
 
-
 /**
  * @namespace controller management classes
  */
