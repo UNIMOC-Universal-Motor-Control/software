@@ -24,14 +24,20 @@
  */
 #include <limits>
 #include <cstdint>
+#include <cstring>
 #include "uavcan.hpp"
+#include "main.hpp"
+#include "hardware.hpp"
 #include "bxcan.h"
 #include "Heartbeat_1_0.h"
 #include "NodeIDAllocationData_1_0.h"
 #include "GetInfo_1_0.h"
 #include "ExecuteCommand_1_1.h"
-#include "Access_1_0.h"
 #include "List_1_0.h"
+#include "Access_1_0.h"
+
+///< Node uses hardware name for identification
+#define NODE_NAME HARDWARE_NAME
 
 ///< heap size for the o1heap instance for UAVCAN frames
 static constexpr size_t O1HEAP_SIZE = 4096;
@@ -64,8 +70,11 @@ static struct next_transfer_id_s
 	uint32_t servo_1Hz_loop;
 } next_transfer_id;
 
-//static uavcan::rx_tx can_thread;
-//static uavcan::heartbeat heartbeat_thread;
+///< can handling thread
+static uavcan::rx_tx can_thread;
+
+///< heartbeat thread
+static uavcan::heartbeat heartbeat_thread;
 
 /**
  * @fn void O1Allocate*(CanardInstance* const, const size_t)
@@ -93,31 +102,45 @@ static void O1Free(CanardInstance* const ins, void* const pointer)
     o1heapFree(o1allocator, pointer);
 }
 
+/**
+ * @fn CanardMicrosecond getMonotonicMicroseconds(void)
+ * @brief get Systemsticks from start in micro seconds
+ *
+ * @return micro secounds from startup
+ */
 static CanardMicrosecond getMonotonicMicroseconds(void)
 {
 	const uint64_t us_per_tick = 1000000ULL / OSAL_ST_FREQUENCY;
 	return (CanardMicrosecond)osalOsGetSystemTimeX() * us_per_tick;
 }
 
-void ProcessGetNodeInfo(const CanardTransfer* transfer)
+/**
+ * @fn void ProcessGetNodeInfo(const CanardTransfer*)
+ * @brief asseamble GetInfo response
+ *
+ * @param transfer 		GetInfo Request
+ */
+static void ProcessGetNodeInfo(const CanardTransfer* transfer)
 {
 
 	// The request object is empty so we don't bother deserializing it. Just send the response.
-	uavcan_node_GetInfo_Response_1_0 resp = {0};
+	uavcan_node_GetInfo_Response_1_0 resp;
 	resp.protocol_version.major           = CANARD_UAVCAN_SPECIFICATION_VERSION_MAJOR;
 	resp.protocol_version.minor           = CANARD_UAVCAN_SPECIFICATION_VERSION_MINOR;
 
 	// The hardware version is not populated in this demo because it runs on no specific hardware.
 	// An embedded node would usually determine the version by querying the hardware.
+	char unique_id[16];
+	snprintf(unique_id, 16, "%ld", DBGMCU->IDCODE);
+	resp.software_version.major   = VERSION_MAJOR;
+	resp.software_version.minor   = VERSION_MINOR;
+	resp.software_vcs_revision_id = 0xDEADBEEFDEADBEEF; //VCS_REVISION_ID;
+	memcpy(resp.unique_id, unique_id, sizeof(unique_id));
 
-//	resp.software_version.major   = VERSION_MAJOR;
-//	resp.software_version.minor   = VERSION_MINOR;
-//	resp.software_vcs_revision_id = VCS_REVISION_ID;
-//	resp.unique_id 				  = DBGMCU->IDCODE;
 
 	// The node name is the name of the product like a reversed Internet domain name (or like a Java package).
-//	resp.name.count = strlen(NODE_NAME);
-//	memcpy(&resp.name.elements, NODE_NAME, resp.name.count);
+	resp.name.count = strlen(NODE_NAME);
+	memcpy(&resp.name.elements, NODE_NAME, resp.name.count);
 
 	uint8_t      serialized[uavcan_node_GetInfo_Response_1_0_SERIALIZATION_BUFFER_SIZE_BYTES_] = {0};
 	size_t       serialized_size = sizeof(serialized);
@@ -133,32 +156,28 @@ void ProcessGetNodeInfo(const CanardTransfer* transfer)
 	}
 	else
 	{
-		assert(false);
+		osalDbgAssert(false, "GetInfo resonse failure");
 	}
 }
 
 /**
- * /// Performance notice: the register storage may be slow to access depending on its implementation (e.g., if it is
-/// backed by an uncached filesystem). If your register storage implementation is slow, this may disrupt real-time
-/// activities of the device. To avoid this, you can employ these measures:
-/// - Access registers asynchronously.
-/// - Run a separate UAVCAN processing task for soft-real-time blocking operations (this approach is used in PX4).
-/// - Cache register states in RAM and synchronize them with the storage asynchronously.
-/// - Document an operational limitation that the register interface should not be accessed while ENGAGED (armed).
- * @param transfer
+ * @fn void ProcessRequestRegisterAccess(const CanardTransfer*)
+ * @brief asseamble Register access response
+ *
+ * @param transfer		Register Access Request
  */
 void ProcessRequestRegisterAccess(const CanardTransfer* transfer)
 {
-	uavcan_register_Access_Request_1_0 req  = {0};
+	uavcan_register_Access_Request_1_0 req;
 	size_t                             size = transfer->payload_size;
 	if (uavcan_register_Access_Request_1_0_deserialize_(&req, (const uint8_t*)transfer->payload, &size) >= 0)
 	{
 		char name[uavcan_register_Name_1_0_name_ARRAY_CAPACITY_ + 1] = {0};
-		assert(req.name.name.count < sizeof(name));
+		osalDbgAssert(req.name.name.count < sizeof(name), "Register Name to Long");
 		memcpy(&name[0], req.name.name.elements, req.name.name.count);
 		name[req.name.name.count] = '\0';
 
-		uavcan_register_Access_Response_1_0 resp = {0};
+		uavcan_register_Access_Response_1_0 resp;
 
 		// If we're asked to write a new value, do it now:
 		if (!uavcan_register_Value_1_0_is_empty_(&req.value))
@@ -313,8 +332,8 @@ void uavcan::Init(void)
         }
     }
 
-//	can_thread.start(NORMALPRIO + 10);
-//	heartbeat_thread.start(NORMALPRIO);
+	can_thread.start(NORMALPRIO + 10);
+	heartbeat_thread.start(NORMALPRIO);
 }
 
 /**
@@ -347,12 +366,12 @@ void uavcan::rx_tx::main(void)
 			// The bxCAN driver doesn't give a timestamp
 			frame.timestamp_usec = getMonotonicMicroseconds();
 
-			CanardTransfer transfer      = {0, CanardPriorityOptional, CanardTransferKindMessage, 0, 0, 0, 0, nullptr};
+			CanardTransfer transfer;
 			CanardRxSubscription *subscription = NULL;
 			const int8_t   canard_result = canardRxAccept2(&canard, &frame, 0, &transfer, &subscription);
 			if (canard_result > 0)
 			{
-				assert(subscription != NULL);
+				osalDbgAssert(subscription != NULL, "No Subscriotion");
 				//If a handler was assigned as user reference, call it and pass the transfer.
 				if(subscription->user_reference!=NULL)
 				{
@@ -365,7 +384,7 @@ void uavcan::rx_tx::main(void)
 						size_t size = transfer.payload_size;
 						if (transfer.port_id == uavcan_pnp_NodeIDAllocationData_1_0_FIXED_PORT_ID_)
 						{
-							uavcan_pnp_NodeIDAllocationData_1_0 msg = {0};
+							uavcan_pnp_NodeIDAllocationData_1_0 msg;
 							if (uavcan_pnp_NodeIDAllocationData_1_0_deserialize_(&msg, (uint8_t*)transfer.payload, &size) >= 0)
 							{
 //								processMessagePlugAndPlayNodeIDAllocation(state, &msg);
@@ -373,7 +392,7 @@ void uavcan::rx_tx::main(void)
 						}
 						else
 						{
-							assert(false);  // Seems like we have set up a port subscription without a handler -- bad implementation.
+							osalDbgAssert(false, "Sub without Handler");  // Seems like we have set up a port subscription without a handler -- bad implementation.
 						}
 					}
 				}
@@ -387,7 +406,7 @@ void uavcan::rx_tx::main(void)
 			}
 			else
 			{
-				assert(false);  // No other error can possibly occur at runtime.
+				osalDbgAssert(false, "undefined Error");  // No other error can possibly occur at runtime.
 			}
 		}
 
@@ -428,7 +447,7 @@ void uavcan::rx_tx::main(void)
 /**
  * @brief constructor of UAVCAN receive and transmit thread
  */
-uavcan::rx_tx::rx_tx(void){}
+uavcan::rx_tx::rx_tx(void):deadline(0){};
 
 
 /**
@@ -505,7 +524,7 @@ void uavcan::heartbeat::main(void)
 				uint8_t      serialized[uavcan_pnp_NodeIDAllocationData_1_0_SERIALIZATION_BUFFER_SIZE_BYTES_] = {0};
 				size_t       serialized_size = sizeof(serialized);
 				const int8_t err = uavcan_pnp_NodeIDAllocationData_1_0_serialize_(&msg, &serialized[0], &serialized_size);
-				assert(err >= 0);
+
 				if (err >= 0)
 				{
 					const CanardTransfer transfer = {
@@ -530,7 +549,7 @@ void uavcan::heartbeat::main(void)
 /**
  * @brief constructor of UAVCAN Heartbeat thread
  */
-uavcan::heartbeat::heartbeat(void){}
+uavcan::heartbeat::heartbeat(void):deadline(0){};
 
 
 /** \} **/ /* end of doxygen group */

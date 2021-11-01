@@ -41,9 +41,6 @@ typedef struct settings_s
 	{
 		///< inertia of of rotor and connected known mechanics
 		float J;
-
-		///< feedback sensor zero position value
-		std::uint16_t zero_pos;
 	}  mechanics;
 
 	/**
@@ -317,6 +314,17 @@ typedef struct settings_s
 		} sel;
 
 	} throttle;
+
+	/**
+	 * @struct uavcan_s
+	 * @brief uavcan specific values
+	 *
+	 */
+	struct uavcan_s
+	{
+		///< ID of the node in UAVCAN
+		uint32_t node_id;
+	}uavcan;
 
 	///< crc32 value for the hole settings
 	uint32_t crc;

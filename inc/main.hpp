@@ -23,7 +23,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #ifndef INC_MAIN_HPP_
-#define HARDWARE_CONFIG_HPP_
+#define INC_MAIN_HPP_
 
 
 #include <cstdint>
@@ -33,6 +33,11 @@
 #include "ch.hpp"
 #include "controller.hpp"
 
+///< Version Major of UNIMOC
+constexpr std::uint8_t VERSION_MAJOR = 0;
+
+///< Versione Minor of UNIMOC
+constexpr std::uint8_t VERSION_MINOR = 1;
 
 
 #endif /* INC_MAIN_HPP_ */

@@ -44,9 +44,6 @@ __attribute__((aligned (32))) settings_ts settings =
 	{
 		///< inertia of of rotor and connected known mechanics
 		.J = 1e-4f,
-
-		///< feedback sensor zero position value
-		.zero_pos = 0,
 	},
 
 	/**
@@ -306,6 +303,16 @@ __attribute__((aligned (32))) settings_ts settings =
 
 		///< Throttle signal source selection
 		.sel = settings_ts::throttle_s::NONE,
+	},
+
+	/**
+	 * @struct uavcan_s
+	 * @brief uavcan specific values
+	 */
+	.uavcan
+	{
+		///< ID of the node in UAVCAN
+		.node_id = 0xFF,
 	},
 
 	///< crc32 value for the hole settings

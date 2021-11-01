@@ -25,7 +25,7 @@ endif
 
 # Linker extra options here.
 ifeq ($(USE_LDOPT),)
-  USE_LDOPT = -lm
+  USE_LDOPT = -lm -Wl,--cref
 endif
 
 # Enable this if you want link time optimizations (LTO).
@@ -122,6 +122,7 @@ LDSCRIPT= $(STARTUPLD)/STM32F730x8.ld
 # setting.
 CSRC = $(ALLCSRC) \
        usbcfg.c \
+       $(CHIBIOS)/os/various/syscalls.c \
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.

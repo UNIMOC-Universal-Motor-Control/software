@@ -364,10 +364,6 @@ static inline int8_t uavcan_register_Access_Response_1_0_serialize_(
     // in the serialization buffer up to the next byte boundary. This is by design and is guaranteed to be safe.
     size_t offset_bits = 0U;
 
-
-
-
-
     {   // uavcan.time.SynchronizedTimestamp.1.0 timestamp
         NUNAVUT_ASSERT(offset_bits % 8U == 0U);
         NUNAVUT_ASSERT(offset_bits % 8U == 0U);
@@ -387,18 +383,12 @@ static inline int8_t uavcan_register_Access_Response_1_0_serialize_(
         NUNAVUT_ASSERT(offset_bits <= (capacity_bytes * 8U));
     }
 
-
-
-
     {   // saturated bool mutable
         NUNAVUT_ASSERT(offset_bits % 8U == 0U);
         NUNAVUT_ASSERT((offset_bits + 1ULL) <= (capacity_bytes * 8U));
         buffer[offset_bits / 8U] = obj->_mutable ? 1U : 0U;
         offset_bits += 1U;
     }
-
-
-
 
     {   // saturated bool persistent
         NUNAVUT_ASSERT((offset_bits + 1ULL) <= (capacity_bytes * 8U));
@@ -412,9 +402,6 @@ static inline int8_t uavcan_register_Access_Response_1_0_serialize_(
         }
         offset_bits += 1U;
     }
-
-
-
 
     {   // void6
         NUNAVUT_ASSERT((offset_bits + 6ULL) <= (capacity_bytes * 8U));

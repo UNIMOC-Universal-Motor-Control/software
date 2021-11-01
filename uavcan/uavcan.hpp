@@ -32,6 +32,8 @@
 #include "hal.h"
 #include "canard.h"
 #include "o1heap.h"
+#include "settings.hpp"
+#include "values.hpp"
 
 #define NUNAVUT_ASSERT(x) osalDbgAssert(x, "NUNAVUT");
 
@@ -81,6 +83,40 @@ namespace uavcan
 	public:
 		rx_tx();
 	};
+
+
+	typedef enum register_type_e
+	{
+		SIGNED,
+		UNSIGNED,
+		FLOATING
+	} register_type_te;
+
+	/**
+	 * @struct uavcan_register_s
+	 * @brief definition of one register in the register table for LIST and ACCESS requests
+	 *
+	 */
+	typedef struct register_s
+	{
+		///< name of the register in the style of unimoc.motor.rotor.r
+		char name[50U];
+		///< pointer to the internal value represented by the register
+		void*	value;
+		///< type of the value this register is pointing on, note 32bit wide values is expected.
+		register_type_te type;
+		///< register variable is writable
+		bool _mutable;
+		///< register variable is saved in non-volatile memory
+		bool persistant;
+	} register_ts;
+
+	constexpr register_ts register_table[] = {
+			/* register name							pointer to value	type		mutable		persistent */
+			{"uavcan.node.id", 					&settings.uavcan.node_id,	UNSIGNED, 	true, 		true		},
+	};
+
+
 } // namespace uavcan
 
 #endif /* UNIMOC_UAVCAN_THREAD_H_ */

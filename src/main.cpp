@@ -37,6 +37,7 @@ using namespace chibios_rt;
 
 static management::thread manager;
 
+
 /**
  * Code entry point
  * @return never
