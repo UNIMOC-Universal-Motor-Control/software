@@ -114,6 +114,7 @@ namespace uavcan
 	constexpr register_ts register_table[] = {
 			/* register name							pointer to value	type		mutable		persistent */
 			{"uavcan.node.id", 					&settings.uavcan.node_id,	UNSIGNED, 	true, 		true		},
+			{"", 												nullptr,	UNSIGNED, 	false, 		false		},
 	};
 
 

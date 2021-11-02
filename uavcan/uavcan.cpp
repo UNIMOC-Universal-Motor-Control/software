@@ -65,9 +65,6 @@ static struct next_transfer_id_s
 	uint32_t uavcan_node_heartbeat;
 	uint32_t uavcan_node_port_list;
 	uint32_t uavcan_pnp_allocation;
-	// Messages published synchronously can share the same transfer-ID:
-	uint32_t servo_fast_loop;
-	uint32_t servo_1Hz_loop;
 } next_transfer_id;
 
 ///< can handling thread
@@ -161,6 +158,32 @@ static void ProcessGetNodeInfo(const CanardTransfer* transfer)
 }
 
 /**
+ * @fn const uavcan::register_ts GetRegisterByName*(char*)
+ * @brief get uavcan register by name
+ *
+ * @param name 		register name for search
+ * @return			pointer to register with given name. (nullptr if not found)
+ */
+const uavcan::register_ts* GetRegisterByName(char* name)
+{
+	const uavcan::register_ts* reg = uavcan::register_table;
+
+	while(std::strcmp(name, reg->name) != 0)
+	{
+		reg++;
+
+		// end of list, reg not found
+		if(reg->value != nullptr)
+		{
+			reg = nullptr;
+			break;
+		}
+	}
+
+	return reg;
+}
+
+/**
  * @fn void ProcessRequestRegisterAccess(const CanardTransfer*)
  * @brief asseamble Register access response
  *
@@ -183,24 +206,43 @@ void ProcessRequestRegisterAccess(const CanardTransfer* transfer)
 		if (!uavcan_register_Value_1_0_is_empty_(&req.value))
 		{
 			uavcan_register_Value_1_0_select_empty_(&resp.value);
-//			registerRead(&name[0], &resp.value);
-//			// If such register exists and it can be assigned from the request value:
-//			if (!uavcan_register_Value_1_0_is_empty_(&resp.value) && registerAssign(&resp.value, &req->value))
-//			{
-//				registerWrite(&name[0], &resp.value);
-//			}
+			const uavcan::register_ts* reg = GetRegisterByName(name);
+
+			switch (reg->type)
+			{
+			case uavcan::UNSIGNED:
+				if(uavcan_register_Value_1_0_is_natural32_(&req.value))
+				{
+					memcpy(reg->value, req.value.natural32.value.elements, 4);
+				}
+				uavcan_register_Value_1_0_select_natural32_(&resp.value);
+				resp.value.natural32.value.elements[0] = *(std::uint32_t*)reg->value;
+				resp.value.natural32.value.count = 0;
+				break;
+			case uavcan::SIGNED:
+				if(uavcan_register_Value_1_0_is_integer32_(&req.value))
+				{
+					memcpy(reg->value, req.value.integer32.value.elements, 4);
+				}
+				uavcan_register_Value_1_0_select_integer32_(&resp.value);
+				resp.value.integer32.value.elements[0] = *(std::int32_t*)reg->value;
+				resp.value.integer32.value.count = 0;
+				break;
+			case uavcan::FLOATING:
+				if(uavcan_register_Value_1_0_is_real32_(&req.value))
+				{
+					memcpy(reg->value, req.value.real32.value.elements, 4);
+				}
+				uavcan_register_Value_1_0_select_real32_(&resp.value);
+				resp.value.real32.value.elements[0] = *(float*)reg->value;
+				resp.value.real32.value.count = 0;
+				break;
+			}
+
+
+			resp._mutable   = reg->_mutable;
+			resp.persistent = reg->persistant;
 		}
-
-		// Regardless of whether we've just wrote a value or not, we need to read the current one and return it.
-		// The client will determine if the write was successful or not by comparing the request value with response.
-		uavcan_register_Value_1_0_select_empty_(&resp.value);
-//		registerRead(&name[0], &resp.value);
-
-		// Currently, all registers we implement are mutable and persistent. This is an acceptable simplification,
-		// but more advanced implementations will need to differentiate between them to support advanced features like
-		// exposing internal states via registers, perfcounters, etc.
-		resp._mutable   = true;
-		resp.persistent = true;
 
 		// Our node does not synchronize its time with the network so we can't populate the timestamp.
 		resp.timestamp.microsecond = uavcan_time_SynchronizedTimestamp_1_0_UNKNOWN;
