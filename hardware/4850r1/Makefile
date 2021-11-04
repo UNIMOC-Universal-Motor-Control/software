@@ -25,7 +25,7 @@ endif
 
 # Linker extra options here.
 ifeq ($(USE_LDOPT),)
-  USE_LDOPT = -lm -Wl,--cref
+  USE_LDOPT = -lm
 endif
 
 # Enable this if you want link time optimizations (LTO).

@@ -145,7 +145,7 @@ static void ProcessGetNodeInfo(const CanardTransfer* transfer)
 	if (res >= 0)
 	{
 		CanardTransfer rt = *transfer;  // Response transfers are similar to their requests.
-		rt.timestamp_usec = transfer->timestamp_usec + (std::uint64_t)1e6;
+		rt.timestamp_usec = transfer->timestamp_usec + 1000000ULL;
 		rt.transfer_kind  = CanardTransferKindResponse;
 		rt.payload_size   = serialized_size;
 		rt.payload        = &serialized[0];
@@ -252,7 +252,96 @@ void ProcessRequestRegisterAccess(const CanardTransfer* transfer)
 		if (uavcan_register_Access_Response_1_0_serialize_(&resp, &serialized[0], &serialized_size) >= 0)
 		{
 			CanardTransfer rt = *transfer;  // Response transfers are similar to their requests.
-			rt.timestamp_usec = transfer->timestamp_usec + (uint64_t)1e6;
+			rt.timestamp_usec = transfer->timestamp_usec + 1000000ULL;
+			rt.transfer_kind  = CanardTransferKindResponse;
+			rt.payload_size   = serialized_size;
+			rt.payload        = &serialized[0];
+			(void) canardTxPush(&canard, &rt);
+		}
+	}
+}
+
+void ProcessRequestList(const CanardTransfer* transfer)
+{
+	uavcan_register_List_Request_1_0 req  = {0};
+	size_t                           size = transfer->payload_size;
+	if (uavcan_register_List_Request_1_0_deserialize_(&req, (const uint8_t*)transfer->payload, &size) >= 0)
+	{
+		const char* name = uavcan::register_table[req.index].name;
+	    uavcan_register_Name_1_0 out;
+	    uavcan_register_Name_1_0_initialize_(&out);
+
+	    out.name.count = nunavutChooseMin(strlen(name), uavcan_register_Name_1_0_name_ARRAY_CAPACITY_);
+	    std::memcpy(out.name.elements, name, out.name.count);
+
+		const uavcan_register_List_Response_1_0 resp = {.name = out};
+		uint8_t serialized[uavcan_register_List_Response_1_0_SERIALIZATION_BUFFER_SIZE_BYTES_] = {0};
+		size_t  serialized_size = sizeof(serialized);
+		if (uavcan_register_List_Response_1_0_serialize_(&resp, &serialized[0], &serialized_size) >= 0)
+		{
+			CanardTransfer rt = *transfer;  // Response transfers are similar to their requests.
+			rt.timestamp_usec = transfer->timestamp_usec + 1000000ULL;
+			rt.transfer_kind  = CanardTransferKindResponse;
+			rt.payload_size   = serialized_size;
+			rt.payload        = &serialized[0];
+			(void) canardTxPush(&canard, &rt);
+		}
+	}
+}
+
+void ProcessRequestExecuteCommand(const CanardTransfer* transfer)
+{
+	uavcan_node_ExecuteCommand_Request_1_1 req;
+	size_t                                 size = transfer->payload_size;
+	if (uavcan_node_ExecuteCommand_Request_1_1_deserialize_(&req, (const uint8_t*)transfer->payload, &size) >= 0)
+	{
+		uavcan_node_ExecuteCommand_Response_1_1 resp;
+		switch (req.command)
+		{
+		case uavcan_node_ExecuteCommand_Request_1_1_COMMAND_BEGIN_SOFTWARE_UPDATE:
+		{
+			char file_name[uavcan_node_ExecuteCommand_Request_1_1_parameter_ARRAY_CAPACITY_ + 1] = {0};
+			std::memcpy(file_name, req.parameter.elements, req.parameter.count);
+			file_name[req.parameter.count] = '\0';
+			// TODO: invoke the bootloader with the specified file name. See https://github.com/Zubax/kocherga/
+//			printf("Firmware update request; filename: '%s' \n", &file_name[0]);
+			resp.status = uavcan_node_ExecuteCommand_Response_1_1_STATUS_BAD_STATE;  // This is a stub.
+			break;
+		}
+		case uavcan_node_ExecuteCommand_Request_1_1_COMMAND_FACTORY_RESET:
+		{
+//			registerDoFactoryReset();
+			resp.status = uavcan_node_ExecuteCommand_Response_1_1_STATUS_SUCCESS;
+			break;
+		}
+		case uavcan_node_ExecuteCommand_Request_1_1_COMMAND_RESTART:
+		{
+//			g_restart_required = true;
+			resp.status        = uavcan_node_ExecuteCommand_Response_1_1_STATUS_SUCCESS;
+			break;
+		}
+		case uavcan_node_ExecuteCommand_Request_1_1_COMMAND_STORE_PERSISTENT_STATES:
+		{
+			// If your registers are not automatically synchronized with the non-volatile storage, use this command
+			// to commit them to the storage explicitly. Otherwise, it is safe to remove it.
+			// In this demo, the registers are stored in files, so there is nothing to do.
+			resp.status = uavcan_node_ExecuteCommand_Response_1_1_STATUS_SUCCESS;
+			break;
+		}
+		// You can add vendor-specific commands here as well.
+		default:
+		{
+			resp.status = uavcan_node_ExecuteCommand_Response_1_1_STATUS_BAD_COMMAND;
+			break;
+		}
+		}
+
+		uint8_t serialized[uavcan_node_ExecuteCommand_Response_1_1_SERIALIZATION_BUFFER_SIZE_BYTES_] = {0};
+		size_t  serialized_size = sizeof(serialized);
+		if (uavcan_node_ExecuteCommand_Response_1_1_serialize_(&resp, &serialized[0], &serialized_size) >= 0)
+		{
+			CanardTransfer rt = *transfer;  // Response transfers are similar to their requests.
+			rt.timestamp_usec = transfer->timestamp_usec + 1000000ULL;
 			rt.transfer_kind  = CanardTransferKindResponse;
 			rt.payload_size   = serialized_size;
 			rt.payload        = &serialized[0];
@@ -318,7 +407,7 @@ void uavcan::Init(void)
         static CanardRxSubscription rx;
         // set the request handler
         rx.user_reference = (void*)ProcessGetNodeInfo;
-        const int8_t                res =  //
+        const int8_t                res =
             canardRxSubscribe(&canard,
                               CanardTransferKindRequest,
                               uavcan_node_GetInfo_1_0_FIXED_PORT_ID_,
@@ -332,7 +421,8 @@ void uavcan::Init(void)
     }
     {
         static CanardRxSubscription rx;
-        const int8_t                res =  //
+        rx.user_reference = (void*)ProcessRequestExecuteCommand;
+        const int8_t                res =
             canardRxSubscribe(&canard,
                               CanardTransferKindRequest,
                               uavcan_node_ExecuteCommand_1_1_FIXED_PORT_ID_,
@@ -361,6 +451,7 @@ void uavcan::Init(void)
     }
     {
         static CanardRxSubscription rx;
+        rx.user_reference = (void*)ProcessRequestList;
         const int8_t                res =  //
             canardRxSubscribe(&canard,
                               CanardTransferKindRequest,
@@ -429,7 +520,13 @@ void uavcan::rx_tx::main(void)
 							uavcan_pnp_NodeIDAllocationData_1_0 msg;
 							if (uavcan_pnp_NodeIDAllocationData_1_0_deserialize_(&msg, (uint8_t*)transfer.payload, &size) >= 0)
 							{
-//								processMessagePlugAndPlayNodeIDAllocation(state, &msg);
+								std::uint64_t uid = DBGMCU->IDCODE;
+								std::uint16_t node_id = msg.allocated_node_id.elements[0].value;
+
+							    if ((node_id <= CANARD_NODE_ID_MAX) && (std::memcmp(&uid, &msg.unique_id_hash, sizeof(uid)) == 0))
+							    {
+							    	settings.uavcan.node_id = node_id;
+							    }
 							}
 						}
 						else
