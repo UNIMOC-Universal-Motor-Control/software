@@ -7,9 +7,9 @@
 // To avoid conflicts with definitions given in the source DSDL file, all entities created by the code generator
 // are named with an underscore at the end, like foo_bar_().
 //
-// Generator:     nunavut-1.2.1 (serialization was enabled)
-// Source file:   C:\Projekte\unimoc\public_regulated_data_types\uavcan\metatransport\udp\Frame.0.1.uavcan
-// Generated at:  2021-06-16 19:00:16.829278 UTC
+// Generator:     nunavut-1.3.0 (serialization was enabled)
+// Source file:   /tmp/pyuavcan-cli-dsdl6o27eu3s/public_regulated_data_types-master/uavcan/metatransport/udp/Frame.0.1.uavcan
+// Generated at:  2021-11-09 21:28:24.156289 UTC
 // Is deprecated: yes
 // Fixed port-ID: None
 // Full name:     uavcan.metatransport.udp.Frame
@@ -17,19 +17,19 @@
 //
 // Platform
 //     python_implementation:  CPython
-//     python_version:  3.9.5
+//     python_version:  3.9.1
 //     python_release_level:  final
-//     python_build:  ('tags/v3.9.5:0a7dcbd', 'May  3 2021 17:27:52')
-//     python_compiler:  MSC v.1928 64 bit (AMD64)
-//     python_revision:  0a7dcbd
+//     python_build:  ('default', 'Feb  9 2021 07:55:26')
+//     python_compiler:  GCC 8.3.0
+//     python_revision:
 //     python_xoptions:  {}
-//     runtime_platform:  Windows-10-10.0.18363-SP0
+//     runtime_platform:  Linux-5.4.0-66-generic-x86_64-with-glibc2.28
 //
 // Language Options
 //     target_endianness:  little
 //     omit_float_serialization_support:  False
 //     enable_serialization_asserts:  True
-//     enable_override_variable_array_capacity:  False
+//     enable_override_variable_array_capacity:  True
 
 //           _____  ______ _____  _____  ______ _____       _______ ______ _____
 //          |  __ `|  ____|  __ `|  __ `|  ____/ ____|   /`|__   __|  ____|  __ `
@@ -50,16 +50,16 @@
 #include <stdlib.h>
 
 static_assert( NUNAVUT_SUPPORT_LANGUAGE_OPTION_TARGET_ENDIANNESS == 434322821,
-              "C:\Projekte\unimoc\public_regulated_data_types\uavcan\metatransport\udp\Frame.0.1.uavcan is trying to use a serialization library that was compiled with "
+              "/tmp/pyuavcan-cli-dsdl6o27eu3s/public_regulated_data_types-master/uavcan/metatransport/udp/Frame.0.1.uavcan is trying to use a serialization library that was compiled with "
               "different language options. This is dangerous and therefore not allowed." );
 static_assert( NUNAVUT_SUPPORT_LANGUAGE_OPTION_OMIT_FLOAT_SERIALIZATION_SUPPORT == 0,
-              "C:\Projekte\unimoc\public_regulated_data_types\uavcan\metatransport\udp\Frame.0.1.uavcan is trying to use a serialization library that was compiled with "
+              "/tmp/pyuavcan-cli-dsdl6o27eu3s/public_regulated_data_types-master/uavcan/metatransport/udp/Frame.0.1.uavcan is trying to use a serialization library that was compiled with "
               "different language options. This is dangerous and therefore not allowed." );
 static_assert( NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_SERIALIZATION_ASSERTS == 1,
-              "C:\Projekte\unimoc\public_regulated_data_types\uavcan\metatransport\udp\Frame.0.1.uavcan is trying to use a serialization library that was compiled with "
+              "/tmp/pyuavcan-cli-dsdl6o27eu3s/public_regulated_data_types-master/uavcan/metatransport/udp/Frame.0.1.uavcan is trying to use a serialization library that was compiled with "
               "different language options. This is dangerous and therefore not allowed." );
-static_assert( NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_OVERRIDE_VARIABLE_ARRAY_CAPACITY == 0,
-              "C:\Projekte\unimoc\public_regulated_data_types\uavcan\metatransport\udp\Frame.0.1.uavcan is trying to use a serialization library that was compiled with "
+static_assert( NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_OVERRIDE_VARIABLE_ARRAY_CAPACITY == 1,
+              "/tmp/pyuavcan-cli-dsdl6o27eu3s/public_regulated_data_types-master/uavcan/metatransport/udp/Frame.0.1.uavcan is trying to use a serialization library that was compiled with "
               "different language options. This is dangerous and therefore not allowed." );
 
 #ifdef __cplusplus
@@ -88,7 +88,14 @@ static_assert(uavcan_metatransport_udp_Frame_0_1_EXTENT_BYTES_ >= uavcan_metatra
 #define uavcan_metatransport_udp_Frame_0_1_MTU (9188U)
 
 /// Array metadata for: saturated uint8[<=9188] data
+#ifndef uavcan_metatransport_udp_Frame_0_1_data_ARRAY_CAPACITY_
 #define uavcan_metatransport_udp_Frame_0_1_data_ARRAY_CAPACITY_           9188U
+#elif !defined(uavcan_metatransport_udp_Frame_0_1_DISABLE_SERIALIZATION_BUFFER_CHECK_)
+#  define uavcan_metatransport_udp_Frame_0_1_DISABLE_SERIALIZATION_BUFFER_CHECK_
+#endif
+#if uavcan_metatransport_udp_Frame_0_1_data_ARRAY_CAPACITY_ > 9188U
+#  error uavcan_metatransport_udp_Frame_0_1_data_ARRAY_CAPACITY_ > 9188U
+#endif
 #define uavcan_metatransport_udp_Frame_0_1_data_ARRAY_IS_VARIABLE_LENGTH_ true
 
 typedef struct
@@ -136,10 +143,14 @@ static inline int8_t uavcan_metatransport_udp_Frame_0_1_serialize_(
 
 
     const size_t capacity_bytes = *inout_buffer_size_bytes;
+#ifndef uavcan_metatransport_udp_Frame_0_1_DISABLE_SERIALIZATION_BUFFER_CHECK_
+
     if ((8U * (size_t) capacity_bytes) < 74096UL)
     {
         return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
     }
+#endif
+
     // Notice that fields that are not an integer number of bytes long may overrun the space allocated for them
     // in the serialization buffer up to the next byte boundary. This is by design and is guaranteed to be safe.
     size_t offset_bits = 0U;

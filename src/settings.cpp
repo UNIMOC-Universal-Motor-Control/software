@@ -312,7 +312,16 @@ __attribute__((aligned (32))) settings_ts settings =
 	.uavcan
 	{
 		///< ID of the node in UAVCAN
-		.node_id = 0xFF,
+		.node_id = std::numeric_limits<std::uint16_t>::max(),
+
+		///< subject ID for servo feedback message
+		.servo_feedback = std::numeric_limits<std::uint16_t>::max(),
+
+		///< subject ID for servo dynamics message
+		.servo_dynamics = std::numeric_limits<std::uint16_t>::max(),
+
+		///< subject ID for servo power message
+		.servo_power = std::numeric_limits<std::uint16_t>::max(),
 	},
 
 	///< crc32 value for the hole settings

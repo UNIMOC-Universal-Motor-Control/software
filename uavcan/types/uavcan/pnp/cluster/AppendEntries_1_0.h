@@ -7,9 +7,9 @@
 // To avoid conflicts with definitions given in the source DSDL file, all entities created by the code generator
 // are named with an underscore at the end, like foo_bar_().
 //
-// Generator:     nunavut-1.2.1 (serialization was enabled)
-// Source file:   C:\Projekte\unimoc\public_regulated_data_types\uavcan\pnp\cluster\390.AppendEntries.1.0.uavcan
-// Generated at:  2021-06-16 19:00:16.564986 UTC
+// Generator:     nunavut-1.3.0 (serialization was enabled)
+// Source file:   /tmp/pyuavcan-cli-dsdl6o27eu3s/public_regulated_data_types-master/uavcan/pnp/cluster/390.AppendEntries.1.0.uavcan
+// Generated at:  2021-11-09 21:28:22.363281 UTC
 // Is deprecated: no
 // Fixed port-ID: 390
 // Full name:     uavcan.pnp.cluster.AppendEntries
@@ -17,19 +17,19 @@
 //
 // Platform
 //     python_implementation:  CPython
-//     python_version:  3.9.5
+//     python_version:  3.9.1
 //     python_release_level:  final
-//     python_build:  ('tags/v3.9.5:0a7dcbd', 'May  3 2021 17:27:52')
-//     python_compiler:  MSC v.1928 64 bit (AMD64)
-//     python_revision:  0a7dcbd
+//     python_build:  ('default', 'Feb  9 2021 07:55:26')
+//     python_compiler:  GCC 8.3.0
+//     python_revision:
 //     python_xoptions:  {}
-//     runtime_platform:  Windows-10-10.0.18363-SP0
+//     runtime_platform:  Linux-5.4.0-66-generic-x86_64-with-glibc2.28
 //
 // Language Options
 //     target_endianness:  little
 //     omit_float_serialization_support:  False
 //     enable_serialization_asserts:  True
-//     enable_override_variable_array_capacity:  False
+//     enable_override_variable_array_capacity:  True
 
 #ifndef UAVCAN_PNP_CLUSTER_APPEND_ENTRIES_1_0_INCLUDED_
 #define UAVCAN_PNP_CLUSTER_APPEND_ENTRIES_1_0_INCLUDED_
@@ -41,16 +41,16 @@
 #include <stdlib.h>
 
 static_assert( NUNAVUT_SUPPORT_LANGUAGE_OPTION_TARGET_ENDIANNESS == 434322821,
-              "C:\Projekte\unimoc\public_regulated_data_types\uavcan\pnp\cluster\390.AppendEntries.1.0.uavcan is trying to use a serialization library that was compiled with "
+              "/tmp/pyuavcan-cli-dsdl6o27eu3s/public_regulated_data_types-master/uavcan/pnp/cluster/390.AppendEntries.1.0.uavcan is trying to use a serialization library that was compiled with "
               "different language options. This is dangerous and therefore not allowed." );
 static_assert( NUNAVUT_SUPPORT_LANGUAGE_OPTION_OMIT_FLOAT_SERIALIZATION_SUPPORT == 0,
-              "C:\Projekte\unimoc\public_regulated_data_types\uavcan\pnp\cluster\390.AppendEntries.1.0.uavcan is trying to use a serialization library that was compiled with "
+              "/tmp/pyuavcan-cli-dsdl6o27eu3s/public_regulated_data_types-master/uavcan/pnp/cluster/390.AppendEntries.1.0.uavcan is trying to use a serialization library that was compiled with "
               "different language options. This is dangerous and therefore not allowed." );
 static_assert( NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_SERIALIZATION_ASSERTS == 1,
-              "C:\Projekte\unimoc\public_regulated_data_types\uavcan\pnp\cluster\390.AppendEntries.1.0.uavcan is trying to use a serialization library that was compiled with "
+              "/tmp/pyuavcan-cli-dsdl6o27eu3s/public_regulated_data_types-master/uavcan/pnp/cluster/390.AppendEntries.1.0.uavcan is trying to use a serialization library that was compiled with "
               "different language options. This is dangerous and therefore not allowed." );
-static_assert( NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_OVERRIDE_VARIABLE_ARRAY_CAPACITY == 0,
-              "C:\Projekte\unimoc\public_regulated_data_types\uavcan\pnp\cluster\390.AppendEntries.1.0.uavcan is trying to use a serialization library that was compiled with "
+static_assert( NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_OVERRIDE_VARIABLE_ARRAY_CAPACITY == 1,
+              "/tmp/pyuavcan-cli-dsdl6o27eu3s/public_regulated_data_types-master/uavcan/pnp/cluster/390.AppendEntries.1.0.uavcan is trying to use a serialization library that was compiled with "
               "different language options. This is dangerous and therefore not allowed." );
 
 #ifdef __cplusplus
@@ -84,7 +84,14 @@ static_assert(uavcan_pnp_cluster_AppendEntries_Request_1_0_EXTENT_BYTES_ >= uavc
 #define uavcan_pnp_cluster_AppendEntries_Request_1_0_DEFAULT_MAX_ELECTION_TIMEOUT (4U)
 
 /// Array metadata for: uavcan.pnp.cluster.Entry.1.0[<=1] entries
+#ifndef uavcan_pnp_cluster_AppendEntries_Request_1_0_entries_ARRAY_CAPACITY_
 #define uavcan_pnp_cluster_AppendEntries_Request_1_0_entries_ARRAY_CAPACITY_           1U
+#elif !defined(uavcan_pnp_cluster_AppendEntries_Request_1_0_DISABLE_SERIALIZATION_BUFFER_CHECK_)
+#  define uavcan_pnp_cluster_AppendEntries_Request_1_0_DISABLE_SERIALIZATION_BUFFER_CHECK_
+#endif
+#if uavcan_pnp_cluster_AppendEntries_Request_1_0_entries_ARRAY_CAPACITY_ > 1U
+#  error uavcan_pnp_cluster_AppendEntries_Request_1_0_entries_ARRAY_CAPACITY_ > 1U
+#endif
 #define uavcan_pnp_cluster_AppendEntries_Request_1_0_entries_ARRAY_IS_VARIABLE_LENGTH_ true
 
 typedef struct
@@ -135,10 +142,14 @@ static inline int8_t uavcan_pnp_cluster_AppendEntries_Request_1_0_serialize_(
 
 
     const size_t capacity_bytes = *inout_buffer_size_bytes;
+#ifndef uavcan_pnp_cluster_AppendEntries_Request_1_0_DISABLE_SERIALIZATION_BUFFER_CHECK_
+
     if ((8U * (size_t) capacity_bytes) < 280UL)
     {
         return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
     }
+#endif
+
     // Notice that fields that are not an integer number of bytes long may overrun the space allocated for them
     // in the serialization buffer up to the next byte boundary. This is by design and is guaranteed to be safe.
     size_t offset_bits = 0U;
@@ -439,10 +450,14 @@ static inline int8_t uavcan_pnp_cluster_AppendEntries_Response_1_0_serialize_(
 
 
     const size_t capacity_bytes = *inout_buffer_size_bytes;
+#ifndef uavcan_pnp_cluster_AppendEntries_Response_1_0_DISABLE_SERIALIZATION_BUFFER_CHECK_
+
     if ((8U * (size_t) capacity_bytes) < 40UL)
     {
         return -NUNAVUT_ERROR_SERIALIZATION_BUFFER_TOO_SMALL;
     }
+#endif
+
     // Notice that fields that are not an integer number of bytes long may overrun the space allocated for them
     // in the serialization buffer up to the next byte boundary. This is by design and is guaranteed to be safe.
     size_t offset_bits = 0U;

@@ -29,12 +29,18 @@
 #include "main.hpp"
 #include "hardware.hpp"
 #include "bxcan.h"
-#include "Heartbeat_1_0.h"
-#include "NodeIDAllocationData_1_0.h"
-#include "GetInfo_1_0.h"
-#include "ExecuteCommand_1_1.h"
-#include "List_1_0.h"
-#include "Access_1_0.h"
+#include "uavcan/node/Heartbeat_1_0.h"
+#include "uavcan/pnp/NodeIDAllocationData_1_0.h"
+#include "uavcan/node/GetInfo_1_0.h"
+#include "uavcan/node/ExecuteCommand_1_1.h"
+#include "uavcan/_register/List_1_0.h"
+#include "uavcan/_register/Access_1_0.h"
+#include "reg/udral/service/actuator/common/Feedback_0_1.h"
+#include "reg/udral/service/actuator/common/Status_0_1.h"
+#include "reg/udral/service/actuator/servo/__0_1.h"
+#include "reg/udral/service/actuator/esc/__0_1.h"
+#include "reg/udral/physics/dynamics/rotation/PlanarTs_0_1.h"
+#include "reg/udral/physics/electricity/PowerTs_0_1.h"
 
 ///< Node uses hardware name for identification
 #define NODE_NAME HARDWARE_NAME
@@ -62,9 +68,10 @@ static std::uint32_t uptime;
 /// as large values naturally contain the number of times each subject was published to.
 static struct next_transfer_id_s
 {
-	uint32_t uavcan_node_heartbeat;
-	uint32_t uavcan_node_port_list;
-	uint32_t uavcan_pnp_allocation;
+	uint32_t node_heartbeat;
+	uint32_t node_port_list;
+	uint32_t pnp_allocation;
+	uint32_t servo_fast_loop;
 } next_transfer_id;
 
 ///< can handling thread
@@ -351,7 +358,9 @@ void ProcessRequestExecuteCommand(const CanardTransfer* transfer)
 }
 
 /**
- * Initialize the uavan and all its threads
+ * @fn void Init(void)
+ * @brief Initialize the uavan and all its threads
+ *
  */
 void uavcan::Init(void)
 {
@@ -373,15 +382,6 @@ void uavcan::Init(void)
 		osalSysHalt("uavcan");
 	}
 
-    // Load the port-IDs from the registers. You can implement hot-reloading at runtime if desired.
-    // Publications:
-	/// FIXME add the specific IDs
-//    state.port_id.pub.differential_pressure =
-//        getPublisherSubjectID("airspeed.differential_pressure",
-//                              uavcan_si_unit_temperature_Scalar_1_0_FULL_NAME_AND_VERSION_);
-//    state.port_id.pub.static_air_temperature =
-//        getPublisherSubjectID("airspeed.static_air_temperature",
-//                              uavcan_si_unit_temperature_Scalar_1_0_FULL_NAME_AND_VERSION_);
     // Subscriptions:
     // (none in this application)
 
@@ -468,6 +468,112 @@ void uavcan::Init(void)
 	can_thread.start(NORMALPRIO + 10);
 	heartbeat_thread.start(NORMALPRIO);
 }
+
+/**
+ * @fn void SendFeedback(void)
+ * @brief Send activated Feedback messages from fast loop (eg. 1kHz)
+ *
+ */
+void uavcan::SendFeedback(void)
+{
+    const bool     anonymous         = canard.node_id > CANARD_NODE_ID_MAX;
+    const uint64_t servo_transfer_id = next_transfer_id.servo_fast_loop++;
+    const CanardMicrosecond deadline_time = getMonotonicMicroseconds() + 10000ULL;
+
+    // Publish feedback if the subject is enabled and the node is non-anonymous.
+    if (!anonymous && (settings.uavcan.servo_feedback <= CANARD_SUBJECT_ID_MAX))
+    {
+        reg_udral_service_actuator_common_Feedback_0_1 msg;
+        msg.heartbeat.readiness.value =
+        		hardware::pwm::output::Active() ? reg_udral_service_common_Readiness_0_1_ENGAGED
+        										: reg_udral_service_common_Readiness_0_1_STANDBY;
+        // If there are any hardware or configuration issues, report them here:
+        msg.heartbeat.health.value = uavcan_node_Health_1_0_NOMINAL;
+        // Serialize and publish the message:
+        uint8_t      serialized[reg_udral_service_actuator_common_Feedback_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_] = {0};
+        size_t       serialized_size = sizeof(serialized);
+        const int8_t err =
+            reg_udral_service_actuator_common_Feedback_0_1_serialize_(&msg, &serialized[0], &serialized_size);
+        assert(err >= 0);
+        if (err >= 0)
+        {
+            const CanardTransfer transfer = {
+                .timestamp_usec = deadline_time,
+                .priority       = CanardPriorityHigh,
+                .transfer_kind  = CanardTransferKindMessage,
+                .port_id        = settings.uavcan.servo_feedback,
+                .remote_node_id = CANARD_NODE_ID_UNSET,
+                .transfer_id    = (CanardTransferID) servo_transfer_id,
+                .payload_size   = serialized_size,
+                .payload        = &serialized[0],
+            };
+            (void) canardTxPush(&canard, &transfer);
+        }
+    }
+
+    // Publish dynamics if the subject is enabled and the node is non-anonymous.
+    if (!anonymous && (settings.uavcan.servo_dynamics <= CANARD_SUBJECT_ID_MAX))
+    {
+        reg_udral_physics_dynamics_rotation_PlanarTs_0_1 msg;
+        // Our node does not synchronize its clock with the network, so we cannot timestamp our publications:
+        msg.timestamp.microsecond = uavcan_time_SynchronizedTimestamp_1_0_UNKNOWN;
+        msg.value.kinematics.angular_position.radian                  = values::motor::rotor::angle;
+        msg.value.kinematics.angular_velocity.radian_per_second       = values::motor::rotor::omega;
+        msg.value.kinematics.angular_acceleration.radian_per_second_per_second = 0.0f;
+        msg.value._torque.newton_meter                                = values::motor::torque::electric;
+        // Serialize and publish the message:
+        uint8_t serialized[reg_udral_physics_dynamics_rotation_PlanarTs_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_] = {0};
+        size_t  serialized_size = sizeof(serialized);
+        const int8_t err =
+            reg_udral_physics_dynamics_rotation_PlanarTs_0_1_serialize_(&msg, &serialized[0], &serialized_size);
+        assert(err >= 0);
+        if (err >= 0)
+        {
+            const CanardTransfer transfer = {
+                .timestamp_usec = deadline_time,
+                .priority       = CanardPriorityHigh,
+                .transfer_kind  = CanardTransferKindMessage,
+                .port_id        = settings.uavcan.servo_dynamics,
+                .remote_node_id = CANARD_NODE_ID_UNSET,
+                .transfer_id    = (CanardTransferID) servo_transfer_id,
+                .payload_size   = serialized_size,
+                .payload        = &serialized[0],
+            };
+            (void) canardTxPush(&canard, &transfer);
+        }
+    }
+
+    // Publish power if the subject is enabled and the node is non-anonymous.
+    if (!anonymous && (settings.uavcan.servo_power <= CANARD_SUBJECT_ID_MAX))
+    {
+        reg_udral_physics_electricity_PowerTs_0_1 msg;
+        // Our node does not synchronize its clock with the network, so we cannot timestamp our publications:
+        msg.timestamp.microsecond = uavcan_time_SynchronizedTimestamp_1_0_UNKNOWN;
+        // TODO populate real values:
+        msg.value.current.ampere = systems::Length(values::motor::rotor::i);
+        msg.value.voltage.volt   = systems::Length(values::motor::rotor::u);
+        // Serialize and publish the message:
+        uint8_t serialized[reg_udral_physics_electricity_PowerTs_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_] = {0};
+        size_t  serialized_size = sizeof(serialized);
+        const int8_t err = reg_udral_physics_electricity_PowerTs_0_1_serialize_(&msg, &serialized[0], &serialized_size);
+        assert(err >= 0);
+        if (err >= 0)
+        {
+            const CanardTransfer transfer = {
+                .timestamp_usec = deadline_time,
+                .priority       = CanardPriorityHigh,
+                .transfer_kind  = CanardTransferKindMessage,
+                .port_id        = settings.uavcan.servo_power,
+                .remote_node_id = CANARD_NODE_ID_UNSET,
+                .transfer_id    = (CanardTransferID) servo_transfer_id,
+                .payload_size   = serialized_size,
+                .payload        = &serialized[0],
+            };
+            (void) canardTxPush(&canard, &transfer);
+        }
+    }
+}
+
 
 /**
  * @brief Thread main function
@@ -608,6 +714,8 @@ void uavcan::heartbeat::main(void)
 		if(uptime < std::numeric_limits<std::uint32_t>::max()) uptime++;
 
 		const bool anonymous = canard.node_id > CANARD_NODE_ID_MAX;
+		const CanardMicrosecond deadline_time = getMonotonicMicroseconds() + 250000ULL;
+
 		// Publish heartbeat every second unless the local node is anonymous. Anonymous nodes shall not publish heartbeat.
 		if (!anonymous)
 		{
@@ -632,12 +740,12 @@ void uavcan::heartbeat::main(void)
 			if (err >= 0)
 			{
 				const CanardTransfer transfer = {
-						.timestamp_usec = (CanardMicrosecond)osalOsGetSystemTimeX() * OSAL_ST_FREQUENCY / 1000000ULL,
+						.timestamp_usec = deadline_time,
 						.priority       = CanardPriorityNominal,
 						.transfer_kind  = CanardTransferKindMessage,
 						.port_id        = uavcan_node_Heartbeat_1_0_FIXED_PORT_ID_,
 						.remote_node_id = CANARD_NODE_ID_UNSET,
-						.transfer_id    = (CanardTransferID)(next_transfer_id.uavcan_node_heartbeat++),
+						.transfer_id    = (CanardTransferID)(next_transfer_id.node_heartbeat++),
 						.payload_size   = serialized_size,
 						.payload        = &serialized[0],
 				};
@@ -667,12 +775,12 @@ void uavcan::heartbeat::main(void)
 				if (err >= 0)
 				{
 					const CanardTransfer transfer = {
-							.timestamp_usec = (CanardMicrosecond)osalOsGetSystemTimeX() * OSAL_ST_FREQUENCY / 1000000ULL,
+							.timestamp_usec = deadline_time,
 							.priority       = CanardPrioritySlow,
 							.transfer_kind  = CanardTransferKindMessage,
 							.port_id        = uavcan_pnp_NodeIDAllocationData_1_0_FIXED_PORT_ID_,
 							.remote_node_id = CANARD_NODE_ID_UNSET,
-							.transfer_id    = (CanardTransferID)(next_transfer_id.uavcan_pnp_allocation++),
+							.transfer_id    = (CanardTransferID)(next_transfer_id.pnp_allocation++),
 							.payload_size   = serialized_size,
 							.payload        = &serialized[0],
 					};

@@ -323,7 +323,16 @@ typedef struct settings_s
 	struct uavcan_s
 	{
 		///< ID of the node in UAVCAN
-		uint32_t node_id;
+		uint16_t node_id;
+
+		///< subject ID for servo feedback message
+		uint16_t servo_feedback;
+
+		///< subject ID for servo dynamics message
+		uint16_t servo_dynamics;
+
+		///< subject ID for servo power message
+		uint16_t servo_power;
 	}uavcan;
 
 	///< crc32 value for the hole settings

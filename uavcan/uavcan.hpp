@@ -39,10 +39,20 @@
 
 namespace uavcan
 {
+
 	/**
-	 * Initialize the uavan and all its threads
+	 * @fn void Init(void)
+	 * @brief Initialize the uavan and all its threads
+	 *
 	 */
 	void Init(void);
+
+	/**
+     * @fn void SendFeedback(void)
+	 * @brief Send activated Feedback messages from fast loop (eg. 1kHz)
+	 *
+	 */
+	void SendFeedback(void);
 
 	/**
 	 * this thread handles the heartbeat of the node or

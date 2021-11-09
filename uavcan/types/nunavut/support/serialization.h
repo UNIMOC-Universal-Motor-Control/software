@@ -8,7 +8,7 @@
 //     target_endianness:  little
 //     omit_float_serialization_support:  False
 //     enable_serialization_asserts:  True
-//     enable_override_variable_array_capacity:  False
+//     enable_override_variable_array_capacity:  True
 
 #ifndef NUNAVUT_SUPPORT_SERIALIZATION_H_INCLUDED
 #define NUNAVUT_SUPPORT_SERIALIZATION_H_INCLUDED
@@ -43,7 +43,7 @@ static_assert(sizeof(size_t) >= sizeof(size_t),
 #define NUNAVUT_SUPPORT_LANGUAGE_OPTION_TARGET_ENDIANNESS 434322821
 #define NUNAVUT_SUPPORT_LANGUAGE_OPTION_OMIT_FLOAT_SERIALIZATION_SUPPORT 0
 #define NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_SERIALIZATION_ASSERTS 1
-#define NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_OVERRIDE_VARIABLE_ARRAY_CAPACITY 0
+#define NUNAVUT_SUPPORT_LANGUAGE_OPTION_ENABLE_OVERRIDE_VARIABLE_ARRAY_CAPACITY 1
 
 /// Nunavut returns 0 for success and < 0 for any failure. It is always adequate to check that error_value < 0
 /// to detect errors or error_value == 0 for success.
