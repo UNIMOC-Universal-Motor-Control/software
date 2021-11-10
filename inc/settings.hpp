@@ -333,6 +333,12 @@ typedef struct settings_s
 
 		///< subject ID for servo power message
 		uint16_t servo_power;
+
+		///< subject ID for servo setpoint
+		uint16_t servo_setpoint;
+
+		///< subject ID for servo readiness (Armed state)
+		uint16_t servo_readiness;
 	}uavcan;
 
 	///< crc32 value for the hole settings

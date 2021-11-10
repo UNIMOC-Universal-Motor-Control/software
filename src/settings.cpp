@@ -322,6 +322,12 @@ __attribute__((aligned (32))) settings_ts settings =
 
 		///< subject ID for servo power message
 		.servo_power = std::numeric_limits<std::uint16_t>::max(),
+
+		///< subject ID for servo setpoint
+		.servo_setpoint = std::numeric_limits<std::uint16_t>::max(),
+
+		///< subject ID for servo readiness (Armed state)
+		.servo_readiness = std::numeric_limits<std::uint16_t>::max(),
 	},
 
 	///< crc32 value for the hole settings

@@ -35,6 +35,8 @@
 #include "uavcan/node/ExecuteCommand_1_1.h"
 #include "uavcan/_register/List_1_0.h"
 #include "uavcan/_register/Access_1_0.h"
+#include <reg/udral/service/common/Readiness_0_1.h>
+#include <reg/udral/service/actuator/common/__0_1.h>
 #include "reg/udral/service/actuator/common/Feedback_0_1.h"
 #include "reg/udral/service/actuator/common/Status_0_1.h"
 #include "reg/udral/service/actuator/servo/__0_1.h"
@@ -61,6 +63,9 @@ static CanardInstance canard;
 
 ///> uptime counter in seconds
 static std::uint32_t uptime;
+
+///< deadline for arming timeout
+static systime_t arm_deadline = 0;
 
 /// A transfer-ID is an integer that is incremented whenever a new message is published on a given subject.
 /// It is used by the protocol for deduplication, message loss detection, and other critical things.
@@ -171,7 +176,7 @@ static void ProcessGetNodeInfo(const CanardTransfer* transfer)
  * @param name 		register name for search
  * @return			pointer to register with given name. (nullptr if not found)
  */
-const uavcan::register_ts* GetRegisterByName(char* name)
+static const uavcan::register_ts* GetRegisterByName(char* name)
 {
 	const uavcan::register_ts* reg = uavcan::register_table;
 
@@ -196,7 +201,7 @@ const uavcan::register_ts* GetRegisterByName(char* name)
  *
  * @param transfer		Register Access Request
  */
-void ProcessRequestRegisterAccess(const CanardTransfer* transfer)
+static void ProcessRequestRegisterAccess(const CanardTransfer* transfer)
 {
 	uavcan_register_Access_Request_1_0 req;
 	size_t                             size = transfer->payload_size;
@@ -268,7 +273,7 @@ void ProcessRequestRegisterAccess(const CanardTransfer* transfer)
 	}
 }
 
-void ProcessRequestList(const CanardTransfer* transfer)
+static void ProcessRequestList(const CanardTransfer* transfer)
 {
 	uavcan_register_List_Request_1_0 req  = {0};
 	size_t                           size = transfer->payload_size;
@@ -296,7 +301,7 @@ void ProcessRequestList(const CanardTransfer* transfer)
 	}
 }
 
-void ProcessRequestExecuteCommand(const CanardTransfer* transfer)
+static void ProcessRequestExecuteCommand(const CanardTransfer* transfer)
 {
 	uavcan_node_ExecuteCommand_Request_1_1 req;
 	size_t                                 size = transfer->payload_size;
@@ -357,6 +362,40 @@ void ProcessRequestExecuteCommand(const CanardTransfer* transfer)
 	}
 }
 
+/// https://github.com/UAVCAN/public_regulated_data_types/blob/master/reg/udral/service/actuator/servo/_.0.1.uavcan
+static void ProcessMessageServoSetpoint(const CanardTransfer* transfer)
+{
+	size_t size = transfer->payload_size;
+	reg_udral_physics_dynamics_rotation_Planar_0_1 msg;
+	if (reg_udral_physics_dynamics_rotation_Planar_0_1_deserialize_(&msg, (const uint8_t*)transfer->payload, &size) >= 0)
+	{
+		values::motor::rotor::setpoint::phi 	= msg.kinematics.angular_position.radian;
+		values::motor::rotor::setpoint::omega   = msg.kinematics.angular_velocity.radian_per_second;
+//		values::motor::rotor::setpoint::acceleration = msg.kinematics.angular_acceleration.radians_per_second_per_second;
+		values::motor::rotor::setpoint::torque   = msg._torque.newton_meter;
+	}
+}
+
+/// https://github.com/UAVCAN/public_regulated_data_types/blob/master/reg/udral/service/common/Readiness.0.1.uavcan
+static void ProcessMessageServiceReadiness(const CanardTransfer* transfer)
+{
+	size_t size = transfer->payload_size;
+	reg_udral_service_common_Readiness_0_1 msg;
+	if (reg_udral_service_common_Readiness_0_1_deserialize_(&msg, (const uint8_t*)transfer->payload, &size) >= 0)
+	{
+		if(msg.value >= reg_udral_service_common_Readiness_0_1_ENGAGED)
+		{
+			hardware::pwm::output::Enable();
+		}
+		else
+		{
+			hardware::pwm::output::Disable();
+		}
+		/// set the deadline to some future time if that time is overdue we disarm
+		arm_deadline = osalOsGetSystemTimeX() + OSAL_MS2I(1000);
+	}
+}
+
 /**
  * @fn void Init(void)
  * @brief Initialize the uavan and all its threads
@@ -381,6 +420,9 @@ void uavcan::Init(void)
 	{
 		osalSysHalt("uavcan");
 	}
+
+	// set the arm deadline to an sure unarmed value
+	arm_deadline = osalOsGetSystemTimeX();
 
     // Subscriptions:
     // (none in this application)
@@ -463,6 +505,42 @@ void uavcan::Init(void)
         {
 //            return -res;
         }
+    }
+
+    if (settings.uavcan.servo_setpoint <= CANARD_SUBJECT_ID_MAX)  // Do not subscribe if not configured.
+    {
+    	static CanardRxSubscription rx;
+        // set the request handler
+        rx.user_reference = (void*)ProcessMessageServoSetpoint;
+    	const int8_t                res =  //
+    			canardRxSubscribe(&canard,
+    					CanardTransferKindMessage,
+						settings.uavcan.servo_setpoint,
+						reg_udral_physics_dynamics_rotation_Planar_0_1_EXTENT_BYTES_,
+						100000ULL,
+						&rx);
+    	if (res < 0)
+    	{
+//    		return -res;
+    	}
+    }
+
+    if (settings.uavcan.servo_readiness <= CANARD_SUBJECT_ID_MAX)  // Do not subscribe if not configured.
+    {
+    	static CanardRxSubscription rx;
+    	// set the request handler
+    	rx.user_reference = (void*)ProcessMessageServiceReadiness;
+    	const int8_t                res =  //
+    			canardRxSubscribe(&canard,
+    					CanardTransferKindMessage,
+						settings.uavcan.servo_readiness,
+						reg_udral_service_common_Readiness_0_1_EXTENT_BYTES_,
+						100000ULL,
+						&rx);
+    	if (res < 0)
+    	{
+//    		return -res;
+    	}
     }
 
 	can_thread.start(NORMALPRIO + 10);
@@ -571,6 +649,12 @@ void uavcan::SendFeedback(void)
             };
             (void) canardTxPush(&canard, &transfer);
         }
+    }
+
+    // Timeout for Readiness Messages Arming state.
+    if (arm_deadline <= osalOsGetSystemTimeX())
+    {
+    	hardware::pwm::output::Disable();
     }
 }
 
