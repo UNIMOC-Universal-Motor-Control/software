@@ -26,7 +26,8 @@
 #define HARDWARE_CONFIG_HPP_
 
 
-constexpr bool HW_HAS_I2C = true;
 
+///< Hardware Node Name
+#define HARDWARE_NAME "UNIMIC-PHHVr1"
 
 #endif /* HARDWARE_CONFIG_HPP_ */

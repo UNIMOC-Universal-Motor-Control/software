@@ -454,9 +454,6 @@ void management::thread::main(void)
 			sequencer = CURRENT_OFFSETS;
 			delay = 100; // wait 100ms before taking current samples
 
-			// software release for PWM
-			hardware::pwm::output::Enable();
-
 			break;
 		/* measure current offsets */
 		case CURRENT_OFFSETS:
@@ -472,9 +469,6 @@ void management::thread::main(void)
 			}
 			break;
 		case RUN:
-			// software release for PWM
-			hardware::pwm::output::Enable();
-
 			// slow tasks of the control loop thread
 			controller.Manage();
 
