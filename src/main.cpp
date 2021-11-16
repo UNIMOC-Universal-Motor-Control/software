@@ -57,7 +57,7 @@ int main(void)
 	/*
 	 * initialize hardware with no control thread
 	 */
-	hardware::i2c::Init();
+//	hardware::i2c::Init();
 	hardware::pwm::Init();
 	hardware::analog::Init();
 
