@@ -25,12 +25,12 @@ endif
 
 # Linker extra options here.
 ifeq ($(USE_LDOPT),)
-  USE_LDOPT = -lm
+  USE_LDOPT = 
 endif
 
 # Enable this if you want link time optimizations (LTO).
 ifeq ($(USE_LTO),)
-  USE_LTO = no
+  USE_LTO = yes
 endif
 
 # Enable this if you want to see the full log while compiling.
@@ -122,10 +122,11 @@ LDSCRIPT= $(STARTUPLD)/STM32G474xE.ld
 # setting.
 CSRC = $(ALLCSRC) \
        usbcfg.c \
+       syscalls_stub.c \
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
-CPPSRC = $(ALLCPPSRC) pwm.cpp analog.cpp digital.cpp eeprom.cpp serial.cpp
+CPPSRC = $(ALLCPPSRC) pwm.cpp analog.cpp digital.cpp eeprom.cpp serial.cpp math.cpp
 
 # List ASM source files here.
 ASMSRC = $(ALLASMSRC)
