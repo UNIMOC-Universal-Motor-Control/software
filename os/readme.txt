@@ -74,48 +74,20 @@
 *****************************************************************************
 
 *** Next ***
-- NEW: Made STM32H7 non-cacheable memory option also shareable.
-- NEW: EFL driver and demo for STM32F3xx.
-- NEW: New unit test subsystem under /os/test. Now it is officially
-       ChibiOS/TEST.
-- FIX: Fixed STM32 ADCv3 differences in headers (bug #1182)
-       (backported to 20.3.4).
-- FIX: Fixed DMAv1 compile fail on STM32L011 (bug #1181)
-       (backported to 20.3.4).
-- FIX: Fixed error in STM32_ADCCLK_MIN for STM32F37x/hal_lld.h (bug #1180)
-       (backported to 20.3.4).
-- FIX: Fixed direct calls to RT in STM32 RTCv2 and RTCv3 (bug #1179)
-       (backported to 20.3.4).
-- FIX: Fixed STM32G071 mcuconf.h template not showing TIM14/15/16/17
-       (bug #1178).
-- FIX: Fixed path ambiguity between STM32 USARTv2 and USARTv3 drivers
-       (bug #1177).
-- FIX: Fixed invalid DMAMUX settings in DMAv1 for some devices (bug #1176)
-       (backported to 20.3.4).
-- FIX: Fixed wrong macro in the demo STM32F7xx-SPI-ADXL355 (bug #1175) 
-       (backported to 21.6.1).
-- FIX: Fixed problem with RC initialization mask of the GPIO for the 
-       STM32L4x3 (bug #1174)(backported to 20.3.4).
-- FIX: Fixed problem with N25Q driver (bug #1173)
-       (backported to 21.6.1)(backported to 20.3.4).
-- FIX: Fixed semaphores broken when CH_CFG_USE_SEMAPHORES_PRIORITY is enabled
-       (bug #1172).
-- FIX: Fixed idle thread stack area not cleared when CH_DBG_FILL_THREADS
-       is enabled (bug #1171).
-- FIX: Fixed function chRegNextThread() broken when CH_CFG_USE_DYNAMIC
-       is disabled (bug #1170).
-- FIX: Fixed insufficient information in RT registry (bug #1169).
-- FIX: Fixed code base not compatible with -Wcast-align=strict (bug #1168).
-- FIX: Fixed wrong chconf.h for ADuCM36x demos (bug #1167)
-       (backported to 21.6.1).
-- FIX: Fixed missing constant in ADuCM36x hal_lld.c (bug #1166)
-       (backported to 21.6.1)(backported to 20.3.4).
-- FIX: Fixed missing chrfcu.c file in rt.mk (bug #1165)
-       (backported to 21.6.1).
-- FIX: Fixed invalid STM32 TIM21/TIM22 debug freeze setting (bug #1164)
-       (backported to 21.6.1)(backported to 20.3.4).
-- FIX: Fixed missing RTC APB enable on STM32G0xx (bug #1163)
-       (backported to 21.6.1)
-- FIX: Fixed I2S-related definitions missing in STM32F3xx registry (bug #1162)
-       (backported to 21.6.1)(backported to 20.3.4).
-- FIX: Fixed AVR port broken (bug #1161)(backported to 21.6.1).
+- NEW: STM32G0B1 USBv2 driver.
+- NEW: USBv1 driver optimization and removal of a potential race condition
+       (not demonstrated).
+- NEW: Added elfAcquireBus()/eflReleaseBus() functions to EFL driver.
+- NEW: Increased stacks size in RT test suite from 128 to 192. added an
+       option to override the stack size by defining THREADS_STACK_SIZE
+       in the makefile.
+- NEW: Added STM32L073RZ-Nucleo64 to USB-CDC "multi" demo. Removed old demo.
+- NEW: Added an STM32 WDG "multi" demo. Removed all old WDG demos.
+- NEW: Added option to copy vectors in RAM on GCC startup for ARMv6-M,
+       ARMv7-M and ARMv8-M-ML.
+- NEW: On STM32WBxx added a check on STM32_LSI_ENABLE required by IWDG.
+- NEW: Added SPIv2 support also to STM32WB and STM32WL.
+- FIX: Fixed STM32_SDMMC2_NUMBER on STM32H7 (bug #1201)
+       (backported to 20.3.5)(backported to 21.11.1).
+- FIX: Fixed STM32G0B1 demo application hangs debuggers (bug #1200)
+       (backported to 21.11.1).

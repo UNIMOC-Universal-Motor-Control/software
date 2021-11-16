@@ -207,6 +207,10 @@ static void __sch_wakeup(virtual_timer_t *vtp, void *p) {
     /* Falls through.*/
   case CH_STATE_QUEUED:
     /* Falls through.*/
+#if CH_CFG_USE_MESSAGES == TRUE
+  case CH_STATE_SNDMSGQ:
+    /* Falls through.*/
+#endif
 #if (CH_CFG_USE_CONDVARS == TRUE) && (CH_CFG_USE_CONDVARS_TIMEOUT == TRUE)
   case CH_STATE_WTCOND:
 #endif
@@ -620,7 +624,7 @@ void chSchDoYieldS(void) {
  *
  * @special
  */
-thread_t *chSchSelectFirstI(void) {
+thread_t *chSchSelectFirst(void) {
   os_instance_t *oip = currcore;
   thread_t *otp = __instance_get_currthread(oip);
   thread_t *ntp;

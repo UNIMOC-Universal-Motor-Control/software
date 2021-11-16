@@ -23,7 +23,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-//#include "sbuser.h"
+#include "sbuser.h"
 
 #define MAKERR(e) (-(int)(e))
 

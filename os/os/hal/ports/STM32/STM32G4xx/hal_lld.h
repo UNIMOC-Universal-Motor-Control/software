@@ -26,7 +26,7 @@
  *          - STM32_HSE_BYPASS (optionally).
  *          .
  *          One of the following macros must also be defined:
- *          - STM32G431xx, STM32G441xx, STM32G471xx.
+ *          - STM32G431xx, STM32G441xx, STM32G471xx, STM32G491xx.
  *          - STM32G473xx, STM32G483xx.
  *          - STM32G474xx, STM32G484xx.
  *          - STM32GBK1CB.
@@ -46,10 +46,15 @@
 /*===========================================================================*/
 
 /**
+ * @brief   Requires use of SPIv2 driver model.
+ */
+#define HAL_LLD_SELECT_SPI_V2           TRUE
+
+/**
  * @name    Platform identification
  * @{
  */
-#if defined(STM32G431xx) || defined(STM32G441xx) || defined(STM32G471xx) || \
+#if defined(STM32G431xx) || defined(STM32G441xx) || defined(STM32G471xx) || defined(STM32G491xx) || \
     defined(__DOXYGEN__)
 #define PLATFORM_NAME           "STM32G4 Access Line"
 
@@ -761,6 +766,9 @@
 #elif defined(STM32GBK1CB) && !defined(STM32GBK1CB_MCUCONF)
 #error "Using a wrong mcuconf.h file, STM32GBK1CB_MCUCONF not defined"
 
+#elif defined(STM32G491xx) && !defined(STM32G491_MCUCONF)
+#error "Using a wrong mcuconf.h file, STM32G491_MCUCONF not defined"
+
 #endif
 
 /**
@@ -1012,10 +1020,10 @@
     #error "HSI16 not enabled, required by STM32_USART3SEL"
   #endif
   #if (STM32_UART4SEL == STM32_UART4SEL_HSI16)
-    #error "HSI16 not enabled, required by STM32_UART4SEL_HSI16"
+    #error "HSI16 not enabled, required by STM32_UART4SEL"
   #endif
   #if (STM32_UART5SEL == STM32_UART5SEL_HSI16)
-    #error "HSI16 not enabled, required by STM32_UART5SEL_HSI16"
+    #error "HSI16 not enabled, required by STM32_UART5SEL"
   #endif
   #if (STM32_LPUART1SEL == STM32_LPUART1SEL_HSI16)
     #error "HSI16 not enabled, required by STM32_LPUART1SEL"
@@ -1046,7 +1054,7 @@
   #endif
 
   #if (STM32_QSPISEL == STM32_QSPISEL_HSI16)
-    #error "HSI16 not enabled, required by STM32_QSPISEL_HSI16"
+    #error "HSI16 not enabled, required by STM32_QSPISEL"
   #endif
 
 #endif /* !STM32_HSI16_ENABLED */

@@ -437,7 +437,7 @@ struct port_context {
 #else
 #define port_switch(ntp, otp) {                                             \
   register struct port_intctx *sp asm ("%r1");                              \
-  if ((stkalign_t *)(sp - 1) < otp->wabase)                                 \
+  if ((stkalign_t *)(void *)(sp - 1) < otp->wabase)                         \
     chSysHalt("stack overflow");                                            \
   _port_switch(ntp, otp);                                                   \
 }
@@ -505,9 +505,11 @@ extern void _IVOR10(void);
  * @brief   Kernel port layer initialization.
  * @details IVOR4 and IVOR10 initialization.
  */
-static inline void port_init(void) {
+static inline void port_init(os_instance_t *oip) {
   uint32_t n;
   unsigned i;
+
+  (void)oip;
 
   /* Initializing the SPRG0 register to zero, it is required for interrupts
      handling.*/

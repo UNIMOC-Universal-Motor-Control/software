@@ -48,28 +48,25 @@
 /*===========================================================================*/
 
 /**
- * @brief   Defines the support for realtime counters in the HAL.
+ * @brief   Requires use of SPIv2 driver model.
  */
-#define HAL_IMPLEMENTS_COUNTERS             TRUE
+#define HAL_LLD_SELECT_SPI_V2           TRUE
 
 /**
  * @name    Platform identification macros
  * @{
  */
 #if defined(STM32F722xx) || defined(__DOXYGEN__)
-#define PLATFORM_NAME           "STM32F722 Very High Performance with DSP and FPU"
+#define PLATFORM_NAME           "STM32F745 Very High Performance with DSP and FPU"
 
 #elif defined(STM32F723xx)
-#define PLATFORM_NAME           "STM32F723 Very High Performance with DSP and FPU"
-
-#elif defined(STM32F730xx)
-#define PLATFORM_NAME           "STM32F730 Very High Performance with DSP and FPU"
+#define PLATFORM_NAME           "STM32F745 Very High Performance with DSP and FPU"
 
 #elif defined(STM32F732xx)
-#define PLATFORM_NAME           "STM32F732 Very High Performance with DSP and FPU"
+#define PLATFORM_NAME           "STM32F745 Very High Performance with DSP and FPU"
 
 #elif defined(STM32F733xx)
-#define PLATFORM_NAME           "STM32F733 Very High Performance with DSP and FPU"
+#define PLATFORM_NAME           "STM32F745 Very High Performance with DSP and FPU"
 
 #elif defined(STM32F745xx)
 #define PLATFORM_NAME           "STM32F745 Very High Performance with DSP and FPU"
@@ -81,7 +78,7 @@
 #define PLATFORM_NAME           "STM32F756 Very High Performance with DSP and FPU"
 
 #elif defined(STM32F765xx)
-#define PLATFORM_NAME           "STM32F765 Very High Performance with DSP and DP FPU"
+#define PLATFORM_NAME           "STM32F767 Very High Performance with DSP and DP FPU"
 
 #elif defined(STM32F767xx)
 #define PLATFORM_NAME           "STM32F767 Very High Performance with DSP and DP FPU"
@@ -90,10 +87,10 @@
 #define PLATFORM_NAME           "STM32F769 Very High Performance with DSP and DP FPU"
 
 #elif defined(STM32F777xx)
-#define PLATFORM_NAME           "STM32F777 Very High Performance with DSP and DP FPU"
+#define PLATFORM_NAME           "STM32F767 Very High Performance with DSP and DP FPU"
 
 #elif defined(STM32F779xx)
-#define PLATFORM_NAME           "STM32F779 Very High Performance with DSP and DP FPU"
+#define PLATFORM_NAME           "STM32F769 Very High Performance with DSP and DP FPU"
 
 #else
 #error "STM32F7xx device not specified"

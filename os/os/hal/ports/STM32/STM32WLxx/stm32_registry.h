@@ -75,9 +75,6 @@
 #define STM32_HAS_CRC                       TRUE
 #define STM32_CRC_PROGRAMMABLE              TRUE
 
-/* CRYP attributes.*/
-#define STM32_HAS_CRYP1                     TRUE
-
 /* DAC attributes.*/
 #define STM32_HAS_DAC1_CH1                  TRUE
 #define STM32_HAS_DAC1_CH2                  FALSE
@@ -127,17 +124,6 @@
                                              RCC_AHB2ENR_GPIOBEN |          \
                                              RCC_AHB2ENR_GPIOCEN)
 
-/* GTZC attributes.*/
-#if defined(STM32WL55xx) || defined(STM32WL54xx) || defined(__DOXYGEN__)
-#define STM32_HAS_GTZC_TZSC                 TRUE
-#define STM32_HAS_GTZC_TZIC                 TRUE
-#else
-#define STM32_HAS_GTZC_TZSC                 FALSE
-#define STM32_HAS_GTZC_TZIC                 FALSE
-#endif /* defined(STM32WL55xx) || defined(STM32WL54xx) */
-
-#define STM32_HAS_HASH1                     FALSE
-
 /* HSEM attributes.*/
 #if defined(STM32WL55xx) || defined(STM32WL54xx) || defined(__DOXYGEN__)
 #define STM32_HAS_HSEM                      TRUE
@@ -173,17 +159,6 @@
 
 /* QUADSPI attributes.*/
 #define STM32_HAS_QUADSPI1                  FALSE
-
-/* SUBGHZ attributes.*/
-#define STM32_HAS_SG                        TRUE
-#if defined(STM32WLE5xx) || defined(STM32WL55xx) || defined(__DOXYGEN__)
-#define STM32_SG_HAS_LORA_MODEM             TRUE
-#else
-#define STM32_SG_HAS_LORA_MODEM             FALSE
-#endif /* defined(STM32WLE5xx) || defined(STM32WL55xx) */
-#define STM32_SG_HAS_FSK_MODEM              TRUE
-#define STM32_SG_HAS_MSK_MODEM              TRUE
-#define STM32_SG_HAS_BPSK_MODEM             TRUE
 
 /* RNG attributes.*/
 #define STM32_HAS_RNG1                      TRUE

@@ -79,10 +79,10 @@
 #endif
 
 /*===========================================================================*/
-/* STM32F722xx, STM32F723xx, STM32F732xx, STM32F733xx, STM32F730xx.          */
+/* STM32F722xx, STM32F723xx, STM32F732xx, STM32F733xx.                       */
 /*===========================================================================*/
 #if defined(STM32F722xx) || defined(STM32F723xx) || defined(STM32F732xx) || \
-    defined(STM32F733xx) || defined(STM32F730xx) || defined(__DOXYGEN__)
+    defined(STM32F733xx) || defined(__DOXYGEN__)
 /* ADC attributes.*/
 #define STM32_HAS_ADC1                      TRUE
 #define STM32_ADC1_DMA_MSK                  (STM32_DMA_STREAM_ID_MSK(2, 0) |\

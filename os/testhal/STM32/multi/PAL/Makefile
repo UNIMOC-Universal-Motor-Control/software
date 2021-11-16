@@ -36,12 +36,20 @@ all:
 	+@make --no-print-directory -f make/stm32l053_discovery.make all
 	@echo ====================================================================
 	@echo
-	@echo === Building for STM32L151-Discovery ===============================
-	+@make --no-print-directory -f make/stm32l151_discovery.make all
+	@echo === Building for STM32L152RB-Discovery ===============================
+	+@make --no-print-directory -f make/stm32l152rb_discovery.make all
 	@echo ====================================================================
 	@echo
 	@echo === Building for STM32L476-Discovery ===============================
 	+@make --no-print-directory -f make/stm32l476_discovery.make all
+	@echo ====================================================================
+	@echo
+	@echo === Building for STM32WL55JC_Nucleo64 ==============================
+	+@make --no-print-directory -f ./make/stm32wl55jc_nucleo64.make all
+	@echo ====================================================================
+	@echo
+	@echo === Building for STM32WB55RG_Nucleo68 ==============================
+	+@make --no-print-directory -f ./make/stm32wb55rg_nucleo68.make all
 	@echo ====================================================================
 	@echo
 
@@ -63,9 +71,13 @@ clean:
 	@echo
 	+@make --no-print-directory -f make/stm32l053_discovery.make clean
 	@echo
-	+@make --no-print-directory -f make/stm32l151_discovery.make clean
+	+@make --no-print-directory -f make/stm32l152rb_discovery.make clean
 	@echo
 	+@make --no-print-directory -f make/stm32l476_discovery.make clean
+	@echo
+	+@make --no-print-directory -f ./make/stm32wl55jc_nucleo64.make clean
+	@echo
+	+@make --no-print-directory -f ./make/stm32wb55rg_nucleo68.make clean
 	@echo
 
 #

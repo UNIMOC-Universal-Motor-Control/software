@@ -46,6 +46,11 @@
 /*===========================================================================*/
 
 /**
+ * @brief   Requires use of SPIv2 driver model.
+ */
+#define HAL_LLD_SELECT_SPI_V2           TRUE
+
+/**
  * @name    Platform identification
  * @{
  */
@@ -500,6 +505,13 @@
  */
 #if !defined(STM32_LSI1_ENABLED) || defined(__DOXYGEN__)
 #define STM32_LSI1_ENABLED                  TRUE
+#endif
+
+/**
+ * @brief   Enables or disables the LSI2 clock source.
+ */
+#if !defined(STM32_LSI2_ENABLED) || defined(__DOXYGEN__)
+#define STM32_LSI2_ENABLED                  FALSE
 #endif
 
 /**
@@ -1250,7 +1262,6 @@
 #else
 #define STM32_ACTIVATE_PLL          FALSE
 #endif
-
 
 /**
  * @brief   STM32_PLLPEN field.

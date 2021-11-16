@@ -34,6 +34,11 @@
  */
 #define STM32_RTC_SSR_INIT_VALUE            0xFFFFFFFFUL
 
+/* Requires services from the EXTI driver.*/
+#if !defined(STM32_EXTI_REQUIRED)
+#define STM32_EXTI_REQUIRED
+#endif
+
 /*===========================================================================*/
 /* Driver pre-compile time settings.                                         */
 /*===========================================================================*/
@@ -78,7 +83,6 @@
 #if STM32_RTC_HAS_BINARY_MODE == FALSE
 #error "RTC does not support binary mode"
 #endif
-
 
 #if (OSAL_ST_RESOLUTION != 32)
 #error "ST based on RTC requires 32bits resolution. Set CH_CFG_ST_RESOLUTION to 32."
@@ -171,7 +175,6 @@ static inline void st_lld_set_alarm(systime_t abstime) {
 
   st_lld_start_alarm(abstime);
 }
-
 
 /**
  * @brief   Determines if the alarm is active.

@@ -179,7 +179,7 @@ void hal_lld_init(void) {
     size = MPU_RASR_SIZE_256K;
 #elif (STM32_NOCACHE_SRAM1_SRAM2 == FALSE) && (STM32_NOCACHE_SRAM3 == TRUE)
     base = 0x30040000U;
-    size = MPU_RASR_SIZE_16K;
+    size = MPU_RASR_SIZE_32K;
 #else
 #error "invalid constants used in mcuconf.h"
 #endif
@@ -195,9 +195,11 @@ void hal_lld_init(void) {
                        MPU_RASR_ENABLE);
     mpuEnable(MPU_CTRL_PRIVDEFENA);
 
+#if STM32_TARGET_CORE == 1
     /* Invalidating data cache to make sure that the MPU settings are taken
        immediately.*/
     SCB_CleanInvalidateDCache();
+#endif
   }
 #endif
 }

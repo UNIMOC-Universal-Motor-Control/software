@@ -179,19 +179,35 @@ void sdObjectInit(SerialDriver *sdp) {
  * @param[in] config    the architecture-dependent serial driver configuration.
  *                      If this parameter is set to @p NULL then a default
  *                      configuration is used.
+ * @return              The operation status.
  *
  * @api
  */
-void sdStart(SerialDriver *sdp, const SerialConfig *config) {
+msg_t sdStart(SerialDriver *sdp, const SerialConfig *config) {
+  msg_t msg;
 
   osalDbgCheck(sdp != NULL);
 
   osalSysLock();
   osalDbgAssert((sdp->state == SD_STOP) || (sdp->state == SD_READY),
                 "invalid state");
+
+#if defined(SD_LLD_ENHANCED_API)
+  msg = sd_lld_start(sdp, config);
+#else
   sd_lld_start(sdp, config);
-  sdp->state = SD_READY;
+  msg = HAL_RET_SUCCESS;
+#endif
+  if (msg == HAL_RET_SUCCESS) {
+    sdp->state = SD_READY;
+  }
+  else {
+    sdp->state = SD_STOP;
+  }
+
   osalSysUnlock();
+
+  return msg;
 }
 
 /**

@@ -17,7 +17,6 @@
 #include "ch.h"
 #include "hal.h"
 
-#include "ccportab.h"
 #include "portab.h"
 
 /*
@@ -42,14 +41,28 @@ void spi_circular_cb(SPIDriver *spip) {
 
   if (spiIsBufferComplete(spip)) {
     /* 2nd half.*/
+#if defined(PORTAB_LINE_LED1)
     palWriteLine(PORTAB_LINE_LED1, PORTAB_LED_OFF);
+#endif
   }
   else {
     /* 1st half.*/
+#if defined(PORTAB_LINE_LED1)
     palWriteLine(PORTAB_LINE_LED1, PORTAB_LED_ON);
+#endif
   }
 }
 #endif
+
+/*
+ * SPI error callback, only used by SPI driver v2.
+ */
+void spi_error_cb(SPIDriver *spip) {
+
+  (void)spip;
+
+  chSysHalt("SPI error");
+}
 
 /*
  * SPI bus contender 1.
@@ -61,7 +74,9 @@ static THD_FUNCTION(spi_thread_1, p) {
   chRegSetThreadName("SPI thread 1");
   while (true) {
     spiAcquireBus(&PORTAB_SPI1);        /* Acquire ownership of the bus.    */
+#if defined(PORTAB_LINE_LED1)
     palWriteLine(PORTAB_LINE_LED1, PORTAB_LED_ON);
+#endif
     spiStart(&PORTAB_SPI1, &hs_spicfg); /* Setup transfer parameters.       */
     spiSelect(&PORTAB_SPI1);            /* Slave Select assertion.          */
     spiExchange(&PORTAB_SPI1, 512,
@@ -89,7 +104,9 @@ static THD_FUNCTION(spi_thread_2, p) {
   chRegSetThreadName("SPI thread 2");
   while (true) {
     spiAcquireBus(&PORTAB_SPI1);        /* Acquire ownership of the bus.    */
+#if defined(PORTAB_LINE_LED1)
     palWriteLine(PORTAB_LINE_LED1, PORTAB_LED_OFF);
+#endif
     spiStart(&PORTAB_SPI1, &ls_spicfg); /* Setup transfer parameters.       */
     spiSelect(&PORTAB_SPI1);            /* Slave Select assertion.          */
     spiExchange(&PORTAB_SPI1, 512,
@@ -157,14 +174,44 @@ int main(void) {
     txbuf[i] = (uint8_t)i;
   cacheBufferFlush(&txbuf[0], sizeof txbuf);
 
+#if (SPI_SUPPORTS_SLAVE_MODE == TRUE) && defined(PORTAB_SPI2)
+  spiStart(&PORTAB_SPI1, &hs_spicfg);   /* Master transfer parameters.      */
+  spiStart(&PORTAB_SPI2, &sl_spicfg);   /* Slave transfer parameters.       */
+  do {
+    size_t size;
+
+    /* Starting asynchronous SPI slave 512 frames receive.*/
+    spiStartReceive(&PORTAB_SPI2, 512, rxbuf);
+
+    /* Starting synchronous master 256 frames send.*/
+    spiSelect(&PORTAB_SPI1);
+    spiSend(&PORTAB_SPI1, 256, txbuf);
+    spiUnselect(&PORTAB_SPI1);
+
+    /* Stopping slave and getting slave status, it should still be
+       ongoing because the master sent just 256 frames.*/
+    spiStopTransfer(&PORTAB_SPI2, &size);
+
+    /* Toggle the LED, wait a little bit and repeat.*/
+#if defined(PORTAB_LINE_LED1)
+    palToggleLine(PORTAB_LINE_LED1);
+#endif
+    chThdSleepMilliseconds(100);
+  } while (palReadLine(PORTAB_LINE_BUTTON) != PORTAB_BUTTON_PRESSED);
+
+  /* Waiting button release.*/
+  while (palReadLine(PORTAB_LINE_BUTTON) == PORTAB_BUTTON_PRESSED) {
+    chThdSleepMilliseconds(100);
+  }
+#endif
+
 #if SPI_SUPPORTS_CIRCULAR == TRUE
   /*
    * Starting a continuous operation for test.
    */
   spiStart(&PORTAB_SPI1, &c_spicfg);  /* Setup transfer parameters.       */
   spiSelect(&PORTAB_SPI1);            /* Slave Select assertion.          */
-  spiExchange(&PORTAB_SPI1, 512,
-              txbuf, rxbuf);          /* Atomic transfer operations.      */
+  spiSend(&PORTAB_SPI1, 512, txbuf);  /* Atomic transfer operations.      */
   spiUnselect(&PORTAB_SPI1);          /* Slave Select de-assertion.       */
   cacheBufferInvalidate(&rxbuf[0],    /* Cache invalidation over the      */
                         sizeof rxbuf);/* buffer.                          */

@@ -26,7 +26,7 @@
  *          - STM32_HSE_BYPASS (optionally).
  *          .
  *          One of the following macros must also be defined:
- *          - STM32L432xx, STM32L433xx, STM32L443xx.
+ *          - STM32L422xx, STM32L432xx, STM32L433xx, STM32L443xx.
  *          - STM32L471xx, STM32L475xx, STM32L476xx, STM32L496xx.
  *          - STM32L485xx, STM32L486xx, STM32L4A6xx.
  *          .
@@ -43,6 +43,11 @@
 /*===========================================================================*/
 /* Driver constants.                                                         */
 /*===========================================================================*/
+
+/**
+ * @brief   Requires use of SPIv2 driver model.
+ */
+#define HAL_LLD_SELECT_SPI_V2           TRUE
 
 /**
  * @name    Platform identification
@@ -500,7 +505,7 @@
  * @note    The allowed values are 8..86.
  */
 #if !defined(STM32_PLLSAI1N_VALUE) || defined(__DOXYGEN__)
-#define STM32_PLLSAI1N_VALUE                80
+#define STM32_PLLSAI1N_VALUE                48
 #endif
 
 /**
@@ -524,7 +529,7 @@
  * @note    The allowed values are 2, 4, 6, 8.
  */
 #if !defined(STM32_PLLSAI1Q_VALUE) || defined(__DOXYGEN__)
-#define STM32_PLLSAI1Q_VALUE                6
+#define STM32_PLLSAI1Q_VALUE                4
 #endif
 
 /**
@@ -540,7 +545,7 @@
  * @note    The allowed values are 8..86.
  */
 #if !defined(STM32_PLLSAI2N_VALUE) || defined(__DOXYGEN__)
-#define STM32_PLLSAI2N_VALUE                80
+#define STM32_PLLSAI2N_VALUE                48
 #endif
 
 /**
@@ -714,6 +719,10 @@
 
 /* Only some devices have strongly checked mcuconf.h files. Others will be
    added gradually.*/
+#if defined(STM32L422xx) && !defined(STM32L422_MCUCONF)
+#error "Using a wrong mcuconf.h file, STM32L422_MCUCONF not defined"
+#endif
+
 #if defined(STM32L432xx) && !defined(STM32L432_MCUCONF)
 #error "Using a wrong mcuconf.h file, STM32L432_MCUCONF not defined"
 #endif

@@ -1,5 +1,5 @@
 /*
-    ChibiOS - Copyright (C) 2006..2018 Giovanni Di Sirio
+    ChibiOS - Copyright (C) 2006..2021 Giovanni Di Sirio
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -80,6 +80,9 @@ void eflObjectInit(EFlashDriver *eflp) {
 
   eflp->vmt = &vmt;
   eflp->state = FLASH_STOP;
+#if EFL_USE_MUTUAL_EXCLUSION == TRUE
+  osalMutexObjectInit(&eflp->mutex);
+#endif
 }
 
 /**
@@ -89,10 +92,12 @@ void eflObjectInit(EFlashDriver *eflp) {
  * @param[in] config    pointer to a configuration structure.
  *                      If this parameter is set to @p NULL then a default
  *                      configuration is used.
+ * @return              The operation status.
  *
  * @api
  */
-void eflStart(EFlashDriver *eflp, const EFlashConfig *config) {
+msg_t eflStart(EFlashDriver *eflp, const EFlashConfig *config) {
+  msg_t msg;
 
   osalDbgCheck(eflp != NULL);
 
@@ -100,11 +105,25 @@ void eflStart(EFlashDriver *eflp, const EFlashConfig *config) {
 
   osalDbgAssert((eflp->state == FLASH_STOP) || (eflp->state == FLASH_READY),
                 "invalid state");
+
   eflp->config = config;
+
+#if defined(EFL_LLD_ENHANCED_API)
+  msg = efl_lld_start(eflp);
+#else
   efl_lld_start(eflp);
-  eflp->state = FLASH_READY;
+  msg = HAL_RET_SUCCESS;
+#endif
+  if (msg == HAL_RET_SUCCESS) {
+    eflp->state = FLASH_READY;
+  }
+  else {
+    eflp->state = FLASH_STOP;
+  }
 
   osalSysUnlock();
+
+  return msg;
 }
 
 /**
@@ -128,6 +147,42 @@ void eflStop(EFlashDriver *eflp) {
 
   osalSysUnlock();
 }
+
+#if (EFL_USE_MUTUAL_EXCLUSION == TRUE) || defined(__DOXYGEN__)
+/**
+ * @brief   Gains exclusive access to EFL.
+ * @details This function tries to gain ownership of EFL. If EFL
+ *          is already being used then the invoking thread is queued.
+ * @pre     In order to use this function the option @p EFL_USE_MUTUAL_EXCLUSION
+ *          must be enabled.
+ *
+ * @param[in] eflp              pointer to the @p EFlashDriver object
+ *
+ * @api
+ */
+void eflAcquireBus(EFlashDriver *eflp) {
+
+  osalDbgCheck(eflp != NULL);
+
+  osalMutexLock(&eflp->mutex);
+}
+
+/**
+ * @brief   Releases exclusive access to EFL.
+ * @pre     In order to use this function the option @p EFL_USE_MUTUAL_EXCLUSION
+ *          must be enabled.
+ *
+ * @param[in] eflp              pointer to the @p EFlashDriver object
+ *
+ * @api
+ */
+void eflReleaseBus(EFlashDriver *eflp) {
+
+  osalDbgCheck(eflp != NULL);
+
+  osalMutexUnlock(&eflp->mutex);
+}
+#endif /* EFL_USE_MUTUAL_EXCLUSION == TRUE */
 
 #endif /* HAL_USE_EFL == TRUE */
 

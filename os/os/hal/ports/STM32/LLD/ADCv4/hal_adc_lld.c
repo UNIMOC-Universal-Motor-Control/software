@@ -31,7 +31,7 @@
 /*===========================================================================*/
 
 #if STM32_ADC_DUAL_MODE == TRUE
-#define ADC12_CCR_DUAL 	ADC_CCR_DUAL_REG_SIMULT
+#define ADC12_CCR_DUAL  ADC_CCR_DUAL_REG_SIMULT
 #if STM32_ADC_SAMPLES_SIZE == 8
 /* Compact type dual mode, 2x8-bit.*/
 #define ADC12_DMA_SIZE  (STM32_DMA_CR_MSIZE_HWORD | STM32_DMA_CR_PSIZE_HWORD)
@@ -46,7 +46,7 @@
 #endif /*  STM32_ADC_SAMPLES_SIZE == 8 */
 
 #else /* STM32_ADC_DUAL_MODE == FALSE */
-#define ADC12_CCR_DUAL 	ADC_CCR_DUAL_INDEPENDENT
+#define ADC12_CCR_DUAL  ADC_CCR_DUAL_INDEPENDENT
 #if STM32_ADC_SAMPLES_SIZE == 8
 /* Compact type single mode, 8-bit.*/
 #define ADC12_DMA_SIZE  (STM32_DMA_CR_MSIZE_BYTE | STM32_DMA_CR_PSIZE_BYTE)
@@ -429,10 +429,11 @@ void adc_lld_init(void) {
  * @brief   Configures and activates the ADC peripheral.
  *
  * @param[in] adcp      pointer to the @p ADCDriver object
+ * @return              The operation status.
  *
  * @notapi
  */
-void adc_lld_start(ADCDriver *adcp) {
+msg_t adc_lld_start(ADCDriver *adcp) {
 
   /* Handling the default configuration.*/
   if (adcp->config == NULL) {
@@ -447,8 +448,13 @@ void adc_lld_start(ADCDriver *adcp) {
                                        STM32_ADC_ADC12_IRQ_PRIORITY,
                                        (stm32_dmaisr_t)adc_lld_serve_dma_interrupt,
                                        (void *)adcp);
-      osalDbgAssert(adcp->data.dma != NULL, "unable to allocate stream");
+      if (adcp->data.dma == NULL) {
+        return HAL_RET_NO_RESOURCE;
+      }
+
       rccEnableADC12(true);
+      rccResetADC12();
+
       dmaSetRequestSource(adcp->data.dma, STM32_DMAMUX1_ADC1);
 
       /* Setting DMA peripheral-side pointer.*/
@@ -474,8 +480,13 @@ void adc_lld_start(ADCDriver *adcp) {
                                          STM32_ADC_ADC3_IRQ_PRIORITY,
                                          (stm32_dmaisr_t)adc_lld_serve_bdma_interrupt,
                                          (void *)adcp);
-      osalDbgAssert(adcp->data.bdma != NULL, "unable to allocate stream");
+      if (adcp->data.bdma == NULL) {
+        return HAL_RET_NO_RESOURCE;
+      }
+
       rccEnableADC3(true);
+      rccResetADC3();
+
       bdmaSetRequestSource(adcp->data.bdma, STM32_DMAMUX2_ADC3_REQ);
 
       /* Setting DMA peripheral-side pointer.*/
@@ -509,6 +520,8 @@ void adc_lld_start(ADCDriver *adcp) {
     /* Master ADC enabled here in order to reduce conversions latencies.*/
     adc_lld_analog_on(adcp);
   }
+
+  return HAL_RET_SUCCESS;
 }
 
 /**
@@ -641,9 +654,9 @@ void adc_lld_start_conversion(ADCDriver *adcp) {
   adcp->adcm->ISR   = adcp->adcm->ISR;
   /* If a callback is set enable the overflow and analog watch dog interrupts. */
   if (grpp->error_cb != NULL) {
-    adcp->adcm->IER   = ADC_IER_OVRIE | ADC_IER_AWD1IE 
-                                      | ADC_IER_AWD2IE 
-                                      | ADC_IER_AWD3IE;
+    adcp->adcm->IER   = ADC_IER_OVRIE | ADC_IER_AWD1IE |
+                                        ADC_IER_AWD2IE |
+                                        ADC_IER_AWD3IE;
   }
 #if STM32_ADC_DUAL_MODE == TRUE && STM32_ADC_USE_ADC12 == TRUE
   /* Configuration for dual mode ADC12 */
@@ -652,9 +665,10 @@ void adc_lld_start_conversion(ADCDriver *adcp) {
     adcp->adcs->ISR   = adcp->adcs->ISR;
     /* If a callback is set enable the overflow and analog watch dog interrupts. */
     if (grpp->error_cb != NULL) {
-    adcp->adcs->IER   = ADC_IER_OVRIE | ADC_IER_AWD1IE
-                                      | ADC_IER_AWD2IE
-                                      | ADC_IER_AWD3IE;
+    adcp->adcs->IER   = ADC_IER_OVRIE | ADC_IER_AWD1IE |
+                                        ADC_IER_AWD2IE |
+                                        ADC_IER_AWD3IE;
+
     /* Configuring the CCR register with the user-specified settings
       in the conversion group configuration structure, static settings are
       preserved.*/
@@ -765,10 +779,6 @@ void adc_lld_stop_conversion(ADCDriver *adcp) {
  */
 void adcSTM32EnableVREF(ADCDriver *adcp) {
 
-#ifdef STM32H7XX
-  chDbgAssert(STM32_PWR_CR2 & PWR_CR2_MONEN,
-              "adcSTM32EnableVREF need PWR_CR2_MONEN in STM32_PWR_CR2");
-#endif
   adcp->adcc->CCR |= ADC_CCR_VREFEN;
 }
 
@@ -798,11 +808,6 @@ void adcSTM32DisableVREF(ADCDriver *adcp) {
  * @notapi
  */
 void adcSTM32EnableTS(ADCDriver *adcp) {
-
-#ifdef STM32H7XX
-  chDbgAssert(STM32_PWR_CR2 & PWR_CR2_MONEN,
-              "adcSTM32EnableVREF need PWR_CR2_MONEN in STM32_PWR_CR2");
-#endif
 
   adcp->adcc->CCR |= ADC_CCR_TSEN;
 }

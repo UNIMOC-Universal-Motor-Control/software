@@ -1070,10 +1070,6 @@ extern ADCDriver ADCD3;
 extern ADCDriver ADCD4;
 #endif
 
-#if STM32_ADC_USE_ADC5 && !defined(__DOXYGEN__)
-extern ADCDriver ADCD5;
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif

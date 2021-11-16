@@ -1,3 +1,0 @@
-PLATFORMSRC += $(CHIBIOS_CONTRIB)/os/hal/ports/LPC/LLD/GPIO/hal_pal_lld.c
-
-PLATFORMINC += $(CHIBIOS_CONTRIB)/os/hal/ports/LPC/LLD/GPIO

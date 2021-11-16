@@ -69,7 +69,11 @@ uint32_t SystemCoreClock = STM32_HCLK;
  */
 const halclkcfg_t hal_clkcfg_reset = {
   .pwr_cr1              = PWR_CR1_VOS_0 | PWR_CR1_FPD_STOP,
+#if defined (PWR_CR2_PVMEN_USB)
+  .pwr_cr2              = PWR_CR2_PVMEN_USB,
+#else
   .pwr_cr2              = 0U,
+#endif
   .rcc_cr               = RCC_CR_HSION,
   .rcc_cfgr             = RCC_CFGR_SW_HSI,
   .rcc_pllcfgr          = 0U,
@@ -81,10 +85,17 @@ const halclkcfg_t hal_clkcfg_reset = {
  */
 const halclkcfg_t hal_clkcfg_default = {
   .pwr_cr1              = STM32_VOS_RANGE1 | PWR_CR1_DBP,
-  .pwr_cr2              = STM32_PWR_CR2,
+#if defined (PWR_CR2_PVMEN_USB)
+  .pwr_cr2              = PWR_CR2_PVMEN_USB,
+#else
+  .pwr_cr2              = 0U,
+#endif
   .rcc_cr               = 0U
 #if STM32_HSI16_ENABLED
                         | RCC_CR_HSIKERON | RCC_CR_HSION
+#endif
+#if STM32_HSI48_ENABLED
+                        | RCC_CR_HSI48ON
 #endif
 #if STM32_HSE_ENABLED
                         | RCC_CR_HSEON
@@ -255,12 +266,25 @@ __STATIC_INLINE void hal_lld_set_static_clocks(void) {
   /* Clock-related settings (dividers, MCO etc).*/
   RCC->CFGR = STM32_MCOPRE | STM32_MCOSEL | STM32_PPRE | STM32_HPRE;
 
-  /* CCIPR register initialization, note.*/
-  RCC->CCIPR = STM32_ADCSEL    | STM32_RNGDIV    | STM32_RNGSEL    |
-               STM32_TIM15SEL  | STM32_TIM1SEL   | STM32_LPTIM2SEL |
-               STM32_LPTIM1SEL | STM32_I2S1SEL   | STM32_I2C1SEL   |
-               STM32_CECSEL    | STM32_USART2SEL | STM32_USART1SEL |
-               STM32_LPUART1SEL;
+#if STM32_RCC_HAS_CCIPR2
+  /* CCIPR register initialization.*/
+  RCC->CCIPR =  STM32_ADCSEL    | STM32_RNGDIV    | STM32_RNGSEL    |
+                STM32_TIM15SEL  | STM32_TIM1SEL   | STM32_LPTIM2SEL |
+                STM32_LPTIM1SEL | STM32_I2C2SEL   | STM32_I2C1SEL   |
+                STM32_CECSEL    | STM32_USART2SEL | STM32_USART1SEL |
+                STM32_LPUART1SEL;
+
+  /* CCIPR2 register initialization.*/
+  RCC->CCIPR2 = STM32_USBSEL    | STM32_FDCANSEL  | STM32_I2S2SEL   |
+                STM32_I2S1SEL;
+#else
+  /* CCIPR register initialization.*/
+  RCC->CCIPR =  STM32_ADCSEL    | STM32_RNGDIV    | STM32_RNGSEL    |
+                STM32_TIM15SEL  | STM32_TIM1SEL   | STM32_LPTIM2SEL |
+                STM32_LPTIM1SEL | STM32_I2S1SEL   | STM32_I2C1SEL   |
+                STM32_CECSEL    | STM32_USART2SEL | STM32_USART1SEL |
+                STM32_LPUART1SEL;
+#endif
 }
 
 #if defined(HAL_LLD_USE_CLOCK_MANAGEMENT) || defined(__DOXYGEN__)
@@ -338,7 +362,7 @@ static bool hal_lld_clock_check_tree(const halclkcfg_t *ccp) {
     /* PLL VCO frequency.*/
     pllvcoclk = (pllselclk / (halfreq_t)pllmdiv) * (halfreq_t)pllndiv;
 
-    if((pllvcoclk < slp->pllvco_min) || (pllvcoclk > slp->pllvco_max)) {
+    if ((pllvcoclk < slp->pllvco_min) || (pllvcoclk > slp->pllvco_max)) {
       return true;
     }
 
@@ -347,7 +371,7 @@ static bool hal_lld_clock_check_tree(const halclkcfg_t *ccp) {
     if ((ccp->rcc_pllcfgr & RCC_PLLCFGR_PLLPEN) != 0U) {
       pllpclk = pllvcoclk / pllpdiv;
 
-      if((pllpclk < slp->pllp_min) || (pllpclk > slp->pllp_max)) {
+      if ((pllpclk < slp->pllp_min) || (pllpclk > slp->pllp_max)) {
         return true;
       }
     }
@@ -357,7 +381,7 @@ static bool hal_lld_clock_check_tree(const halclkcfg_t *ccp) {
     if ((ccp->rcc_pllcfgr & RCC_PLLCFGR_PLLQEN) != 0U) {
       pllqclk = pllvcoclk / pllqdiv;
 
-      if((pllqclk < slp->pllq_min) || (pllqclk > slp->pllq_max)) {
+      if ((pllqclk < slp->pllq_min) || (pllqclk > slp->pllq_max)) {
         return true;
       }
     }
@@ -367,14 +391,14 @@ static bool hal_lld_clock_check_tree(const halclkcfg_t *ccp) {
     if ((ccp->rcc_pllcfgr & RCC_PLLCFGR_PLLREN) != 0U) {
       pllrclk = pllvcoclk / pllrdiv;
 
-      if((pllrclk < slp->pllr_min) || (pllrclk > slp->pllr_max)) {
+      if ((pllrclk < slp->pllr_min) || (pllrclk > slp->pllr_max)) {
         return true;
       }
     }
   }
 
   /* SYSCLK frequency.*/
-  switch(ccp->rcc_cfgr & RCC_CFGR_SW_Msk) {
+  switch (ccp->rcc_cfgr & RCC_CFGR_SW_Msk) {
   case RCC_CFGR_SW_HSI:
     sysclk = hsisysclk;
     break;
@@ -411,7 +435,7 @@ static bool hal_lld_clock_check_tree(const halclkcfg_t *ccp) {
   }
 
   /* MCO clock.*/
-  switch(ccp->rcc_cfgr & RCC_CFGR_MCOSEL_Msk) {
+  switch (ccp->rcc_cfgr & RCC_CFGR_MCOSEL_Msk) {
   case STM32_MCOSEL_NOCLOCK:
     mcoclk = 0U;
     break;
@@ -507,6 +531,13 @@ static bool hal_lld_clock_raw_config(const halclkcfg_t *ccp) {
   if ((ccp->rcc_cr & RCC_CR_HSEON) != 0U) {
     hse_enable();
   }
+
+#if STM32_RCC_HAS_HSI48
+  /* HSI48 setup, if required, before starting the PLL.*/
+  if ((ccp->rcc_cr & RCC_CR_HSI48ON) != 0U) {
+    hsi48_enable();
+  }
+#endif
 
   /* PLL setup.*/
   RCC->PLLCFGR = ccp->rcc_pllcfgr;
@@ -707,6 +738,7 @@ void stm32_clock_init(void) {
   lse_init();
   lsi_init();
   hsi16_init();
+  hsi48_init();
   hse_init();
 
   /* Backup domain initializations.*/

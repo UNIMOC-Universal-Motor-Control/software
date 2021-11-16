@@ -19,7 +19,7 @@
 
 /**
  * @file    sb/host/sbhost.c
- * @brief   ARM sandbox host code.
+ * @brief   ARM SandBox host code.
  *
  * @addtogroup ARM_SANDBOX
  * @{
@@ -35,6 +35,11 @@
 /*===========================================================================*/
 /* Module exported variables.                                                */
 /*===========================================================================*/
+
+/**
+ * @brief   Global sandbox managed state variable.
+ */
+sb_t sb;
 
 /*===========================================================================*/
 /* Module local types.                                                       */
@@ -102,13 +107,15 @@ void sbObjectInit(sb_class_t *sbcp) {
 /**
  * @brief   Starts a sandboxed thread.
  *
- * @param[in] sbcp      pointer to the sandbox object
- * @return              The function returns only if the operation failed.
- *
- * @api
+ * @param[out] sbcp     pointer to the sandbox object
+ * @param[in] config    pointer to the sandbox configuration
+ * @return              The thread pointer.
+ * @retval NULL         if the sandbox thread creation failed.
  */
-void sbStart(sb_class_t *sbcp, const sb_config_t *config) {
-  uint32_t pc, psp;
+thread_t *sbStartThread(sb_class_t *sbcp, const sb_config_t *config,
+                        const char *name, void *wsp, size_t size,
+                        tprio_t prio) {
+  thread_t *utp;
   const sb_header_t *sbhp;
 
   /* Header location.*/
@@ -116,31 +123,45 @@ void sbStart(sb_class_t *sbcp, const sb_config_t *config) {
 
   /* Checking header magic numbers.*/
   if ((sbhp->hdr_magic1 != SB_MAGIC1) || (sbhp->hdr_magic2 != SB_MAGIC2)) {
-    return;
+    return NULL;
   }
 
   /* Checking header size and alignment.*/
   if (sbhp->hdr_size != sizeof (sb_header_t)) {
-    return;
+    return NULL;
   }
 
-  /* PC initial address, by convention it is immediately after the header.*/
-  pc = (config->regions[config->code_region].base + sizeof (sb_header_t)) | 1U;
-
-  /* PSP initial address.*/
-  psp = config->regions[config->data_region].end;
-
-  /* Additional context information.*/
+  /* Linking configuration information.*/
   sbcp->config = config;
-  sbcp->tp     = chThdGetSelfX();
-  sbcp->tp->ctx.syscall.p    = (const void *)sbcp;
-  sbcp->tp->ctx.syscall.psp  = __get_PSP();
 
-  /* Jumping to the unprivileged code.*/
-  port_unprivileged_jump(pc, psp);
+  unprivileged_thread_descriptor_t utd = {
+    .name       = name,
+    .wbase      = (stkalign_t *)wsp,
+    .wend       = (stkalign_t *)wsp + (size / sizeof (stkalign_t)),
+    .prio       = prio,
+    .u_pc       = (config->regions[config->code_region].base +
+                   sizeof (sb_header_t)) | 1U,
+    .u_psp      = config->regions[config->data_region].end,
+    .arg        = (void *)sbcp
+  };
+#if PORT_SWITCHED_REGIONS_NUMBER > 0
+  for (unsigned i = 0U; i < PORT_SWITCHED_REGIONS_NUMBER; i++) {
+    utd.regions[i] = config->mpuregs[i];
+  }
+#endif
 
-  /* Must never happen condition.*/
-  chSysHalt("returned");
+  utp = chThdCreateUnprivileged(&utd);
+
+  /* For messages exchange.*/
+  sbcp->tp      = utp;
+#if CH_CFG_USE_MESSAGES == TRUE
+  sbcp->msg_tp  = NULL;
+#endif
+#if CH_CFG_USE_EVENTS == TRUE
+  chEvtObjectInit(&sbcp->es);
+#endif
+
+  return utp;
 }
 
 #if (CH_CFG_USE_MESSAGES == TRUE) || defined(__DOXYGEN__)
@@ -180,7 +201,7 @@ msg_t sbSendMessageTimeout(sb_class_t *sbcp,
   /* If a timeout occurred while the boxed thread already received the message
      then this thread needs to "unregister" as sender, the boxed error will
      get SB_ERR_EBUSY when/if trying to reply.*/
-  if (sbcp->msg_tp == ctp) {
+  if ((msg == MSG_TIMEOUT) && (sbcp->msg_tp == ctp)) {
     sbcp->msg_tp = NULL;
   }
 

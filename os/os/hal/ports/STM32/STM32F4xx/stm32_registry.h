@@ -1734,7 +1734,8 @@
 #define STM32_I2C1_RX_DMA_MSK               (STM32_DMA_STREAM_ID_MSK(1, 0) |\
                                              STM32_DMA_STREAM_ID_MSK(1, 5))
 #define STM32_I2C1_RX_DMA_CHN               0x00100001
-#define STM32_I2C1_TX_DMA_MSK               (STM32_DMA_STREAM_ID_MSK(1, 7) |\
+#define STM32_I2C1_TX_DMA_MSK               (STM32_DMA_STREAM_ID_MSK(1, 1) |\
+                                             STM32_DMA_STREAM_ID_MSK(1, 7) |\
                                              STM32_DMA_STREAM_ID_MSK(1, 6))
 #define STM32_I2C1_TX_DMA_CHN               0x11000000
 
@@ -1775,7 +1776,8 @@
 #define STM32_SPI1_RX_DMA_MSK               (STM32_DMA_STREAM_ID_MSK(2, 0) |\
                                              STM32_DMA_STREAM_ID_MSK(2, 2))
 #define STM32_SPI1_RX_DMA_CHN               0x00000303
-#define STM32_SPI1_TX_DMA_MSK               (STM32_DMA_STREAM_ID_MSK(2, 3) |\
+#define STM32_SPI1_TX_DMA_MSK               (STM32_DMA_STREAM_ID_MSK(2, 2) |\
+                                             STM32_DMA_STREAM_ID_MSK(2, 3) |\
                                              STM32_DMA_STREAM_ID_MSK(2, 5))
 #define STM32_SPI1_TX_DMA_CHN               0x00303000
 
@@ -2855,7 +2857,7 @@
 #define STM32_HAS_LPUART1                   FALSE
 
 /* USB attributes.*/
-#define STM32_OTG_STEPPING                  1
+#define STM32_OTG_STEPPING                  2
 #define STM32_HAS_OTG1                      TRUE
 #define STM32_OTG1_ENDPOINTS                3
 #define STM32_HAS_OTG2                      TRUE

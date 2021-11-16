@@ -19,7 +19,7 @@
 
 /**
  * @file    sb/host/sbhost.h
- * @brief   ARM sandbox host macros and structures.
+ * @brief   ARM SandBox host macros and structures.
  *
  * @addtogroup ARM_SANDBOX
  * @{
@@ -55,6 +55,21 @@
 /* Module data structures and types.                                         */
 /*===========================================================================*/
 
+/**
+ * @brief   Type of a sandbox manager global structure.
+ */
+typedef struct {
+#if (CH_CFG_USE_EVENTS == TRUE) || defined(__DOXYGEN__)
+  /**
+   * @brief   Event source for sandbox termination.
+   */
+  event_source_t                termination_es;
+#endif
+} sb_t;
+
+/**
+ * @brief   Type of a sandbox memory region.
+ */
 typedef struct {
   /**
    * @brief   Memory range base.
@@ -92,6 +107,14 @@ typedef struct {
    *          validation, not for MPU setup.
    */
   sb_memory_region_t            regions[SB_NUM_REGIONS];
+#if (PORT_SWITCHED_REGIONS_NUMBER == SB_NUM_REGIONS) || defined(__DOXYGEN__)
+  /**
+   * @brief   MPU regions initialization values.
+   * @note    Regions initialization values must be chosen to be
+   *          consistent with the values in the "regions" field.
+   */
+  mpureg_t                      mpuregs[SB_NUM_REGIONS];
+#endif
   /**
    * @brief   Sandbox STDIN stream.
    * @note    Set this to @p NULL if standard I/O is not needed.
@@ -168,6 +191,8 @@ typedef struct {
 /* External declarations.                                                    */
 /*===========================================================================*/
 
+extern sb_t sb;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -176,6 +201,9 @@ extern "C" {
   bool sb_is_valid_write_range(sb_class_t *sbcp, void *start, size_t size);
   void sbObjectInit(sb_class_t *sbcp);
   void sbStart(sb_class_t *sbcp, const sb_config_t *config);
+  thread_t *sbStartThread(sb_class_t *sbcp, const sb_config_t *config,
+                          const char *name, void *wsp, size_t size,
+                          tprio_t prio);
   msg_t sbSendMessageTimeout(sb_class_t *sbcp,
                              msg_t msg,
                              sysinterval_t timeout);
@@ -186,6 +214,18 @@ extern "C" {
 /*===========================================================================*/
 /* Module inline functions.                                                  */
 /*===========================================================================*/
+
+/**
+ * @brief   Initialization of the sandbox host.
+ *
+ * @init
+ */
+static inline void sbHostInit(void) {
+
+#if (CH_CFG_USE_EVENTS == TRUE) || defined(__DOXYGEN__)
+  chEvtObjectInit(&sb.termination_es);
+#endif
+}
 
 #if (CH_CFG_USE_WAITEXIT == TRUE) || defined(__DOXYGEN__)
 /**

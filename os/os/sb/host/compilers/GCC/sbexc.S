@@ -54,7 +54,7 @@ port_syscall:
                 ldr         r3, =sb_syscalls
                 ldr.w       r3, [r3, r1, lsl #2]
                 blx         r3
-                svc         0
+                svc         1
 .zombies1:      b           .zombies1
 
                 .align      2
@@ -149,7 +149,7 @@ UsageFault_Handler:
 
                 /* Exception exit point.*/
 .do_exit:
-                bl          chThdExitS
+                bl          __sb_abort
 .zombies2:      b           .zombies2
 
                 .align      2

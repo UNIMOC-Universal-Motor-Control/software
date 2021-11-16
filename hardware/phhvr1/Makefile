@@ -122,7 +122,6 @@ LDSCRIPT= $(STARTUPLD)/STM32G474xE.ld
 # setting.
 CSRC = $(ALLCSRC) \
        usbcfg.c \
-       $(CHIBIOS)/os/various/syscalls.c \
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.

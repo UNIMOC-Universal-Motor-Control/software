@@ -93,13 +93,13 @@
 #define STM32_MCOPRE                        STM32_MCOPRE_DIV1
 #define STM32_LSCOSEL                       STM32_LSCOSEL_NOCLOCK
 #define STM32_PLLSAI1M_VALUE                1
-#define STM32_PLLSAI1N_VALUE                72
+#define STM32_PLLSAI1N_VALUE                60
 #define STM32_PLLSAI1PDIV_VALUE             6
 #define STM32_PLLSAI1P_VALUE                7
 #define STM32_PLLSAI1Q_VALUE                6
 #define STM32_PLLSAI1R_VALUE                6
 #define STM32_PLLSAI2M_VALUE                1
-#define STM32_PLLSAI2N_VALUE                72
+#define STM32_PLLSAI2N_VALUE                60
 #define STM32_PLLSAI2PDIV_VALUE             6
 #define STM32_PLLSAI2P_VALUE                7
 #define STM32_PLLSAI2Q_VALUE                6
@@ -312,7 +312,7 @@
  */
 #define STM32_SPI_USE_SPI1                  FALSE
 #define STM32_SPI_USE_SPI2                  TRUE
-#define STM32_SPI_USE_SPI3                  FALSE
+#define STM32_SPI_USE_SPI3                  TRUE
 #define STM32_SPI_SPI1_RX_DMA_STREAM        STM32_DMA_STREAM_ID_ANY
 #define STM32_SPI_SPI1_TX_DMA_STREAM        STM32_DMA_STREAM_ID_ANY
 #define STM32_SPI_SPI2_RX_DMA_STREAM        STM32_DMA_STREAM_ID_ANY
