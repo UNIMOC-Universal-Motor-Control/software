@@ -90,7 +90,7 @@ int main(void)
 	chThdSetPriority(HIGHPRIO);
 	hardware::control_thread = controller.start(HIGHPRIO - 1);
 	manager.start(NORMALPRIO + 2);
-	uavcan::Init();
+//	uavcan::Init();
 	chThdSetPriority(LOWPRIO);
 
 	/*
