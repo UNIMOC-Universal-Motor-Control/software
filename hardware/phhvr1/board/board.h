@@ -665,7 +665,7 @@
                                      PIN_PUPDR_FLOATING(GPIOD_TEMP_RES1 ) |       \
                                      PIN_PUPDR_FLOATING(GPIOD_THERMO4   ) |       \
                                      PIN_PUPDR_FLOATING(GPIOD_AIN_IDC   ) |       \
-                                     PIN_PUPDR_FLOATING(GPIOD_AIN_VDC   ) |       \
+                                     PIN_PUPDR_PULLUP(GPIOD_AIN_VDC   ) |       \
                                      PIN_PUPDR_FLOATING(GPIOD_THERMO1   ) |       \
                                      PIN_PUPDR_FLOATING(GPIOD_THERMO2   ) |       \
                                      PIN_PUPDR_FLOATING(GPIOD_THERMO3   ) |       \

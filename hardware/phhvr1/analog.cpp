@@ -124,7 +124,7 @@ static ADCConversionGroup adcgrpcfg1 = {
 	   NOTE: The bits @p ADC_CFGR_CONT or @p ADC_CFGR_DISCEN must be
 			 specified in continuous mode or if the buffer depth is
 			 greater than one.*/
-	ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_0 | ADC_CFGR_EXTSEL_2,
+	ADC_CFGR_CONT | ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_0 | ADC_CFGR_EXTSEL_2,
 	/* ADC CFGR2 register initialization data.*/
 	0,
 	/* ADC TR1 register initialization data.*/
@@ -181,7 +181,7 @@ static ADCConversionGroup adcgrpcfg2 = {
 	   NOTE: The bits @p ADC_CFGR_CONT or @p ADC_CFGR_DISCEN must be
 			 specified in continuous mode or if the buffer depth is
 			 greater than one.*/
-	ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_0 | ADC_CFGR_EXTSEL_2,
+	ADC_CFGR_CONT | ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_0 | ADC_CFGR_EXTSEL_2,
 	/* ADC CFGR2 register initialization data.*/
 	0,
 	/* ADC TR1 register initialization data.*/
@@ -238,7 +238,7 @@ static ADCConversionGroup adcgrpcfg3 = {
 	   NOTE: The bits @p ADC_CFGR_CONT or @p ADC_CFGR_DISCEN must be
 			 specified in continuous mode or if the buffer depth is
 			 greater than one.*/
-	ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_0 | ADC_CFGR_EXTSEL_2,
+	ADC_CFGR_CONT | ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_1 | ADC_CFGR_EXTSEL_2,
 	/* ADC CFGR2 register initialization data.*/
 	0,
 	/* ADC TR1 register initialization data.*/
@@ -293,7 +293,7 @@ static ADCConversionGroup adcgrpcfg4 = {
 	   NOTE: The bits @p ADC_CFGR_CONT or @p ADC_CFGR_DISCEN must be
 			 specified in continuous mode or if the buffer depth is
 			 greater than one.*/
-	ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_0 | ADC_CFGR_EXTSEL_2,
+	ADC_CFGR_CONT | ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_1 | ADC_CFGR_EXTSEL_2,
 	/* ADC CFGR2 register initialization data.*/
 	0,
 	/* ADC TR1 register initialization data.*/
@@ -349,7 +349,7 @@ static ADCConversionGroup adcgrpcfg5 = {
 	   NOTE: The bits @p ADC_CFGR_CONT or @p ADC_CFGR_DISCEN must be
 			 specified in continuous mode or if the buffer depth is
 			 greater than one.*/
-	ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_0 | ADC_CFGR_EXTSEL_2,
+	ADC_CFGR_CONT | ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_1 | ADC_CFGR_EXTSEL_2,
 	/* ADC CFGR2 register initialization data.*/
 	0,
 	/* ADC TR1 register initialization data.*/
@@ -404,10 +404,10 @@ void hardware::analog::Init(void)
 	/*
 	 * Starts an ADC continuous conversion
 	 */
-	adcStartConversion(&ADCD1, &adcgrpcfg1, &samples[0][0][0], ADC_SEQ_BUFFERED);
-	adcStartConversion(&ADCD2, &adcgrpcfg2, &samples[1][0][0], ADC_SEQ_BUFFERED);
-	adcStartConversion(&ADCD3, &adcgrpcfg3, &samples[2][0][0], ADC_SEQ_BUFFERED);
-	adcStartConversion(&ADCD4, &adcgrpcfg4, &samples[3][0][0], ADC_SEQ_BUFFERED);
+//	adcStartConversion(&ADCD1, &adcgrpcfg1, &samples[0][0][0], ADC_SEQ_BUFFERED);
+//	adcStartConversion(&ADCD2, &adcgrpcfg2, &samples[1][0][0], ADC_SEQ_BUFFERED);
+//	adcStartConversion(&ADCD3, &adcgrpcfg3, &samples[2][0][0], ADC_SEQ_BUFFERED);
+//	adcStartConversion(&ADCD4, &adcgrpcfg4, &samples[3][0][0], ADC_SEQ_BUFFERED);
 	adcStartConversion(&ADCD5, &adcgrpcfg5, &samples[4][0][0], ADC_SEQ_BUFFERED);
 
 }

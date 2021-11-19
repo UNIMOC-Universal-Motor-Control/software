@@ -224,6 +224,7 @@ void hardware::pwm::Init(void)
 
 	/* set adc trigger offset = minimal */
 	pwmEnableChannel(ADC_TRIGP, 3, ADC_SAMPLING_OFFSET);
+	pwmEnableChannel(ADC_TRIGP, 0, ADC_SAMPLING_OFFSET);
 
 	/* enable pwms */
 	pwmEnableChannel(PWMP, 0, period/2);
