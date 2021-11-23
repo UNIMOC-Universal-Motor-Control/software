@@ -128,7 +128,7 @@ const PWMConfig adctriggercfg =
 		0xFFFE,
 		nullptr,
 		{ /*  */
-				{PWM_OUTPUT_DISABLED, nullptr},
+				{PWM_OUTPUT_ACTIVE_HIGH, nullptr},
 				{PWM_OUTPUT_DISABLED, nullptr},
 				{PWM_OUTPUT_DISABLED, nullptr},
 				{PWM_OUTPUT_ACTIVE_HIGH, nullptr}

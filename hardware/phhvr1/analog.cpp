@@ -404,10 +404,10 @@ void hardware::analog::Init(void)
 	/*
 	 * Starts an ADC continuous conversion
 	 */
-//	adcStartConversion(&ADCD1, &adcgrpcfg1, &samples[0][0][0], ADC_SEQ_BUFFERED);
-//	adcStartConversion(&ADCD2, &adcgrpcfg2, &samples[1][0][0], ADC_SEQ_BUFFERED);
-//	adcStartConversion(&ADCD3, &adcgrpcfg3, &samples[2][0][0], ADC_SEQ_BUFFERED);
-//	adcStartConversion(&ADCD4, &adcgrpcfg4, &samples[3][0][0], ADC_SEQ_BUFFERED);
+	adcStartConversion(&ADCD1, &adcgrpcfg1, &samples[0][0][0], ADC_SEQ_BUFFERED);
+	adcStartConversion(&ADCD2, &adcgrpcfg2, &samples[1][0][0], ADC_SEQ_BUFFERED);
+	adcStartConversion(&ADCD3, &adcgrpcfg3, &samples[2][0][0], ADC_SEQ_BUFFERED);
+	adcStartConversion(&ADCD4, &adcgrpcfg4, &samples[3][0][0], ADC_SEQ_BUFFERED);
 	adcStartConversion(&ADCD5, &adcgrpcfg5, &samples[4][0][0], ADC_SEQ_BUFFERED);
 
 }
