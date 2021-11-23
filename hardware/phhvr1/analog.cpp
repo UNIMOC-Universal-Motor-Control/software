@@ -59,15 +59,16 @@ constexpr uint32_t LENGTH_ADC_SEQ = 16;
 constexpr uint32_t ADC_SEQ_BUFFERED = hardware::pwm::INJECTION_CYCLES * 2;
 
 ///< # of ADCs
-constexpr uint32_t NUM_OF_ADC = 5;
+constexpr uint32_t NUM_OF_ADC = 3;
 
 /* Note, the buffer is aligned to a 32 bytes boundary because limitations
    imposed by the data cache. Note, this is GNU specific, it must be
    handled differently for other compilers.
    Only required if the ADC buffer is placed in a cache-able area.*/
 ///< dma accessed buffer for the adcs, probably cached
+/* Node: Dual mode for all ADCs present. */
 __attribute__((aligned (32)))
-std::array<std::array<std::array<adcsample_t, LENGTH_ADC_SEQ>, ADC_SEQ_BUFFERED>, NUM_OF_ADC> samples;
+std::array<std::array<std::array<adcsample_t, LENGTH_ADC_SEQ * 2>, ADC_SEQ_BUFFERED>, NUM_OF_ADC> samples;
 
 ///< reference to thread to be woken up in the hardware control cycle.
 chibios_rt::ThreadReference hardware::control_thread = nullptr;
@@ -111,9 +112,12 @@ constexpr std::uint32_t AIN_IA = ADC_CHANNEL_IN1;
 constexpr std::uint32_t AIN_ENC_COS = ADC_CHANNEL_IN7;
 constexpr std::uint32_t AIN_TR0 = ADC_CHANNEL_IN3;
 constexpr std::uint32_t AIN_RES0 = ADC_CHANNEL_IN8;
-
+/**ADC2 Channels:    AIN_IA, AIN_ENC_COS, AIN_RES0. */
+constexpr std::uint32_t AIN_IB = ADC_CHANNEL_IN2;
+constexpr std::uint32_t AIN_ENC_SIN = ADC_CHANNEL_IN6;
+constexpr std::uint32_t AIN_RES1 = ADC_CHANNEL_IN9;
 /*************************************************************/
-static ADCConversionGroup adcgrpcfg1 = {
+static ADCConversionGroup adcgrpcfg12 = {
 	true,
 	LENGTH_ADC_SEQ,
 	adccallback,
@@ -137,6 +141,9 @@ static ADCConversionGroup adcgrpcfg1 = {
 	0,
 	/* ADC AWD3CR register initialization data.*/
 	0,
+	/* ADC CCR register initialization data.
+	   NOTE: Put this field to zero if not using oversampling.*/
+	ADC_CCR_DUAL_FIELD(1),
 	/* ADC SMPRx registers initialization data.*/
 	ADC_SMPR1_SMP_AN1(ADC_SMPR_SMP_2P5) |
 	ADC_SMPR1_SMP_AN3(ADC_SMPR_SMP_2P5) |
@@ -159,47 +166,15 @@ static ADCConversionGroup adcgrpcfg1 = {
 	ADC_SQR3_SQ13_N(AIN_TR0) |
 	ADC_SQR3_SQ14_N(AIN_TR0),                             /* SQR3  */
 	ADC_SQR4_SQ15_N(AIN_RES0) |
-	ADC_SQR4_SQ16_N(AIN_RES0),                            /* SQR4  */
-};
-
-/**
- * ADC conversion group.
- * Mode:        Continuous, Dual Mode
- * ADC2 Channels:    AIN_IA, AIN_ENC_COS, AIN_RES1. */
-constexpr std::uint32_t AIN_IB = ADC_CHANNEL_IN2;
-constexpr std::uint32_t AIN_ENC_SIN = ADC_CHANNEL_IN6;
-constexpr std::uint32_t AIN_RES1 = ADC_CHANNEL_IN9;
-/*************************************************************/
-static ADCConversionGroup adcgrpcfg2 = {
-	true,
-	LENGTH_ADC_SEQ,
-	nullptr,
-	adcerrorcallback,
-	/* ADC CFGR register initialization data.
-	   NOTE: The bits DMAEN and DMACFG are enforced internally
-			 to the driver, keep them to zero.
-	   NOTE: The bits @p ADC_CFGR_CONT or @p ADC_CFGR_DISCEN must be
-			 specified in continuous mode or if the buffer depth is
-			 greater than one.*/
-	ADC_CFGR_CONT | ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_0 | ADC_CFGR_EXTSEL_2,
-	/* ADC CFGR2 register initialization data.*/
-	0,
-	/* ADC TR1 register initialization data.*/
-	0,
-	/* ADC TR2 register initialization data.*/
-	0,
-	/* ADC TR3 register initialization data.*/
-	0,
-	/* ADC AWD2CR register initialization data.*/
-	0,
-	/* ADC AWD3CR register initialization data.*/
-	0,
-	/* ADC SMPRx registers initialization data.*/
+	ADC_SQR4_SQ16_N(AIN_RES0),                             /* SQR4  */
+	/* Slave ADC SMPRx registers initialization data.
+	   NOTE: This field is only present in dual mode.*/
 	ADC_SMPR1_SMP_AN2(ADC_SMPR_SMP_2P5) |
 	ADC_SMPR1_SMP_AN6(ADC_SMPR_SMP_2P5) |
-	ADC_SMPR1_SMP_AN9(ADC_SMPR_SMP_2P5),                  /* SMPR1 */
-	0,                                                    /* SMPR2 */
-	/* ADC SQRx register initialization data.*/
+	ADC_SMPR1_SMP_AN9(ADC_SMPR_SMP_2P5),                  /* SSMPR1 */
+	0,                                                    /* SSMPR2 */
+	/* Slave ADC SQRx register initialization data.
+	   NOTE: This field is only present in dual mode.*/
 	ADC_SQR1_SQ1_N(AIN_IB) |
 	ADC_SQR1_SQ2_N(AIN_IB) |
 	ADC_SQR1_SQ3_N(AIN_IB) |
@@ -225,9 +200,12 @@ static ADCConversionGroup adcgrpcfg2 = {
 constexpr std::uint32_t AIN_IC = ADC_CHANNEL_IN1;
 constexpr std::uint32_t AIN_T0 = ADC_CHANNEL_IN9;
 constexpr std::uint32_t AIN_TM = ADC_CHANNEL_IN12;
-
+/**ADC4 Channels:    AIN_IDC, AIN_T1, AIN_T4 */
+constexpr std::uint32_t AIN_IDC = ADC_CHANNEL_IN7;
+constexpr std::uint32_t AIN_T1 = ADC_CHANNEL_IN10;
+constexpr std::uint32_t AIN_T4 = ADC_CHANNEL_IN13;
 /*************************************************************/
-static ADCConversionGroup adcgrpcfg3 = {
+static ADCConversionGroup adcgrpcfg34 = {
 	true,
 	LENGTH_ADC_SEQ,
 	nullptr,
@@ -251,6 +229,9 @@ static ADCConversionGroup adcgrpcfg3 = {
 	0,
 	/* ADC AWD3CR register initialization data.*/
 	0,
+	/* ADC CCR register initialization data.
+	   NOTE: Put this field to zero if not using oversampling.*/
+	ADC_CCR_DUAL_FIELD(1),
 	/* ADC SMPRx registers initialization data.*/
 	ADC_SMPR1_SMP_AN1(ADC_SMPR_SMP_2P5) |
 	ADC_SMPR1_SMP_AN9(ADC_SMPR_SMP_2P5),                  /* SMPR1 */
@@ -272,61 +253,29 @@ static ADCConversionGroup adcgrpcfg3 = {
 	ADC_SQR3_SQ14_N(AIN_TM),                              /* SQR3  */
 	ADC_SQR4_SQ15_N(AIN_TM) |
 	ADC_SQR4_SQ16_N(AIN_TM),                              /* SQR4  */
-};
-
-/**
- * ADC conversion group.
- * Mode:        Continuous, Dual Mode
- * ADC4 Channels:    AIN_IDC, AIN_T1, AIN_T4 */
-constexpr std::uint32_t AIN_IDC = ADC_CHANNEL_IN7;
-constexpr std::uint32_t AIN_T1 = ADC_CHANNEL_IN10;
-constexpr std::uint32_t AIN_T4 = ADC_CHANNEL_IN13;
-/*************************************************************/
-static ADCConversionGroup adcgrpcfg4 = {
-	true,
-	LENGTH_ADC_SEQ,
-	nullptr,
-	adcerrorcallback,
-	/* ADC CFGR register initialization data.
-	   NOTE: The bits DMAEN and DMACFG are enforced internally
-			 to the driver, keep them to zero.
-	   NOTE: The bits @p ADC_CFGR_CONT or @p ADC_CFGR_DISCEN must be
-			 specified in continuous mode or if the buffer depth is
-			 greater than one.*/
-	ADC_CFGR_CONT | ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_1 | ADC_CFGR_EXTSEL_2,
-	/* ADC CFGR2 register initialization data.*/
-	0,
-	/* ADC TR1 register initialization data.*/
-	0,
-	/* ADC TR2 register initialization data.*/
-	0,
-	/* ADC TR3 register initialization data.*/
-	0,
-	/* ADC AWD2CR register initialization data.*/
-	0,
-	/* ADC AWD3CR register initialization data.*/
-	0,
-	/* ADC SMPRx registers initialization data.*/
-	ADC_SMPR1_SMP_AN7(ADC_SMPR_SMP_2P5),                  /* SMPR1 */
+	/* Slave ADC SMPRx registers initialization data.
+	   NOTE: This field is only present in dual mode.*/
+	ADC_SMPR1_SMP_AN7(ADC_SMPR_SMP_2P5),                  /* SSMPR1 */
 	ADC_SMPR2_SMP_AN10(ADC_SMPR_SMP_2P5) |
-	ADC_SMPR2_SMP_AN13(ADC_SMPR_SMP_2P5),                 /* SMPR2 */
-	/* ADC SQRx register initialization data.*/
+	ADC_SMPR2_SMP_AN13(ADC_SMPR_SMP_2P5),                 /* SSMPR2 */
+	/* Slave ADC SQRx register initialization data.
+	   NOTE: This field is only present in dual mode.*/
 	ADC_SQR1_SQ1_N(AIN_IDC) |
 	ADC_SQR1_SQ2_N(AIN_IDC) |
 	ADC_SQR1_SQ3_N(AIN_IDC) |
-	ADC_SQR1_SQ4_N(AIN_IDC),                              /* SQR1  */
+	ADC_SQR1_SQ4_N(AIN_IDC),                              /* SSQR1  */
 	ADC_SQR2_SQ5_N(AIN_IDC) |
 	ADC_SQR2_SQ6_N(AIN_IDC) |
 	ADC_SQR2_SQ7_N(AIN_T1) |
 	ADC_SQR2_SQ8_N(AIN_T1) |
-	ADC_SQR2_SQ9_N(AIN_T1),                               /* SQR2  */
+	ADC_SQR2_SQ9_N(AIN_T1),                               /* SSQR2  */
 	ADC_SQR3_SQ10_N(AIN_T1) |
 	ADC_SQR3_SQ11_N(AIN_T1) |
 	ADC_SQR3_SQ12_N(AIN_T1) |
 	ADC_SQR3_SQ13_N(AIN_T4) |
-	ADC_SQR3_SQ14_N(AIN_T4),                              /* SQR3  */
+	ADC_SQR3_SQ14_N(AIN_T4),                              /* SSQR3  */
 	ADC_SQR4_SQ15_N(AIN_T4) |
-	ADC_SQR4_SQ16_N(AIN_T4)                               /* SQR4  */
+	ADC_SQR4_SQ16_N(AIN_T4)                               /* SSQR4  */
 };
 
 /**
@@ -362,6 +311,9 @@ static ADCConversionGroup adcgrpcfg5 = {
 	0,
 	/* ADC AWD3CR register initialization data.*/
 	0,
+	/* ADC CCR register initialization data.
+	   NOTE: Put this field to zero if not using oversampling.*/
+	0,
 	/* ADC SMPRx registers initialization data.*/
 	ADC_SMPR1_SMP_AN1(ADC_SMPR_SMP_2P5) |
 	ADC_SMPR1_SMP_AN8(ADC_SMPR_SMP_2P5),                  /* SMPR1 */
@@ -384,6 +336,16 @@ static ADCConversionGroup adcgrpcfg5 = {
 	ADC_SQR3_SQ14_N(AIN_T2),                              /* SQR3  */
 	ADC_SQR4_SQ15_N(AIN_TR1) |
 	ADC_SQR4_SQ16_N(AIN_TR1),                             /* SQR4  */
+	/* Slave ADC SMPRx registers initialization data.
+	   NOTE: This field is only present in dual mode.*/
+	0,                                                    /* SSMPR1 */
+	0,                                                    /* SSMPR2 */
+	/* Slave ADC SQRx register initialization data.
+	   NOTE: This field is only present in dual mode.*/
+	0,                                                    /* SSQR1  */
+	0,                                                    /* SSQR2  */
+	0,                                                    /* SSQR3  */
+	0,                                                    /* SSQR4  */
 };
 
 
@@ -396,19 +358,15 @@ void hardware::analog::Init(void)
 	 * Activates the ADC drivers and the VREF input.
 	 */
 	adcStart(&ADCD1, nullptr);
-	adcStart(&ADCD2, nullptr);
 	adcStart(&ADCD3, nullptr);
-	adcStart(&ADCD4, nullptr);
 	adcStart(&ADCD5, nullptr);
 
 	/*
 	 * Starts an ADC continuous conversion
 	 */
-	adcStartConversion(&ADCD1, &adcgrpcfg1, &samples[0][0][0], ADC_SEQ_BUFFERED);
-	adcStartConversion(&ADCD2, &adcgrpcfg2, &samples[1][0][0], ADC_SEQ_BUFFERED);
-	adcStartConversion(&ADCD3, &adcgrpcfg3, &samples[2][0][0], ADC_SEQ_BUFFERED);
-	adcStartConversion(&ADCD4, &adcgrpcfg4, &samples[3][0][0], ADC_SEQ_BUFFERED);
-	adcStartConversion(&ADCD5, &adcgrpcfg5, &samples[4][0][0], ADC_SEQ_BUFFERED);
+	adcStartConversion(&ADCD1, &adcgrpcfg12, &samples[0][0][0], ADC_SEQ_BUFFERED);
+	adcStartConversion(&ADCD3, &adcgrpcfg34, &samples[1][0][0], ADC_SEQ_BUFFERED);
+	adcStartConversion(&ADCD5, &adcgrpcfg5, &samples[2][0][0], ADC_SEQ_BUFFERED);
 
 }
 
@@ -427,7 +385,7 @@ void hardware::analog::current::Value(std::array<systems::abc, hardware::pwm::IN
 
 			for (std::uint_fast8_t a = 0; a < 6; a++)
 			{
-				sum += samples[i][s][a] + samples[i][s + hardware::pwm::INJECTION_CYCLES][a];
+				//sum += samples[i][s][a] + samples[i][s + hardware::pwm::INJECTION_CYCLES][a];
 				cnt += 2;
 			}
 			currents[s].array[i] = ADC2CURRENT * (float)(current_offset[i] - sum) / (float)cnt;
@@ -458,7 +416,7 @@ void hardware::analog::current::SetOffset(void)
 		{
 			for (std::uint_fast8_t a = 0; a < 6; a++)
 			{
-				sum += samples[i][s][a];
+				//sum += samples[i][s][a];
 			}
 		}
 		current_offset[i] = sum / hardware::pwm::INJECTION_CYCLES;
@@ -479,7 +437,7 @@ float hardware::analog::voltage::DCBus(void)
 
 		for (std::uint_fast8_t a = 0; a < 6; a++)
 		{
-			sum += samples[4][s][a] + samples[4][s + hardware::pwm::INJECTION_CYCLES][a];
+			//sum += samples[4][s][a] + samples[4][s + hardware::pwm::INJECTION_CYCLES][a];
 			cnt += 2;
 		}
 		result = ADC2VOLTAGE * (float)sum / (float)cnt;
