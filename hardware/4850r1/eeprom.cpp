@@ -50,7 +50,7 @@ static const I2CConfig i2ccfg = {
   0
 };
 
-I2CDriver* const hardware::i2c::instance = &I2CD1;
+I2CDriver* const instance = &I2CD1;
 volatile i2cflags_t i2c_error = 0;
 
 /**
@@ -105,11 +105,11 @@ bool hardware::memory::Read(const void* const buffer, const uint32_t length)
 	osalDbgAssert((length) < SIZE, "EEPROM: Read out of bounds");
 	osalDbgAssert(buffer != NULL, "EEPROM: Read buffer not existing");
 
-	i2cAcquireBus(i2c::instance);
+	i2cAcquireBus(instance);
 
 	read_length = length;
 
-	status |= i2cMasterTransmitTimeout(i2c::instance, RW_ADDRESS,
+	status |= i2cMasterTransmitTimeout(instance, RW_ADDRESS,
 			(std::uint8_t*)&wordaddr, sizeof(wordaddr), (std::uint8_t*)buffer, read_length, READ_TIMEOUT);
 
 
@@ -123,11 +123,11 @@ bool hardware::memory::Read(const void* const buffer, const uint32_t length)
 	}
 	else
 	{
-		i2c_error = i2cGetErrors(i2c::instance);
+		i2c_error = i2cGetErrors(instance);
 		result = true;
 	}
 
-	i2cReleaseBus(i2c::instance);
+	i2cReleaseBus(instance);
 
 	return result;
 }
@@ -155,7 +155,7 @@ bool hardware::memory::Write(void const * buffer, const std::uint32_t length)
 	osalDbgAssert((length) < SIZE, "EEPROM: Write out of bounds");
 	osalDbgAssert(buffer != NULL, "EEPROM: Write buffer not existing");
 
-	i2cAcquireBus(i2c::instance);
+	i2cAcquireBus(instance);
 
 	while (written_bytes < length && status == MSG_OK)
 	{
@@ -186,7 +186,7 @@ bool hardware::memory::Write(void const * buffer, const std::uint32_t length)
 		// write buffer out to ram so that dma can access it.
 		cacheBufferFlush(write_buffer.data(), sizeof(write_buffer));
 
-		status |= i2cMasterTransmitTimeout(i2c::instance, RW_ADDRESS,
+		status |= i2cMasterTransmitTimeout(instance, RW_ADDRESS,
 				write_buffer.data(), write_length + sizeof(write_addr), nullptr, 0, WRITE_TIMEOUT);
 
 		written_bytes += write_length;
@@ -201,11 +201,11 @@ bool hardware::memory::Write(void const * buffer, const std::uint32_t length)
 	}
 	else
 	{
-		i2c_error = i2cGetErrors(i2c::instance);
+		i2c_error = i2cGetErrors(instance);
 		result = true;
 	}
 
-	i2cReleaseBus(i2c::instance);
+	i2cReleaseBus(instance);
 
 	return result;
 }

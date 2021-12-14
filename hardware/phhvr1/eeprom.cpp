@@ -72,13 +72,6 @@ uint32_t hardware::memory::Crc32(const void* const buffer, const uint32_t length
 	return crc32;
 }
 
-///**
-// * initialize non volatile memory
-// */
-//void hardware::i2c::Init(void)
-//{
-//
-//}
 
 /**
  * Read buffer from non-volatile memory
@@ -146,5 +139,3 @@ uint32_t hardware::memory::Size(void)
 {
 	return mfscfg1.bank_size;
 }
-
-

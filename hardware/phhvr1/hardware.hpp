@@ -30,4 +30,14 @@
 ///< Hardware Node Name
 #define HARDWARE_NAME "UNIMIC-PHHVr1"
 
+namespace hardware {
+	namespace capability {
+		constexpr bool UAVCAN = false;
+
+		constexpr bool PAS_TORQUE = false;
+
+		constexpr bool KT_DISPLAY = false;
+	} /* namespace capability */
+} /* namespace hardware */
+
 #endif /* HARDWARE_CONFIG_HPP_ */

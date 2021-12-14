@@ -93,6 +93,7 @@ CHIBIOS  := ../../os
 CONFDIR  := ./cfg
 BUILDDIR := ./build
 DEPDIR   := ./.dep
+PROJECTDIR := ../..
 
 # Licensing files.
 include $(CHIBIOS)/os/license/license.mk
@@ -113,7 +114,7 @@ include $(CHIBIOS)/tools/mk/autobuild.mk
 
 # unimoc files
 include ./board/board.mk
-include ../../unimoc.mk
+include ${PROJECTDIR}/unimoc.mk
 
 # Define linker script file here
 LDSCRIPT= $(STARTUPLD)/STM32G474xE.ld

@@ -33,6 +33,7 @@
 
 
 namespace hardware {
+
 	///< Motor Phases. Normally fixed to 3
 	const uint8_t PHASES = 3;
 
@@ -290,15 +291,12 @@ namespace hardware {
 	} /* namespace serial */
 
 
-//	namespace i2c {
-//		/**
-//		 * initialize i2c driver instance
-//		 */
-//		extern void Init(void);
-//
-//		///< I2C Driver instance for external communication
-//		extern I2CDriver* const instance;
-//	}
+	namespace i2c {
+		/**
+		 * initialize i2c driver instance
+		 */
+		extern void Init(void);
+	}
 
 } /* namespace hardware */
 

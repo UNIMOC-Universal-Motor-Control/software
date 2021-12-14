@@ -57,7 +57,6 @@ int main(void)
 	/*
 	 * initialize hardware with no control thread
 	 */
-//	hardware::i2c::Init();
 	hardware::pwm::Init();
 	hardware::analog::Init();
 
@@ -90,7 +89,7 @@ int main(void)
 	chThdSetPriority(HIGHPRIO);
 	hardware::control_thread = controller.start(HIGHPRIO - 1);
 	manager.start(NORMALPRIO + 2);
-//	uavcan::Init();
+	if (hardware::capability::UAVCAN) uavcan::Init();
 	chThdSetPriority(LOWPRIO);
 
 	/*
