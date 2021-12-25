@@ -73,11 +73,14 @@ namespace values
 			///< Current in phases
 			systems::abc i = {0.0f, 0.0f, 0.0f};
 
-			///< motor phase current derivatives
-			systems::abc di = {0.0f, 0.0f, 0.0f};
-
 			///< motor phase voltage
 			systems::abc u = {0.0f, 0.0f, 0.0f};
+
+			///< motor phase voltage output
+			systems::abc u_out = {0.0f, 0.0f, 0.0f};
+
+			///< motor phase voltage output normalized
+			systems::abc duty = {0.0f, 0.0f, 0.0f};
 		} /* namespace phase */
 
 		/**
@@ -85,20 +88,14 @@ namespace values
 		 */
 		namespace stator
 		{
-			///< Current in stator frame
+			///< phase current in stator frame
 			systems::alpha_beta i = {0.0f, 0.0f};
 
-			///< motor stator current derivatives
-			systems::alpha_beta di = {0.0f, 0.0f};
-
-			///< motor stator voltage
+			///< phase voltage in stator frame
 			systems::alpha_beta u = {0.0f, 0.0f};
 
-			///< motor stator admittance
-			systems::alpha_beta y = {0.0f, 0.0f};
-
-			///< motor stator admittance vector
-			systems::alpha_beta yd = {0.0f, 0.0f};
+			///< motor stator voltage for pwm output
+			systems::alpha_beta u_out = {0.0f, 0.0f};
 		} /* namespace stator */
 
 		/**
@@ -117,6 +114,9 @@ namespace values
 
 			///< Voltage in rotor frame
 			systems::dq u = {0.0f, 0.0f};
+
+			///< Voltage in rotor frame for pwm output
+			systems::dq u_out = {0.0f, 0.0f};
 
 			///< angular velocity in rotor frame
 			float omega = 0.0f;

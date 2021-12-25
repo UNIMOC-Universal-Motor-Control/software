@@ -126,39 +126,6 @@ namespace observer
 
 	};
 
-	/**
-	 * high frequency injection based observer
-	 */
-	class hfi
-	{
-	private:
-
-	public:
-	    /**
-	     * add the injection pattern to the output voltage
-	     * @param u_in stator frame voltage vector
-	     * @param u_out stator frame voltage vectors with injection
-	     */
-	    static void Injection(const systems::alpha_beta u_in, std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& u_out);
-
-		/**
-		 * @brief calculate the mean stator admittance.
-		 *
-		 * @note call only once per control cycle
-		 *
-		 * @retval mean stator admittance.
-		 */
-		static systems::alpha_beta GetMean(std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& ad);
-
-		/**
-		 * @brief calculate the stator admittance vector.
-		 *
-		 * @note call only once per control cycle
-		 *
-		 * @retval stator admittance vector.
-		 */
-		static systems::alpha_beta GetVector(std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& ad);
-	};
 
 	/**
 	 * hall sensor based observer

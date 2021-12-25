@@ -29,8 +29,6 @@
 using namespace hardware;
 using namespace hardware::pwm;
 
-static void pwm_serve_dma_interrupt(PWMDriver *pwmp, uint32_t flags);
-
 ///< PWM driver instance
 PWMDriver* PWMP = &PWMD1;
 
@@ -39,12 +37,6 @@ PWMDriver* ADC_TRIGP = &PWMD4;
 
 ///< Pointer to the dma stream for duty update
 const stm32_dma_stream_t* dmastp;
-
-///< PWM duty counts
-std::array<std::uint32_t, PHASES * INJECTION_CYCLES * 2> duty_counts = {0};
-
-///< buffer index for the duty buffer
-std::uint_fast8_t duty_index = 0;
 
 ///< PWM Timer clock in Hz
 const std::uint32_t hardware::pwm::TIMER_CLOCK = STM32_TIMCLK2;
@@ -76,17 +68,21 @@ std::uint32_t period = DEF_PERIOD;
 std::uint32_t frequency = hardware::pwm::TIMER_CLOCK/(2*DEF_PERIOD);
 
 ///< control frequency in Hz
-float fc = hardware::pwm::TIMER_CLOCK/(DEF_PERIOD * INJECTION_CYCLES);
+float fc = hardware::pwm::TIMER_CLOCK/(DEF_PERIOD);
 
 
 ///< control period in s
-float tc = (float)(DEF_PERIOD * INJECTION_CYCLES)/(float)hardware::pwm::TIMER_CLOCK;
+float tc = (float)(DEF_PERIOD)/(float)hardware::pwm::TIMER_CLOCK;
 
 ///< Filter group delay
 /// RC Filter with 11k and 1n plus 5us for the INA240
+const float TF_HW_CUR = (510.0f * 1e-9f);
+/// RC Filter with soem Resistior and Cap. TODO
+const float TF_HW_VOLT = (510.0f * 1e-9f);
+
 ///  Software needs 1 control cycle for calculations
-const float TF_HW = (510.0f * 1e-9f);
-float tf = tc + TF_HW;
+float ctf = tc + TF_HW_CUR;
+float vtf = tc + TF_HW_VOLT;
 
 /**
  * basic PWM configuration
@@ -115,7 +111,7 @@ PWMConfig pwmcfg =
 		/*
 		 * DIER Register
 		 */
-		STM32_TIM_DIER_UDE
+		0
 };
 
 
@@ -148,32 +144,6 @@ const PWMConfig adctriggercfg =
 };
 
 /**
- * @brief   PWM DMA ISR service routine.
- *
- * @param[in] pwmp      pointer to the @p PWMDriver object
- * @param[in] flags     pre-shifted content of the ISR register
- */
-static void pwm_serve_dma_interrupt(PWMDriver *pwmp, uint32_t flags)
-{
-	(void)pwmp;
-	/* DMA errors handling.*/
-	if(flags & STM32_DMA_ISR_TCIF)		// Transfer complete
-	{
-		palClearLine(LINE_LED_ERROR);
-	}
-	if(flags & STM32_DMA_ISR_HTIF)		// Half Transfer
-	{
-		palSetLine(LINE_LED_ERROR);
-	}
-	if ((flags & (STM32_DMA_ISR_TEIF | STM32_DMA_ISR_DMEIF)) != 0) {
-		/* DMA, this could help only if the DMA tries to access an unmapped
-          address space or violates alignment rules.*/
-		osalSysHalt("PWM DMA Error");
-	}
-}
-
-
-/**
  * Initialize PWM hardware with outputs disabled!
  */
 void hardware::pwm::Init(void)
@@ -189,37 +159,13 @@ void hardware::pwm::Init(void)
 	PWMP->tim->CR1 &=~ STM32_TIM_CR1_CEN; // timer stop
 	PWMP->tim->CR1 |= STM32_TIM_CR1_CMS(2) | STM32_TIM_CR1_CKD(1); // center aligned mode and deadtime generation with clock/2
 	PWMP->tim->SMCR |= STM32_TIM_SMCR_MSM;
-//	PWMP->tim->CR1 &= ~STM32_TIM_CR1_URS; // every thing is an update event
+	PWMP->tim->CR1 &= ~STM32_TIM_CR1_URS; // every thing is an update event
 
 	/* start the ADC trigger timer */
 	pwmStart(ADC_TRIGP, &adctriggercfg);
 	ADC_TRIGP->tim->CR1 &=~ STM32_TIM_CR1_CEN; // timer stop
 	ADC_TRIGP->tim->SMCR |= STM32_TIM_SMCR_SMS(4) | STM32_TIM_SMCR_MSM;
 	ADC_TRIGP->tim->CR1 |= STM32_TIM_CR1_CEN; // adc trigger timer start again
-
-	/* DMA setup.*/
-	dmastp = dmaStreamAlloc(STM32_DMA_STREAM_ID(2, 5), 3,
-							(stm32_dmaisr_t)pwm_serve_dma_interrupt, (void*)PWMP);
-	osalDbgAssert(dmastp != nullptr, "unable to allocate stream");
-
-	PWMP->tim->DCR = STM32_TIM_DCR_DBL(2) | STM32_TIM_DCR_DBA(0xD); //
-	PWMP->tim->CR1 |= STM32_TIM_CR1_CEN; // pwm timer start again
-
-	dmaStreamSetPeripheral(dmastp, &PWMP->tim->DMAR);
-	dmaStreamSetMemory0(dmastp, duty_counts.data());
-
-	dmaStreamSetTransactionSize(dmastp, duty_counts.size());
-
-	std::uint32_t dmamode = STM32_DMA_CR_CHSEL(6)	 |
-							STM32_DMA_CR_MSIZE_WORD  | STM32_DMA_CR_PSIZE_WORD  |
-	                  	  	STM32_DMA_CR_PL(3)       | STM32_DMA_CR_MINC        |
-							STM32_DMA_CR_DIR_M2P     | STM32_DMA_CR_CIRC        |
-							STM32_DMA_CR_HTIE        | STM32_DMA_CR_TCIE		|
-							STM32_DMA_CR_DMEIE       | STM32_DMA_CR_TEIE;
-
-	dmaStreamSetMode(dmastp, dmamode);
-
-	dmaStreamEnable(dmastp);
 
 	/* set adc trigger offset = minimal */
 	pwmEnableChannel(ADC_TRIGP, 3, ADC_SAMPLING_OFFSET);
@@ -300,9 +246,10 @@ std::uint32_t hardware::pwm::Frequency(const std::uint32_t freq)
 
 	pwmChangePeriod(PWMP, period);
 
-	fc = (float)TIMER_CLOCK / (float)(period * INJECTION_CYCLES);
-	tc = (float)(period * INJECTION_CYCLES) / (float)TIMER_CLOCK;
-	tf = tc + TF_HW;
+	fc = (float)TIMER_CLOCK / (float)(period);
+	tc = (float)(period) / (float)TIMER_CLOCK;
+	ctf = tc + TF_HW_CUR;
+	vtf = tc + TF_HW_VOLT;
 
 	frequency = (std::uint32_t)(fc * 2.0f);
 
@@ -332,9 +279,18 @@ float hardware::Fc(void)
  * Get Filters Group delay (Hardware and Software)
  * @return Group delay of the hole signal chain in s
  */
-float hardware::Tf(void)
+float hardware::analog::current::Tf(void)
 {
-	return tf;
+	return ctf;
+}
+
+/**
+ * Get Filters Group delay (Hardware and Software)
+ * @return Group delay of the hole signal chain in s
+ */
+float hardware::analog::voltage::Tf(void)
+{
+	return vtf;
 }
 
 /**
@@ -370,25 +326,17 @@ bool hardware::pwm::output::Active(void)
  * Set the normalized duty cycles for each phase
  * @param dutys 0 = LOW, 1=HIGH
  */
-void hardware::pwm::Duty(const std::array<systems::abc, INJECTION_CYCLES>& dutys)
+void hardware::pwm::Duty(const systems::abc& dutys)
 {
-	duty_index++;
-	if(duty_index > 1) duty_index = 0;
-
-	for (std::uint_fast8_t i = 0; i < INJECTION_CYCLES; ++i)
+	for (uint16_t p = 0; p < PHASES; ++p)
 	{
-		for (uint16_t p = 0; p < PHASES; ++p)
-		{
-			int16_t new_duty = (int16_t)((float)period * dutys[i].array[p]);
+		int16_t new_duty = (int16_t)((float)period * dutys.array[p]);
 
-			if(new_duty < 0) new_duty = 0;
-			if(new_duty > (int16_t)period) new_duty = period;
+		if(new_duty < 0) new_duty = 0;
+		if(new_duty > (int16_t)period) new_duty = period;
 
-			duty_counts[p + 3*(i + (INJECTION_CYCLES * duty_index))] = new_duty;
-		}
+		pwmEnableChannel(PWMP, p, new_duty);
 	}
-
-	cacheBufferFlush(duty_counts.data(), sizeof(duty_counts));
 }
 
 

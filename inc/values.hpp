@@ -74,11 +74,14 @@ namespace values
 			///< Current in phases
 			extern systems::abc i;
 
-			///< motor phase current derivatives
-			extern systems::abc di;
-
 			///< motor phase voltage
 			extern systems::abc u;
+
+			///< motor phase voltage output
+			extern systems::abc u_out;
+
+			///< motor phase voltage output normalized
+			extern systems::abc duty;
 		} /* namespace phase */
 
 		/**
@@ -89,18 +92,11 @@ namespace values
 			///< Current in stator frame
 			extern systems::alpha_beta i;
 
-			///< motor stator current derivatives
-			extern systems::alpha_beta di;
-
 			///< motor stator voltage
 			extern systems::alpha_beta u;
 
-			///< motor stator admittance
-			extern systems::alpha_beta y;
-
-			///< motor stator admittance vector
-			extern systems::alpha_beta yd;
-
+			///< motor stator voltage output
+			extern systems::alpha_beta u_out;
 
 		} /* namespace stator */
 
@@ -120,6 +116,9 @@ namespace values
 
 			///< Voltage in rotor frame
 			extern systems::dq u;
+
+			///< Output voltage in rotor frame
+			extern systems::dq u_out;
 
 			///< angular velocity in rotor frame
 			extern float omega;

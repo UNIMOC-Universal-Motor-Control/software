@@ -225,7 +225,7 @@ namespace measurement
 
 					settings.motor.rs = r;
 
-					settings.control.current.kp = CalculateKp(settings.motor.l.d, hardware::Tf());
+					settings.control.current.kp = CalculateKp(settings.motor.l.d, hardware::analog::current::Tf());
 					settings.control.current.tn = CalculateTn(settings.motor.l.q, settings.motor.rs);
 				}
 				point = 0;
@@ -348,7 +348,7 @@ namespace measurement
 						settings.motor.l.d = u/(rotor::omega * (i_len + iac));
 						settings.motor.l.q = u/(rotor::omega * (i_len - iac));
 
-						settings.control.current.kp = CalculateKp(settings.motor.l.d, hardware::Tf());
+						settings.control.current.kp = CalculateKp(settings.motor.l.d, hardware::analog::current::Tf());
 						settings.control.current.tn = CalculateTn(settings.motor.l.q, settings.motor.rs);
 					}
 				}

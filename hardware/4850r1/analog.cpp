@@ -55,11 +55,11 @@ static float adc2ntc_temperature(const uint16_t adc_value);
  */
 #define ADC_CH_TORQUE			ADC_CHANNEL_IN11
 #define ADC_CH_CUR_A			ADC_CHANNEL_IN12
-#define ADC_CH_CUR_A_AC			ADC_CHANNEL_IN13
+#define ADC_CH_VOL_A			ADC_CHANNEL_IN13
 #define ADC_CH_CUR_B			ADC_CHANNEL_IN0
-#define ADC_CH_CUR_B_AC			ADC_CHANNEL_IN1
+#define ADC_CH_VOL_B			ADC_CHANNEL_IN1
 #define ADC_CH_CUR_C			ADC_CHANNEL_IN2
-#define ADC_CH_CUR_C_AC			ADC_CHANNEL_IN3
+#define ADC_CH_VOL_C			ADC_CHANNEL_IN3
 #define ADC_CH_VDC				ADC_CHANNEL_IN4
 #define ADC_CH_BRDG_TEMP		ADC_CHANNEL_IN5
 #define ADC_CH_MOT_TEMP			ADC_CHANNEL_IN6
@@ -133,7 +133,7 @@ constexpr uint32_t LENGTH_ADC_SEQ = 16;
 /// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
 ///          so even length of sequence is best choice.
 /// @note: must be 2 to have the controller running twice per PWM period
-constexpr uint32_t ADC_SEQ_BUFFERED = hardware::pwm::INJECTION_CYCLES * 2;
+constexpr uint32_t ADC_SEQ_BUFFERED = 4;
 
 ///< # of ADCs
 constexpr uint32_t NUM_OF_ADC = 3;
@@ -144,11 +144,8 @@ constexpr float hardware::analog::current::MAX = 1.65f/(20.0f*(0.002f/3.0f));
 ///< Three 2mR shunts in parallel with a 20V/V gain map to 2048 per 1.65V
 constexpr float ADC2CURRENT = hardware::analog::current::MAX /(2048.0f);
 
-///< Currents are amplified by high pass
-constexpr float ADC2DERIVATIVE = ADC2CURRENT * 44.0f;
-
 ///< Voltage divider
-constexpr float ADC2VDC = (24e3f+1.2e3f)/1.2e3f * 3.3f/(4096.0f);
+constexpr float ADC2VOLTAGE = (24e3f+1.2e3f)/1.2e3f * 3.3f/(4096.0f);
 
 
 /* Note, the buffer is aligned to a 32 bytes boundary because limitations
@@ -162,11 +159,11 @@ std::array<std::array<std::array<adcsample_t, LENGTH_ADC_SEQ>, ADC_SEQ_BUFFERED>
 ///< reference to thread to be woken up in the hardware control cycle.
 chibios_rt::ThreadReference hardware::control_thread = nullptr;
 
-///< current offsets
+///< phase current offsets
 std::int32_t current_offset[hardware::PHASES];
 
-///< current derivative offsets
-std::int32_t derivative_offset[hardware::PHASES];
+///< phase voltage offsets
+std::int32_t voltage_offset[hardware::PHASES];
 
 
 /**
@@ -186,12 +183,12 @@ static ADCConversionGroup adcgrpcfg1 = {
 		0,                                                    /* HTR */
 		0,                                                    /* LTR */
 		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) |
-		ADC_SQR1_SQ16_N(ADC_CH_CUR_A_AC) |
-		ADC_SQR1_SQ15_N(ADC_CH_CUR_A_AC) |
-		ADC_SQR1_SQ14_N(ADC_CH_CUR_A_AC) |
-		ADC_SQR1_SQ13_N(ADC_CH_CUR_A_AC),                  	  /* SQR1  */
-		ADC_SQR2_SQ12_N(ADC_CH_CUR_A_AC) |
-		ADC_SQR2_SQ11_N(ADC_CH_CUR_A_AC) |
+		ADC_SQR1_SQ16_N(ADC_CH_VOL_A) |
+		ADC_SQR1_SQ15_N(ADC_CH_VOL_A) |
+		ADC_SQR1_SQ14_N(ADC_CH_VOL_A) |
+		ADC_SQR1_SQ13_N(ADC_CH_VOL_A),                  	  /* SQR1  */
+		ADC_SQR2_SQ12_N(ADC_CH_VOL_A) |
+		ADC_SQR2_SQ11_N(ADC_CH_VOL_A) |
 		ADC_SQR2_SQ10_N(ADC_CH_VDC) |
 		ADC_SQR2_SQ9_N(ADC_CH_VDC) |
 		ADC_SQR2_SQ8_N(ADC_CH_VDC) |
@@ -223,12 +220,12 @@ static ADCConversionGroup adcgrpcfg2 = {
 		0,                                                    /* HTR */
 		0,                                                    /* LTR */
 		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) |
-		ADC_SQR1_SQ16_N(ADC_CH_CUR_B_AC) |
-		ADC_SQR1_SQ15_N(ADC_CH_CUR_B_AC) |
-		ADC_SQR1_SQ14_N(ADC_CH_CUR_B_AC) |
-		ADC_SQR1_SQ13_N(ADC_CH_CUR_B_AC),                      /* SQR1  */
-		ADC_SQR2_SQ12_N(ADC_CH_CUR_B_AC) |
-		ADC_SQR2_SQ11_N(ADC_CH_CUR_B_AC) |
+		ADC_SQR1_SQ16_N(ADC_CH_VOL_B) |
+		ADC_SQR1_SQ15_N(ADC_CH_VOL_B) |
+		ADC_SQR1_SQ14_N(ADC_CH_VOL_B) |
+		ADC_SQR1_SQ13_N(ADC_CH_VOL_B),                      /* SQR1  */
+		ADC_SQR2_SQ12_N(ADC_CH_VOL_B) |
+		ADC_SQR2_SQ11_N(ADC_CH_VOL_B) |
 		ADC_SQR2_SQ10_N(ADC_CH_BRDG_TEMP) |
 		ADC_SQR2_SQ9_N(ADC_CH_BRDG_TEMP) |
 		ADC_SQR2_SQ8_N(ADC_CH_BRDG_TEMP) |
@@ -258,12 +255,12 @@ static ADCConversionGroup adcgrpcfg3 = {
 		0,                                                    /* HTR */
 		0,                                                    /* LTR */
 		ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) |
-		ADC_SQR1_SQ16_N(ADC_CH_CUR_C_AC) |
-		ADC_SQR1_SQ15_N(ADC_CH_CUR_C_AC) |
-		ADC_SQR1_SQ14_N(ADC_CH_CUR_C_AC) |
-		ADC_SQR1_SQ13_N(ADC_CH_CUR_C_AC),                      /* SQR1  */
-		ADC_SQR2_SQ12_N(ADC_CH_CUR_C_AC) |
-		ADC_SQR2_SQ11_N(ADC_CH_CUR_C_AC) |
+		ADC_SQR1_SQ16_N(ADC_CH_VOL_C) |
+		ADC_SQR1_SQ15_N(ADC_CH_VOL_C) |
+		ADC_SQR1_SQ14_N(ADC_CH_VOL_C) |
+		ADC_SQR1_SQ13_N(ADC_CH_VOL_C),                      /* SQR1  */
+		ADC_SQR2_SQ12_N(ADC_CH_VOL_C) |
+		ADC_SQR2_SQ11_N(ADC_CH_VOL_C) |
 		ADC_SQR2_SQ10_N(ADC_CH_TORQUE) |
 		ADC_SQR2_SQ9_N(ADC_CH_TORQUE) |
 		ADC_SQR2_SQ8_N(ADC_CH_TORQUE) |
@@ -307,22 +304,22 @@ void hardware::analog::Init(void)
  * Get the current values in the last control cycle
  * @param currents references to the current samples
  */
-void hardware::analog::current::Value(std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& currents)
+void hardware::analog::current::Phase(systems::abc& currents)
 {
 	for(std::uint_fast8_t i = 0; i < PHASES; i++)
 	{
-		for (std::uint_fast8_t s = 0; s < hardware::pwm::INJECTION_CYCLES; s++)
-		{
-			std::int_fast32_t sum = 0;
-			std::int_fast32_t cnt = 0;
+		std::int_fast32_t sum = 0;
+		std::int_fast32_t cnt = 0;
 
+		for (std::uint_fast8_t s = 0; s < ADC_SEQ_BUFFERED; s++)
+		{
 			for (std::uint_fast8_t a = 0; a < 6; a++)
 			{
-				sum += samples[i][s][a] + samples[i][s + hardware::pwm::INJECTION_CYCLES][a];
-				cnt += 2;
+				sum += samples[i][s][a];
+				cnt++;
 			}
-			currents[s].array[i] = ADC2CURRENT * (float)(current_offset[i] - sum) / (float)cnt;
 		}
+		currents.array[i] = ADC2CURRENT * (float)(current_offset[i] - sum) / (float)cnt;
 	}
 }
 
@@ -331,27 +328,27 @@ void hardware::analog::current::Value(std::array<systems::abc, hardware::pwm::IN
  * cycles
  * @param derivatives
  */
-void hardware::analog::current::Derivative(std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& derivatives)
+void hardware::analog::voltage::Phase(systems::abc& voltages)
 {
 	for(std::uint_fast8_t i = 0; i < PHASES; i++)
 	{
-		for (std::uint_fast8_t s = 0; s < hardware::pwm::INJECTION_CYCLES; s++)
-		{
-			std::int_fast32_t sum = 0;
-			std::int_fast32_t cnt = 0;
+		std::int_fast32_t sum = 0;
+		std::int_fast32_t cnt = 0;
 
-			for (std::uint_fast8_t a = 10; a < 16; a++)
+		for (std::uint_fast8_t s = 0; s < ADC_SEQ_BUFFERED; s++)
+		{
+			for (std::uint_fast8_t a = 0; a < 6; a++)
 			{
-				sum += samples[i][s][a] + samples[i][s + hardware::pwm::INJECTION_CYCLES][a];
-				cnt += 2;
+				sum += samples[i][s][a];
+				cnt++;
 			}
-			derivatives[s].array[i] = ADC2DERIVATIVE * (float)(derivative_offset[i] - sum) / (float)cnt;
 		}
+		voltages.array[i] = ADC2VOLTAGE * (float)(voltage_offset[i] - sum) / (float)cnt;
 	}
 }
 
 /**
- * set dc current offsets
+ * set phase current offsets
  */
 void hardware::analog::current::SetOffset(void)
 {
@@ -366,9 +363,15 @@ void hardware::analog::current::SetOffset(void)
 				sum += samples[i][s][a];
 			}
 		}
-		current_offset[i] = sum / hardware::pwm::INJECTION_CYCLES;
+		current_offset[i] = sum;
 	}
+}
 
+/**
+ * set phase voltage offsets
+ */
+void hardware::analog::voltage::SetOffset(void)
+{
 	for(std::uint_fast8_t i = 0; i < PHASES; i++)
 	{
 		std::int_fast32_t sum = 0;
@@ -380,7 +383,7 @@ void hardware::analog::current::SetOffset(void)
 				sum += samples[i][s][a];
 			}
 		}
-		derivative_offset[i] = sum / hardware::pwm::INJECTION_CYCLES;
+		voltage_offset[i] = sum;
 	}
 }
 
@@ -403,8 +406,7 @@ float hardware::analog::voltage::DCBus(void)
 		}
 	}
 
-	// Filter inverts the values
-	vdc = (float)sum * ADC2VDC / (float)cnt;
+	vdc = (float)sum * ADC2VOLTAGE / (float)cnt;
 
 	return vdc;
 }
@@ -427,7 +429,6 @@ float hardware::analog::temperature::Bridge(void)
 		}
 	}
 
-	// Filter inverts the values
 	return adc2ntc_temperature(sum/cnt);
 }
 
@@ -437,17 +438,17 @@ float hardware::analog::temperature::Bridge(void)
  */
 float hardware::analog::temperature::Motor(void)
 {
-//	std::int_fast32_t sum = 0;
-//	std::int_fast32_t cnt = 0;
-//
-//	for(std::uint_fast32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
-//	{
-//		for (std::uint_fast8_t a = 6; a < 10; a++)
-//		{
-//			sum += samples[0][i][a];
-//			cnt ++;
-//		}
-//	}
+	std::int_fast32_t sum = 0;
+	std::int_fast32_t cnt = 0;
+
+	for(std::uint_fast32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
+	{
+		for (std::uint_fast8_t a = 6; a < 10; a++)
+		{
+			sum += samples[0][i][a];
+			cnt ++;
+		}
+	}
 
 	// Filter inverts the values
 	return 0.0f;

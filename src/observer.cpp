@@ -185,58 +185,7 @@ namespace observer
     	rotor.feedback.q = C.q * (set_flux.q - out_flux.q);
     }
 
-    /**
-     * add the injection pattern to the output voltage
-     * @param u_in stator frame voltage vector
-     * @param u_out stator frame voltage vectors with injection
-     */
-    void hfi::Injection(const systems::alpha_beta u_in, std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& u_out)
-    {
-    	// add the injection pattern to the voltage output
-    	float u_inj = settings.observer.hfi.current*hardware::Fc()*settings.motor.l.d;
-    	u_out[0] = {u_in.alpha + u_inj, u_in.beta        };
-    	u_out[1] = {u_in.alpha        , u_in.beta + u_inj};
-    	u_out[2] = {u_in.alpha - u_inj, u_in.beta        };
-    	u_out[3] = {u_in.alpha        , u_in.beta - u_inj};
-    }
-
-
-    /**
-     * @brief calculate the mean stator admittance.
-     *
-     * @note call only once per control cycle
-     *
-     * @retval mean stator admittance.
-     */
-    systems::alpha_beta hfi::GetMean(std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& ad)
-    {
-        systems::alpha_beta y;
-        // statonary part of the admittance vector, float sampling
-        y.alpha = (ad[0].alpha + ad[1].beta  - ad[2].alpha - ad[3].beta);
-        y.beta  = (ad[0].beta  - ad[1].alpha - ad[2].beta  + ad[3].alpha);
-
-        return y;
-    }
-
-    /**
-     * @brief calculate the stator admittance vector.
-     *
-     * @note call only once per control cycle
-     *
-     * @retval stator admittance vector.
-     */
-    systems::alpha_beta hfi::GetVector(std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES>& ad)
-    {
-        systems::alpha_beta yd;
-        // rotating part of the admittance vector, float sampling
-        yd.alpha = (ad[0].beta  + ad[1].alpha - ad[2].beta  - ad[3].alpha);
-        yd.beta  = (ad[0].alpha - ad[1].beta  - ad[2].alpha + ad[3].beta);
-
-        return yd;
-    }
-
-
-    /**
+       /**
      * @brief hall observers trivial constructor
      */
     hall::hall(void):offset(0.0f), sc_offset{0.0f, 1.0f} {}

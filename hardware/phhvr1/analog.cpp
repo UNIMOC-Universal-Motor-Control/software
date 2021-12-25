@@ -56,7 +56,7 @@ constexpr uint32_t LENGTH_ADC_SEQ = 16;
 /// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
 ///          so even length of sequence is best choice.
 /// @note: must be 2 to have the controller running twice per PWM period
-constexpr uint32_t ADC_SEQ_BUFFERED = hardware::pwm::INJECTION_CYCLES * 2;
+constexpr uint32_t ADC_SEQ_BUFFERED = 4;
 
 ///< # of ADCs
 constexpr uint32_t NUM_OF_ADC = 3;
@@ -75,6 +75,9 @@ chibios_rt::ThreadReference hardware::control_thread = nullptr;
 
 ///< current offsets
 std::int32_t current_offset[hardware::PHASES];
+
+///< phase voltage offsets
+std::int32_t voltage_offset[hardware::PHASES];
 
 /**
  * ADC Channel Mapping
@@ -371,40 +374,39 @@ void hardware::analog::Init(void)
 }
 
 /**
- * Get the current values in the last control cycle
+ * Get the phase current values in the last control cycle
  * @param currents references to the current samples
  */
-void hardware::analog::current::Value(std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& currents)
+void hardware::analog::current::Phase(systems::abc& currents)
 {
 	for(std::uint_fast8_t i = 0; i < PHASES; i++)
 	{
-		for (std::uint_fast8_t s = 0; s < hardware::pwm::INJECTION_CYCLES; s++)
-		{
-			std::int_fast32_t sum = 0;
-			std::int_fast32_t cnt = 0;
+		std::int_fast32_t sum = 0;
+		std::int_fast32_t cnt = 0;
 
+		for (std::uint_fast8_t s = 0; s < ADC_SEQ_BUFFERED; s++)
+		{
 			for (std::uint_fast8_t a = 0; a < 6; a++)
 			{
-				//sum += samples[i][s][a] + samples[i][s + hardware::pwm::INJECTION_CYCLES][a];
+				sum += samples[i][s][a];
 				cnt += 2;
 			}
-			currents[s].array[i] = ADC2CURRENT * (float)(current_offset[i] - sum) / (float)cnt;
+			currents.array[i] = ADC2CURRENT * (float)(current_offset[i] - sum) / (float)cnt;
 		}
 	}
 }
 
 /**
- * Get current derivatives in the last control
- * cycles
- * @param derivatives
+ * Get the phase voltage values in the last control cycle
+ * @param voltages references to the current samples
  */
-void hardware::analog::current::Derivative(std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& derivatives)
+void hardware::analog::voltage::Phase(systems::abc& voltages)
 {
-	(void)derivatives;
+	(void)voltages; /// TODO need SPI for Voltage ADCs
 }
 
 /**
- * set dc current offsets
+ * set phase current offsets
  */
 void hardware::analog::current::SetOffset(void)
 {
@@ -416,11 +418,19 @@ void hardware::analog::current::SetOffset(void)
 		{
 			for (std::uint_fast8_t a = 0; a < 6; a++)
 			{
-				//sum += samples[i][s][a];
+				sum += samples[i][s][a];
 			}
 		}
-		current_offset[i] = sum / hardware::pwm::INJECTION_CYCLES;
+		current_offset[i] = sum;
 	}
+}
+
+/**
+ * set phase voltage offsets
+ */
+void hardware::analog::voltage::SetOffset(void)
+{
+	(void)voltage_offset; /// TODO need SPI for Voltage ADCs
 }
 
 /**
@@ -430,18 +440,19 @@ void hardware::analog::current::SetOffset(void)
 float hardware::analog::voltage::DCBus(void)
 {
 	float result = 0.0f;
-	for (std::uint_fast8_t s = 0; s < hardware::pwm::INJECTION_CYCLES; s++)
-	{
-		std::int_fast32_t sum = 0;
-		std::int_fast32_t cnt = 0;
 
+	std::int_fast32_t sum = 0;
+	std::int_fast32_t cnt = 0;
+
+	for (std::uint_fast8_t s = 0; s < ADC_SEQ_BUFFERED; s++)
+	{
 		for (std::uint_fast8_t a = 0; a < 6; a++)
 		{
-			//sum += samples[4][s][a] + samples[4][s + hardware::pwm::INJECTION_CYCLES][a];
+			sum += samples[4][s][a];
 			cnt += 2;
 		}
-		result = ADC2VOLTAGE * (float)sum / (float)cnt;
 	}
+	result = ADC2VOLTAGE * (float)sum / (float)cnt;
 	return (result);
 }
 

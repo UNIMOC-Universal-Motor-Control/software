@@ -144,11 +144,11 @@ namespace control
 		ctrl_d.positive_limit = limit;
 		ctrl_d.negative_limit = -limit;
 
-		float length = systems::Length(rotor::u);
+		float length = systems::Length(rotor::u_out);
 
 		if(length > ctrl_d.positive_limit)									// saturation
 		{
-			float rest = std::sqrt(length*length - rotor::u.d * rotor::u.d);
+			float rest = std::sqrt(length*length - rotor::u_out.d * rotor::u_out.d);
 			// q current controller is only fully free if we are not in voltage limit
 			ctrl_q.positive_limit = rest;
 			ctrl_q.negative_limit = -rest;
@@ -168,8 +168,8 @@ namespace control
 			feedforward.q = settings.motor.rs*setpoint.q + rotor::omega * setpoint.d * settings.motor.l.d + rotor::omega*settings.motor.psi;
 		}
 
-		rotor::u.d = ctrl_d.Calculate(setpoint.d, rotor::i.d, feedforward.d);
-		rotor::u.q = ctrl_q.Calculate(setpoint.q, rotor::i.q, feedforward.q);
+		rotor::u_out.d = ctrl_d.Calculate(setpoint.d, rotor::i.d, feedforward.d);
+		rotor::u_out.q = ctrl_q.Calculate(setpoint.q, rotor::i.q, feedforward.q);
 	}
 
 }/* namespace control */

@@ -49,9 +49,6 @@ namespace hardware {
 		///< PWM Timer clock in Hz
 		extern const uint32_t TIMER_CLOCK;
 		
-		///< current injection cycles used for low speed position estimation
-		constexpr uint32_t INJECTION_CYCLES = 4;
-		
 		/**
 		 * Get Deadtime of PWM
 		 * @return deadtime in nano seconds
@@ -97,7 +94,7 @@ namespace hardware {
 		 * Set the normalized duty cycles for each phase
 		 * @param dutys -1 = LOW, 0 = 50%, 1=HIGH
 		 */
-		extern void Duty(const std::array<systems::abc, INJECTION_CYCLES>& dutys);
+		extern void Duty(const systems::abc& dutys);
 
 
 		namespace output {
@@ -134,12 +131,6 @@ namespace hardware {
 	extern float Fc(void);
 
 	/**
-	 * Get Filters Group delay (Hardware and Software)
-	 * @return Group delay of the hole signal chain in s
-	 */
-	extern float Tf(void);
-
-	/**
 	 * analog value releated functions
 	 */
 	namespace analog
@@ -162,22 +153,19 @@ namespace hardware {
 		namespace current {
 
 			/**
-			 * Get current in the last control
-			 * cycles
+			 * Get phase currents in the last control cycle
 			 * @param currents
 			 */
-			extern void Value(std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& currents);
+			extern void Phase(systems::abc& currents);
 
 			/**
-			 * Get current derivatives in the last control
-			 * cycles
-			 * @param derivatives
+			 * Get Filters Group delay (Hardware and Software)
+			 * @return Group delay of the hole signal chain in s
 			 */
-			extern void Derivative(std::array<systems::abc, hardware::pwm::INJECTION_CYCLES>& derivatives);
+			extern float Tf(void);
 
 			/**
-			 * set current offsets
-			 * @param offset in A
+			 * set phase current offsets
 			 */
 			extern void SetOffset(void);
 
@@ -192,6 +180,23 @@ namespace hardware {
 			 * @return DC Bus voltage in Volts
 			 */
 			extern float DCBus(void);
+
+			/**
+			 * Get phase voltages in the last control cycle
+			 * @param currents
+			 */
+			extern void Phase(systems::abc& voltages);
+
+			/**
+			 * Get Filters Group delay (Hardware and Software)
+			 * @return Group delay of the hole signal chain in s
+			 */
+			extern float Tf(void);
+
+			/**
+			 * set phase voltage offsets
+			 */
+			extern void SetOffset(void);
 
 			///< absolute maximum voltage
 			extern const float MAX;

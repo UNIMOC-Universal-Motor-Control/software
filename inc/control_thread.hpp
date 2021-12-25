@@ -56,12 +56,6 @@ namespace control
 		observer::hall       	hall;
 		control::foc      		foc;
 		std::array<float, 3>   	correction;
-		std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> i_abc;
-		std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> i_abc_ac;
-		std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES> i_ab;
-		std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES> i_ab_ac;
-		std::array<systems::alpha_beta, hardware::pwm::INJECTION_CYCLES> u_ab;
-		std::array<systems::abc, hardware::pwm::INJECTION_CYCLES> dutys;
 
 		/**
 		 * compensate the commanded voltage for the error introduced by PWM deadtime
