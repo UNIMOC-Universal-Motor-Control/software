@@ -51,7 +51,7 @@
 /* Derived constants and error checks.                                       */
 /*===========================================================================*/
 
-#if defined(STM32F413xx) || defined(STM32F412xx) ||                         \
+#if defined(STM32F413xx) || defined(STM32F412xx) || defined(STM32F446xx) || \
     defined(STM32F40_41xxx) || defined(__DOXYGEN__)
 
 /* Flash size register. */
@@ -65,8 +65,10 @@
 #define STM32_FLASH_NUMBER_OF_BANKS         1
 #define STM32_FLASH1_SIZE                   1536U
 #define STM32_FLASH2_SIZE                   1024U
+#define STM32_FLASH3_SIZE                   512U
 #define STM32_FLASH1_SECTORS_TOTAL          16
 #define STM32_FLASH2_SECTORS_TOTAL          12
+#define STM32_FLASH3_SECTORS_TOTAL          8
 
 #elif defined(STM32F429_439xx) || defined(STM32F427_437xx) || \
       defined(__DOXYGEN__)
