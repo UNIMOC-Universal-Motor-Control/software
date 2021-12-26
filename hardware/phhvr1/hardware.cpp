@@ -29,6 +29,7 @@
 
 extern void hardware_pwm_Init(void);
 extern void hardware_analog_Init(void);
+extern void hardware_cordic_Init(void);
 
 /**
  * Initialize hardware with outputs disabled!
@@ -37,6 +38,7 @@ void hardware::Init()
 {
 	hardware_pwm_Init();
 	hardware_analog_Init();
+	hardware_cordic_Init();
 	trngInit();
 	trngStart(&TRNGD1, NULL);
 }

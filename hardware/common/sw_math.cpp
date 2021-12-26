@@ -142,14 +142,6 @@ constexpr float SINE_TABLE[FAST_MATH_TABLE_SIZE + 1] =
 		-0.04906767f, -0.03680722f, -0.02454123f, -0.01227154f, -0.00000000f
 };
 
-
-float sqrtf(const float in)
-{
-	float result = in;
-
-	return result;
-}
-
 /**
   @brief         Floating-point sine and cosine function.
   @param 	     theta   input value in q31

@@ -25,7 +25,7 @@ endif
 
 # Linker extra options here.
 ifeq ($(USE_LDOPT),)
-  USE_LDOPT = 
+  USE_LDOPT = -lm
 endif
 
 # Enable this if you want link time optimizations (LTO).
@@ -127,7 +127,7 @@ CSRC = $(ALLCSRC) \
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
-CPPSRC = $(ALLCPPSRC) pwm.cpp analog.cpp hardware.cpp ../common/efld.cpp ../common/sw_sincos.cpp
+CPPSRC = $(ALLCPPSRC) pwm.cpp analog.cpp hardware.cpp ../common/efld.cpp ../common/cordic_math.cpp
 
 # List ASM source files here.
 ASMSRC = $(ALLASMSRC)
