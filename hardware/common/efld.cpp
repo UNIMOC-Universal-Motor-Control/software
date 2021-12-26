@@ -31,16 +31,8 @@
 ///< CRC seed
 constexpr uint32_t CRC32MASK   		= 0x04C11DB7;
 
-///< embedded flash eeprom driver config
-const MFSConfig mfscfg1 = {
-  .flashp           = (BaseFlash *)&EFLD1,
-  .erased           = 0xFFFFFFFFU,
-  .bank_size        = 2048U,
-  .bank0_start      = 254U,
-  .bank0_sectors    = 1U,
-  .bank1_start      = 255U,
-  .bank1_sectors    = 1U
-};
+///< embedded flash eeprom driver config need to be defined by each hardware
+extern MFSConfig mfscfg1;
 
 ///< Managed flash driver instance for embedded flash eeprom emulation
 MFSDriver mfs1;

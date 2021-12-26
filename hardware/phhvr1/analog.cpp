@@ -355,7 +355,7 @@ static ADCConversionGroup adcgrpcfg5 = {
 /**
  * Initialize ADC hardware
  */
-void hardware::analog::Init(void)
+void hardware_analog_Init(void)
 {
 	/*
 	 * Activates the ADC drivers and the VREF input.
@@ -369,7 +369,7 @@ void hardware::analog::Init(void)
 	 */
 	adcStartConversion(&ADCD1, &adcgrpcfg12, &samples[0][0][0], ADC_SEQ_BUFFERED);
 	adcStartConversion(&ADCD3, &adcgrpcfg34, &samples[1][0][0], ADC_SEQ_BUFFERED);
-	adcStartConversion(&ADCD5, &adcgrpcfg5, &samples[2][0][0], ADC_SEQ_BUFFERED);
+	adcStartConversion(&ADCD5, &adcgrpcfg5,  &samples[2][0][0], ADC_SEQ_BUFFERED);
 
 }
 

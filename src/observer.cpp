@@ -232,7 +232,7 @@ namespace observer
 		if(offset != new_offset)
 		{
 			offset = new_offset;
-			sc_offset = systems::SinCos(offset);
+			sc_offset = hardware::SinCos(offset);
 		}
 	}
 }/* namespace observer */

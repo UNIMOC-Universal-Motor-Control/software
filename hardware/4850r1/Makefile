@@ -55,13 +55,13 @@ endif
 # Stack size to be allocated to the Cortex-M process stack. This stack is
 # the stack used by the main() thread.
 ifeq ($(USE_PROCESS_STACKSIZE),)
-  USE_PROCESS_STACKSIZE = 0x800
+  USE_PROCESS_STACKSIZE = 0x400
 endif
 
 # Stack size to the allocated to the Cortex-M main/exceptions stack. This
 # stack is used for processing interrupts and exceptions.
 ifeq ($(USE_EXCEPTIONS_STACKSIZE),)
-  USE_EXCEPTIONS_STACKSIZE = 0x800
+  USE_EXCEPTIONS_STACKSIZE = 0x400
 endif
 
 # Enables the use of FPU (no, softfp, hard).
@@ -71,7 +71,7 @@ endif
 
 # FPU-related options.
 ifeq ($(USE_FPU_OPT),)
-  USE_FPU_OPT = -mfloat-abi=$(USE_FPU) -mfpu=fpv5-sp-d16
+  USE_FPU_OPT = -mfloat-abi=$(USE_FPU) -mfpu=fpv4-sp-d16
 endif
 
 #
@@ -86,7 +86,7 @@ endif
 PROJECT = unimoc_4850r1
 
 # Target settings.
-MCU  = cortex-m7
+MCU  = cortex-m4
 
 # Imported source files and paths.
 CHIBIOS  := ../../os
@@ -98,11 +98,12 @@ PROJECTDIR := ../..
 # Licensing files.
 include $(CHIBIOS)/os/license/license.mk
 # Startup files.
-include $(CHIBIOS)/os/common/startup/ARMCMx/compilers/GCC/mk/startup_stm32f7xx.mk
+include $(CHIBIOS)/os/common/startup/ARMCMx/compilers/GCC/mk/startup_stm32f4xx.mk
 # HAL-OSAL files (optional).
 include $(CHIBIOS)/os/hal/hal.mk
+include $(CHIBIOS)/os/hal/lib/complex/mfs/hal_mfs.mk
 include $(CHIBIOS)/os/hal/lib/streams/streams.mk
-include $(CHIBIOS)/os/hal/ports/STM32/STM32F7xx/platform.mk
+include $(CHIBIOS)/os/hal/ports/STM32/STM32F4xx/platform.mk
 include $(CHIBIOS)/os/hal/osal/rt-nil/osal.mk
 include $(CHIBIOS)/os/various/cpp_wrappers/chcpp.mk
 # RTOS files (optional).
@@ -116,7 +117,7 @@ include ./board/board.mk
 include ${PROJECTDIR}/unimoc.mk
 
 # Define linker script file here
-LDSCRIPT= .//STM32F730x8.ld
+LDSCRIPT= ./STM32F446xE.ld
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -126,7 +127,7 @@ CSRC = $(ALLCSRC) \
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
-CPPSRC = $(ALLCPPSRC) pwm.cpp analog.cpp digital.cpp eeprom.cpp serial.cpp math.cpp
+CPPSRC = $(ALLCPPSRC) pwm.cpp analog.cpp hardware.cpp ../common/efld.cpp ../common/sw_sincos.cpp
 
 # List ASM source files here.
 ASMSRC = $(ALLASMSRC)

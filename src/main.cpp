@@ -57,8 +57,7 @@ int main(void)
 	/*
 	 * initialize hardware with no control thread
 	 */
-	hardware::pwm::Init();
-	hardware::analog::Init();
+	hardware::Init();
 
 	/*
 	 * Initializes two serial-over-USB CDC drivers.
@@ -89,7 +88,7 @@ int main(void)
 	chThdSetPriority(HIGHPRIO);
 	hardware::control_thread = controller.start(HIGHPRIO - 1);
 	manager.start(NORMALPRIO + 2);
-	if (hardware::capability::UAVCAN) uavcan::Init();
+	uavcan::Init();
 	chThdSetPriority(LOWPRIO);
 
 	/*

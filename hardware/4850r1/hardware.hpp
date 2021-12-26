@@ -28,17 +28,11 @@
 ///< Hardware Node Name
 #define HARDWARE_NAME "UNIMIC-4850r1"
 
-namespace hardware {
+///< Hardware supports random number generation: STM32F446 has no TRNG
+#define HARDWARE_CAPABIITY_RANDOM 				FALSE
 
-
-	namespace capability {
-		constexpr bool UAVCAN = false;
-
-		constexpr bool PAS_TORQUE = false;
-
-		constexpr bool KT_DISPLAY = false;
-	} /* namespace capability */
-} /* namespace hardware */
+///< Hardware supports CAN-FD: STM32F446 has no CAN-FD
+#define HARDWARE_CAPABIITY_CAN_FD				FALSE
 
 
 #endif /* HARDWARE_CONFIG_HPP_ */

@@ -146,7 +146,7 @@ const PWMConfig adctriggercfg =
 /**
  * Initialize PWM hardware with outputs disabled!
  */
-void hardware::pwm::Init(void)
+void hardware_pwm_Init(void)
 {
 	/*
 	 * Set Debug register to stop TIM1 and TIM5 in DebugMode

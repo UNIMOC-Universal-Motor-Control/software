@@ -58,7 +58,7 @@ namespace control
 	{
 		using namespace values;
 
-		systems::sin_cos tmp = systems::SinCos(motor::rotor::phi);
+		systems::sin_cos tmp = hardware::SinCos(motor::rotor::phi);
 
 		motor::rotor::u.d += 4.0f/3.0f*battery::u*(settings.converter.deadtime*1e-9f)*hardware::Fc()*tmp.sin;
 		motor::rotor::u.q += 4.0f/3.0f*battery::u*(settings.converter.deadtime*1e-9f)*hardware::Fc()*tmp.cos;
@@ -105,8 +105,8 @@ namespace control
 			u_angle = motor::rotor::phi
 						- unit::Q31R(motor::rotor::omega * hardware::analog::voltage::Tf());
 			// calculate new sine and cosine for the reference system
-			i_sc = systems::SinCos(i_angle);
-			u_sc = systems::SinCos(u_angle);
+			i_sc = hardware::SinCos(i_angle);
+			u_sc = hardware::SinCos(u_angle);
 
 			// convert current samples from clark to rotor frame;
 			motor::rotor::i = systems::transform::Park(motor::stator::i, i_sc);
@@ -198,7 +198,7 @@ namespace control
 			DeadtimeCompensation();
 
 			// calculate new sine and cosine for the reference system
-			motor::rotor::sc = systems::SinCos(motor::rotor::phi);
+			motor::rotor::sc = hardware::SinCos(motor::rotor::phi);
 
 			// transform the voltages to stator frame
 			motor::stator::u_out = systems::transform::InversePark(motor::rotor::u_out, motor::rotor::sc);

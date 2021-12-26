@@ -72,7 +72,7 @@
  * @brief   Enables the EFlash subsystem.
  */
 #if !defined(HAL_USE_EFL) || defined(__DOXYGEN__)
-#define HAL_USE_EFL                         FALSE
+#define HAL_USE_EFL                         TRUE
 #endif
 
 /**
@@ -170,7 +170,7 @@
  * @brief   Enables the TRNG subsystem.
  */
 #if !defined(HAL_USE_TRNG) || defined(__DOXYGEN__)
-#define HAL_USE_TRNG                        TRUE
+#define HAL_USE_TRNG                        FALSE
 #endif
 
 /**

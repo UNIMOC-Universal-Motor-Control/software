@@ -379,16 +379,16 @@ void management::thread::SetThrottleSetpoint(systems::dq& setpoint)
 		setpoint.q = UniAnalogThrottleDeadzone(hardware::analog::input()) * setpoint::limit::i::min;
 		break;
 	case settings_ts::throttle_s::ANALOG_SWITCH:
-		if(hardware::digital::input(hardware::digital::MOTOR_TEMP_DI))
-		{
-			setpoint.d = 0.0f;
-			setpoint.q = UniAnalogThrottleDeadzone(hardware::analog::input()) * setpoint::limit::i::min;
-		}
-		else
-		{
-			setpoint.d = 0.0f;
-			setpoint.q = UniAnalogThrottleDeadzone(hardware::analog::input()) * setpoint::limit::i::max;
-		}
+//		if(hardware::digital::input(hardware::digital::MOTOR_TEMP_DI))
+//		{
+//			setpoint.d = 0.0f;
+//			setpoint.q = UniAnalogThrottleDeadzone(hardware::analog::input()) * setpoint::limit::i::min;
+//		}
+//		else
+//		{
+//			setpoint.d = 0.0f;
+//			setpoint.q = UniAnalogThrottleDeadzone(hardware::analog::input()) * setpoint::limit::i::max;
+//		}
 		break;
 	case settings_ts::throttle_s::PAS:
 		break;

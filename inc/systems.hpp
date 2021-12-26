@@ -153,13 +153,6 @@ namespace systems
     float Length(const alpha_beta& vector);
 
     /**
-      @brief         Floating-point sine and cosine function.
-      @param 	     theta    input value in rad
-      @retval	     out      points to processed sine cosine output
-     */
-    sin_cos SinCos(const std::int32_t theta);
-
-    /**
       @brief         Calculate angle difference from sin/cosine values.
       @param 	     a    	sin/cosine of the angle a in c = a - b
       @param 	     b    	sin/cosine of the angle b in c = a - b

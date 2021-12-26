@@ -1,5 +1,5 @@
 /*
-    ChibiOS - Copyright (C) 2006..2017 Giovanni Di Sirio
+    ChibiOS - Copyright (C) 2006..2020 Giovanni Di Sirio
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@
 /*===========================================================================*/
 
 /*
- * Setup for STMicroelectronics STM32 Nucleo144-F722ZE board.
+ * Setup for UNIMOC 48V 50A board.
  */
 
 /*
@@ -59,8 +59,7 @@
 /*
  * MCU type as defined in the ST header.
  */
-#define STM32F730xx
-#define STM32F732xx
+#define STM32F446xx
 
 /*
  * IO pins assignments.
@@ -82,9 +81,9 @@
 #define GPIOA_SWCLK                 14U
 #define GPIOA_TDI	                15U
 
-#define GPIOB_LED_PWM               0U
-#define GPIOB_LED_MODE              1U
-#define GPIOB_LED_ERROR             2U
+#define GPIOB_LED_MODE              0U
+#define GPIOB_LED_ERROR             1U
+#define GPIOB_LED_RUN               2U
 #define GPIOB_SWO                   3U
 #define GPIOB_TRST                  4U
 #define GPIOB_5                     5U
@@ -92,8 +91,8 @@
 #define GPIOB_SDA                   7U
 #define GPIOB_CAN_RX                8U
 #define GPIOB_CAN_TX                9U
-#define GPIOB_LED_RUN               10U
-#define GPIOB_EN_PWM_OUT            11U
+#define GPIOB_EN_PWM_OUT            10U
+#define GPIOB_11					11U
 #define GPIOB_PWM_BREAK             12U
 #define GPIOB_PWM_AL                13U
 #define GPIOB_PWM_BL                14U
@@ -104,7 +103,7 @@
 #define GPIOC_AIN_CUR_C_DC          2U
 #define GPIOC_AIN_CUR_C_AC          3U
 #define GPIOC_4                     4U
-#define GPIOC_5                     5U
+#define GPIOC_LED_PWM               5U
 #define GPIOC_6                     6U
 #define GPIOC_7                     7U
 #define GPIOC_8                     8U
@@ -271,17 +270,16 @@
 #define LINE_SWCLK                  PAL_LINE(GPIOA, 15U)
 #define LINE_TDI	                PAL_LINE(GPIOA, 15U)
 
-#define LINE_LED_PWM                PAL_LINE(GPIOB, 0U)
-#define LINE_LED_MODE               PAL_LINE(GPIOB, 1U)
-#define LINE_LED_ERROR              PAL_LINE(GPIOB, 2U)
+#define LINE_LED_MODE               PAL_LINE(GPIOB, 0U)
+#define LINE_LED_ERROR              PAL_LINE(GPIOB, 1U)
+#define LINE_LED_RUN                PAL_LINE(GPIOB, 2U)
 #define LINE_SWO                    PAL_LINE(GPIOB, 3U)
 #define LINE_TRST                   PAL_LINE(GPIOB, 4U)
 #define LINE_SCL                    PAL_LINE(GPIOB, 6U)
 #define LINE_SDA                    PAL_LINE(GPIOB, 7U)
 #define LINE_CAN_RX                 PAL_LINE(GPIOB, 8U)
 #define LINE_CAN_TX                 PAL_LINE(GPIOB, 9U)
-#define LINE_LED_RUN                PAL_LINE(GPIOB, 10U)
-#define LINE_EN_PWM_OUT             PAL_LINE(GPIOB, 11U)
+#define LINE_EN_PWM_OUT             PAL_LINE(GPIOB, 10U)
 #define LINE_PWM_BREAK              PAL_LINE(GPIOB, 12U)
 #define LINE_PWM_AL                 PAL_LINE(GPIOB, 13U)
 #define LINE_PWM_BL                 PAL_LINE(GPIOB, 14U)
@@ -291,6 +289,7 @@
 #define LINE_AIN_TORQUE             PAL_LINE(GPIOC, 1U)
 #define LINE_AIN_CUR_C_DC           PAL_LINE(GPIOC, 2U)
 #define LINE_AIN_CUR_C_AC           PAL_LINE(GPIOC, 3U)
+#define LINE_LED_PWM                PAL_LINE(GPIOC, 5U)
 #define LINE_DISP_TX                PAL_LINE(GPIOC, 10U)
 #define LINE_DISP_RX                PAL_LINE(GPIOC, 11U)
 #define LINE_HALL_A                 PAL_LINE(GPIOC, 13U)
@@ -456,9 +455,9 @@
 /*
  * GPIOB setup:
  *
- * PB0  - LED_PWM                    (output pushpull).
- * PB1  - LED_MODE                   (output pushpull).
- * PB2  - LED_ERROR                  (output pushpull).
+ * PB0  - LED_MODE                   (output pushpull).
+ * PB1  - LED_ERROR                  (output pushpull).
+ * PB2  - LED_RUN                    (output pushpull).
  * PB3  - SWO                        (alternate 0).
  * PB4  - TRST                       (alternate 0).
  * PB5  - 5                          (input pullup).
@@ -466,8 +465,8 @@
  * PB7  - SDA                        (alternate 4).
  * PB8  - CAN_RX                     (alternate 9).
  * PB9  - CAN_TX                     (alternate 9).
- * PB10 - LED_RUN                    (output pushpull).
- * PB11 - EN_PWM_OUT                 (output opendrain).
+ * PB10 - EN_PWM_OUT                 (output opendrain).
+ * PB11 -                            (input pullup).
  * PB12 - PWM_BREAK                  (alternate 1).
  * PB13 - PWM_AL                     (alternate 1).
  * PB14 - PWM_BL                     (alternate 1).
@@ -475,9 +474,9 @@
  *
  *
  */
-#define VAL_GPIOB_MODER             (PIN_MODE_OUTPUT(GPIOB_LED_PWM) | \
-                                     PIN_MODE_OUTPUT(GPIOB_LED_MODE) | \
+#define VAL_GPIOB_MODER             (PIN_MODE_OUTPUT(GPIOB_LED_MODE) | \
                                      PIN_MODE_OUTPUT(GPIOB_LED_ERROR) | \
+                                     PIN_MODE_OUTPUT(GPIOB_LED_RUN) | \
                                      PIN_MODE_ALTERNATE(GPIOB_SWO) | \
                                      PIN_MODE_ALTERNATE(GPIOB_TRST) | \
                                      PIN_MODE_INPUT(GPIOB_5) | \
@@ -485,15 +484,15 @@
                                      PIN_MODE_ALTERNATE(GPIOB_SDA) | \
                                      PIN_MODE_ALTERNATE(GPIOB_CAN_RX) | \
                                      PIN_MODE_ALTERNATE(GPIOB_CAN_TX) | \
-                                     PIN_MODE_OUTPUT(GPIOB_LED_RUN) | \
                                      PIN_MODE_OUTPUT(GPIOB_EN_PWM_OUT) | \
+                                     PIN_MODE_INPUT(GPIOB_11) | \
                                      PIN_MODE_ALTERNATE(GPIOB_PWM_BREAK) | \
                                      PIN_MODE_ALTERNATE(GPIOB_PWM_AL) | \
                                      PIN_MODE_ALTERNATE(GPIOB_PWM_BL) | \
                                      PIN_MODE_ALTERNATE(GPIOB_PWM_CL))
-#define VAL_GPIOB_OTYPER            (PIN_OTYPE_PUSHPULL(GPIOB_LED_PWM) | \
-                                     PIN_OTYPE_PUSHPULL(GPIOB_LED_MODE) | \
+#define VAL_GPIOB_OTYPER            (PIN_OTYPE_PUSHPULL(GPIOB_LED_MODE) | \
                                      PIN_OTYPE_PUSHPULL(GPIOB_LED_ERROR) | \
+                                     PIN_OTYPE_PUSHPULL(GPIOB_LED_RUN) | \
                                      PIN_OTYPE_PUSHPULL(GPIOB_SWO) | \
                                      PIN_OTYPE_PUSHPULL(GPIOB_TRST) | \
                                      PIN_OTYPE_PUSHPULL(GPIOB_5) | \
@@ -501,15 +500,15 @@
                                      PIN_OTYPE_OPENDRAIN(GPIOB_SDA) | \
                                      PIN_OTYPE_PUSHPULL(GPIOB_CAN_RX) | \
                                      PIN_OTYPE_PUSHPULL(GPIOB_CAN_TX) | \
-                                     PIN_OTYPE_PUSHPULL(GPIOB_LED_RUN) | \
                                      PIN_OTYPE_OPENDRAIN(GPIOB_EN_PWM_OUT) | \
+                                     PIN_OTYPE_PUSHPULL(GPIOB_11) | \
                                      PIN_OTYPE_PUSHPULL(GPIOB_PWM_BREAK) | \
                                      PIN_OTYPE_PUSHPULL(GPIOB_PWM_AL) | \
                                      PIN_OTYPE_PUSHPULL(GPIOB_PWM_BL) | \
                                      PIN_OTYPE_PUSHPULL(GPIOB_PWM_CL))
-#define VAL_GPIOB_OSPEEDR           (PIN_OSPEED_HIGH(GPIOB_LED_PWM) | \
-                                     PIN_OSPEED_HIGH(GPIOB_LED_MODE) | \
+#define VAL_GPIOB_OSPEEDR           (PIN_OSPEED_HIGH(GPIOB_LED_MODE) | \
                                      PIN_OSPEED_HIGH(GPIOB_LED_ERROR) | \
+                                     PIN_OSPEED_HIGH(GPIOB_LED_RUN) | \
                                      PIN_OSPEED_HIGH(GPIOB_SWO) | \
                                      PIN_OSPEED_HIGH(GPIOB_TRST) | \
                                      PIN_OSPEED_HIGH(GPIOB_5) | \
@@ -517,15 +516,15 @@
                                      PIN_OSPEED_HIGH(GPIOB_SDA) | \
                                      PIN_OSPEED_HIGH(GPIOB_CAN_RX) | \
                                      PIN_OSPEED_HIGH(GPIOB_CAN_TX) | \
-                                     PIN_OSPEED_HIGH(GPIOB_LED_RUN) | \
                                      PIN_OSPEED_LOW(GPIOB_EN_PWM_OUT) | \
+                                     PIN_OSPEED_HIGH(GPIOB_11) | \
                                      PIN_OSPEED_LOW(GPIOB_PWM_BREAK) | \
                                      PIN_OSPEED_LOW(GPIOB_PWM_AL) | \
                                      PIN_OSPEED_LOW(GPIOB_PWM_BL) | \
                                      PIN_OSPEED_LOW(GPIOB_PWM_CL))
-#define VAL_GPIOB_PUPDR             (PIN_PUPDR_FLOATING(GPIOB_LED_PWM) | \
-                                     PIN_PUPDR_FLOATING(GPIOB_LED_MODE) | \
+#define VAL_GPIOB_PUPDR             (PIN_PUPDR_FLOATING(GPIOB_LED_MODE) | \
                                      PIN_PUPDR_FLOATING(GPIOB_LED_ERROR) | \
+                                     PIN_PUPDR_FLOATING(GPIOB_LED_RUN) | \
                                      PIN_PUPDR_PULLUP(GPIOB_SWO) | \
                                      PIN_PUPDR_PULLUP(GPIOB_TRST) | \
                                      PIN_PUPDR_PULLUP(GPIOB_5) | \
@@ -533,15 +532,15 @@
                                      PIN_PUPDR_PULLUP(GPIOB_SDA) | \
                                      PIN_PUPDR_FLOATING(GPIOB_CAN_RX) | \
                                      PIN_PUPDR_FLOATING(GPIOB_CAN_TX) | \
-                                     PIN_PUPDR_FLOATING(GPIOB_LED_RUN) | \
                                      PIN_PUPDR_PULLDOWN(GPIOB_EN_PWM_OUT) | \
+                                     PIN_PUPDR_FLOATING(GPIOB_11) | \
                                      PIN_PUPDR_PULLDOWN(GPIOB_PWM_BREAK) | \
                                      PIN_PUPDR_PULLDOWN(GPIOB_PWM_AL) | \
                                      PIN_PUPDR_PULLDOWN(GPIOB_PWM_BL) | \
                                      PIN_PUPDR_PULLDOWN(GPIOB_PWM_CL))
-#define VAL_GPIOB_ODR               (PIN_ODR_HIGH(GPIOB_LED_PWM) | \
-                                     PIN_ODR_HIGH(GPIOB_LED_MODE) | \
+#define VAL_GPIOB_ODR               (PIN_ODR_HIGH(GPIOB_LED_MODE) | \
                                      PIN_ODR_HIGH(GPIOB_LED_ERROR) | \
+                                     PIN_ODR_HIGH(GPIOB_LED_RUN) | \
                                      PIN_ODR_HIGH(GPIOB_SWO) | \
                                      PIN_ODR_HIGH(GPIOB_TRST) | \
                                      PIN_ODR_HIGH(GPIOB_5) | \
@@ -549,30 +548,28 @@
                                      PIN_ODR_HIGH(GPIOB_SDA) | \
                                      PIN_ODR_HIGH(GPIOB_CAN_RX) | \
                                      PIN_ODR_HIGH(GPIOB_CAN_TX) | \
-                                     PIN_ODR_HIGH(GPIOB_LED_RUN) | \
                                      PIN_ODR_LOW(GPIOB_EN_PWM_OUT) | \
+                                     PIN_ODR_LOW(GPIOB_11) | \
                                      PIN_ODR_LOW(GPIOB_PWM_BREAK) | \
                                      PIN_ODR_LOW(GPIOB_PWM_AL) | \
                                      PIN_ODR_LOW(GPIOB_PWM_BL) | \
                                      PIN_ODR_LOW(GPIOB_PWM_CL))
-#define VAL_GPIOB_AFRL              (PIN_AFIO_AF(GPIOB_LED_PWM, 0) | \
-                                     PIN_AFIO_AF(GPIOB_LED_MODE, 0) | \
+#define VAL_GPIOB_AFRL              (PIN_AFIO_AF(GPIOB_LED_MODE, 0) | \
                                      PIN_AFIO_AF(GPIOB_LED_ERROR, 0) | \
+                                     PIN_AFIO_AF(GPIOB_LED_RUN, 0) | \
                                      PIN_AFIO_AF(GPIOB_SWO, 0) | \
                                      PIN_AFIO_AF(GPIOB_TRST, 0) | \
                                      PIN_AFIO_AF(GPIOB_5, 0) | \
                                      PIN_AFIO_AF(GPIOB_SCL, 4) | \
                                      PIN_AFIO_AF(GPIOB_SDA, 4))
-#define VAL_GPIOB_AFRH              (PIN_AFIO_AF(GPIOB_CAN_RX, 2) | \
-                                     PIN_AFIO_AF(GPIOB_CAN_TX, 2) | \
-                                     PIN_AFIO_AF(GPIOB_LED_RUN, 0) | \
+#define VAL_GPIOB_AFRH              (PIN_AFIO_AF(GPIOB_CAN_RX, 9) | \
+                                     PIN_AFIO_AF(GPIOB_CAN_TX, 9) | \
                                      PIN_AFIO_AF(GPIOB_EN_PWM_OUT, 0) | \
+                                     PIN_AFIO_AF(GPIOB_11, 0) | \
                                      PIN_AFIO_AF(GPIOB_PWM_BREAK, 1) | \
                                      PIN_AFIO_AF(GPIOB_PWM_AL, 1) | \
                                      PIN_AFIO_AF(GPIOB_PWM_BL, 1) | \
                                      PIN_AFIO_AF(GPIOB_PWM_CL, 1))
-///FIXME PB8 goes to PWM4CH3 for debugging
-///FIXME PB9 goes to PWM4CH4 for debugging
 /*
  * GPIOC setup:
  *
@@ -581,13 +578,13 @@
  * PC2  - AIN_CUR_C_DC              (analog).
  * PC3  - AIN_CUR_C_AC              (analog).
  * PC4  - 4                         (input pullup).
- * PC5  - 5                         (input pullup).
+ * PC5  - LED_PWM                   (output pushpull).
  * PC6  - 6                         (input pullup).
  * PC7  - 7                         (input pullup).
  * PC8  - 8                         (input pullup).
  * PC9  - 9                         (input pullup).
- * PC10 - DISP_TX                   (input pulldown).
- * PC11 - DISP_RX                   (input pullup).
+ * PC10 - DISP_TX                   (alternate 7).
+ * PC11 - DISP_RX                   (alternate 7).
  * PC12 - 12                        (input pullup).
  * PC13 - HALL_A                    (input pulldown).
  * PC14 - HALL_B                    (input pulldown).
@@ -598,7 +595,7 @@
                                      PIN_MODE_ANALOG(GPIOC_AIN_CUR_C_DC) | \
                                      PIN_MODE_ANALOG(GPIOC_AIN_CUR_C_AC) | \
                                      PIN_MODE_INPUT(GPIOC_4) | \
-                                     PIN_MODE_INPUT(GPIOC_5) | \
+                                     PIN_MODE_OUTPUT(GPIOC_LED_PWM) | \
                                      PIN_MODE_INPUT(GPIOC_6) | \
                                      PIN_MODE_INPUT(GPIOC_7) | \
                                      PIN_MODE_INPUT(GPIOC_8) | \
@@ -614,7 +611,7 @@
                                      PIN_OTYPE_PUSHPULL(GPIOC_AIN_CUR_C_DC) | \
                                      PIN_OTYPE_PUSHPULL(GPIOC_AIN_CUR_C_AC) | \
                                      PIN_OTYPE_PUSHPULL(GPIOC_4) | \
-                                     PIN_OTYPE_PUSHPULL(GPIOC_5) | \
+                                     PIN_OTYPE_PUSHPULL(GPIOC_LED_PWM) | \
                                      PIN_OTYPE_PUSHPULL(GPIOC_6) | \
                                      PIN_OTYPE_PUSHPULL(GPIOC_7) | \
                                      PIN_OTYPE_PUSHPULL(GPIOC_8) | \
@@ -630,7 +627,7 @@
                                      PIN_OSPEED_HIGH(GPIOC_AIN_CUR_C_DC) | \
                                      PIN_OSPEED_HIGH(GPIOC_AIN_CUR_C_AC) | \
                                      PIN_OSPEED_HIGH(GPIOC_4) | \
-                                     PIN_OSPEED_HIGH(GPIOC_5) | \
+                                     PIN_OSPEED_HIGH(GPIOC_LED_PWM) | \
                                      PIN_OSPEED_HIGH(GPIOC_6) | \
                                      PIN_OSPEED_HIGH(GPIOC_7) | \
                                      PIN_OSPEED_HIGH(GPIOC_8) | \
@@ -646,7 +643,7 @@
                                      PIN_PUPDR_FLOATING(GPIOC_AIN_CUR_C_DC) | \
                                      PIN_PUPDR_FLOATING(GPIOC_AIN_CUR_C_AC) | \
                                      PIN_PUPDR_PULLUP(GPIOC_4) | \
-                                     PIN_PUPDR_PULLUP(GPIOC_5) | \
+                                     PIN_PUPDR_FLOATING(GPIOC_LED_PWM) | \
                                      PIN_PUPDR_PULLUP(GPIOC_6) | \
                                      PIN_PUPDR_PULLUP(GPIOC_7) | \
                                      PIN_PUPDR_PULLUP(GPIOC_8) | \
@@ -662,7 +659,7 @@
                                      PIN_ODR_HIGH(GPIOC_AIN_CUR_C_DC) | \
                                      PIN_ODR_HIGH(GPIOC_AIN_CUR_C_AC) | \
                                      PIN_ODR_HIGH(GPIOC_4) | \
-                                     PIN_ODR_HIGH(GPIOC_5) | \
+                                     PIN_ODR_HIGH(GPIOC_LED_PWM) | \
                                      PIN_ODR_HIGH(GPIOC_6) | \
                                      PIN_ODR_HIGH(GPIOC_7) | \
                                      PIN_ODR_HIGH(GPIOC_8) | \
@@ -678,7 +675,7 @@
                                      PIN_AFIO_AF(GPIOC_AIN_CUR_C_DC, 0) | \
                                      PIN_AFIO_AF(GPIOC_AIN_CUR_C_AC, 0) | \
                                      PIN_AFIO_AF(GPIOC_4, 0) | \
-                                     PIN_AFIO_AF(GPIOC_5, 0) | \
+                                     PIN_AFIO_AF(GPIOC_LED_PWM, 0) | \
                                      PIN_AFIO_AF(GPIOC_6, 0) | \
                                      PIN_AFIO_AF(GPIOC_7, 0))
 #define VAL_GPIOC_AFRH              (PIN_AFIO_AF(GPIOC_8, 0) | \

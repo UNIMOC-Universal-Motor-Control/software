@@ -32,6 +32,18 @@
 #include "hardware.hpp"
 
 
+#ifndef HARDWARE_NAME
+#error "HARDWARE_NAME needs to be defined in hardware.hpp of current hardware."
+#endif
+
+#ifndef HARDWARE_CAPABIITY_RANDOM
+#error "HARDWARE_CAPABIITY_RANDOM needs to be defined in hardware.hpp of current hardware."
+#endif
+
+#ifndef HARDWARE_CAPABIITY_CAN_FD
+#error "HARDWARE_CAPABIITY_CAN_FD needs to be defined in hardware.hpp of current hardware."
+#endif
+
 namespace hardware {
 
 	///< Motor Phases. Normally fixed to 3
@@ -39,6 +51,11 @@ namespace hardware {
 
 	///< reference to thread to be woken up in the hardware control cycle.
 	extern chibios_rt::ThreadReference  control_thread;
+
+	/**
+	 * Initialize hardware with outputs disabled!
+	 */
+	extern void Init();
 
 	namespace pwm {
 		/*
@@ -86,11 +103,6 @@ namespace hardware {
 		extern std::uint32_t Frequency(const std::uint32_t freq);
 
 		/**
-		 * Initialize PWM hardware with outputs disabled!
-		 */
-		extern void Init();
-
-		/**
 		 * Set the normalized duty cycles for each phase
 		 * @param dutys -1 = LOW, 0 = 50%, 1=HIGH
 		 */
@@ -131,6 +143,13 @@ namespace hardware {
 	extern float Fc(void);
 
 	/**
+	  @brief         Floating-point sine and cosine function.
+	  @param 	     theta   input value in q31
+	  @retval	     out     sine and cosine value of theta
+	 */
+	systems::sin_cos SinCos(const std::int32_t theta);
+
+	/**
 	 * analog value releated functions
 	 */
 	namespace analog
@@ -144,11 +163,6 @@ namespace hardware {
 		 * @return analog in put 0 - 1
 		 */
 		float input(void);
-
-		/**
-		 * Initialize ADC hardware with outputs disabled!
-		 */
-		extern void Init();
 
 		namespace current {
 
@@ -223,19 +237,6 @@ namespace hardware {
 	 */
 	namespace digital
 	{
-		typedef enum input_e
-		{
-			MOTOR_TEMP_DI,
-		} input_te;
-
-		/**
-		 * Get the level of a digital input
-		 * @note inputs that are not available in hardware are always false
-		 * @param in selects one of the digital inputs to read
-		 * @return level of the input: true = high
-		 */
-		bool input(const input_te in);
-
 		namespace hall {
 			/**
 			 * get the sector which is represented by the hall sensors
@@ -243,7 +244,7 @@ namespace hardware {
 			 */
 			uint8_t State(void);
 		} /* namespace hall */
-	}
+	} /* namespace digital */
 
 	namespace memory
 	{
@@ -279,29 +280,17 @@ namespace hardware {
 		extern uint32_t Crc32(const void* const buffer, const uint32_t length);
 	} /* namespace memory*/
 
-	namespace serial {
+#if HARDWARE_CAPABIITY_RANDOM == TRUE
+	namespace random {
 		/**
-		 * Send the buffer via Serial to the Display
+		 * Generate random number of variable size
 		 * @param buffer pointer to the send buffer
 		 * @param length of the send buffer in bytes
+		 * @retval true on error
 		 */
-		extern void Send(char* buffer, uint32_t length);
-
-		/**
-		 * Receive data from the Display
-		 * @param buffer pointer to the receive buffer
-		 * @param length of the receive buffer.
-		 */
-		extern void Receive(char* buffer, uint32_t length);
-	} /* namespace serial */
-
-
-	namespace i2c {
-		/**
-		 * initialize i2c driver instance
-		 */
-		extern void Init(void);
+		extern bool Generate(std::uint8_t* buffer, const std::uint32_t size);
 	}
+#endif
 
 } /* namespace hardware */
 

@@ -26,18 +26,14 @@
 #define HARDWARE_CONFIG_HPP_
 
 
-
 ///< Hardware Node Name
 #define HARDWARE_NAME "UNIMIC-PHHVr1"
 
-namespace hardware {
-	namespace capability {
-		constexpr bool UAVCAN = false;
+///< Hardware supports random number generation: STM32G473 has TRNG
+#define HARDWARE_CAPABIITY_RANDOM 				TRUE
 
-		constexpr bool PAS_TORQUE = false;
+///< Hardware supports CAN-FD: STM32F446 has CAN-FD
+#define HARDWARE_CAPABIITY_CAN_FD				TRUE
 
-		constexpr bool KT_DISPLAY = false;
-	} /* namespace capability */
-} /* namespace hardware */
 
 #endif /* HARDWARE_CONFIG_HPP_ */

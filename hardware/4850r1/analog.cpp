@@ -277,7 +277,7 @@ static ADCConversionGroup adcgrpcfg3 = {
 /**
  * Initialize ADC hardware
  */
-void hardware::analog::Init(void)
+void hardware_analog_Init(void)
 {
 	/*
 	 * Fixed an errata on the STM32F7xx, the DAC clock is required for ADC

@@ -22,17 +22,35 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <cstring>
-#include <cstdint>
-#include <cmath>
-#include <array>
-#include <algorithm>
+
 #include "hardware_interface.hpp"
 #include "hal.h"
+#include "hal_mfs.h"
 
-using namespace hardware::digital;
+extern void hardware_pwm_Init(void);
+extern void hardware_analog_Init(void);
 
+/**
+ * Initialize hardware with outputs disabled!
+ */
+void hardware::Init()
+{
+	hardware_pwm_Init();
+	hardware_analog_Init();
+	trngInit();
+	trngStart(&TRNGD1, NULL);
+}
 
+///< embedded flash eeprom driver config
+MFSConfig mfscfg1 = {
+  .flashp           = (BaseFlash *)&EFLD1,
+  .erased           = 0xFFFFFFFFU,
+  .bank_size        = 2048U,
+  .bank0_start      = 254U,
+  .bank0_sectors    = 1U,
+  .bank1_start      = 255U,
+  .bank1_sectors    = 1U
+};
 
 /**
  * get the angle which is represented by the hall sensors
@@ -41,30 +59,16 @@ using namespace hardware::digital;
  */
 uint8_t hardware::digital::hall::State(void)
 {
-	return palReadGroup(GPIOC, 0x0007, 13);
+	return 0;
 }
-
 
 /**
- * Get the level of a digital input
- * @note inputs that are not available in hardware are always false
- * @param in selects one of the digital inputs to read
- * @return level of the input: true = high
+ * Generate random number of variable size
+ * @param buffer pointer to the send buffer
+ * @param length of the send buffer in bytes
  */
-bool hardware::digital::input(const input_te in)
+bool hardware::random::Generate(std::uint8_t* buffer, const std::uint32_t size)
 {
-	static bool changed = false;
-	bool level = false;
-	switch(in)
-	{
-	case MOTOR_TEMP_DI:
-		if(!changed)
-		{
-			palSetLineMode(LINE_AIN_MOT_TEMP, PAL_MODE_INPUT_PULLUP);
-			changed = true;
-		}
-		if(palReadLine(LINE_AIN_MOT_TEMP)) level = true;
-		break;
-	}
-	return level;
+	return trngGenerate(&TRNGD1, size, buffer);
 }
+

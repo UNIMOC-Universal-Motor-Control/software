@@ -117,7 +117,7 @@ include ./board/board.mk
 include ${PROJECTDIR}/unimoc.mk
 
 # Define linker script file here
-LDSCRIPT= $(STARTUPLD)/STM32G474xE.ld
+LDSCRIPT= ./STM32G474xE.ld
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -127,7 +127,7 @@ CSRC = $(ALLCSRC) \
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
-CPPSRC = $(ALLCPPSRC) pwm.cpp analog.cpp digital.cpp eeprom.cpp serial.cpp math.cpp
+CPPSRC = $(ALLCPPSRC) pwm.cpp analog.cpp hardware.cpp ../common/efld.cpp ../common/sw_sincos.cpp
 
 # List ASM source files here.
 ASMSRC = $(ALLASMSRC)

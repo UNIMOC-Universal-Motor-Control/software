@@ -786,8 +786,6 @@ void uavcan::heartbeat::main(void)
 {
 	setName("UAVCAN HEARTBEAT");
 
-	trngStart(&TRNGD1, NULL);
-
 	/*
 	 * Normal main() thread activity, sleeping in a loop.
 	 */
@@ -836,7 +834,8 @@ void uavcan::heartbeat::main(void)
 				(void) canardTxPush(&canard, &transfer);
 			}
 		}
-		else  // If we don't have a node-ID, obtain one by publishing allocation request messages until we get a response.
+#if HARDWARE_CAPABIITY_RANDOM == TRUE
+		else // If we don't have a node-ID, obtain one by publishing allocation request messages until we get a response.
 		{
 			std::uint8_t random;
 			// The Specification says that the allocation request publication interval shall be randomized.
@@ -844,7 +843,7 @@ void uavcan::heartbeat::main(void)
 			// There are other ways to do it, of course. See the docs in the Specification or in the DSDL definition here:
 			// https://github.com/UAVCAN/public_regulated_data_types/blob/master/uavcan/pnp/8165.NodeIDAllocationData.2.0.uavcan
 			// Note that a high-integrity/safety-certified application is unlikely to be able to rely on this feature.
-			bool err = trngGenerate(&TRNGD1, 1, &random);
+			bool err = hardware::random::Generate(&random, sizeof(random));
 			if (!err && random > 127)  // NOLINT
 			{
 				// Note that this will only work over CAN FD. If you need to run PnP over Classic CAN, use message v1.0.
@@ -872,6 +871,7 @@ void uavcan::heartbeat::main(void)
 				}
 			}
 		}
+#endif
 		sleepUntilWindowed(deadline, deadline + CYCLE_TIME);
 	}
 

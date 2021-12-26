@@ -28,6 +28,7 @@
 #include <array>
 #include <algorithm>
 #include "systems.hpp"
+#include "hardware_interface.hpp"
 
 
 constexpr uint32_t FAST_MATH_TABLE_SIZE = 512;
@@ -154,8 +155,10 @@ float sqrtf(const float in)
   @param 	     theta   input value in q31
   @retval	     out     points to processed sine cosine output
  */
-systems::sin_cos systems::SinCos(const std::int32_t theta)
+systems::sin_cos hardware::SinCos(const std::int32_t theta)
 {
+	using namespace systems;
+
 	sin_cos out = {0.0f, 0.0f};
 	constexpr float _1by2PI = 0.5f/(float)std::numeric_limits<std::int32_t>::max();
 	float Dn = math::_2PI / FAST_MATH_TABLE_SIZE;    /* delta between the two points (fixed), in this case 2*pi/FAST_MATH_TABLE_SIZE */

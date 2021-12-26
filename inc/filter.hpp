@@ -32,6 +32,7 @@
 #include <climits>
 #include <complex>
 #include "systems.hpp"
+#include "hardware_interface.hpp"
 
 
 namespace filter
@@ -371,7 +372,7 @@ public:
 	void SetFrequency(const float F, const float Fs)
 	{
 		k = (uint32_t)(F/Fs*(float)N);
-		sc = systems::SinCos(unit::Q31R(math::_2PI * (float)k/(float)N));
+		sc = hardware::SinCos(unit::Q31R(math::_2PI * (float)k/(float)N));
 		coeff = 2.0f*sc.cos;
 	}
 
