@@ -322,23 +322,45 @@ typedef struct settings_s
 	 */
 	struct uavcan_s
 	{
+		///< true if CAN-FD is enabled.
+		bool fd;
+
 		///< ID of the node in UAVCAN
-		uint16_t node_id;
+		std::uint16_t node_id;
 
-		///< subject ID for servo feedback message
-		uint16_t servo_feedback;
+		///< CAN Bus base bit rate.
+		std::uint32_t bitrate;
 
-		///< subject ID for servo dynamics message
-		uint16_t servo_dynamics;
+		/**
+		 * @struct subject_s
+		 * @brief setable subject IDs of messages
+		 *
+		 */
+		struct subject_s
+		{
+			/**
+			 * @struct servo_s
+			 * @brief subject IDs of servo related messages
+			 *
+			 */
+			struct servo_s
+			{
+				///< subject ID for servo feedback message
+				std::uint16_t feedback;
 
-		///< subject ID for servo power message
-		uint16_t servo_power;
+				///< subject ID for servo dynamics message
+				std::uint16_t dynamics;
 
-		///< subject ID for servo setpoint
-		uint16_t servo_setpoint;
+				///< subject ID for servo power message
+				std::uint16_t power;
 
-		///< subject ID for servo readiness (Armed state)
-		uint16_t servo_readiness;
+				///< subject ID for servo setpoint
+				std::uint16_t setpoint;
+
+				///< subject ID for servo readiness (Armed state)
+				std::uint16_t readiness;
+			} servo;
+		} subject;
 	}uavcan;
 
 	///< crc32 value for the hole settings

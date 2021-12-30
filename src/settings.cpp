@@ -309,25 +309,47 @@ __attribute__((aligned (32))) settings_ts settings =
 	 * @struct uavcan_s
 	 * @brief uavcan specific values
 	 */
-	.uavcan
+	.uavcan =
 	{
+		///< true if CAN-FD is enabled.
+		.fd = false,
+
 		///< ID of the node in UAVCAN
 		.node_id = std::numeric_limits<std::uint16_t>::max(),
 
-		///< subject ID for servo feedback message
-		.servo_feedback = std::numeric_limits<std::uint16_t>::max(),
+		///< CAN Bus base bit rate.
+		.bitrate = 500000,
 
-		///< subject ID for servo dynamics message
-		.servo_dynamics = std::numeric_limits<std::uint16_t>::max(),
+		/**
+		 * @struct subject_s
+		 * @brief setable subject IDs of messages
+		 *
+		 */
+		.subject =
+		{
+			/**
+			 * @struct servo_s
+			 * @brief subject IDs of servo related messages
+			 *
+			 */
+			.servo =
+			{
+				///< subject ID for servo feedback message
+				.feedback = std::numeric_limits<std::uint16_t>::max(),
 
-		///< subject ID for servo power message
-		.servo_power = std::numeric_limits<std::uint16_t>::max(),
+				///< subject ID for servo dynamics message
+				.dynamics = std::numeric_limits<std::uint16_t>::max(),
 
-		///< subject ID for servo setpoint
-		.servo_setpoint = std::numeric_limits<std::uint16_t>::max(),
+				///< subject ID for servo power message
+				.power = std::numeric_limits<std::uint16_t>::max(),
 
-		///< subject ID for servo readiness (Armed state)
-		.servo_readiness = std::numeric_limits<std::uint16_t>::max(),
+				///< subject ID for servo setpoint
+				.setpoint = std::numeric_limits<std::uint16_t>::max(),
+
+				///< subject ID for servo readiness (Armed state)
+				.readiness = std::numeric_limits<std::uint16_t>::max(),
+			},
+		},
 	},
 
 	///< crc32 value for the hole settings

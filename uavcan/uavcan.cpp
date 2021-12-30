@@ -28,7 +28,6 @@
 #include "uavcan.hpp"
 #include "main.hpp"
 #include "hardware.hpp"
-#include "bxcan.h"
 #include "uavcan/node/Heartbeat_1_0.h"
 #include "uavcan/pnp/NodeIDAllocationData_1_0.h"
 #include "uavcan/node/GetInfo_1_0.h"
@@ -44,11 +43,111 @@
 #include "reg/udral/physics/dynamics/rotation/PlanarTs_0_1.h"
 #include "reg/udral/physics/electricity/PowerTs_0_1.h"
 
+namespace uavcan
+{
+	/**
+	 * this thread handles the heartbeat of the node or
+	 * if anonymous it sends the node allocation requests
+	 */
+	class can_heartbeat : public chibios_rt::BaseStaticThread<1024>
+	{
+	private:
+		static constexpr systime_t 	CYCLE_TIME = OSAL_MS2I(1000);
+		systime_t 					deadline;
+	protected:
+		/**
+		 * Thread function
+		 */
+		virtual void main(void);
+
+	public:
+
+		can_heartbeat(void):deadline(0) { };
+	};
+
+	/**
+	 * this thread takes care of sending the queued frames
+	 */
+	class can_tx : public chibios_rt::BaseStaticThread<256>
+	{
+	private:
+		static std::uint8_t count;
+		const std::uint8_t interface;
+
+		event_listener_t el_tx_empty;
+		event_listener_t el_tx_needed;
+	protected:
+		/**
+		 * Thread function
+		 */
+		virtual void main(void);
+
+	public:
+		can_tx(void): interface(count) {count++;};
+	};
+
+	/**
+	 * this thread takes care of sending the queued frames
+	 */
+	class can_rx : public chibios_rt::BaseStaticThread<256>
+	{
+	private:
+		static std::uint8_t count;
+		const std::uint8_t interface;
+
+		event_listener_t el_rx_full;
+
+    	CANRxFrame rxmsg;
+		CanardRxTransfer transfer;
+		CanardRxSubscription* subscription;
+	protected:
+		/**
+		 * Thread function
+		 */
+		virtual void main(void);
+
+	public:
+		can_rx(void): interface(count) {count++;};
+	};
+
+	typedef enum register_type_e
+	{
+		SIGNED,
+		UNSIGNED,
+		FLOATING
+	} register_type_te;
+
+	/**
+	 * @struct uavcan_register_s
+	 * @brief definition of one register in the register table for LIST and ACCESS requests
+	 *
+	 */
+	typedef struct register_s
+	{
+		///< name of the register in the style of unimoc.motor.rotor.r
+		char name[50U];
+		///< pointer to the internal value represented by the register
+		void*	value;
+		///< type of the value this register is pointing on, note 32bit wide values is expected.
+		register_type_te type;
+		///< register variable is writable
+		bool _mutable;
+		///< register variable is saved in non-volatile memory
+		bool persistant;
+	} register_ts;
+
+	constexpr register_ts register_table[] = {
+			/* register name							pointer to value	type		mutable		persistent */
+			{"uavcan.node.id", 					&settings.uavcan.node_id,	UNSIGNED, 	true, 		true		},
+			{"", 												nullptr,	UNSIGNED, 	false, 		false		},
+	};
+}
+
 ///< Node uses hardware name for identification
 #define NODE_NAME HARDWARE_NAME
 
 ///< heap size for the o1heap instance for UAVCAN frames
-static constexpr size_t O1HEAP_SIZE = 4096;
+static constexpr size_t O1HEAP_SIZE = 8192;
 
 static constexpr std::uint16_t FRAMES_PER_ITER = 1000;
 
@@ -58,8 +157,24 @@ static char o1heap[O1HEAP_SIZE];
 ///< o1heap allocator instance pointer
 static O1HeapInstance* o1allocator;
 
-///> libcanard instance for UAVCAN communication
+///< libcanard instance for UAVCAN communication
 static CanardInstance canard;
+
+///< canard transmission queues for each interface.
+static CanardTxQueue tx_queues[HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES];
+
+///< interface counter for the constructors of the can threads
+std::uint8_t uavcan::can_tx::count = 0;
+std::uint8_t uavcan::can_rx::count = 0;
+
+///< can transmission handling thread
+static uavcan::can_tx can_send[HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES];
+
+///< can receive handling thread
+static uavcan::can_rx can_recv[HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES];
+
+///< can transmission needed event.
+static event_source_t es_tx_needed[HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES];
 
 ///> uptime counter in seconds
 static std::uint32_t uptime;
@@ -67,23 +182,8 @@ static std::uint32_t uptime;
 ///< deadline for arming timeout
 static systime_t arm_deadline = 0;
 
-/// A transfer-ID is an integer that is incremented whenever a new message is published on a given subject.
-/// It is used by the protocol for deduplication, message loss detection, and other critical things.
-/// For CAN, each value can be of type uint8_t, but we use larger types for genericity and for statistical purposes,
-/// as large values naturally contain the number of times each subject was published to.
-static struct next_transfer_id_s
-{
-	uint32_t node_heartbeat;
-	uint32_t node_port_list;
-	uint32_t pnp_allocation;
-	uint32_t servo_fast_loop;
-} next_transfer_id;
-
-///< can handling thread
-static uavcan::rx_tx can_thread;
-
 ///< heartbeat thread
-static uavcan::heartbeat heartbeat_thread;
+static uavcan::can_heartbeat heartbeat_thread;
 
 /**
  * @fn void O1Allocate*(CanardInstance* const, const size_t)
@@ -112,24 +212,12 @@ static void O1Free(CanardInstance* const ins, void* const pointer)
 }
 
 /**
- * @fn CanardMicrosecond getMonotonicMicroseconds(void)
- * @brief get Systemsticks from start in micro seconds
- *
- * @return micro secounds from startup
- */
-static CanardMicrosecond getMonotonicMicroseconds(void)
-{
-	const uint64_t us_per_tick = 1000000ULL / OSAL_ST_FREQUENCY;
-	return (CanardMicrosecond)osalOsGetSystemTimeX() * us_per_tick;
-}
-
-/**
  * @fn void ProcessGetNodeInfo(const CanardTransfer*)
  * @brief asseamble GetInfo response
  *
  * @param transfer 		GetInfo Request
  */
-static void ProcessGetNodeInfo(const CanardTransfer* transfer)
+static void ProcessGetNodeInfo(const CanardRxTransfer* transfer)
 {
 
 	// The request object is empty so we don't bother deserializing it. Just send the response.
@@ -153,15 +241,34 @@ static void ProcessGetNodeInfo(const CanardTransfer* transfer)
 
 	uint8_t      serialized[uavcan_node_GetInfo_Response_1_0_SERIALIZATION_BUFFER_SIZE_BYTES_] = {0};
 	size_t       serialized_size = sizeof(serialized);
-	const int8_t res = uavcan_node_GetInfo_Response_1_0_serialize_(&resp, &serialized[0], &serialized_size);
-	if (res >= 0)
+	const int8_t err = uavcan_node_GetInfo_Response_1_0_serialize_(&resp, &serialized[0], &serialized_size);
+
+	osalDbgAssert(err >= 0, "UAVCAN Get Node Info Response serialize error");
+
+	if (err >= 0)
 	{
-		CanardTransfer rt = *transfer;  // Response transfers are similar to their requests.
-		rt.timestamp_usec = transfer->timestamp_usec + 1000000ULL;
-		rt.transfer_kind  = CanardTransferKindResponse;
-		rt.payload_size   = serialized_size;
-		rt.payload        = &serialized[0];
-		(void) canardTxPush(&canard, &rt);
+		const CanardTransferMetadata transfer_metadata = {
+				.priority       = CanardPriorityNominal,
+				.transfer_kind  = CanardTransferKindMessage,
+				.port_id        = uavcan_node_GetInfo_1_0_FIXED_PORT_ID_,
+				.remote_node_id = CANARD_NODE_ID_UNSET,       // Messages cannot be unicast, so use UNSET.
+				.transfer_id    = transfer->metadata.transfer_id,
+		};
+
+		for(std::uint8_t i = 0; i < HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES; i++)
+		{
+			int32_t result = canardTxPush(&tx_queues[i], // Call this once per redundant CAN interface (queue).
+					&canard,
+					0,			     	       // Zero if transmission deadline is not limited.
+					&transfer_metadata,
+					serialized_size,           // Size of the message payload (see Nunavut transpiler).
+					&serialized[0]);
+
+			// An error has occurred: either an argument is invalid, the TX queue is full, or we've run out of memory.
+			// It is possible to statically prove that an out-of-memory will never occur for a given application if the
+			// heap is sized correctly; for background, refer to the Robson's Proof and the documentation for O1Heap.
+			osalDbgAssert(result < 0, "UAVCAN Servo Feedback tx push error");
+		}
 	}
 	else
 	{
@@ -201,7 +308,7 @@ static const uavcan::register_ts* GetRegisterByName(char* name)
  *
  * @param transfer		Register Access Request
  */
-static void ProcessRequestRegisterAccess(const CanardTransfer* transfer)
+static void ProcessRequestRegisterAccess(const CanardRxTransfer* transfer)
 {
 	uavcan_register_Access_Request_1_0 req;
 	size_t                             size = transfer->payload_size;
@@ -261,19 +368,43 @@ static void ProcessRequestRegisterAccess(const CanardTransfer* transfer)
 
 		uint8_t serialized[uavcan_register_Access_Response_1_0_SERIALIZATION_BUFFER_SIZE_BYTES_] = {0};
 		size_t  serialized_size = sizeof(serialized);
-		if (uavcan_register_Access_Response_1_0_serialize_(&resp, &serialized[0], &serialized_size) >= 0)
+		const std::int8_t err = uavcan_register_Access_Response_1_0_serialize_(&resp, &serialized[0], &serialized_size);
+
+		osalDbgAssert(err >= 0, "UAVCAN Access Response serialize error");
+
+		if (err >= 0)
 		{
-			CanardTransfer rt = *transfer;  // Response transfers are similar to their requests.
-			rt.timestamp_usec = transfer->timestamp_usec + 1000000ULL;
-			rt.transfer_kind  = CanardTransferKindResponse;
-			rt.payload_size   = serialized_size;
-			rt.payload        = &serialized[0];
-			(void) canardTxPush(&canard, &rt);
+			const CanardTransferMetadata transfer_metadata = {
+					.priority       = CanardPriorityNominal,
+					.transfer_kind  = CanardTransferKindMessage,
+					.port_id        = uavcan_register_Access_1_0_FIXED_PORT_ID_,
+					.remote_node_id = CANARD_NODE_ID_UNSET,       // Messages cannot be unicast, so use UNSET.
+					.transfer_id    = transfer->metadata.transfer_id,
+			};
+
+			for(std::uint8_t i = 0; i < HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES; i++)
+			{
+				int32_t result = canardTxPush(&tx_queues[i], // Call this once per redundant CAN interface (queue).
+						&canard,
+						0,			     	       // Zero if transmission deadline is not limited.
+						&transfer_metadata,
+						serialized_size,           // Size of the message payload (see Nunavut transpiler).
+						&serialized[0]);
+
+				// An error has occurred: either an argument is invalid, the TX queue is full, or we've run out of memory.
+				// It is possible to statically prove that an out-of-memory will never occur for a given application if the
+				// heap is sized correctly; for background, refer to the Robson's Proof and the documentation for O1Heap.
+				osalDbgAssert(result < 0, "UAVCAN Access tx push error");
+			}
+		}
+		else
+		{
+			osalDbgAssert(false, "Access response failure");
 		}
 	}
 }
 
-static void ProcessRequestList(const CanardTransfer* transfer)
+static void ProcessRequestList(const CanardRxTransfer* transfer)
 {
 	uavcan_register_List_Request_1_0 req  = {0};
 	size_t                           size = transfer->payload_size;
@@ -289,19 +420,43 @@ static void ProcessRequestList(const CanardTransfer* transfer)
 		const uavcan_register_List_Response_1_0 resp = {.name = out};
 		uint8_t serialized[uavcan_register_List_Response_1_0_SERIALIZATION_BUFFER_SIZE_BYTES_] = {0};
 		size_t  serialized_size = sizeof(serialized);
-		if (uavcan_register_List_Response_1_0_serialize_(&resp, &serialized[0], &serialized_size) >= 0)
+		const std::int8_t err = uavcan_register_List_Response_1_0_serialize_(&resp, &serialized[0], &serialized_size);
+
+		osalDbgAssert(err >= 0, "UAVCAN List Response serialize error");
+
+		if (err >= 0)
 		{
-			CanardTransfer rt = *transfer;  // Response transfers are similar to their requests.
-			rt.timestamp_usec = transfer->timestamp_usec + 1000000ULL;
-			rt.transfer_kind  = CanardTransferKindResponse;
-			rt.payload_size   = serialized_size;
-			rt.payload        = &serialized[0];
-			(void) canardTxPush(&canard, &rt);
+			const CanardTransferMetadata transfer_metadata = {
+					.priority       = CanardPriorityNominal,
+					.transfer_kind  = CanardTransferKindMessage,
+					.port_id        = uavcan_register_List_1_0_FIXED_PORT_ID_,
+					.remote_node_id = CANARD_NODE_ID_UNSET,       // Messages cannot be unicast, so use UNSET.
+					.transfer_id    = transfer->metadata.transfer_id,
+			};
+
+			for(std::uint8_t i = 0; i < HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES; i++)
+			{
+				int32_t result = canardTxPush(&tx_queues[i], // Call this once per redundant CAN interface (queue).
+						&canard,
+						0,			     	       // Zero if transmission deadline is not limited.
+						&transfer_metadata,
+						serialized_size,           // Size of the message payload (see Nunavut transpiler).
+						&serialized[0]);
+
+				// An error has occurred: either an argument is invalid, the TX queue is full, or we've run out of memory.
+				// It is possible to statically prove that an out-of-memory will never occur for a given application if the
+				// heap is sized correctly; for background, refer to the Robson's Proof and the documentation for O1Heap.
+				osalDbgAssert(result < 0, "UAVCAN List tx push error");
+			}
+		}
+		else
+		{
+			osalDbgAssert(false, "List response failure");
 		}
 	}
 }
 
-static void ProcessRequestExecuteCommand(const CanardTransfer* transfer)
+static void ProcessRequestExecuteCommand(const CanardRxTransfer* transfer)
 {
 	uavcan_node_ExecuteCommand_Request_1_1 req;
 	size_t                                 size = transfer->payload_size;
@@ -350,20 +505,44 @@ static void ProcessRequestExecuteCommand(const CanardTransfer* transfer)
 
 		uint8_t serialized[uavcan_node_ExecuteCommand_Response_1_1_SERIALIZATION_BUFFER_SIZE_BYTES_] = {0};
 		size_t  serialized_size = sizeof(serialized);
-		if (uavcan_node_ExecuteCommand_Response_1_1_serialize_(&resp, &serialized[0], &serialized_size) >= 0)
+		const std::int8_t err = uavcan_node_ExecuteCommand_Response_1_1_serialize_(&resp, &serialized[0], &serialized_size);
+
+		osalDbgAssert(err >= 0, "UAVCAN Execute Response serialize error");
+
+		if (err >= 0)
 		{
-			CanardTransfer rt = *transfer;  // Response transfers are similar to their requests.
-			rt.timestamp_usec = transfer->timestamp_usec + 1000000ULL;
-			rt.transfer_kind  = CanardTransferKindResponse;
-			rt.payload_size   = serialized_size;
-			rt.payload        = &serialized[0];
-			(void) canardTxPush(&canard, &rt);
+			const CanardTransferMetadata transfer_metadata = {
+					.priority       = CanardPriorityNominal,
+					.transfer_kind  = CanardTransferKindMessage,
+					.port_id        = uavcan_node_ExecuteCommand_1_1_FIXED_PORT_ID_,
+					.remote_node_id = CANARD_NODE_ID_UNSET,       // Messages cannot be unicast, so use UNSET.
+					.transfer_id    = transfer->metadata.transfer_id,
+			};
+
+			for(std::uint8_t i = 0; i < HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES; i++)
+			{
+				int32_t result = canardTxPush(&tx_queues[i], // Call this once per redundant CAN interface (queue).
+						&canard,
+						0,			     	       // Zero if transmission deadline is not limited.
+						&transfer_metadata,
+						serialized_size,           // Size of the message payload (see Nunavut transpiler).
+						&serialized[0]);
+
+				// An error has occurred: either an argument is invalid, the TX queue is full, or we've run out of memory.
+				// It is possible to statically prove that an out-of-memory will never occur for a given application if the
+				// heap is sized correctly; for background, refer to the Robson's Proof and the documentation for O1Heap.
+				osalDbgAssert(result < 0, "UAVCAN Execute tx push error");
+			}
+		}
+		else
+		{
+			osalDbgAssert(false, "Execute response failure");
 		}
 	}
 }
 
 /// https://github.com/UAVCAN/public_regulated_data_types/blob/master/reg/udral/service/actuator/servo/_.0.1.uavcan
-static void ProcessMessageServoSetpoint(const CanardTransfer* transfer)
+static void ProcessMessageServoSetpoint(const CanardRxTransfer* transfer)
 {
 	size_t size = transfer->payload_size;
 	reg_udral_physics_dynamics_rotation_Planar_0_1 msg;
@@ -377,7 +556,7 @@ static void ProcessMessageServoSetpoint(const CanardTransfer* transfer)
 }
 
 /// https://github.com/UAVCAN/public_regulated_data_types/blob/master/reg/udral/service/common/Readiness.0.1.uavcan
-static void ProcessMessageServiceReadiness(const CanardTransfer* transfer)
+static void ProcessMessageServiceReadiness(const CanardRxTransfer* transfer)
 {
 	size_t size = transfer->payload_size;
 	reg_udral_service_common_Readiness_0_1 msg;
@@ -397,6 +576,117 @@ static void ProcessMessageServiceReadiness(const CanardTransfer* transfer)
 }
 
 /**
+ * @fn void main(void)
+ * @brief task for handing frames from libcanard to CAN HAL
+ *
+ */
+void uavcan::can_tx::main(void)
+{
+	setName("CAN Send");
+
+	chEvtRegister(&es_tx_needed[interface], &el_tx_needed, 0);
+	chEvtRegister(&hardware::can::event[interface].txempty, &el_tx_empty, 0);
+
+	while(TRUE)
+	{
+		for (const CanardTxQueueItem* ti = NULL;
+				(ti = canardTxPeek(&tx_queues[interface])) != NULL;)  // Peek at the top of the queue.
+		{
+			if (		(0U == ti->tx_deadline_usec)
+					||  (ti->tx_deadline_usec > hardware::GetMonotonicMicroseconds()))  // Check the deadline.
+			{
+				if (hardware::can::Transmit(interface, ti->frame)) // Send the frame over this redundant CAN iface.
+				{
+					break;                             // If the driver is busy, break and retry later.
+				}
+			}
+			// After the frame is transmitted or if it has timed out while waiting, pop it from the queue and deallocate:
+			canard.memory_free(&canard, canardTxPop(&tx_queues[interface], ti));
+		}
+		// wait for either tx empty or new stuff to be transmitted
+		chEvtWaitAnyTimeout(ALL_EVENTS, OSAL_MS2I(1000));
+	}
+}
+
+
+void uavcan::can_rx::main(void)
+{
+	setName("CAN Receive");
+
+	chEvtRegister(&hardware::can::event[interface].rxfull, &el_rx_full, 0);
+
+	while(TRUE)
+	{
+		// wait for any frame received
+		const msg_t evt = chEvtWaitAnyTimeout(ALL_EVENTS, OSAL_MS2I(1000));
+
+		if (evt == MSG_OK)
+		{
+			CanardFrame received_frame;
+
+			while (hardware::can::Receive(interface, received_frame))
+			{
+				CanardMicrosecond rs_timestamp = hardware::GetMonotonicMicroseconds();
+
+				const std::int8_t result = canardRxAccept(&canard,
+						rs_timestamp,               // When the frame was received, in microseconds.
+						&received_frame,            // The CAN frame received from the bus.
+						interface,                  // If the transport is not redundant, use 0.
+						&transfer,
+						&subscription);
+
+				if (result < 0)
+				{
+					// An error has occurred: either an argument is invalid or we've ran out of memory.
+					// It is possible to statically prove that an out-of-memory will never occur for a given application if
+					// the heap is sized correctly; for background, refer to the Robson's Proof and the documentation for O1Heap.
+					// Reception of an invalid frame is NOT an error.
+				}
+				else if (result == 1)
+				{
+					if (transfer.metadata.transfer_kind == CanardTransferKindMessage)
+					{
+						size_t size = transfer.payload_size;
+						if (transfer.metadata.port_id == uavcan_pnp_NodeIDAllocationData_1_0_FIXED_PORT_ID_)
+						{
+							uavcan_pnp_NodeIDAllocationData_1_0 msg;
+							if (uavcan_pnp_NodeIDAllocationData_1_0_deserialize_(&msg, (uint8_t*)transfer.payload, &size) >= 0)
+							{
+								std::uint64_t uid = DBGMCU->IDCODE;
+								std::uint16_t node_id = msg.allocated_node_id.elements[0].value;
+
+								if ((node_id <= CANARD_NODE_ID_MAX) && (std::memcmp(&uid, &msg.unique_id_hash, sizeof(uid)) == 0))
+								{
+									settings.uavcan.node_id = node_id;
+								}
+							}
+						}
+						else
+						{
+							osalDbgAssert(false, "Sub without Handler");  // Seems like we have set up a port subscription without a handler -- bad implementation.
+						}
+					}
+					else
+					{
+						//If a handler was assigned as user reference, call it and pass the transfer.
+						if(subscription->user_reference!=NULL)
+						{
+							((void (*)(const CanardRxTransfer* transfer))subscription->user_reference)(&transfer);
+						}
+					}
+					canard.memory_free(&canard, transfer.payload);                  // Deallocate the dynamic memory afterwards.
+				}
+				else
+				{
+					// Nothing to do.
+					// The received frame is either invalid or it's a non-last frame of a multi-frame transfer.
+					// Reception of an invalid frame is NOT reported as an error because it is not an error.
+				}
+			}
+		}
+	}
+}
+/**
  * @fn void Init(void)
  * @brief Initialize the uavan and all its threads
  *
@@ -408,142 +698,28 @@ void uavcan::Init(void)
 
 	// map o1heap to canard instance
 	canard = canardInit(O1Allocate, O1Free);
-	canard.mtu_bytes = CANARD_MTU_CAN_CLASSIC;  // Defaults to 64 (CAN FD); here select Classic CAN.
-	canard.node_id   = CANARD_NODE_ID_MAX;      // Defaults to anonymous; can be set up later at any point.
 
-	// bxCAN driver initialisation
-	BxCANTimings timings;
-	// fix it rate to 500k FIXME add autobaud algo in listen only
-	bxCANComputeTimings(STM32_PCLK1, 500000, &timings);
-
-	if(bxCANConfigure(0, timings, false)!=true)
+	for(std::uint8_t i = 0; i < HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES; i++)
 	{
-		osalSysHalt("uavcan");
+		if(settings.uavcan.fd && HARDWARE_CAPABIITY_CAN_FD)
+		{
+			tx_queues[i] = canardTxInit(O1HEAP_SIZE / HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES, CANARD_MTU_CAN_FD);
+		}
+		else
+		{
+			tx_queues[i] = canardTxInit(O1HEAP_SIZE / HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES, CANARD_MTU_CAN_CLASSIC);
+		}
+		// init event source for send event.
+		osalEventObjectInit(&es_tx_needed[i]);
+		// start the frame handling tasks
+		can_recv[i].start(NORMALPRIO + 11);
+		can_send[i].start(NORMALPRIO + 10);
 	}
+	canard.node_id   = settings.uavcan.node_id; // Defaults to anonymous; can be set up later at any point.
 
 	// set the arm deadline to an sure unarmed value
 	arm_deadline = osalOsGetSystemTimeX();
 
-    // Subscriptions:
-    // (none in this application)
-
-    // Set up subject subscriptions and RPC-service servers.
-    // Message subscriptions:
-    if (canard.node_id > CANARD_NODE_ID_MAX)
-    {
-        static CanardRxSubscription rx;
-        const int8_t                res =  //
-            canardRxSubscribe(&canard,
-                              CanardTransferKindMessage,
-                              uavcan_pnp_NodeIDAllocationData_1_0_FIXED_PORT_ID_,
-                              uavcan_pnp_NodeIDAllocationData_1_0_EXTENT_BYTES_,
-                              CANARD_DEFAULT_TRANSFER_ID_TIMEOUT_USEC,
-                              &rx);
-        if (res < 0)
-        {
-//            return -res;
-        }
-    }
-    // Service servers:
-    {
-        static CanardRxSubscription rx;
-        // set the request handler
-        rx.user_reference = (void*)ProcessGetNodeInfo;
-        const int8_t                res =
-            canardRxSubscribe(&canard,
-                              CanardTransferKindRequest,
-                              uavcan_node_GetInfo_1_0_FIXED_PORT_ID_,
-                              uavcan_node_GetInfo_Request_1_0_EXTENT_BYTES_,
-                              CANARD_DEFAULT_TRANSFER_ID_TIMEOUT_USEC,
-                              &rx);
-        if (res < 0)
-        {
-//            return -res;
-        }
-    }
-    {
-        static CanardRxSubscription rx;
-        rx.user_reference = (void*)ProcessRequestExecuteCommand;
-        const int8_t                res =
-            canardRxSubscribe(&canard,
-                              CanardTransferKindRequest,
-                              uavcan_node_ExecuteCommand_1_1_FIXED_PORT_ID_,
-                              uavcan_node_ExecuteCommand_Request_1_1_EXTENT_BYTES_,
-                              CANARD_DEFAULT_TRANSFER_ID_TIMEOUT_USEC,
-                              &rx);
-        if (res < 0)
-        {
-//            return -res;
-        }
-    }
-    {
-        static CanardRxSubscription rx;
-        rx.user_reference = (void*)ProcessRequestRegisterAccess;
-        const int8_t                res =  //
-            canardRxSubscribe(&canard,
-                              CanardTransferKindRequest,
-                              uavcan_register_Access_1_0_FIXED_PORT_ID_,
-                              uavcan_register_Access_Request_1_0_EXTENT_BYTES_,
-                              CANARD_DEFAULT_TRANSFER_ID_TIMEOUT_USEC,
-                              &rx);
-        if (res < 0)
-        {
-//            return -res;
-        }
-    }
-    {
-        static CanardRxSubscription rx;
-        rx.user_reference = (void*)ProcessRequestList;
-        const int8_t                res =  //
-            canardRxSubscribe(&canard,
-                              CanardTransferKindRequest,
-                              uavcan_register_List_1_0_FIXED_PORT_ID_,
-                              uavcan_register_List_Request_1_0_EXTENT_BYTES_,
-                              CANARD_DEFAULT_TRANSFER_ID_TIMEOUT_USEC,
-                              &rx);
-        if (res < 0)
-        {
-//            return -res;
-        }
-    }
-
-    if (settings.uavcan.servo_setpoint <= CANARD_SUBJECT_ID_MAX)  // Do not subscribe if not configured.
-    {
-    	static CanardRxSubscription rx;
-        // set the request handler
-        rx.user_reference = (void*)ProcessMessageServoSetpoint;
-    	const int8_t                res =  //
-    			canardRxSubscribe(&canard,
-    					CanardTransferKindMessage,
-						settings.uavcan.servo_setpoint,
-						reg_udral_physics_dynamics_rotation_Planar_0_1_EXTENT_BYTES_,
-						100000ULL,
-						&rx);
-    	if (res < 0)
-    	{
-//    		return -res;
-    	}
-    }
-
-    if (settings.uavcan.servo_readiness <= CANARD_SUBJECT_ID_MAX)  // Do not subscribe if not configured.
-    {
-    	static CanardRxSubscription rx;
-    	// set the request handler
-    	rx.user_reference = (void*)ProcessMessageServiceReadiness;
-    	const int8_t                res =  //
-    			canardRxSubscribe(&canard,
-    					CanardTransferKindMessage,
-						settings.uavcan.servo_readiness,
-						reg_udral_service_common_Readiness_0_1_EXTENT_BYTES_,
-						100000ULL,
-						&rx);
-    	if (res < 0)
-    	{
-//    		return -res;
-    	}
-    }
-
-	can_thread.start(NORMALPRIO + 10);
 	heartbeat_thread.start(NORMALPRIO);
 }
 
@@ -555,11 +731,13 @@ void uavcan::Init(void)
 void uavcan::SendFeedback(void)
 {
     const bool     anonymous         = canard.node_id > CANARD_NODE_ID_MAX;
-    const uint64_t servo_transfer_id = next_transfer_id.servo_fast_loop++;
-    const CanardMicrosecond deadline_time = getMonotonicMicroseconds() + 10000ULL;
+    static uint8_t servo_transfer_id;
+    const CanardMicrosecond deadline_time = hardware::GetMonotonicMicroseconds() + 10000ULL;
+
+    ++servo_transfer_id;  // The transfer-ID shall be incremented after every transmission on this subject.
 
     // Publish feedback if the subject is enabled and the node is non-anonymous.
-    if (!anonymous && (settings.uavcan.servo_feedback <= CANARD_SUBJECT_ID_MAX))
+    if (!anonymous && (settings.uavcan.subject.servo.feedback <= CANARD_SUBJECT_ID_MAX))
     {
         reg_udral_service_actuator_common_Feedback_0_1 msg;
         msg.heartbeat.readiness.value =
@@ -572,25 +750,37 @@ void uavcan::SendFeedback(void)
         size_t       serialized_size = sizeof(serialized);
         const int8_t err =
             reg_udral_service_actuator_common_Feedback_0_1_serialize_(&msg, &serialized[0], &serialized_size);
-        assert(err >= 0);
+        osalDbgAssert(err >= 0, "UAVCAN Servo Feedback serialisation error");
+
         if (err >= 0)
         {
-            const CanardTransfer transfer = {
-                .timestamp_usec = deadline_time,
-                .priority       = CanardPriorityHigh,
-                .transfer_kind  = CanardTransferKindMessage,
-                .port_id        = settings.uavcan.servo_feedback,
-                .remote_node_id = CANARD_NODE_ID_UNSET,
-                .transfer_id    = (CanardTransferID) servo_transfer_id,
-                .payload_size   = serialized_size,
-                .payload        = &serialized[0],
-            };
-            (void) canardTxPush(&canard, &transfer);
+        	const CanardTransferMetadata transfer_metadata = {
+        	    .priority       = CanardPriorityHigh,
+        	    .transfer_kind  = CanardTransferKindMessage,
+        	    .port_id        = settings.uavcan.subject.servo.feedback,
+        	    .remote_node_id = CANARD_NODE_ID_UNSET,       // Messages cannot be unicast, so use UNSET.
+        	    .transfer_id    = servo_transfer_id,
+        	};
+
+        	for(std::uint8_t i = 0; i < HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES; i++)
+        	{
+        		int32_t result = canardTxPush(&tx_queues[i], // Call this once per redundant CAN interface (queue).
+        				&canard,
+						deadline_time,     		 // Zero if transmission deadline is not limited.
+						&transfer_metadata,
+						serialized_size,           // Size of the message payload (see Nunavut transpiler).
+						&serialized[0]);
+
+        		// An error has occurred: either an argument is invalid, the TX queue is full, or we've run out of memory.
+        		// It is possible to statically prove that an out-of-memory will never occur for a given application if the
+        		// heap is sized correctly; for background, refer to the Robson's Proof and the documentation for O1Heap.
+        		osalDbgAssert(result < 0, "UAVCAN Servo Feedback tx push error");
+        	}
         }
     }
 
     // Publish dynamics if the subject is enabled and the node is non-anonymous.
-    if (!anonymous && (settings.uavcan.servo_dynamics <= CANARD_SUBJECT_ID_MAX))
+    if (!anonymous && (settings.uavcan.subject.servo.dynamics <= CANARD_SUBJECT_ID_MAX))
     {
         reg_udral_physics_dynamics_rotation_PlanarTs_0_1 msg;
         // Our node does not synchronize its clock with the network, so we cannot timestamp our publications:
@@ -604,25 +794,38 @@ void uavcan::SendFeedback(void)
         size_t  serialized_size = sizeof(serialized);
         const int8_t err =
             reg_udral_physics_dynamics_rotation_PlanarTs_0_1_serialize_(&msg, &serialized[0], &serialized_size);
-        assert(err >= 0);
+
+        osalDbgAssert(err >= 0, "UAVCAN Servo Dynamics serialisation error");
+
         if (err >= 0)
         {
-            const CanardTransfer transfer = {
-                .timestamp_usec = deadline_time,
-                .priority       = CanardPriorityHigh,
-                .transfer_kind  = CanardTransferKindMessage,
-                .port_id        = settings.uavcan.servo_dynamics,
-                .remote_node_id = CANARD_NODE_ID_UNSET,
-                .transfer_id    = (CanardTransferID) servo_transfer_id,
-                .payload_size   = serialized_size,
-                .payload        = &serialized[0],
-            };
-            (void) canardTxPush(&canard, &transfer);
+        	const CanardTransferMetadata transfer_metadata = {
+        	    .priority       = CanardPriorityHigh,
+        	    .transfer_kind  = CanardTransferKindMessage,
+        	    .port_id        = settings.uavcan.subject.servo.dynamics,
+        	    .remote_node_id = CANARD_NODE_ID_UNSET,       // Messages cannot be unicast, so use UNSET.
+        	    .transfer_id    = servo_transfer_id,
+        	};
+
+        	for(std::uint8_t i = 0; i < HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES; i++)
+        	{
+        		int32_t result = canardTxPush(&tx_queues[i], // Call this once per redundant CAN interface (queue).
+        				&canard,
+						deadline_time,     		 // Zero if transmission deadline is not limited.
+						&transfer_metadata,
+						serialized_size,           // Size of the message payload (see Nunavut transpiler).
+						&serialized[0]);
+
+        		// An error has occurred: either an argument is invalid, the TX queue is full, or we've run out of memory.
+        		// It is possible to statically prove that an out-of-memory will never occur for a given application if the
+        		// heap is sized correctly; for background, refer to the Robson's Proof and the documentation for O1Heap.
+        		osalDbgAssert(result < 0, "UAVCAN Servo Dynamics tx push error");
+        	}
         }
     }
 
     // Publish power if the subject is enabled and the node is non-anonymous.
-    if (!anonymous && (settings.uavcan.servo_power <= CANARD_SUBJECT_ID_MAX))
+    if (!anonymous && (settings.uavcan.subject.servo.power <= CANARD_SUBJECT_ID_MAX))
     {
         reg_udral_physics_electricity_PowerTs_0_1 msg;
         // Our node does not synchronize its clock with the network, so we cannot timestamp our publications:
@@ -634,21 +837,40 @@ void uavcan::SendFeedback(void)
         uint8_t serialized[reg_udral_physics_electricity_PowerTs_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_] = {0};
         size_t  serialized_size = sizeof(serialized);
         const int8_t err = reg_udral_physics_electricity_PowerTs_0_1_serialize_(&msg, &serialized[0], &serialized_size);
-        assert(err >= 0);
+
+        osalDbgAssert(err >= 0, "UAVCAN Servo Power serialisation error");
+
         if (err >= 0)
         {
-            const CanardTransfer transfer = {
-                .timestamp_usec = deadline_time,
-                .priority       = CanardPriorityHigh,
-                .transfer_kind  = CanardTransferKindMessage,
-                .port_id        = settings.uavcan.servo_power,
-                .remote_node_id = CANARD_NODE_ID_UNSET,
-                .transfer_id    = (CanardTransferID) servo_transfer_id,
-                .payload_size   = serialized_size,
-                .payload        = &serialized[0],
-            };
-            (void) canardTxPush(&canard, &transfer);
+        	const CanardTransferMetadata transfer_metadata = {
+        	    .priority       = CanardPriorityNominal,
+        	    .transfer_kind  = CanardTransferKindMessage,
+        	    .port_id        = settings.uavcan.subject.servo.power,
+        	    .remote_node_id = CANARD_NODE_ID_UNSET,       // Messages cannot be unicast, so use UNSET.
+        	    .transfer_id    = servo_transfer_id,
+        	};
+
+        	for(std::uint8_t i = 0; i < HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES; i++)
+        	{
+        		int32_t result = canardTxPush(&tx_queues[i], // Call this once per redundant CAN interface (queue).
+        				&canard,
+						deadline_time,     		 // Zero if transmission deadline is not limited.
+						&transfer_metadata,
+						serialized_size,           // Size of the message payload (see Nunavut transpiler).
+						&serialized[0]);
+
+        		// An error has occurred: either an argument is invalid, the TX queue is full, or we've run out of memory.
+        		// It is possible to statically prove that an out-of-memory will never occur for a given application if the
+        		// heap is sized correctly; for background, refer to the Robson's Proof and the documentation for O1Heap.
+        		osalDbgAssert(result < 0, "UAVCAN Servo Power tx push error");
+        	}
         }
+    }
+
+    for (std::uint8_t i = 0; i < HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES; i++)
+    {
+    	eventflags_t flags = i + 1;
+    	osalEventBroadcastFlags(&es_tx_needed[i], flags);
     }
 
     // Timeout for Readiness Messages Arming state.
@@ -658,131 +880,10 @@ void uavcan::SendFeedback(void)
     }
 }
 
-
 /**
  * @brief Thread main function
  */
-void uavcan::rx_tx::main(void)
-{
-	setName("CANARD");
-
-	while(TRUE)
-	{
-		deadline = chibios_rt::System::getTime();
-
-		// Process received frames by feeding them from bxCAN driver to libcanard.
-		// This function will invoke the "process received" handler specified during init.
-		CanardFrame frame             = {0,0,0, nullptr};
-		uint8_t     buffer[CANARD_MTU_CAN_CLASSIC] = {0};
-		frame.payload = &buffer;
-		for (uint16_t i = 0; i < FRAMES_PER_ITER; ++i)
-		{
-			const bool result = bxCANPop(
-					0,
-					&(frame.extended_can_id),
-					&(frame.payload_size),
-					buffer);
-			if (result == false)  // The read operation has timed out with no frames, nothing to do here.
-			{
-				break;
-			}
-			// The bxCAN driver doesn't give a timestamp
-			frame.timestamp_usec = getMonotonicMicroseconds();
-
-			CanardTransfer transfer;
-			CanardRxSubscription *subscription = NULL;
-			const int8_t   canard_result = canardRxAccept2(&canard, &frame, 0, &transfer, &subscription);
-			if (canard_result > 0)
-			{
-				osalDbgAssert(subscription != NULL, "No Subscriotion");
-				//If a handler was assigned as user reference, call it and pass the transfer.
-				if(subscription->user_reference!=NULL)
-				{
-					((void (*)(const CanardTransfer* transfer))subscription->user_reference)(&transfer);
-				}
-				else
-				{
-					if (transfer.transfer_kind == CanardTransferKindMessage)
-					{
-						size_t size = transfer.payload_size;
-						if (transfer.port_id == uavcan_pnp_NodeIDAllocationData_1_0_FIXED_PORT_ID_)
-						{
-							uavcan_pnp_NodeIDAllocationData_1_0 msg;
-							if (uavcan_pnp_NodeIDAllocationData_1_0_deserialize_(&msg, (uint8_t*)transfer.payload, &size) >= 0)
-							{
-								std::uint64_t uid = DBGMCU->IDCODE;
-								std::uint16_t node_id = msg.allocated_node_id.elements[0].value;
-
-							    if ((node_id <= CANARD_NODE_ID_MAX) && (std::memcmp(&uid, &msg.unique_id_hash, sizeof(uid)) == 0))
-							    {
-							    	settings.uavcan.node_id = node_id;
-							    }
-							}
-						}
-						else
-						{
-							osalDbgAssert(false, "Sub without Handler");  // Seems like we have set up a port subscription without a handler -- bad implementation.
-						}
-					}
-				}
-
-				canard.memory_free(&canard, (void*) transfer.payload);
-			}
-			else if ((canard_result == 0) || (canard_result == -CANARD_ERROR_OUT_OF_MEMORY))
-			{
-				;  // Zero means that the frame did not complete a transfer so there is nothing to do.
-				// OOM should never occur if the heap is sized correctly. We track OOM errors via heap API.
-			}
-			else
-			{
-				osalDbgAssert(false, "undefined Error");  // No other error can possibly occur at runtime.
-			}
-		}
-
-		// Transmit pending frames from the prioritized TX queue managed by libcanard
-		const CanardFrame* pframe = canardTxPeek(&canard);  // Take the highest-priority frame from TX queue.
-		uint64_t us = getMonotonicMicroseconds();
-		while (pframe != NULL)
-		{
-			// Attempt transmission only if the frame is not yet timed out while waiting in the TX queue.
-			// Otherwise just drop it and move on to the next one.
-			if ((pframe->timestamp_usec == 0) || (pframe->timestamp_usec > us))
-			{
-				const bool result = bxCANPush(
-						0,
-						us,
-						pframe->timestamp_usec,
-						pframe->extended_can_id,
-						pframe->payload_size,
-						pframe->payload);
-				if (result == false)
-				{
-					break;  //TODO: Handle errors properly
-				}
-
-			}
-			//Remove the frame from the transmission queue and free its memory.
-			canardTxPop(&canard);
-			canard.memory_free(&canard, (void*) pframe);
-
-			//Check if there are any more frames to transmit.
-			pframe = canardTxPeek(&canard);
-		}
-
-		sleepUntilWindowed(deadline, deadline + CYCLE_TIME);
-	}
-}
-
-/**
- * @brief constructor of UAVCAN receive and transmit thread
- */
-uavcan::rx_tx::rx_tx(void):deadline(0){};
-
-
-/**
- * @brief Thread main function
- */
-void uavcan::heartbeat::main(void)
+void uavcan::can_heartbeat::main(void)
 {
 	setName("UAVCAN HEARTBEAT");
 
@@ -796,11 +897,12 @@ void uavcan::heartbeat::main(void)
 		if(uptime < std::numeric_limits<std::uint32_t>::max()) uptime++;
 
 		const bool anonymous = canard.node_id > CANARD_NODE_ID_MAX;
-		const CanardMicrosecond deadline_time = getMonotonicMicroseconds() + 250000ULL;
+		const CanardMicrosecond deadline_time = hardware::GetMonotonicMicroseconds() + 250000ULL;
 
 		// Publish heartbeat every second unless the local node is anonymous. Anonymous nodes shall not publish heartbeat.
 		if (!anonymous)
 		{
+			static std::uint8_t heartbeat_transfer_id;
 			uavcan_node_Heartbeat_1_0 heartbeat = {
 				.uptime                      = uptime,
 				.health                      = {uavcan_node_Health_1_0_NOMINAL},
@@ -814,24 +916,156 @@ void uavcan::heartbeat::main(void)
 				heartbeat.health.value = uavcan_node_Health_1_0_CAUTION;
 			}
 
-
 			uint8_t      serialized[uavcan_node_Heartbeat_1_0_SERIALIZATION_BUFFER_SIZE_BYTES_] = {0};
 			size_t       serialized_size                                                        = sizeof(serialized);
 			const int8_t err = uavcan_node_Heartbeat_1_0_serialize_(&heartbeat, &serialized[0], &serialized_size);
+
 			osalDbgAssert(err >= 0, "UAVCAN Heartbeat serialisation error!");
+
 			if (err >= 0)
 			{
-				const CanardTransfer transfer = {
-						.timestamp_usec = deadline_time,
+				heartbeat_transfer_id++;
+
+				const CanardTransferMetadata transfer_metadata = {
 						.priority       = CanardPriorityNominal,
 						.transfer_kind  = CanardTransferKindMessage,
 						.port_id        = uavcan_node_Heartbeat_1_0_FIXED_PORT_ID_,
-						.remote_node_id = CANARD_NODE_ID_UNSET,
-						.transfer_id    = (CanardTransferID)(next_transfer_id.node_heartbeat++),
-						.payload_size   = serialized_size,
-						.payload        = &serialized[0],
+						.remote_node_id = CANARD_NODE_ID_UNSET,       // Messages cannot be unicast, so use UNSET.
+						.transfer_id    = heartbeat_transfer_id,
 				};
-				(void) canardTxPush(&canard, &transfer);
+
+				for(std::uint8_t i = 0; i < HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES; i++)
+				{
+					int32_t result = canardTxPush(&tx_queues[i], // Call this once per redundant CAN interface (queue).
+							&canard,
+							deadline_time,     		 // Zero if transmission deadline is not limited.
+							&transfer_metadata,
+							serialized_size,           // Size of the message payload (see Nunavut transpiler).
+							&serialized[0]);
+
+					// An error has occurred: either an argument is invalid, the TX queue is full, or we've run out of memory.
+					// It is possible to statically prove that an out-of-memory will never occur for a given application if the
+					// heap is sized correctly; for background, refer to the Robson's Proof and the documentation for O1Heap.
+					osalDbgAssert(result < 0, "UAVCAN Heartbeat tx push error");
+			}
+
+			// Subscriptions:
+			// (none in this application)
+
+			// Set up subject subscriptions and RPC-service servers.
+			// Message subscriptions:
+			if (canard.node_id > CANARD_NODE_ID_MAX)
+			{
+				static CanardRxSubscription rx;
+				const int8_t                res =  //
+						canardRxSubscribe(&canard,
+								CanardTransferKindMessage,
+								uavcan_pnp_NodeIDAllocationData_1_0_FIXED_PORT_ID_,
+								uavcan_pnp_NodeIDAllocationData_1_0_EXTENT_BYTES_,
+								CANARD_DEFAULT_TRANSFER_ID_TIMEOUT_USEC,
+								&rx);
+				if (res < 0)
+				{
+					//            return -res;
+				}
+			}
+			// Service servers:
+			{
+				static CanardRxSubscription rx;
+				// set the request handler
+				rx.user_reference = (void*)ProcessGetNodeInfo;
+				const int8_t                res =
+						canardRxSubscribe(&canard,
+								CanardTransferKindRequest,
+								uavcan_node_GetInfo_1_0_FIXED_PORT_ID_,
+								uavcan_node_GetInfo_Request_1_0_EXTENT_BYTES_,
+								CANARD_DEFAULT_TRANSFER_ID_TIMEOUT_USEC,
+								&rx);
+				if (res < 0)
+				{
+					//            return -res;
+				}
+			}
+			{
+				static CanardRxSubscription rx;
+				rx.user_reference = (void*)ProcessRequestExecuteCommand;
+				const int8_t                res =
+						canardRxSubscribe(&canard,
+								CanardTransferKindRequest,
+								uavcan_node_ExecuteCommand_1_1_FIXED_PORT_ID_,
+								uavcan_node_ExecuteCommand_Request_1_1_EXTENT_BYTES_,
+								CANARD_DEFAULT_TRANSFER_ID_TIMEOUT_USEC,
+								&rx);
+				if (res < 0)
+				{
+					//            return -res;
+				}
+			}
+			{
+				static CanardRxSubscription rx;
+				rx.user_reference = (void*)ProcessRequestRegisterAccess;
+				const int8_t                res =  //
+						canardRxSubscribe(&canard,
+								CanardTransferKindRequest,
+								uavcan_register_Access_1_0_FIXED_PORT_ID_,
+								uavcan_register_Access_Request_1_0_EXTENT_BYTES_,
+								CANARD_DEFAULT_TRANSFER_ID_TIMEOUT_USEC,
+								&rx);
+				if (res < 0)
+				{
+					//            return -res;
+				}
+			}
+			{
+				static CanardRxSubscription rx;
+				rx.user_reference = (void*)ProcessRequestList;
+				const int8_t                res =  //
+						canardRxSubscribe(&canard,
+								CanardTransferKindRequest,
+								uavcan_register_List_1_0_FIXED_PORT_ID_,
+								uavcan_register_List_Request_1_0_EXTENT_BYTES_,
+								CANARD_DEFAULT_TRANSFER_ID_TIMEOUT_USEC,
+								&rx);
+				if (res < 0)
+				{
+					//            return -res;
+				}
+			}
+
+			if (settings.uavcan.subject.servo.setpoint <= CANARD_SUBJECT_ID_MAX)  // Do not subscribe if not configured.
+			{
+				static CanardRxSubscription rx;
+				// set the request handler
+				rx.user_reference = (void*)ProcessMessageServoSetpoint;
+				const int8_t                res =  //
+						canardRxSubscribe(&canard,
+								CanardTransferKindMessage,
+								settings.uavcan.subject.servo.setpoint,
+								reg_udral_physics_dynamics_rotation_Planar_0_1_EXTENT_BYTES_,
+								100000ULL,
+								&rx);
+				if (res < 0)
+				{
+					//    		return -res;
+				}
+			}
+
+			if (settings.uavcan.subject.servo.readiness <= CANARD_SUBJECT_ID_MAX)  // Do not subscribe if not configured.
+			{
+				static CanardRxSubscription rx;
+				// set the request handler
+				rx.user_reference = (void*)ProcessMessageServiceReadiness;
+				const int8_t                res =  //
+						canardRxSubscribe(&canard,
+								CanardTransferKindMessage,
+								settings.uavcan.subject.servo.readiness,
+								reg_udral_service_common_Readiness_0_1_EXTENT_BYTES_,
+								100000ULL,
+								&rx);
+				if (res < 0)
+				{
+					//    		return -res;
+				}
 			}
 		}
 #if HARDWARE_CAPABIITY_RANDOM == TRUE
@@ -870,17 +1104,12 @@ void uavcan::heartbeat::main(void)
 					(void) canardTxPush(&canard, &transfer);  // The response will arrive asynchronously eventually.
 				}
 			}
-		}
 #endif
+		}
 		sleepUntilWindowed(deadline, deadline + CYCLE_TIME);
 	}
-
 }
 
-/**
- * @brief constructor of UAVCAN Heartbeat thread
- */
-uavcan::heartbeat::heartbeat(void):deadline(0){};
 
 
 /** \} **/ /* end of doxygen group */

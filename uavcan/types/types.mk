@@ -2,5 +2,3 @@
 UAVCANTYPESINC = ../../uavcan/types \
                  ../../uavcan/types/nonavut/support \
                  
-                 
-		   

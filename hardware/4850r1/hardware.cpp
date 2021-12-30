@@ -27,19 +27,6 @@
 #include "hal.h"
 #include "hal_mfs.h"
 
-extern void hardware_pwm_Init(void);
-extern void hardware_analog_Init(void);
-
-/**
- * Initialize hardware with outputs disabled!
- */
-void hardware::Init()
-{
-	hardware_pwm_Init();
-	hardware_analog_Init();
-}
-
-
 MFSConfig mfscfg1 = {
 	.flashp           = (BaseFlash *)&EFLD1,
 	.erased           = 0xFFFFFFFFU,
@@ -50,6 +37,25 @@ MFSConfig mfscfg1 = {
 	.bank1_sectors    = 1U
 };
 
+///< CAN Driver instances if redundant. Instance 0 is always master CAN
+CANDriver* pcan[HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES] = {&CAND1};
+
+
+extern void hardware_pwm_Init(void);
+extern void hardware_analog_Init(void);
+extern void hardware_can_Init(void);
+
+/**
+ * Initialize hardware with outputs disabled!
+ */
+void hardware::Init()
+{
+	hardware_pwm_Init();
+	hardware_analog_Init();
+	hardware_can_Init();
+}
+
+
 /**
  * get the angle which is represented by the hall sensors
  * @param[out] sincos angle of the halls represented as sin/cos values
@@ -59,3 +65,4 @@ uint8_t hardware::digital::hall::State(void)
 {
 	return palReadGroup(GPIOC, 0x0007, 13);
 }
+

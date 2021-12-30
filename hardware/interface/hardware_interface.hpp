@@ -29,6 +29,7 @@
 #include "ch.hpp"
 #include "hal.h"
 #include "systems.hpp"
+#include "canard.h"
 #include "hardware.hpp"
 
 
@@ -38,6 +39,10 @@
 
 #ifndef HARDWARE_CAPABIITY_RANDOM
 #error "HARDWARE_CAPABIITY_RANDOM needs to be defined in hardware.hpp of current hardware."
+#endif
+
+#ifndef HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES
+#error "HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES needs to be defined in hardware.hpp of current hardware."
 #endif
 
 #ifndef HARDWARE_CAPABIITY_CAN_FD
@@ -53,9 +58,19 @@ namespace hardware {
 	extern chibios_rt::ThreadReference  control_thread;
 
 	/**
-	 * Initialize hardware with outputs disabled!
+	 * @fn void Init()
+	 * @brief Initialize hardware with outputs disabled!
+	 *
 	 */
 	extern void Init();
+
+	/**
+	 * @fn CanardMicrosecond GetMonotonicMicroseconds(void)
+	 * @brief get a us since start of the mcu.
+	 *
+	 * @return us since start.
+	 */
+	extern CanardMicrosecond GetMonotonicMicroseconds(void);
 
 	namespace pwm {
 		/*
@@ -291,6 +306,95 @@ namespace hardware {
 		extern bool Generate(std::uint8_t* buffer, const std::uint32_t size);
 	}
 #endif
+
+	/**
+	 * @namespace can
+	 * @brief interface to can driver
+	 *
+	 */
+	namespace can
+	{
+		extern struct events_s
+		{
+			/**
+			 * @brief   One or more frames become available.
+			 * @note    After broadcasting this event it will not be broadcasted again
+			 *          until the received frames queue has been completely emptied. It
+			 *          is <b>not</b> broadcasted for each received frame. It is
+			 *          responsibility of the application to empty the queue by
+			 *          repeatedly invoking @p canReceive() when listening to this event.
+			 *          This behavior minimizes the interrupt served by the system
+			 *          because CAN traffic.
+			 * @note    The flags associated to the listeners will indicate which
+			 *          receive mailboxes become non-empty.
+			 */
+			event_source_t rxfull;
+			/**
+			 * @brief   One or more transmission mailbox become available.
+			 * @note    The flags associated to the listeners will indicate which
+			 *          transmit mailboxes become empty.
+			 * @note    The upper 16 bits are transmission error flags associated
+			 *          to the transmit mailboxes.
+			 */
+			event_source_t txempty;
+			/**
+			 * @brief   A CAN bus error happened.
+			 * @note    The flags associated to the listeners will indicate that
+			 *          receive error(s) have occurred.
+			 * @note    In this implementation the upper 16 bits are filled with the
+			 *          unprocessed content of the ESR register.
+			 */
+			event_source_t error;
+		} event[HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES];
+
+		/**
+		 * @fn bool Transmit(const std::uint_fast8_t, CanardFrame&)
+		 * @brief transmit frame via selected interface.
+		 *
+		 * @param interface 	index of the CAN interface used to transmit the frame.
+		 * @param frame			uavcan:can frame to be transmitted.
+		 * @return				true on error.
+		 */
+		extern bool Transmit(const std::uint_fast8_t interface, const CanardFrame& frame);
+
+		/**
+		 * @fn bool Receive(const std::uint_fast8_t, CanardFrame&)
+		 * @brief receive frame from selected interface.
+		 *
+		 * @param interface		index of the CAN interface used to transmit the frame.
+		 * @param frame			uavcan:can frame recived.
+		 * @return				true on error.
+		 */
+		extern bool Receive(const std::uint_fast8_t interface, CanardFrame& frame);
+
+		/**
+		 * @fn bool SetBitrate(const std::uint32_t)
+		 * @brief set the desired bitrate for the can bus.
+		 *
+		 * @param bitrate 		desired bitrate in bits/second
+		 * @return				True on success.
+		 */
+		extern bool SetBitrate(const std::uint32_t bitrate);
+
+		/**
+		 * @fn std::uint32_t GetBitrate(void)
+		 * @brief get the currently set bitrate
+		 *
+		 * @return current bitrate in bits/second
+		 */
+		extern std::uint32_t GetBitrate(void);
+
+		/**
+		 * @fn bool SetFilters(const std::uint8_t, const CanardFilter* const)
+		 * @brief set the can acceptance filters.
+		 *
+		 * @param num			number of filter elements
+		 * @param filters		array of filter settings
+		 * @return				true on success, false if num is to large
+		 */
+		extern bool SetFilters(const std::uint8_t num, const CanardFilter* const filters);
+
+	} /* namespace can */
 
 } /* namespace hardware */
 

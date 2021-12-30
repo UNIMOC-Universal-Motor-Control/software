@@ -1,5 +1,4 @@
 # included modules
-include ${BASEDIR}/uavcan/can/can.mk
 include ${BASEDIR}/uavcan/libcanard/libcanard.mk
 include ${BASEDIR}/uavcan/types/types.mk
 include ${BASEDIR}/uavcan/o1heap/o1heap.mk
