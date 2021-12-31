@@ -43,9 +43,30 @@ extern CANDriver* pcan[HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES];
  * automatic wakeup, automatic recover from abort mode.
  * See section 22.7.7 on the STM32 reference manual.
  */
-static CANConfig cancfg = {
-  CAN_MCR_ABOM | CAN_MCR_AWUM | CAN_MCR_TXFP,
-  0
+/**
+ * @brief   Type of a CAN configuration structure.
+ */
+static hal_can_config cancfg = {
+	/**
+	 * @brief   Nominal bit timing and prescaler register.
+	 */
+	.NBTP = 0,
+	/**
+	 * @brief   Data bit timing and prescaler register.
+	 */
+	.DBTP = 0,
+	/**
+	 * @brief   CC control register.
+	 */
+	.CCCR = FDCAN_CCCR_TXP,
+	/**
+	 * @brief   Test configuration register.
+	 */
+	.TEST = 0,
+	/**
+	 * @brief   Global filter configuration register.
+	 */
+	.RXGFC = 0,
 };
 
 /// Bit timing parameters. Use bxCANComputeTimings() to derive these from the desired bus data rate.
@@ -59,7 +80,9 @@ typedef struct bxcan_timings_s
 } bxcan_timings_ts;
 
 ///< currently set bit rate
-std::uint32_t cur_bitrate = 125000;
+std::uint32_t cur_nbitrate = 125000;
+std::uint32_t cur_dbitrate = 1000000;
+bool cur_fd_mode = false;
 
 ///< Eventsources for the CAN driver instances
 struct hardware::can::events_s hardware::can::event[HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES];
@@ -203,15 +226,18 @@ void hardware_can_Init(void)
 {
 	const std::uint32_t FALLBACK_BITRATE = 125000;
 
-	cur_bitrate = settings.uavcan.nbitrate;
+	cur_nbitrate = settings.uavcan.nbitrate;
+	cur_dbitrate = settings.uavcan.dbitrate;
+	cur_fd_mode = settings.uavcan.fd;
 
 	// if successful SetBitrate will start the can interfaces.
-	while(!hardware::can::SetBitrate(cur_bitrate, 0, false))
+	while(!hardware::can::SetBitrate(cur_nbitrate, cur_dbitrate, cur_fd_mode))
 	{
 		// if desired bit rate is not possible then fall back to a standard bit rate
-		if(cur_bitrate != FALLBACK_BITRATE)
+		if(cur_nbitrate != FALLBACK_BITRATE)
 		{
-			cur_bitrate = FALLBACK_BITRATE;
+			cur_nbitrate = FALLBACK_BITRATE;
+			cur_fd_mode = false;
 		}
 		else
 		{
@@ -235,9 +261,26 @@ bool hardware::can::Transmit(const std::uint_fast8_t interface, const CanardFram
 {
 	CANTxFrame txmsg;
 
-	txmsg.DLC = frame.payload_size;
-	txmsg.EID = frame.extended_can_id;
-	txmsg.IDE = 1;
+	std::memset(&txmsg, 0, sizeof(txmsg));
+
+	if(frame.payload_size < 9) txmsg.DLC = frame.payload_size;
+	else if(frame.payload_size < 13) txmsg.DLC = 9;
+	else if(frame.payload_size < 17) txmsg.DLC = 10;
+	else if(frame.payload_size < 21) txmsg.DLC = 11;
+	else if(frame.payload_size < 25) txmsg.DLC = 12;
+	else if(frame.payload_size < 33) txmsg.DLC = 13;
+	else if(frame.payload_size < 49) txmsg.DLC = 14;
+	else if(frame.payload_size < 65) txmsg.DLC = 15;
+
+	txmsg.common.XTD = 1;
+	txmsg.ext.EID = frame.extended_can_id;
+
+	// transmit long frames as FD frames
+	if(txmsg.DLC > 8)
+	{
+		txmsg.FDF = 1;
+		txmsg.BPS = 1;  // BRS. Bit rate Switch enabled. driver name is wrong
+	}
 
 	std::memcpy(txmsg.data8, frame.payload, frame.payload_size);
 
@@ -257,18 +300,21 @@ bool hardware::can::Transmit(const std::uint_fast8_t interface, const CanardFram
 bool hardware::can::Receive(const std::uint_fast8_t interface, CanardFrame& frame)
 {
 	static CANRxFrame rxmsg;
+	static const std::uint8_t dlc_to_bytes[] = {
+	  0U,  1U,  2U,  3U,  4U,  5U,  6U,  7U,
+	  8U, 12U, 16U, 20U, 24U, 32U, 48U, 64U
+	};
 
 	msg_t result = canReceive(pcan[interface], CAN_ANY_MAILBOX, &rxmsg, TIME_IMMEDIATE);
-
 	// only extended id frames are valid frames
-	if(!rxmsg.IDE)
+	if(!rxmsg.common.XTD)
 	{
 		result = !MSG_OK;
 	}
 	else
 	{
-		frame.payload_size = rxmsg.DLC;
-		frame.extended_can_id = rxmsg.EID;
+		frame.payload_size = dlc_to_bytes[rxmsg.DLC];
+		frame.extended_can_id = rxmsg.ext.EID;
 		frame.payload = rxmsg.data8;
 	}
 
@@ -287,24 +333,44 @@ bool hardware::can::Receive(const std::uint_fast8_t interface, CanardFrame& fram
 bool hardware::can::SetBitrate(const std::uint32_t nbitrate, const std::uint32_t dbitrate, const bool fd_mode)
 {
 	bool result = false;
-	bxcan_timings_ts timings;
-	(void) dbitrate;
-
-	if (fd_mode) return result;
+	bxcan_timings_ts ntimings;
+	bxcan_timings_ts dtimings;
 
 	if(			nbitrate >= 125000
 			&& 	nbitrate <= 1000000)
 	{
-		result = hardware_can_ComputeTimings(STM32_PCLK1, nbitrate, &timings);
+		result = hardware_can_ComputeTimings(STM32_PCLK1, nbitrate, &ntimings);
+
+		if(result && fd_mode)
+		{
+			result = hardware_can_ComputeTimings(STM32_PCLK1, dbitrate, &dtimings);
+		}
 
 		if(result)
 		{
-			cancfg.btr = 	  CAN_BTR_SJW(timings.max_resync_jump_width - 1)
-							| CAN_BTR_TS1(timings.bit_segment_1 - 1)
-							| CAN_BTR_TS2(timings.bit_segment_2 - 1)
-							| CAN_BTR_BRP(timings.bit_rate_prescaler - 1);
+			cancfg.NBTP = 	  (ntimings.max_resync_jump_width - 1) << FDCAN_NBTP_NSJW_Pos
+							| (ntimings.bit_segment_1 - 1) << FDCAN_NBTP_NTSEG1_Pos
+							| (ntimings.bit_segment_2 - 1) << FDCAN_NBTP_NTSEG2_Pos
+							| (ntimings.bit_rate_prescaler - 1) << FDCAN_NBTP_NBRP_Pos;
 
-			cur_bitrate = nbitrate;
+			cancfg.DBTP = 	  (dtimings.max_resync_jump_width - 1) << FDCAN_DBTP_DSJW_Pos
+							| (dtimings.bit_segment_1 - 1) << FDCAN_DBTP_DTSEG1_Pos
+							| (dtimings.bit_segment_2 - 1) << FDCAN_DBTP_DTSEG2_Pos
+							| (dtimings.bit_rate_prescaler - 1) << FDCAN_DBTP_DBRP_Pos;
+
+			if(fd_mode)
+			{
+				cancfg.CCCR |= FDCAN_CCCR_FDOE | FDCAN_CCCR_BRSE;
+			}
+			else
+			{
+				cancfg.CCCR &= ~FDCAN_CCCR_FDOE | FDCAN_CCCR_BRSE;
+			}
+
+			cur_nbitrate = nbitrate;
+			cur_dbitrate = dbitrate;
+			cur_fd_mode = fd_mode;
+
 			for(std::uint_fast8_t i = 0; i < HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES; i++)
 			{
 				canStop(pcan[i]);
@@ -327,33 +393,7 @@ bool hardware::can::SetBitrate(const std::uint32_t nbitrate, const std::uint32_t
  */
 bool hardware::can::SetFilters(const std::uint8_t num, const CanardFilter* const filters)
 {
-	CANFilter stm_filters[BXCAN_NUM_ACCEPTANCE_FILTERS * HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES] = {0};
-
-	if(num > BXCAN_NUM_ACCEPTANCE_FILTERS) return false;
-
-	for(std::uint_fast8_t i; i < num; i++)
-	{
-		stm_filters[i].filter = i;
-		stm_filters[i].mode = 0;
-		stm_filters[i].scale = 1;
-		stm_filters[i].assignment = 0;
-		stm_filters[i].register1 = filters[i].extended_can_id;
-		stm_filters[i].register2 = filters[i].extended_mask;
-
-		if(HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES > 1)
-		{
-			stm_filters[i + num].filter = i;
-			stm_filters[i + num].mode = 0;
-			stm_filters[i + num].scale = 1;
-			stm_filters[i + num].assignment = 0;
-			stm_filters[i + num].register1 = filters[i].extended_can_id;
-			stm_filters[i + num].register2 = filters[i].extended_mask;
-		}
-	}
-
-	canSTM32SetFilters(pcan[0], num, num * HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES, stm_filters);
-
-	return true;
+	return false;
 }
 
 /**
@@ -364,7 +404,7 @@ bool hardware::can::SetFilters(const std::uint8_t num, const CanardFilter* const
  */
 std::uint32_t hardware::can::GetBitrate(void)
 {
-	return cur_bitrate;
+	return cur_nbitrate;
 }
 
 

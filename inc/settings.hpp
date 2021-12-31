@@ -322,14 +322,17 @@ typedef struct settings_s
 	 */
 	struct uavcan_s
 	{
-		///< true if CAN-FD is enabled.
-		bool fd;
-
 		///< ID of the node in UAVCAN
 		std::uint16_t node_id;
 
-		///< CAN Bus base bit rate.
-		std::uint32_t bitrate;
+		///< CAN Bus nominal bit rate.
+		std::uint32_t nbitrate;
+
+		///< true if CAN-FD is enabled.
+		bool fd;
+
+		///< CAN Bus data bit rate.
+		std::uint32_t dbitrate;
 
 		/**
 		 * @struct subject_s

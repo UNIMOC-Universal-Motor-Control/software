@@ -35,5 +35,7 @@
 ///< Hardware supports CAN-FD: STM32F446 has CAN-FD
 #define HARDWARE_CAPABIITY_CAN_FD				TRUE
 
+///< Hardware supports 1 CAN Interface
+#define HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES 1
 
 #endif /* HARDWARE_CONFIG_HPP_ */

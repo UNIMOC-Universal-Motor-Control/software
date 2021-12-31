@@ -311,14 +311,17 @@ __attribute__((aligned (32))) settings_ts settings =
 	 */
 	.uavcan =
 	{
-		///< true if CAN-FD is enabled.
-		.fd = false,
-
 		///< ID of the node in UAVCAN
 		.node_id = std::numeric_limits<std::uint16_t>::max(),
 
-		///< CAN Bus base bit rate.
-		.bitrate = 500000,
+		///< CAN Bus nominal bit rate.
+		.nbitrate = 500000,
+
+		///< true if CAN-FD is enabled.
+		.fd = false,
+
+		///< CAN Bus data bit rate.
+		.dbitrate = 4000000,
 
 		/**
 		 * @struct subject_s

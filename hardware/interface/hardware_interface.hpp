@@ -371,10 +371,12 @@ namespace hardware {
 		 * @fn bool SetBitrate(const std::uint32_t)
 		 * @brief set the desired bitrate for the can bus.
 		 *
-		 * @param bitrate 		desired bitrate in bits/second
+		 * @param nbitrate 		desired nominal bitrate in bits/second
+		 * @param dbitrate 		desired data bitrate in bits/second (only FD Mode)
+		 * @param fd_mode		True enables FD Mode
 		 * @return				True on success.
 		 */
-		extern bool SetBitrate(const std::uint32_t bitrate);
+		extern bool SetBitrate(const std::uint32_t nbitrate, const std::uint32_t dbitrate, const bool fd_mode);
 
 		/**
 		 * @fn std::uint32_t GetBitrate(void)

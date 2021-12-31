@@ -720,6 +720,24 @@ void uavcan::Init(void)
 	// set the arm deadline to an sure unarmed value
 	arm_deadline = osalOsGetSystemTimeX();
 
+	// Set up subject subscriptions and RPC-service servers.
+	// Message subscriptions:
+	if (canard.node_id > CANARD_NODE_ID_MAX)
+	{
+		static CanardRxSubscription rx;
+		const int8_t                res =  //
+				canardRxSubscribe(&canard,
+						CanardTransferKindMessage,
+						uavcan_pnp_NodeIDAllocationData_1_0_FIXED_PORT_ID_,
+						uavcan_pnp_NodeIDAllocationData_1_0_EXTENT_BYTES_,
+						CANARD_DEFAULT_TRANSFER_ID_TIMEOUT_USEC,
+						&rx);
+		if (res < 0)
+		{
+			//            return -res;
+		}
+	}
+
 	heartbeat_thread.start(NORMALPRIO);
 }
 
@@ -885,6 +903,8 @@ void uavcan::SendFeedback(void)
  */
 void uavcan::can_heartbeat::main(void)
 {
+	static std::uint8_t heartbeat_transfer_id;
+
 	setName("UAVCAN HEARTBEAT");
 
 	/*
@@ -896,13 +916,15 @@ void uavcan::can_heartbeat::main(void)
 		// saturated uptime
 		if(uptime < std::numeric_limits<std::uint32_t>::max()) uptime++;
 
+		static bool was_anonymous = true;
+		static std::uint16_t old_servo_readiness = CANARD_SUBJECT_ID_MAX;
+		static std::uint16_t old_servo_setpoint = CANARD_SUBJECT_ID_MAX;
 		const bool anonymous = canard.node_id > CANARD_NODE_ID_MAX;
 		const CanardMicrosecond deadline_time = hardware::GetMonotonicMicroseconds() + 250000ULL;
 
 		// Publish heartbeat every second unless the local node is anonymous. Anonymous nodes shall not publish heartbeat.
 		if (!anonymous)
 		{
-			static std::uint8_t heartbeat_transfer_id;
 			uavcan_node_Heartbeat_1_0 heartbeat = {
 				.uptime                      = uptime,
 				.health                      = {uavcan_node_Health_1_0_NOMINAL},
@@ -947,29 +969,13 @@ void uavcan::can_heartbeat::main(void)
 					// It is possible to statically prove that an out-of-memory will never occur for a given application if the
 					// heap is sized correctly; for background, refer to the Robson's Proof and the documentation for O1Heap.
 					osalDbgAssert(result < 0, "UAVCAN Heartbeat tx push error");
+				}
 			}
 
 			// Subscriptions:
 			// (none in this application)
-
-			// Set up subject subscriptions and RPC-service servers.
-			// Message subscriptions:
-			if (canard.node_id > CANARD_NODE_ID_MAX)
-			{
-				static CanardRxSubscription rx;
-				const int8_t                res =  //
-						canardRxSubscribe(&canard,
-								CanardTransferKindMessage,
-								uavcan_pnp_NodeIDAllocationData_1_0_FIXED_PORT_ID_,
-								uavcan_pnp_NodeIDAllocationData_1_0_EXTENT_BYTES_,
-								CANARD_DEFAULT_TRANSFER_ID_TIMEOUT_USEC,
-								&rx);
-				if (res < 0)
-				{
-					//            return -res;
-				}
-			}
 			// Service servers:
+			if(was_anonymous)
 			{
 				static CanardRxSubscription rx;
 				// set the request handler
@@ -986,6 +992,8 @@ void uavcan::can_heartbeat::main(void)
 					//            return -res;
 				}
 			}
+
+			if(was_anonymous)
 			{
 				static CanardRxSubscription rx;
 				rx.user_reference = (void*)ProcessRequestExecuteCommand;
@@ -1001,6 +1009,8 @@ void uavcan::can_heartbeat::main(void)
 					//            return -res;
 				}
 			}
+
+			if(was_anonymous)
 			{
 				static CanardRxSubscription rx;
 				rx.user_reference = (void*)ProcessRequestRegisterAccess;
@@ -1016,6 +1026,8 @@ void uavcan::can_heartbeat::main(void)
 					//            return -res;
 				}
 			}
+
+			if(was_anonymous)
 			{
 				static CanardRxSubscription rx;
 				rx.user_reference = (void*)ProcessRequestList;
@@ -1031,8 +1043,11 @@ void uavcan::can_heartbeat::main(void)
 					//            return -res;
 				}
 			}
+			was_anonymous = false;
 
-			if (settings.uavcan.subject.servo.setpoint <= CANARD_SUBJECT_ID_MAX)  // Do not subscribe if not configured.
+
+			if (   settings.uavcan.subject.servo.setpoint <= CANARD_SUBJECT_ID_MAX
+				&& settings.uavcan.subject.servo.setpoint != old_servo_setpoint)  // Do not subscribe if not configured.
 			{
 				static CanardRxSubscription rx;
 				// set the request handler
@@ -1048,9 +1063,14 @@ void uavcan::can_heartbeat::main(void)
 				{
 					//    		return -res;
 				}
+				else
+				{
+					 old_servo_setpoint = settings.uavcan.subject.servo.setpoint;
+				}
 			}
 
-			if (settings.uavcan.subject.servo.readiness <= CANARD_SUBJECT_ID_MAX)  // Do not subscribe if not configured.
+			if (	settings.uavcan.subject.servo.readiness <= CANARD_SUBJECT_ID_MAX
+				&&  settings.uavcan.subject.servo.readiness != old_servo_readiness)  // Do not subscribe if not configured.
 			{
 				static CanardRxSubscription rx;
 				// set the request handler
@@ -1066,12 +1086,19 @@ void uavcan::can_heartbeat::main(void)
 				{
 					//    		return -res;
 				}
+				else
+				{
+					 old_servo_readiness = settings.uavcan.subject.servo.readiness;
+				}
 			}
 		}
 #if HARDWARE_CAPABIITY_RANDOM == TRUE
 		else // If we don't have a node-ID, obtain one by publishing allocation request messages until we get a response.
 		{
 			std::uint8_t random;
+
+			was_anonymous = true;
+
 			// The Specification says that the allocation request publication interval shall be randomized.
 			// We implement randomization by calling rand() at fixed intervals and comparing it against some threshold.
 			// There are other ways to do it, of course. See the docs in the Specification or in the DSDL definition here:
@@ -1082,30 +1109,47 @@ void uavcan::can_heartbeat::main(void)
 			{
 				// Note that this will only work over CAN FD. If you need to run PnP over Classic CAN, use message v1.0.
 				uavcan_pnp_NodeIDAllocationData_1_0 msg = {
-					.unique_id_hash = DBGMCU->IDCODE,
-					.allocated_node_id = {0,0},
+						.unique_id_hash = DBGMCU->IDCODE,
+						.allocated_node_id = {0,0},
 				};
 				uint8_t      serialized[uavcan_pnp_NodeIDAllocationData_1_0_SERIALIZATION_BUFFER_SIZE_BYTES_] = {0};
 				size_t       serialized_size = sizeof(serialized);
 				const int8_t err = uavcan_pnp_NodeIDAllocationData_1_0_serialize_(&msg, &serialized[0], &serialized_size);
 
+
+				osalDbgAssert(err >= 0, "UAVCAN Node Alloc serialisation error!");
+
 				if (err >= 0)
 				{
-					const CanardTransfer transfer = {
-							.timestamp_usec = deadline_time,
+					heartbeat_transfer_id++;
+
+					const CanardTransferMetadata transfer_metadata = {
 							.priority       = CanardPrioritySlow,
 							.transfer_kind  = CanardTransferKindMessage,
 							.port_id        = uavcan_pnp_NodeIDAllocationData_1_0_FIXED_PORT_ID_,
-							.remote_node_id = CANARD_NODE_ID_UNSET,
-							.transfer_id    = (CanardTransferID)(next_transfer_id.pnp_allocation++),
-							.payload_size   = serialized_size,
-							.payload        = &serialized[0],
+							.remote_node_id = CANARD_NODE_ID_UNSET,       // Messages cannot be unicast, so use UNSET.
+							.transfer_id    = heartbeat_transfer_id,
 					};
-					(void) canardTxPush(&canard, &transfer);  // The response will arrive asynchronously eventually.
+
+					for(std::uint8_t i = 0; i < HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES; i++)
+					{
+						int32_t result = canardTxPush(&tx_queues[i], // Call this once per redundant CAN interface (queue).
+								&canard,
+								0,     		 			   // Zero if transmission deadline is not limited.
+								&transfer_metadata,
+								serialized_size,           // Size of the message payload (see Nunavut transpiler).
+								&serialized[0]);
+
+						// An error has occurred: either an argument is invalid, the TX queue is full, or we've run out of memory.
+						// It is possible to statically prove that an out-of-memory will never occur for a given application if the
+						// heap is sized correctly; for background, refer to the Robson's Proof and the documentation for O1Heap.
+						osalDbgAssert(result < 0, "UAVCAN Node Alloc tx push error");
+					}
 				}
+
 			}
-#endif
 		}
+#endif
 		sleepUntilWindowed(deadline, deadline + CYCLE_TIME);
 	}
 }

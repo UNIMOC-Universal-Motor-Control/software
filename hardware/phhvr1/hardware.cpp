@@ -27,21 +27,9 @@
 #include "hal.h"
 #include "hal_mfs.h"
 
-extern void hardware_pwm_Init(void);
-extern void hardware_analog_Init(void);
-extern void hardware_cordic_Init(void);
 
-/**
- * Initialize hardware with outputs disabled!
- */
-void hardware::Init()
-{
-	hardware_pwm_Init();
-	hardware_analog_Init();
-	hardware_cordic_Init();
-	trngInit();
-	trngStart(&TRNGD1, NULL);
-}
+///< CAN Driver instances if redundant. Instance 0 is always master CAN
+CANDriver* pcan[HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES] = {&CAND1};
 
 ///< embedded flash eeprom driver config
 MFSConfig mfscfg1 = {
@@ -53,6 +41,27 @@ MFSConfig mfscfg1 = {
   .bank1_start      = 255U,
   .bank1_sectors    = 1U
 };
+
+
+extern void hardware_pwm_Init(void);
+extern void hardware_analog_Init(void);
+extern void hardware_cordic_Init(void);
+extern void hardware_can_Init(void);
+
+/**
+ * Initialize hardware with outputs disabled!
+ */
+void hardware::Init()
+{
+	hardware_pwm_Init();
+	hardware_analog_Init();
+	hardware_cordic_Init();
+	hardware_can_Init();
+
+	trngInit();
+	trngStart(&TRNGD1, NULL);
+}
+
 
 /**
  * get the angle which is represented by the hall sensors

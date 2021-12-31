@@ -132,7 +132,8 @@ CPPSRC = $(ALLCPPSRC) \
          hardware.cpp \
          ../common/efld.cpp \
          ../common/cordic_math.cpp \
-         ../common/monotic_cm4.cpp
+         ../common/monotic_cm4.cpp \
+         ../common/fdcan.cpp
 
 # List ASM source files here.
 ASMSRC = $(ALLASMSRC)
