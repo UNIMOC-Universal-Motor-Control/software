@@ -3,10 +3,11 @@ BASEDIR := ../../
 
 # included modules
 include ${BASEDIR}/uavcan/uavcan.mk
+include ${BASEDIR}/systemview/systemview.mk
 
 # List of all the Project related hardware independent files.
 # C code
-UNIMOCSRC := ${UAVCANSRC}
+UNIMOCSRC := ${UAVCANSRC} ${SYSTEMVIEWSRC}
 
 # Cpp code
 UNIMOCCPPSRC := ${BASEDIR}/src/main.cpp \
@@ -25,8 +26,12 @@ UNIMOCCPPSRC := ${BASEDIR}/src/main.cpp \
 UNIMOCINC := ${BASEDIR}/inc \
              ${BASEDIR}/hardware/interface \
              ${UAVCANINC} \
+             ${SYSTEMVIEWINC}
+             
+UNIMOCASM := ${SYSTEMVIEWASM}
 
 # Shared variables
 ALLCPPSRC += ${UNIMOCCPPSRC}
 ALLCSRC += $(UNIMOCSRC)
 ALLINC  += $(UNIMOCINC)
+ALLXASMSRC  += ${UNIMOCSSM}

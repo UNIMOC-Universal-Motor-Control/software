@@ -31,6 +31,11 @@
 #define _CHIBIOS_RT_CONF_
 #define _CHIBIOS_RT_CONF_VER_7_0_
 
+#include "SEGGER_SYSVIEW.h"
+
+#define SYSVIEW_ENABLE 			1
+#define SYSVIEW_CFG_HIDE_IDLE 	TRUE
+
 /*===========================================================================*/
 /**
  * @name System settings
@@ -620,7 +625,7 @@
  *          @p panic_msg variable set to @p NULL.
  */
 #if !defined(CH_DBG_ENABLE_STACK_CHECK)
-#define CH_DBG_ENABLE_STACK_CHECK           FALSE
+#define CH_DBG_ENABLE_STACK_CHECK           TRUE
 #endif
 
 /**
@@ -705,10 +710,16 @@
  *
  * @param[in] tp        pointer to the @p thread_t structure
  */
+#if SYSVIEW_ENABLE == 1
+#define CH_CFG_THREAD_INIT_HOOK(tp) {                                       \
+  /* Add threads initialization code here.*/                                \
+  SEGGER_SYSVIEW_OnTaskCreate((uint32_t) tp);                               \
+}
+#else
 #define CH_CFG_THREAD_INIT_HOOK(tp) {                                       \
   /* Add threads initialization code here.*/                                \
 }
-
+#endif
 /**
  * @brief   Threads finalization hook.
  * @details User finalization code added to the @p chThdExit() API.
@@ -726,23 +737,66 @@
  * @param[in] ntp       thread being switched in
  * @param[in] otp       thread being switched out
  */
+#if SYSVIEW_ENABLE == 1
+#if SYSVIEW_CFG_HIDE_IDLE == TRUE
+#define CH_CFG_CONTEXT_SWITCH_HOOK(ntp, otp) {                              \
+  /* Context switch code here.*/                                            \
+  if (otp->prio != IDLEPRIO)                                                \
+  {                                                                         \
+    SEGGER_SYSVIEW_OnTaskStopExec();                                        \
+  }                                                                         \
+  if (ntp->prio == IDLEPRIO)                                                \
+  {                                                                         \
+    SEGGER_SYSVIEW_OnIdle();                                                \
+  } else                                                                    \
+  {                                                                         \
+    SEGGER_SYSVIEW_OnTaskStartExec((unsigned)ntp);                          \
+  }                                                                         \
+}
+#else
+#define CH_CFG_CONTEXT_SWITCH_HOOK(ntp, otp) {                              \
+  /* Context switch code here.*/                                            \
+  SEGGER_SYSVIEW_OnTaskStopExec();                                          \
+  SEGGER_SYSVIEW_OnTaskStartExec((unsigned)ntp);                            \
+}
+#endif
+#else
 #define CH_CFG_CONTEXT_SWITCH_HOOK(ntp, otp) {                              \
   /* Context switch code here.*/                                            \
 }
+#endif
 
 /**
  * @brief   ISR enter hook.
  */
+#if SYSVIEW_ENABLE == 1
+#define CH_CFG_IRQ_PROLOGUE_HOOK() {                                        \
+  /* IRQ prologue code here.*/                                              \
+  SEGGER_SYSVIEW_RecordEnterISR();                                          \
+}
+#else
 #define CH_CFG_IRQ_PROLOGUE_HOOK() {                                        \
   /* IRQ prologue code here.*/                                              \
 }
+#endif
+
 
 /**
  * @brief   ISR exit hook.
  */
+#if SYSVIEW_ENABLE == 1
+#define CH_CFG_IRQ_EPILOGUE_HOOK() {                                        \
+  /* IRQ epilogue code here.*/                                              \
+  if (chSchIsPreemptionRequired())                                          \
+    SEGGER_SYSVIEW_RecordExitISRToScheduler();                              \
+  else                                                                      \
+    SEGGER_SYSVIEW_RecordExitISR();                                         \
+}
+#else
 #define CH_CFG_IRQ_EPILOGUE_HOOK() {                                        \
   /* IRQ epilogue code here.*/                                              \
 }
+#endif
 
 /**
  * @brief   Idle thread enter hook.
