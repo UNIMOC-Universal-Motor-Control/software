@@ -33,7 +33,6 @@
 
 #define SYSVIEW_ENABLE 			1
 #define SYSVIEW_CFG_HIDE_IDLE 	TRUE
-
 /*===========================================================================*/
 /**
  * @name System settings
@@ -635,7 +634,7 @@
  * @note    The default is @p FALSE.
  */
 #if !defined(CH_DBG_FILL_THREADS)
-#define CH_DBG_FILL_THREADS                 FALSE
+#define CH_DBG_FILL_THREADS                 TRUE
 #endif
 
 /**
@@ -659,6 +658,20 @@
  * @{
  */
 /*===========================================================================*/
+#if !defined(__ASSEMBLER__)
+#if SYSVIEW_ENABLE == 1
+extern void SEGGER_SYSVIEW_OnIdle                        (void);
+extern void SEGGER_SYSVIEW_OnTaskCreate                  (unsigned int TaskId);
+extern void SEGGER_SYSVIEW_OnTaskTerminate               (unsigned int TaskId);
+extern void SEGGER_SYSVIEW_OnTaskStartExec               (unsigned int TaskId);
+extern void SEGGER_SYSVIEW_OnTaskStopExec                (void);
+extern void SEGGER_SYSVIEW_OnTaskStartReady              (unsigned int TaskId);
+extern void SEGGER_SYSVIEW_OnTaskStopReady               (unsigned int TaskId, unsigned int Cause);
+extern void SEGGER_SYSVIEW_RecordEnterISR                (void);
+extern void SEGGER_SYSVIEW_RecordExitISR                 (void);
+extern void SEGGER_SYSVIEW_RecordExitISRToScheduler      (void);
+#endif
+#endif
 
 /**
  * @brief   System structure extension.
@@ -739,11 +752,11 @@
 #if SYSVIEW_CFG_HIDE_IDLE == TRUE
 #define CH_CFG_CONTEXT_SWITCH_HOOK(ntp, otp) {                              \
   /* Context switch code here.*/                                            \
-  if (otp->prio != IDLEPRIO)                                                \
+  if (otp->realprio != IDLEPRIO)                                            \
   {                                                                         \
     SEGGER_SYSVIEW_OnTaskStopExec();                                        \
   }                                                                         \
-  if (ntp->prio == IDLEPRIO)                                                \
+  if (ntp->realprio == IDLEPRIO)                                            \
   {                                                                         \
     SEGGER_SYSVIEW_OnIdle();                                                \
   } else                                                                    \
