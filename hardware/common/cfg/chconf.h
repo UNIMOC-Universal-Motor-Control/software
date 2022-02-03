@@ -660,16 +660,25 @@
 /*===========================================================================*/
 #if !defined(__ASSEMBLER__)
 #if SYSVIEW_ENABLE == 1
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 extern void SEGGER_SYSVIEW_OnIdle                        (void);
-extern void SEGGER_SYSVIEW_OnTaskCreate                  (unsigned int TaskId);
-extern void SEGGER_SYSVIEW_OnTaskTerminate               (unsigned int TaskId);
-extern void SEGGER_SYSVIEW_OnTaskStartExec               (unsigned int TaskId);
+extern void SEGGER_SYSVIEW_OnTaskCreate                  (long unsigned int TaskId);
+extern void SEGGER_SYSVIEW_OnTaskTerminate               (long unsigned int TaskId);
+extern void SEGGER_SYSVIEW_OnTaskStartExec               (long unsigned int TaskId);
 extern void SEGGER_SYSVIEW_OnTaskStopExec                (void);
-extern void SEGGER_SYSVIEW_OnTaskStartReady              (unsigned int TaskId);
-extern void SEGGER_SYSVIEW_OnTaskStopReady               (unsigned int TaskId, unsigned int Cause);
+extern void SEGGER_SYSVIEW_OnTaskStartReady              (long unsigned int TaskId);
+extern void SEGGER_SYSVIEW_OnTaskStopReady               (long unsigned int TaskId, unsigned int Cause);
 extern void SEGGER_SYSVIEW_RecordEnterISR                (void);
 extern void SEGGER_SYSVIEW_RecordExitISR                 (void);
 extern void SEGGER_SYSVIEW_RecordExitISRToScheduler      (void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 #endif
 #endif
 

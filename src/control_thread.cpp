@@ -31,6 +31,7 @@
 #include "values.hpp"
 #include "settings.hpp"
 #include "hardware_interface.hpp"
+#include "SEGGER_RTT.h"
 
 /**
  * @namespace controller classes
@@ -257,6 +258,20 @@ namespace control
 			management::battery::u.Calculate(battery::u);
 			management::battery::i.Calculate(battery::i);
 			management::converter::temp.Calculate(converter::temp);
+
+		    //
+		    // Send data over RTT channel
+		    //
+//			values::scope::sample.timestamp = chibios_rt::System::getRealtimeCounterX();
+			values::scope::sample.ch[0] = motor::phase::i.array[0];
+			values::scope::sample.ch[1] = motor::phase::i.array[1];
+			values::scope::sample.ch[2] = motor::phase::i.array[2];
+			values::scope::sample.ch[3] = motor::phase::u.array[0];
+			values::scope::sample.ch[4] = motor::phase::u.array[1];
+			values::scope::sample.ch[5] = motor::phase::u.array[2];
+			values::scope::sample.ch[6] = battery::u;
+			values::scope::sample.ch[7] = battery::i;
+		    SEGGER_RTT_Write(SEGGER_J_SCOPE_CHANNEL, &values::scope::sample, sizeof(values::scope::scope_ts));
 		}
 
 	}

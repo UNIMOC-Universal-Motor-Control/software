@@ -67,6 +67,8 @@ Additional information:
 #ifndef SEGGER_SYSVIEW_CONF_H
 #define SEGGER_SYSVIEW_CONF_H
 
+#include "hardware.hpp"
+
 /*********************************************************************
 *
 *       Defines, configurable
@@ -75,11 +77,34 @@ Additional information:
 */
 
 /*********************************************************************
-* TODO: Add your defines here.                                       *
-**********************************************************************
+*
+*       Define: SEGGER_SYSVIEW_APP_NAME
+*
+*  Description
+*    The application name to be displayed in SystemView.
+*  Default
+*    "SystemView-enabled Application"
+*  Notes
+*    Convenience define to be used for SEGGER_SYSVIEW_SendSysDesc().
 */
+#ifndef   SEGGER_SYSVIEW_APP_NAME
+  #define SEGGER_SYSVIEW_APP_NAME                 "UNIMOC"
+#endif
 
-
+/*********************************************************************
+*
+*       Define: SEGGER_SYSVIEW_DEVICE_NAME
+*
+*  Description
+*    The target device name to be displayed in SystemView.
+*  Default
+*    "undefined device"
+*  Notes
+*    Convenience define to be used for SEGGER_SYSVIEW_SendSysDesc().
+*/
+#ifndef   SEGGER_SYSVIEW_DEVICE_NAME
+  #define SEGGER_SYSVIEW_DEVICE_NAME             HARDWARE_NAME
+#endif
 #endif  // SEGGER_SYSVIEW_CONF_H
 
 /*************************** End of file ****************************/

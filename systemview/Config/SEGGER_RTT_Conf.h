@@ -77,6 +77,7 @@ Revision: $Rev: 21386 $
 // Most common case:
 // Up-channel 0: RTT
 // Up-channel 1: SystemView
+// Up-channel 2: J-Scope
 //
 #ifndef   SEGGER_RTT_MAX_NUM_UP_BUFFERS
   #define SEGGER_RTT_MAX_NUM_UP_BUFFERS             (3)     // Max. number of up-buffers (T->H) available on this target    (Default: 3)
@@ -85,13 +86,14 @@ Revision: $Rev: 21386 $
 // Most common case:
 // Down-channel 0: RTT
 // Down-channel 1: SystemView
+// Down-channel 2: J-Scope
 //
 #ifndef   SEGGER_RTT_MAX_NUM_DOWN_BUFFERS
   #define SEGGER_RTT_MAX_NUM_DOWN_BUFFERS           (3)     // Max. number of down-buffers (H->T) available on this target  (Default: 3)
 #endif
 
 #ifndef   BUFFER_SIZE_UP
-  #define BUFFER_SIZE_UP                            (1024)  // Size of the buffer for terminal output of target, up to host (Default: 1k)
+  #define BUFFER_SIZE_UP                            (4096)  // Size of the buffer for terminal output of target, up to host (Default: 1k)
 #endif
 
 #ifndef   BUFFER_SIZE_DOWN
@@ -105,6 +107,8 @@ Revision: $Rev: 21386 $
 #ifndef   SEGGER_RTT_MODE_DEFAULT
   #define SEGGER_RTT_MODE_DEFAULT                   SEGGER_RTT_MODE_NO_BLOCK_SKIP // Mode for pre-initialized terminal channel (buffer 0)
 #endif
+
+#define SEGGER_J_SCOPE_CHANNEL (2)
 
 /*********************************************************************
 *

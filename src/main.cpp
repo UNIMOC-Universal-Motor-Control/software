@@ -32,6 +32,8 @@
 #include "control_thread.hpp"
 #include "main.hpp"
 #include "uavcan.hpp"
+#include "SEGGER_SYSVIEW.h"
+#include "SEGGER_RTT.h"
 
 using namespace chibios_rt;
 
@@ -53,6 +55,12 @@ int main(void)
 	 */
 	halInit();
 	System::init();
+	/* Configure and initialize SystemView */
+	SEGGER_SYSVIEW_Conf();
+	/*
+	 * Configure J-Scope RTT buffer for one unsigned int and one signed int
+	*/
+	SEGGER_RTT_ConfigUpBuffer(SEGGER_J_SCOPE_CHANNEL, values::scope::string.str, values::scope::buffer, values::scope::BUFFER_SIZE, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
 
 	/*
 	 * initialize hardware with no control thread
