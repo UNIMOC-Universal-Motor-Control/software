@@ -393,6 +393,8 @@ bool hardware::can::SetBitrate(const std::uint32_t nbitrate, const std::uint32_t
  */
 bool hardware::can::SetFilters(const std::uint8_t num, const CanardFilter* const filters)
 {
+	(void)num;
+	(void)filters;
 	return false;
 }
 
