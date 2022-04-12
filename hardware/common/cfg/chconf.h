@@ -31,8 +31,6 @@
 #define _CHIBIOS_RT_CONF_
 #define _CHIBIOS_RT_CONF_VER_7_0_
 
-#define SYSVIEW_ENABLE 			1
-#define SYSVIEW_CFG_HIDE_IDLE 	TRUE
 /*===========================================================================*/
 /**
  * @name System settings
@@ -566,7 +564,7 @@
  * @note    The default is @p FALSE.
  */
 #if !defined(CH_DBG_SYSTEM_STATE_CHECK)
-#define CH_DBG_SYSTEM_STATE_CHECK           FALSE
+#define CH_DBG_SYSTEM_STATE_CHECK           TRUE
 #endif
 
 /**
@@ -634,7 +632,7 @@
  * @note    The default is @p FALSE.
  */
 #if !defined(CH_DBG_FILL_THREADS)
-#define CH_DBG_FILL_THREADS                 TRUE
+#define CH_DBG_FILL_THREADS                 FALSE
 #endif
 
 /**
@@ -658,29 +656,6 @@
  * @{
  */
 /*===========================================================================*/
-#if !defined(__ASSEMBLER__)
-#if SYSVIEW_ENABLE == 1
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-extern void SEGGER_SYSVIEW_OnIdle                        (void);
-extern void SEGGER_SYSVIEW_OnTaskCreate                  (long unsigned int TaskId);
-extern void SEGGER_SYSVIEW_OnTaskTerminate               (long unsigned int TaskId);
-extern void SEGGER_SYSVIEW_OnTaskStartExec               (long unsigned int TaskId);
-extern void SEGGER_SYSVIEW_OnTaskStopExec                (void);
-extern void SEGGER_SYSVIEW_OnTaskStartReady              (long unsigned int TaskId);
-extern void SEGGER_SYSVIEW_OnTaskStopReady               (long unsigned int TaskId, unsigned int Cause);
-extern void SEGGER_SYSVIEW_RecordEnterISR                (void);
-extern void SEGGER_SYSVIEW_RecordExitISR                 (void);
-extern void SEGGER_SYSVIEW_RecordExitISRToScheduler      (void);
-
-#ifdef __cplusplus
-} // extern "C"
-#endif
-#endif
-#endif
 
 /**
  * @brief   System structure extension.
@@ -730,23 +705,17 @@ extern void SEGGER_SYSVIEW_RecordExitISRToScheduler      (void);
  *
  * @param[in] tp        pointer to the @p thread_t structure
  */
-#if SYSVIEW_ENABLE == 1
-#define CH_CFG_THREAD_INIT_HOOK(tp) {                                       \
-  /* Add threads initialization code here.*/                                \
-  SEGGER_SYSVIEW_OnTaskCreate((uint32_t) tp);                               \
-}
-#else
-#define CH_CFG_THREAD_INIT_HOOK(tp) {                                       \
+#define _CH_CFG_THREAD_INIT_HOOK(tp) {                                       \
   /* Add threads initialization code here.*/                                \
 }
-#endif
+
 /**
  * @brief   Threads finalization hook.
  * @details User finalization code added to the @p chThdExit() API.
  *
  * @param[in] tp        pointer to the @p thread_t structure
  */
-#define CH_CFG_THREAD_EXIT_HOOK(tp) {                                       \
+#define _CH_CFG_THREAD_EXIT_HOOK(tp) {                                       \
   /* Add threads finalization code here.*/                                  \
 }
 
@@ -757,66 +726,23 @@ extern void SEGGER_SYSVIEW_RecordExitISRToScheduler      (void);
  * @param[in] ntp       thread being switched in
  * @param[in] otp       thread being switched out
  */
-#if SYSVIEW_ENABLE == 1
-#if SYSVIEW_CFG_HIDE_IDLE == TRUE
-#define CH_CFG_CONTEXT_SWITCH_HOOK(ntp, otp) {                              \
-  /* Context switch code here.*/                                            \
-  if (otp->realprio != IDLEPRIO)                                            \
-  {                                                                         \
-    SEGGER_SYSVIEW_OnTaskStopExec();                                        \
-  }                                                                         \
-  if (ntp->realprio == IDLEPRIO)                                            \
-  {                                                                         \
-    SEGGER_SYSVIEW_OnIdle();                                                \
-  } else                                                                    \
-  {                                                                         \
-    SEGGER_SYSVIEW_OnTaskStartExec((unsigned)ntp);                          \
-  }                                                                         \
-}
-#else
-#define CH_CFG_CONTEXT_SWITCH_HOOK(ntp, otp) {                              \
-  /* Context switch code here.*/                                            \
-  SEGGER_SYSVIEW_OnTaskStopExec();                                          \
-  SEGGER_SYSVIEW_OnTaskStartExec((unsigned)ntp);                            \
-}
-#endif
-#else
-#define CH_CFG_CONTEXT_SWITCH_HOOK(ntp, otp) {                              \
+#define _CH_CFG_CONTEXT_SWITCH_HOOK(ntp, otp) {                              \
   /* Context switch code here.*/                                            \
 }
-#endif
 
 /**
  * @brief   ISR enter hook.
  */
-#if SYSVIEW_ENABLE == 1
-#define CH_CFG_IRQ_PROLOGUE_HOOK() {                                        \
-  /* IRQ prologue code here.*/                                              \
-  SEGGER_SYSVIEW_RecordEnterISR();                                          \
-}
-#else
-#define CH_CFG_IRQ_PROLOGUE_HOOK() {                                        \
+#define _CH_CFG_IRQ_PROLOGUE_HOOK() {                                        \
   /* IRQ prologue code here.*/                                              \
 }
-#endif
-
 
 /**
  * @brief   ISR exit hook.
  */
-#if SYSVIEW_ENABLE == 1
-#define CH_CFG_IRQ_EPILOGUE_HOOK() {                                        \
-  /* IRQ epilogue code here.*/                                              \
-  if (chSchIsPreemptionRequired())                                          \
-    SEGGER_SYSVIEW_RecordExitISRToScheduler();                              \
-  else                                                                      \
-    SEGGER_SYSVIEW_RecordExitISR();                                         \
-}
-#else
-#define CH_CFG_IRQ_EPILOGUE_HOOK() {                                        \
+#define _CH_CFG_IRQ_EPILOGUE_HOOK() {                                        \
   /* IRQ epilogue code here.*/                                              \
 }
-#endif
 
 /**
  * @brief   Idle thread enter hook.
@@ -860,7 +786,7 @@ extern void SEGGER_SYSVIEW_RecordExitISRToScheduler      (void);
  * @details This hook is invoked in case to a system halting error before
  *          the system is halted.
  */
-#define CH_CFG_SYSTEM_HALT_HOOK(reason) {                                   \
+#define _CH_CFG_SYSTEM_HALT_HOOK(reason) {                                   \
   /* System halt code here.*/                                               \
 }
 
@@ -887,6 +813,9 @@ extern void SEGGER_SYSVIEW_RecordExitISRToScheduler      (void);
 /* Port-specific settings (override port settings defaulted in chcore.h).    */
 /*===========================================================================*/
 
-#endif  /* CHCONF_H */
+#if !defined(_FROM_ASM_)
+#include "SEGGER_SYSVIEW_ChibiOS.h"
+#endif
 
+#endif  /* CHCONF_H */
 /** @} */

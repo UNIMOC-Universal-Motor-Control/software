@@ -31,9 +31,10 @@
 #include "management.hpp"
 #include "control_thread.hpp"
 #include "main.hpp"
-#include "uavcan.hpp"
-#include "SEGGER_SYSVIEW.h"
+
+#include "SEGGER_SYSVIEW_Chibios.h"
 #include "SEGGER_RTT.h"
+#include "uavcan.hpp"
 
 using namespace chibios_rt;
 
@@ -55,8 +56,10 @@ int main(void)
 	 */
 	halInit();
 	System::init();
-	/* Configure and initialize SystemView */
-	SEGGER_SYSVIEW_Conf();
+
+	/* Configure and initialize SystemView with all the needed IRQ Names */
+	SYSVIEW_ChibiOS_Start(STM32_SYSCLK, STM32_SYSCLK, "I#15=SysTick");
+
 	/*
 	 * Configure J-Scope RTT buffer for one unsigned int and one signed int
 	*/

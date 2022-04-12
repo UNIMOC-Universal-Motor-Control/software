@@ -30,8 +30,9 @@
 #include "filter.hpp"
 #include "values.hpp"
 #include "settings.hpp"
+
+#include "../systemview/segger/SEGGER_RTT.h"
 #include "hardware_interface.hpp"
-#include "SEGGER_RTT.h"
 
 /**
  * @namespace controller classes
