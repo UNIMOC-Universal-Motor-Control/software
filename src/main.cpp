@@ -5,7 +5,7 @@
 	/ /_/ / /|  // // /  / / /_/ / /___
 	\____/_/ |_/___/_/  /_/\____/\____/
 
-	Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
+	Universal Motor Control  2022 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 
@@ -25,8 +25,6 @@
 #include <cstring>
 #include <stdint.h>
 #include "ch.hpp"
-#include "hal.h"
-#include "usbcfg.h"
 #include "hardware_interface.hpp"
 #include "management.hpp"
 #include "control_thread.hpp"
@@ -69,22 +67,6 @@ int main(void)
 	 * initialize hardware with no control thread
 	 */
 	hardware::Init();
-
-	/*
-	 * Initializes two serial-over-USB CDC drivers.
-	 */
-	sduObjectInit(&SDU1);
-	sduStart(&SDU1, &serusbcfg);
-
-	/*
-	 * Activates the USB driver and then the USB bus pull-up on D+.
-	 * Note, a delay is inserted in order to not have to disconnect the cable
-	 * after a reset.
-	 */
-	usbDisconnectBus(serusbcfg.usbp);
-	chThdSleepMilliseconds(1500);
-	usbStart(serusbcfg.usbp, &usbcfg);
-	usbConnectBus(serusbcfg.usbp);
 
 	/*
 	 * setup pwm according to config

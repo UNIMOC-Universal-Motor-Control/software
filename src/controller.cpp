@@ -1,5 +1,5 @@
 /*
-    UNIMOC - Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
+    UNIMOC - Universal Motor Control  2022 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 

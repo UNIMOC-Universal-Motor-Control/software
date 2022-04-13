@@ -5,7 +5,7 @@
 	/ /_/ / /|  // // /  / / /_/ / /___
 	\____/_/ |_/___/_/  /_/\____/\____/
 
-	Universal Motor Control  2021 Alexander <tecnologic86@gmail.com> Evers
+	Universal Motor Control  2022 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 
