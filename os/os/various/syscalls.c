@@ -193,7 +193,7 @@ void _exit(int status) {
 
 /***************************************************************************/
 
-__attribute__((used))
+__attribute__((used, weak))
 int _kill_r(struct _reent *r, int pid, int sig) {
   (void) pid;
   (void) sig;
@@ -208,4 +208,12 @@ int _getpid(void) {
 
   return 1;
 }
+
+#ifdef __cplusplus
+extern "C" {
+  void __cxa_pure_virtual(void) {
+    osalSysHalt("Pure virtual function call.");
+  }
+}
+#endif
 /*** EOF ***/
