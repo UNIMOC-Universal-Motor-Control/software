@@ -89,7 +89,7 @@ PROJECT = unimoc_75100
 MCU  = cortex-m4
 
 # Imported source files and paths.
-CHIBIOS  := ../../os
+CHIBIOS  := ../../chibios
 CONFDIR  := ./cfg  ../common/cfg
 BUILDDIR := ./build
 DEPDIR   := ./.dep
@@ -123,7 +123,6 @@ LDSCRIPT= ./STM32F405xG.ld
 # setting.
 CSRC = $(ALLCSRC) \
        usbcfg.c \
-       syscalls_stub.c \
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.

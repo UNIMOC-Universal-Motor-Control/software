@@ -18,8 +18,8 @@
 #ifndef SEGGER_RTT_streams_H_
 #define SEGGER_RTT_streams_H_
 
-#include "SEGGER_RTT.h"
 #include "hal.h"
+#include "SEGGER_RTT.h"
 
 /*===========================================================================*/
 /* Driver pre-compile time settings.                                         */

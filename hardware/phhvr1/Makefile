@@ -89,7 +89,7 @@ PROJECT = unimoc_phhvr1
 MCU  = cortex-m4
 
 # Imported source files and paths.
-CHIBIOS  := ../../os
+CHIBIOS  := ../../chibios
 CONFDIR  := ./cfg  ../common/cfg
 BUILDDIR := ./build
 DEPDIR   := ./.dep

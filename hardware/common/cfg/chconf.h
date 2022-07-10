@@ -704,10 +704,40 @@
  *          the threads creation APIs.
  *
  * @param[in] tp        pointer to the @p thread_t structure
+ *
+ * We report the thread creation and we immediately send the TaskInfo
+ * structure, so that SystemView can show it as early as possible.
  */
-#define _CH_CFG_THREAD_INIT_HOOK(tp) {                                       \
-  /* Add threads initialization code here.*/                                \
+#define CH_CFG_THREAD_INIT_HOOK(tp) {                                       \
+	SEGGER_SYSVIEW_OnTaskCreate((U32)tp);                   \
+	SYSVIEW_ChibiOS_SendTaskInfo((const void *)tp);         \
 }
+
+/** CH_CFG_THREAD_READY_HOOK:
+ *
+ * This is an *extra* hook, not present in the "stock" ChibiOS code. It is
+ * important if you want SystemView to show all the ready threads, even if
+ * they are not executing.
+ *
+ * The hook should be placed just before the return lines of the chSchReadyI
+ * and the chSchReadyAheadI functions, in chschd.c:
+ *
+ * thread_t *chSchReadyAheadI(thread_t *tp) {
+ *   ...
+ *   CH_CFG_THREAD_READY_HOOK(tp);
+ *   return tp;
+ * }
+ *
+ * thread_t *chSchReadyI(thread_t *tp) {
+ *   ...
+ *   CH_CFG_THREAD_READY_HOOK(tp);
+ *   return tp;
+ * }
+ */
+#define CH_CFG_THREAD_READY_HOOK(tp) {                    \
+	SEGGER_SYSVIEW_OnTaskStartReady((U32)tp);               \
+}
+
 
 /**
  * @brief   Threads finalization hook.
@@ -715,8 +745,8 @@
  *
  * @param[in] tp        pointer to the @p thread_t structure
  */
-#define _CH_CFG_THREAD_EXIT_HOOK(tp) {                                       \
-  /* Add threads finalization code here.*/                                  \
+#define CH_CFG_THREAD_EXIT_HOOK(tp) {                                       \
+	SEGGER_SYSVIEW_OnTaskStopExec();                        \
 }
 
 /**
@@ -725,23 +755,95 @@
  *
  * @param[in] ntp       thread being switched in
  * @param[in] otp       thread being switched out
+ *
+ * This hook is called when switching context from Thread to Thread, or by the
+ * tail ISR exit sequence (see comments at CH_CFG_IRQ_EPILOGUE_HOOK).
+ *
+ * First, we report the switching-out of the "old" thread (otp), and then the
+ * switching-in of the "new" thread. Unfortunately, SystemView treats the idle
+ * thread as a special case, so we need to do some ugly handling here.
+ *
  */
-#define _CH_CFG_CONTEXT_SWITCH_HOOK(ntp, otp) {                              \
-  /* Context switch code here.*/                                            \
+#define CH_CFG_CONTEXT_SWITCH_HOOK(ntp, otp) {                              \
+	if (otp->hdr.pqueue.prio != IDLEPRIO) {                            \
+		SEGGER_SYSVIEW_OnTaskStopReady((U32)otp, otp->state); \
+	}                                                       \
+	if (ntp->hdr.pqueue.prio == IDLEPRIO) {                 \
+		SEGGER_SYSVIEW_OnIdle();                              \
+	} else {                                                \
+		SEGGER_SYSVIEW_OnTaskStartExec((U32)ntp);             \
+	}                                                       \
 }
 
 /**
  * @brief   ISR enter hook.
+ *
+ * For the ARM Cortex-M* architectures, the PORT_IRQ_PROLOGUE doesn't contain
+ * any code, so the timestamp shown by SystemView for the ISR entry is quite
+ * accurate.
  */
-#define _CH_CFG_IRQ_PROLOGUE_HOOK() {                                        \
-  /* IRQ prologue code here.*/                                              \
+#define CH_CFG_IRQ_PROLOGUE_HOOK() {                                        \
+	SEGGER_SYSVIEW_RecordEnterISR();                        \
 }
 
 /**
  * @brief   ISR exit hook.
+ *
+ * When the ISR is at the tail, and preemption is required, we tell SystemView
+ * that we exit the ISR to the scheduler first so that the code between
+ * CH_CFG_IRQ_EPILOGUE_HOOK and the actual context switch will be shown as
+ * "scheduler". Otherwise, that time will be shown as belonging to the thread
+ * that was running before the first ISR. If the ISR is not at the tail, we
+ * simply tell SystemView that the ISR has been exited. If the ISR is at the
+ * tail but preemption is not required, we tell Systemview that we exit the ISR
+ * so that it shows that the last thread resumes execution.
+ *
+ * When the ISR is at the tail, and preemption is required, this hook will
+ * be immediately followed by CH_CFG_CONTEXT_SWITCH_HOOK (see
+ * _port_switch_from_isr()).
+ *
+ * Actually, this hook runs a bit early in the ISR exit sequence, so the
+ * scheduler time shown by SystemView will be underestimated. The ideal place
+ * to place these calls would be at _port_irq_epilogue.
+ *
+ * Note: Unfortunately, this hook is specific to the Cortex-M architecture
+ * until ChibiOS gets a generic "_isr_is_tail()" macro/function.
  */
-#define _CH_CFG_IRQ_EPILOGUE_HOOK() {                                        \
-  /* IRQ epilogue code here.*/                                              \
+#if defined(__GNUC__)
+#  if (defined(__ARM_ARCH_6M__) || defined(__ARM_ARCH_8M_BASE__))
+#    define _isr_is_tail()    (_saved_lr != (regarm_t)0xFFFFFFF1U)
+#  elif (defined(__ARM_ARCH_7M__) || defined(__ARM_ARCH_7EM__) || defined(__ARM_ARCH_8M_MAIN__))
+#    define _isr_is_tail()    ((SCB->ICSR & SCB_ICSR_RETTOBASE_Msk) != 0U)
+#  else
+#    error "SYSVIEW integration: unsupported architecture"
+#  endif
+#elif defined(__ICCARM__)
+#  if (defined (__ARM6M__) && (__CORE__ == __ARM6M__))
+#    define _isr_is_tail()    (_saved_lr != (regarm_t)0xFFFFFFF1U)
+#  elif ((defined (__ARM7EM__) && (__CORE__ == __ARM7EM__)) || (defined (__ARM7M__) && (__CORE__ == __ARM7M__)))
+#    define _isr_is_tail()    ((SCB->ICSR & SCB_ICSR_RETTOBASE_Msk) != 0U)
+#  else
+#    error "SYSVIEW integration: unsupported architecture"
+#  endif
+#elif defined(__CC_ARM)
+#  if (defined __TARGET_ARCH_6S_M)
+#    define _isr_is_tail()    (_saved_lr != (regarm_t)0xFFFFFFF1U)
+#  elif (defined(__TARGET_ARCH_7_M) || defined(__TARGET_ARCH_7E_M))
+#    define _isr_is_tail()    ((SCB->ICSR & SCB_ICSR_RETTOBASE_Msk) != 0U)
+#  else
+#    error "SYSVIEW integration: unsupported architecture"
+#  endif
+#else
+#  error "SYSVIEW integration: unsupported compiler"
+#endif
+
+#define CH_CFG_IRQ_EPILOGUE_HOOK() {                      \
+  port_lock_from_isr();                                   \
+  if (_isr_is_tail() && chSchIsPreemptionRequired()) {    \
+    SEGGER_SYSVIEW_RecordExitISRToScheduler();            \
+  } else {                                                \
+    SEGGER_SYSVIEW_RecordExitISR();                       \
+  }                                                       \
 }
 
 /**
@@ -786,8 +888,8 @@
  * @details This hook is invoked in case to a system halting error before
  *          the system is halted.
  */
-#define _CH_CFG_SYSTEM_HALT_HOOK(reason) {                                   \
-  /* System halt code here.*/                                               \
+#define CH_CFG_SYSTEM_HALT_HOOK(reason) {                                   \
+	SEGGER_SYSVIEW_Error(reason);                           \
 }
 
 /**

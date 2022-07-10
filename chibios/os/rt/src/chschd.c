@@ -290,6 +290,8 @@ thread_t *chSchReadyI(thread_t *tp) {
   }
 #endif
 
+  CH_CFG_THREAD_READY_HOOK(tp);
+
   return __sch_ready_behind(tp);
 }
 
