@@ -177,7 +177,7 @@ static ADCConversionGroup adcgrpcfg1 = {
 		adccallback,
 		adcerrorcallback,
 		0,                                                    /* CR1   */
-		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
+		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_3,/* CR2   */
 		ADC_SMPR1_SMP_AN12(ADC_SAMPLE_3),                    /* SMPR1 */
 		ADC_SMPR2_SMP_AN4(ADC_SAMPLE_3),                     /* SMPR2 */
 		0,                                                    /* HTR */
@@ -212,7 +212,7 @@ static ADCConversionGroup adcgrpcfg2 = {
 		nullptr,
 		adcerrorcallback,
 		0,                                                    /* CR1   */
-		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
+		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_3,/* CR2   */
 		0,                                                    /* SMPR1 */
 		ADC_SMPR2_SMP_AN0(ADC_SAMPLE_3) |
 		ADC_SMPR2_SMP_AN5(ADC_SAMPLE_3) |
@@ -249,7 +249,7 @@ static ADCConversionGroup adcgrpcfg3 = {
 		nullptr,
 		adcerrorcallback,
 		0,                                                    /* CR1   */
-		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_2,/* CR2   */
+		ADC_CR2_EXTEN_1 | ADC_CR2_EXTSEL_0 | ADC_CR2_EXTSEL_3,/* CR2   */
 		ADC_SMPR1_SMP_AN11(ADC_SAMPLE_3),                     /* SMPR1 */
 		ADC_SMPR2_SMP_AN2(ADC_SAMPLE_3),                      /* SMPR2 */
 		0,                                                    /* HTR */
@@ -519,12 +519,6 @@ static void adcerrorcallback(ADCDriver *adcp, adcerror_t err)
 static void adccallback(ADCDriver *adcp)
 {
 	(void)adcp;
-
-	/* DMA buffer invalidation because data cache, only invalidating the
-     * buffer just filled.
-     */
-	cacheBufferInvalidate(&samples[0][0][0], sizeof(adcsample_t)*LENGTH_ADC_SEQ*ADC_SEQ_BUFFERED*NUM_OF_ADC);
-
 	// only every second cycle because of current zero delay sample estimation
 	if(!hardware::control_thread.isNull())
 	{

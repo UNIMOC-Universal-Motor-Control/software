@@ -56,7 +56,7 @@ int main(void)
 	System::init();
 
 	/* Configure and initialize SystemView with all the needed IRQ Names */
-	SYSVIEW_ChibiOS_Start(STM32_SYSCLK, STM32_SYSCLK, "I#15=SysTick");
+	SYSVIEW_ChibiOS_Start(STM32_SYSCLK, STM32_SYSCLK, "I#15=SysTick,I#44=TIM2,I#73=ADC1,I#74=ADC2,I#76=ADC3");
 
 	/*
 	 * Configure J-Scope RTT buffer for one unsigned int and one signed int
@@ -71,9 +71,8 @@ int main(void)
 	/*
 	 * setup pwm according to config
 	 */
-	hardware::pwm::Frequency(settings.converter.frequency);
-	hardware::pwm::Deadtime(settings.converter.deadtime);
-
+	settings.converter.frequency = hardware::pwm::Frequency(settings.converter.frequency);
+	settings.converter.deadtime = hardware::pwm::Deadtime(settings.converter.deadtime);
 
 	/*
 	 * start threads
@@ -81,7 +80,7 @@ int main(void)
 	chThdSetPriority(HIGHPRIO);
 	hardware::control_thread = controller.start(HIGHPRIO - 1);
 	manager.start(NORMALPRIO + 2);
-	uavcan::Init();
+//	uavcan::Init();
 	chThdSetPriority(LOWPRIO);
 
 	/*

@@ -242,7 +242,7 @@ __attribute__((aligned (32))) settings_ts settings =
 		.deadtime = 1000,
 
 		///< pwm frequency
-		.frequency = 32000,
+		.frequency = 8000,
 
 		///< maps the phase wires to internal phases
 		.map =

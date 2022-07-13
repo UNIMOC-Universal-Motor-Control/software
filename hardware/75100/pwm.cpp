@@ -160,6 +160,7 @@ void hardware_pwm_Init(void)
 	PWMP->tim->CR1 |= STM32_TIM_CR1_CMS(2) | STM32_TIM_CR1_CKD(1); // center aligned mode and deadtime generation with clock/2
 	PWMP->tim->SMCR |= STM32_TIM_SMCR_MSM;
 	PWMP->tim->CR1 &= ~STM32_TIM_CR1_URS; // every thing is an update event
+	PWMP->tim->CR1 |= STM32_TIM_CR1_CEN; // timer start again
 
 	/* start the ADC trigger timer */
 	pwmStart(ADC_TRIGP, &adctriggercfg);
@@ -251,7 +252,7 @@ std::uint32_t hardware::pwm::Frequency(const std::uint32_t freq)
 	ctf = tc + TF_HW_CUR;
 	vtf = tc + TF_HW_VOLT;
 
-	frequency = (std::uint32_t)(fc * 2.0f);
+	frequency = (std::uint32_t)(fc * 0.5f);
 
 	return frequency;
 }

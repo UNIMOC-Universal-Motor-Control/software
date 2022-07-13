@@ -24,13 +24,11 @@ static const char *isr_desc;
 
 static void _cbSendTaskList(void) {
   thread_t *tp;
-  syssts_t sts = chSysGetStatusAndLockX();
   tp = chRegFirstThread();
   do {
     SYSVIEW_ChibiOS_SendTaskInfo(tp);
     tp = chRegNextThread(tp);
   } while (tp != NULL);
-  chSysRestoreStatusX(sts);
 }
 
 static U64 _cbGetTime(void) {

@@ -48,7 +48,7 @@
 #define STM32_HSECLK                8000000U
 
 
-#define STM32_HSE_BYPASS
+//#define STM32_HSE_BYPASS
 
 /*
  * Board voltages.
