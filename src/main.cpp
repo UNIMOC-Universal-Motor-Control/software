@@ -32,7 +32,7 @@
 
 #include "SEGGER_SYSVIEW_Chibios.h"
 #include "SEGGER_RTT.h"
-#include "uavcan.hpp"
+#include "cyphal.hpp"
 
 using namespace chibios_rt;
 
@@ -80,7 +80,7 @@ int main(void)
 	chThdSetPriority(HIGHPRIO);
 	hardware::control_thread = controller.start(HIGHPRIO - 1);
 	manager.start(NORMALPRIO + 2);
-//	uavcan::Init();
+	cyphal::Init();
 	chThdSetPriority(LOWPRIO);
 
 	/*

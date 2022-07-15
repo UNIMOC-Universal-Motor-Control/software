@@ -2,12 +2,12 @@
 BASEDIR := ../../
 
 # included modules
-include ${BASEDIR}/uavcan/uavcan.mk
+include ${BASEDIR}/cyphal/cyphal.mk
 include ${BASEDIR}/systemview/systemview.mk
 
 # List of all the Project related hardware independent files.
 # C code
-UNIMOCSRC := ${UAVCANSRC} ${SYSTEMVIEWSRC}
+UNIMOCSRC := ${CYPHALSRC} ${SYSTEMVIEWSRC}
 
 # Cpp code
 UNIMOCCPPSRC := ${BASEDIR}/src/main.cpp \
@@ -20,12 +20,12 @@ UNIMOCCPPSRC := ${BASEDIR}/src/main.cpp \
                 ${BASEDIR}/src/management.cpp \
                 ${BASEDIR}/src/control_thread.cpp \
                 ${BASEDIR}/src/measurement.cpp \
-                ${UAVCANCPPSRC} \
+                ${CYPHALCPPSRC} \
 
 # Required include directories
 UNIMOCINC := ${BASEDIR}/inc \
              ${BASEDIR}/hardware/interface \
-             ${UAVCANINC} \
+             ${CYPHALINC} \
              ${SYSTEMVIEWINC}
              
 UNIMOCXASM := ${SYSTEMVIEWXASM}

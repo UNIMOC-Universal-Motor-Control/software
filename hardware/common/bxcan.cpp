@@ -203,7 +203,7 @@ void hardware_can_Init(void)
 {
 	const std::uint32_t FALLBACK_BITRATE = 125000;
 
-	cur_bitrate = settings.uavcan.nbitrate;
+	cur_bitrate = settings.cyphal.nbitrate;
 
 	// if successful SetBitrate will start the can interfaces.
 	while(!hardware::can::SetBitrate(cur_bitrate, 0, false))
@@ -327,11 +327,11 @@ bool hardware::can::SetBitrate(const std::uint32_t nbitrate, const std::uint32_t
  */
 bool hardware::can::SetFilters(const std::uint8_t num, const CanardFilter* const filters)
 {
-	CANFilter stm_filters[BXCAN_NUM_ACCEPTANCE_FILTERS * HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES] = {0};
+	CANFilter stm_filters[BXCAN_NUM_ACCEPTANCE_FILTERS * HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES];
 
 	if(num > BXCAN_NUM_ACCEPTANCE_FILTERS) return false;
 
-	for(std::uint_fast8_t i; i < num; i++)
+	for(std::uint_fast8_t i = 0; i < num; i++)
 	{
 		stm_filters[i].filter = i;
 		stm_filters[i].mode = 0;

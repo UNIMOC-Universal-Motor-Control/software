@@ -306,10 +306,10 @@ __attribute__((aligned (32))) settings_ts settings =
 	},
 
 	/**
-	 * @struct uavcan_s
-	 * @brief uavcan specific values
+	 * @struct cyphal_s
+	 * @brief cyphal specific values
 	 */
-	.uavcan =
+	.cyphal =
 	{
 		///< ID of the node in UAVCAN
 		.node_id = std::numeric_limits<std::uint16_t>::max(),

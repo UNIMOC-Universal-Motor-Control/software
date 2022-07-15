@@ -316,11 +316,11 @@ typedef struct settings_s
 	} throttle;
 
 	/**
-	 * @struct uavcan_s
-	 * @brief uavcan specific values
+	 * @struct cyphal_s
+	 * @brief cyphal specific values
 	 *
 	 */
-	struct uavcan_s
+	struct cyphal_s
 	{
 		///< ID of the node in UAVCAN
 		std::uint16_t node_id;
@@ -364,7 +364,7 @@ typedef struct settings_s
 				std::uint16_t readiness;
 			} servo;
 		} subject;
-	}uavcan;
+	}cyphal;
 
 	///< crc32 value for the hole settings
 	uint32_t crc;
