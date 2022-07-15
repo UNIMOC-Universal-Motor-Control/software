@@ -52,7 +52,7 @@ namespace terminal
 	void Init(void)
 	{
 		/*
-		 * Initializes two serial-over-USB CDC drivers.
+		 * Initializes serial-over-USB CDC driver.
 		 */
 		sduObjectInit(&SDU1);
 		sduStart(&SDU1, &serusbcfg);
@@ -73,8 +73,7 @@ namespace terminal
 		shellInit();
 
 		chThdCreateStatic(&wa_shell, sizeof(wa_shell),
-				SHELL_THREAD_NAME, NORMALPRIO + 1,
-				shellThread, (void *)&shell_cfg1);
+				NORMALPRIO + 1, shellThread, (void *)&shell_cfg1);
 	}
 
 } /* namespace terminal */
