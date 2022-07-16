@@ -22,12 +22,12 @@ void OnProjectLoad (void) {
   //
   // Dialog-generated settings
   //
-  Project.AddPathSubstitute ("D:/Elektronik/Projekte/unimoc/software/hardware/75100", "$(ProjectDir)");
-  Project.AddPathSubstitute ("d:/elektronik/projekte/unimoc/software/hardware/75100", "$(ProjectDir)");
   Project.SetDevice ("STM32F405RG");
   Project.SetHostIF ("USB", "260104367");
   Project.SetTargetIF ("SWD");
-  Project.SetTIFSpeed ("4 MHz");
+  Project.SetTIFSpeed ("12 MHz");
+  Project.AddPathSubstitute ("D:/Elektronik/Projekte/unimoc/software/hardware/75100", "$(ProjectDir)");
+  Project.AddPathSubstitute ("d:/elektronik/projekte/unimoc/software/hardware/75100", "$(ProjectDir)");
   Project.AddSvdFile ("$(InstallDir)/Config/CPU/Cortex-M4F.svd");
   Project.AddSvdFile ("$(InstallDir)/Config/Peripherals/STM32F407IG.svd");
   //
