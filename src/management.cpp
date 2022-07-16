@@ -33,6 +33,7 @@
 #include "management.hpp"
 #include "measurement.hpp"
 #include "control_thread.hpp"
+#include "cyphal.hpp"
 
 using namespace chibios_rt;
 
@@ -530,6 +531,9 @@ void management::thread::main(void)
 			else if(measure::flux) sequencer = MEASURE_PSI;
 
 			if(double_pulse::enable) sequencer = DOUBLE_PULSE;
+
+
+			cyphal::SendFeedback();
 
 			break;
 

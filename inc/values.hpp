@@ -175,9 +175,6 @@ namespace scope
 			///< rotor angle in q31
 			extern std::int32_t phi;
 
-			///< rotor angle in deg
-			extern float angle;
-
 			///< sine cosine values of phi
 			extern systems::sin_cos sc;
 

@@ -28,6 +28,8 @@
 #include "cyphal.hpp"
 #include "main.hpp"
 #include "hardware.hpp"
+#include "values.hpp"
+#include "settings.hpp"
 #include "uavcan/node/Heartbeat_1_0.h"
 #include "uavcan/pnp/NodeIDAllocationData_1_0.h"
 #include "uavcan/node/GetInfo_1_0.h"
@@ -222,6 +224,8 @@ static void ProcessGetNodeInfo(const CanardRxTransfer* transfer)
 
 	// The request object is empty so we don't bother deserializing it. Just send the response.
 	uavcan_node_GetInfo_Response_1_0 resp;
+	std::memset(&resp, 0, sizeof(resp));
+
 	resp.protocol_version.major           = CANARD_CYPHAL_SPECIFICATION_VERSION_MAJOR;
 	resp.protocol_version.minor           = CANARD_CYPHAL_SPECIFICATION_VERSION_MINOR;
 
@@ -650,6 +654,7 @@ void cyphal::can_rx::main(void)
 						if (transfer.metadata.port_id == uavcan_pnp_NodeIDAllocationData_1_0_FIXED_PORT_ID_)
 						{
 							uavcan_pnp_NodeIDAllocationData_1_0 msg;
+							std::memset(&msg, 0, sizeof(msg));
 							if (uavcan_pnp_NodeIDAllocationData_1_0_deserialize_(&msg, (uint8_t*)transfer.payload, &size) >= 0)
 							{
 								std::uint64_t uid = DBGMCU->IDCODE;
@@ -758,6 +763,7 @@ void cyphal::SendFeedback(void)
     if (!anonymous && (settings.cyphal.subject.servo.feedback <= CANARD_SUBJECT_ID_MAX))
     {
         reg_udral_service_actuator_common_Feedback_0_1 msg;
+        std::memset(&msg, 0, sizeof(msg));
         msg.heartbeat.readiness.value =
         		hardware::pwm::output::Active() ? reg_udral_service_common_Readiness_0_1_ENGAGED
         										: reg_udral_service_common_Readiness_0_1_STANDBY;
@@ -803,7 +809,7 @@ void cyphal::SendFeedback(void)
         reg_udral_physics_dynamics_rotation_PlanarTs_0_1 msg;
         // Our node does not synchronize its clock with the network, so we cannot timestamp our publications:
         msg.timestamp.microsecond = uavcan_time_SynchronizedTimestamp_1_0_UNKNOWN;
-        msg.value.kinematics.angular_position.radian                  = values::motor::rotor::angle;
+        msg.value.kinematics.angular_position.radian                  = ((float)values::motor::rotor::phi * math::_2PI) / (float)std::numeric_limits<std::int32_t>::max() ;
         msg.value.kinematics.angular_velocity.radian_per_second       = values::motor::rotor::omega;
         msg.value.kinematics.angular_acceleration.radian_per_second_per_second = 0.0f;
         msg.value._torque.newton_meter                                = values::motor::torque::electric;
@@ -905,7 +911,7 @@ void cyphal::can_heartbeat::main(void)
 {
 	static std::uint8_t heartbeat_transfer_id;
 
-	setName("cyphal HEARTBEAT");
+	setName("Cyphal Heartbeat");
 
 	/*
 	 * Normal main() thread activity, sleeping in a loop.
@@ -1090,6 +1096,13 @@ void cyphal::can_heartbeat::main(void)
 				{
 					 old_servo_readiness = settings.cyphal.subject.servo.readiness;
 				}
+			}
+
+			// Trigger Can tx
+			for (std::uint8_t i = 0; i < HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES; i++)
+			{
+				eventflags_t flags = i + 1;
+				osalEventBroadcastFlags(&es_tx_needed[i], flags);
 			}
 		}
 #if HARDWARE_CAPABIITY_RANDOM == TRUE
