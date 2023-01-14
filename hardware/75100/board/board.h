@@ -27,7 +27,7 @@
 /*===========================================================================*/
 
 /*
- * Setup for UNIMOC 48V 50A board.
+ * Setup for UNIMOC VESC FlipSky 75100 board.
  */
 
 /*
