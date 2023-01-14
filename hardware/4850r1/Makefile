@@ -124,7 +124,6 @@ LDSCRIPT= ./STM32F446xE.ld
 # setting.
 CSRC = $(ALLCSRC) \
        usbcfg.c \
-       syscalls_stub.c \
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
