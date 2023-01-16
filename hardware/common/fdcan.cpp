@@ -226,9 +226,9 @@ void hardware_can_Init(void)
 {
 	const std::uint32_t FALLBACK_BITRATE = 125000;
 
-	cur_nbitrate = settings.uavcan.nbitrate;
-	cur_dbitrate = settings.uavcan.dbitrate;
-	cur_fd_mode = settings.uavcan.fd;
+	cur_nbitrate = settings.cyphal.nbitrate;
+	cur_dbitrate = settings.cyphal.dbitrate;
+	cur_fd_mode = settings.cyphal.fd;
 
 	// if successful SetBitrate will start the can interfaces.
 	while(!hardware::can::SetBitrate(cur_nbitrate, cur_dbitrate, cur_fd_mode))

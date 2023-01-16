@@ -46,8 +46,8 @@ REGION_ALIAS("VECTORS_FLASH", flash0);
 REGION_ALIAS("VECTORS_FLASH_LMA", flash0);
 
 /* Flash region to be used for constructors and destructors.*/
-REGION_ALIAS("XTORS_FLASH", flash0);
-REGION_ALIAS("XTORS_FLASH_LMA", flash0);
+REGION_ALIAS("XTORS_FLASH", flash3);
+REGION_ALIAS("XTORS_FLASH_LMA", flash3);
 
 /* Flash region to be used for code text.*/
 REGION_ALIAS("TEXT_FLASH", flash3);
