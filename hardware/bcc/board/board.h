@@ -65,37 +65,37 @@
  */
 #define GPIOA_AIN_IA                0U
 #define GPIOA_AIN_IB                1U
-#define GPIOA_AIN_VA	            2U
-#define GPIOA_LED_RUN	            3U
-#define GPIOA_LED_ERR				4U
+#define GPIOA_AIN_VA                2U
+#define GPIOA_LED_RUN               3U
+#define GPIOA_LED_ERR               4U
 #define GPIOA_PULSE_CRK             5U
-#define GPIOA_AIN_VB	            6U
-#define GPIOA_PWM_AL	            7U
-#define GPIOA_AIN_TMOT		        8U
+#define GPIOA_AIN_VB                6U
+#define GPIOA_PWM_AL                7U
+#define GPIOA_AIN_TMOT              8U
 #define GPIOA_AIN_TBRDG             9U
 #define GPIOA_PWM_BRK               10U
 #define GPIOA_USB_DP                11U
 #define GPIOA_USB_DM                12U
-#define GPIOA_SWD_IO       			13U
-#define GPIOA_SWD_CLK 				14U
-#define GPIOA_LED_PWM				15U
+#define GPIOA_SWD_IO                13U
+#define GPIOA_SWD_CLK               14U
+#define GPIOA_LED_PWM               15U
 
-#define GPIOB_PWM_BL	            0U
+#define GPIOB_PWM_BL                0U
 #define GPIOB_AIN_IC                1U
 #define GPIOB_PULSE_MOT             2U
-#define GPIOB_CAN_RX	            3U
+#define GPIOB_CAN_RX                3U
 #define GPIOB_CAN_TX                4U
-#define GPIOB_PWM_CL	            5U
+#define GPIOB_PWM_CL                5U
 #define GPIOB_PWM_AH                6U
 #define GPIOB_CAN_SLP               7U
 #define GPIOB_PWM_BH                8U
 #define GPIOB_PWM_CH                9U
 #define GPIOB_DISP_TX               10U
-#define GPIOB_PWM_BRK               11U
+#define GPIOB_DISP_RX               11U
 #define GPIOB_AIN_VDC               12U
 #define GPIOB_AIN_VC                13U
 #define GPIOB_AIN_CRK_TRQ           14U
-#define GPIOB_DISP_RX               15U
+#define GPIOB_PWM_BRK               15U
 
 #define GPIOC_PIN0                  0U
 #define GPIOC_PIN1                  1U
@@ -110,7 +110,7 @@
 #define GPIOC_PIN10                 10U
 #define GPIOC_PIN11                 11U
 #define GPIOC_PIN12                 12U
-#define GPIOC_HALL_A		        13U
+#define GPIOC_HALL_A                13U
 #define GPIOC_HALL_B                14U
 #define GPIOC_HALL_C                15U
 
@@ -185,14 +185,7 @@
 /*
  * IO lines assignments.
  */
-#define LINE_VDC_NCS                PAL_LINE(GPIOA, 9U)
-#define LINE_IABC_NCS               PAL_LINE(GPIOB, 7U)
-#define LINE_LED_RED                PAL_LINE(GPIOE, 4U)
-#define LINE_LED_GREEN              PAL_LINE(GPIOE, 7U)
-#define LINE_RES_NSTANDBY           PAL_LINE(GPIOA, 3U)
-#define LINE_RES_NFAULT             PAL_LINE(GPIOA, 10U)
-#define LINE_GATE_EN                PAL_LINE(GPIOB, 11U)
-#define LINE_PWM_HWBREAK            PAL_LINE(GPIOB, 10U)
+//#define LINE_VDC_NCS                PAL_LINE(GPIOA, 9U)
 
 
 /*===========================================================================*/
@@ -240,234 +233,234 @@
  *
  * PA0  - AIN_IA                    (analog).
  * PA1  - AIN_IB                    (analog).
- * PA2  - TEMP_RES0                 (analog).
- * PA3  - RES_STANDBY               (output pushpull minimum).
- * PA4  - RES_REF                   (analog output)
- * PA5  - SPI1_SCK                  (alternate 5).
- * PA6  - SPI1_MISO                 (alternate 5).
- * PA7  - SPI1_MOSI                 (alternate 5).
- * PA8  - AIN_TCOOLING              (analog).
- * PA9  - VDC_NCS                   (output pushpull minimum).
- * PA10 - RES_NFAULT                (input pulldown).
- * PA11 - USB_DM                    (analog).
- * PA12 - USB_DP                    (analog).
- * PA13 - SWDIO                     (alternate 0).
- * PA14 - SWCLK                     (alternate 0).
- * PA15 - OVP_C                     (input pulldown).
+ * PA2  - AIN_VA	                (analog).
+ * PA3  - LED_RUN	                (output pushpull minimum).
+ * PA4  - LED_ERR	                (output pushpull minimum)
+ * PA5  - PULSE_CRK                 (alternate 2).
+ * PA6  - AIN_VB	                (analog).
+ * PA7  - PWM_AL	                (alternate 4).
+ * PA8  - AIN_TMOT	                (analog).
+ * PA9  - AIN_TBRDG                 (analog).
+ * PA10 - PWM_BRK                   (alternate 11).
+ * PA11 - USB_DP                    (analog).
+ * PA12 - USB_DM                    (analog).
+ * PA13 - SWD_IO                    (alternate 0).
+ * PA14 - SWD_CLK 	                (alternate 0).
+ * PA15 - LED_PWM	                (output pushpull minimum).
  */
-#define VAL_GPIOA_MODER             (PIN_MODE_ANALOG(GPIOA_AIN_IA       ) |     \
-                                     PIN_MODE_ANALOG(GPIOA_AIN_IB       ) |     \
-                                     PIN_MODE_ANALOG(GPIOA_TEMP_RES0    ) |     \
-                                     PIN_MODE_OUTPUT(GPIOA_REF_NSTANDBY ) |     \
-                                     PIN_MODE_ANALOG(GPIOA_RES_REF      ) |     \
-                                     PIN_MODE_ALTERNATE(GPIOA_SPI1_SCK  ) |     \
-                                     PIN_MODE_ALTERNATE(GPIOA_SPI1_MISO ) |     \
-                                     PIN_MODE_ALTERNATE(GPIOA_SPI1_MOSI ) |     \
-                                     PIN_MODE_ANALOG(GPIOA_AIN_TCOOLING ) |     \
-                                     PIN_MODE_OUTPUT(GPIOA_VDC_NCS      ) |     \
-                                     PIN_MODE_INPUT(GPIOA_RES_NFAULT    ) |     \
-                                     PIN_MODE_ANALOG(GPIOA_USB_DM       ) |     \
-                                     PIN_MODE_ANALOG(GPIOA_USB_DP       ) |     \
-                                     PIN_MODE_ALTERNATE(GPIOA_JTAG_TMS  ) |     \
-                                     PIN_MODE_ALTERNATE(GPIOA_JTAG_CLK  ) |     \
-                                     PIN_MODE_INPUT(GPIOA_OVP_C         ))
-#define VAL_GPIOA_OTYPER            (PIN_OTYPE_PUSHPULL(GPIOA_AIN_IA       ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOA_AIN_IB       ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOA_TEMP_RES0    ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOA_REF_NSTANDBY ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOA_RES_REF      ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOA_SPI1_SCK     ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOA_SPI1_MISO    ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOA_SPI1_MOSI    ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOA_AIN_TCOOLING ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOA_VDC_NCS      ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOA_RES_NFAULT   ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOA_USB_DM       ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOA_USB_DP       ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOA_JTAG_TMS     ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOA_JTAG_CLK     ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOA_OVP_C        ))
-#define VAL_GPIOA_OSPEEDR           (PIN_OSPEED_VERYLOW(GPIOA_AIN_IA       ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOA_AIN_IB       ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOA_TEMP_RES0    ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOA_REF_NSTANDBY ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOA_RES_REF      ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOA_SPI1_SCK     ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOA_SPI1_MISO    ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOA_SPI1_MOSI    ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOA_AIN_TCOOLING ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOA_VDC_NCS      ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOA_RES_NFAULT   ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOA_USB_DM       ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOA_USB_DP       ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOA_JTAG_TMS     ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOA_JTAG_CLK     ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOA_OVP_C        ))
-#define VAL_GPIOA_PUPDR             (PIN_PUPDR_FLOATING(GPIOA_AIN_IA       ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOA_AIN_IB       ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOA_TEMP_RES0    ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOA_REF_NSTANDBY ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOA_RES_REF      ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOA_SPI1_SCK     ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOA_SPI1_MISO    ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOA_SPI1_MOSI    ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOA_AIN_TCOOLING ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOA_VDC_NCS      ) |  \
-                                     PIN_PUPDR_PULLDOWN(GPIOA_RES_NFAULT   ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOA_USB_DM       ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOA_USB_DP       ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOA_JTAG_TMS     ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOA_JTAG_CLK     ) |  \
-                                     PIN_PUPDR_PULLDOWN(GPIOA_OVP_C        ))
-#define VAL_GPIOA_ODR               (PIN_ODR_LOW(GPIOA_AIN_IA       ) |         \
-                                     PIN_ODR_LOW(GPIOA_AIN_IB       ) |         \
-                                     PIN_ODR_LOW(GPIOA_TEMP_RES0    ) |         \
-                                     PIN_ODR_LOW(GPIOA_REF_NSTANDBY ) |         \
-                                     PIN_ODR_LOW(GPIOA_RES_REF      ) |         \
-                                     PIN_ODR_LOW(GPIOA_SPI1_SCK     ) |         \
-                                     PIN_ODR_LOW(GPIOA_SPI1_MISO    ) |         \
-                                     PIN_ODR_LOW(GPIOA_SPI1_MOSI    ) |         \
-                                     PIN_ODR_LOW(GPIOA_AIN_TCOOLING ) |         \
-                                     PIN_ODR_LOW(GPIOA_VDC_NCS      ) |         \
-                                     PIN_ODR_LOW(GPIOA_RES_NFAULT   ) |         \
-                                     PIN_ODR_LOW(GPIOA_USB_DM       ) |         \
-                                     PIN_ODR_LOW(GPIOA_USB_DP       ) |         \
-                                     PIN_ODR_LOW(GPIOA_JTAG_TMS     ) |         \
-                                     PIN_ODR_LOW(GPIOA_JTAG_CLK     ) |         \
-                                     PIN_ODR_LOW(GPIOA_OVP_C        ))
-#define VAL_GPIOA_AFRL              (PIN_AFIO_AF(GPIOA_AIN_IA       , 0U) |     \
-                                     PIN_AFIO_AF(GPIOA_AIN_IB       , 0U) |     \
-                                     PIN_AFIO_AF(GPIOA_TEMP_RES0    , 0U) |     \
-                                     PIN_AFIO_AF(GPIOA_REF_NSTANDBY , 0U) |     \
-                                     PIN_AFIO_AF(GPIOA_RES_REF      , 0U) |     \
-                                     PIN_AFIO_AF(GPIOA_SPI1_SCK     , 5U) |     \
-                                     PIN_AFIO_AF(GPIOA_SPI1_MISO    , 5U) |     \
-                                     PIN_AFIO_AF(GPIOA_SPI1_MOSI    , 5U))
-#define VAL_GPIOA_AFRH              (PIN_AFIO_AF(GPIOA_AIN_TCOOLING , 0U) |     \
-                                     PIN_AFIO_AF(GPIOA_VDC_NCS      , 0U) |     \
-                                     PIN_AFIO_AF(GPIOA_RES_NFAULT   , 0U) |     \
-                                     PIN_AFIO_AF(GPIOA_USB_DM       , 0U) |     \
-                                     PIN_AFIO_AF(GPIOA_USB_DP       , 0U) |     \
-                                     PIN_AFIO_AF(GPIOA_JTAG_TMS     , 0U) |     \
-                                     PIN_AFIO_AF(GPIOA_JTAG_CLK     , 0U) |     \
-                                     PIN_AFIO_AF(GPIOA_OVP_C        , 0U))
+#define VAL_GPIOA_MODER             (PIN_MODE_ANALOG	(GPIOA_AIN_IA     ) |     \
+                                     PIN_MODE_ANALOG	(GPIOA_AIN_IB     ) |     \
+                                     PIN_MODE_ANALOG	(GPIOA_AIN_VA     ) |     \
+                                     PIN_MODE_OUTPUT	(GPIOA_LED_RUN    ) |     \
+                                     PIN_MODE_OUTPUT	(GPIOA_LED_ERR    ) |     \
+                                     PIN_MODE_ALTERNATE	(GPIOA_PULSE_CRK  ) |     \
+                                     PIN_MODE_ANALOG	(GPIOA_AIN_VB     ) |     \
+                                     PIN_MODE_ALTERNATE	(GPIOA_PWM_AL     ) |     \
+                                     PIN_MODE_ANALOG	(GPIOA_AIN_TMOT   ) |     \
+                                     PIN_MODE_ANALOG	(GPIOA_AIN_TBRDG  ) |     \
+                                     PIN_MODE_ALTERNATE (GPIOA_PWM_BRK    ) |     \
+                                     PIN_MODE_ANALOG	(GPIOA_USB_DP     ) |     \
+                                     PIN_MODE_ANALOG	(GPIOA_USB_DM     ) |     \
+                                     PIN_MODE_ALTERNATE	(GPIOA_SWD_IO     ) |     \
+                                     PIN_MODE_ALTERNATE	(GPIOA_SWD_CLK    ) |     \
+                                     PIN_MODE_OUTPUT	(GPIOA_LED_PWM    ))
+#define VAL_GPIOA_OTYPER            (PIN_OTYPE_PUSHPULL(GPIOA_AIN_IA     ) |  \
+                                     PIN_OTYPE_PUSHPULL(GPIOA_AIN_IB     ) |  \
+                                     PIN_OTYPE_PUSHPULL(GPIOA_AIN_VA     ) |  \
+                                     PIN_OTYPE_PUSHPULL(GPIOA_LED_RUN    ) |  \
+                                     PIN_OTYPE_PUSHPULL(GPIOA_LED_ERR    ) |  \
+                                     PIN_OTYPE_PUSHPULL(GPIOA_PULSE_CRK  ) |  \
+                                     PIN_OTYPE_PUSHPULL(GPIOA_AIN_VB     ) |  \
+                                     PIN_OTYPE_PUSHPULL(GPIOA_PWM_AL     ) |  \
+                                     PIN_OTYPE_PUSHPULL(GPIOA_AIN_TMOT   ) |  \
+                                     PIN_OTYPE_PUSHPULL(GPIOA_AIN_TBRDG  ) |  \
+                                     PIN_OTYPE_PUSHPULL(GPIOA_PWM_BRK    ) |  \
+                                     PIN_OTYPE_PUSHPULL(GPIOA_USB_DP     ) |  \
+                                     PIN_OTYPE_PUSHPULL(GPIOA_USB_DM     ) |  \
+                                     PIN_OTYPE_PUSHPULL(GPIOA_SWD_IO     ) |  \
+                                     PIN_OTYPE_PUSHPULL(GPIOA_SWD_CLK    ) |  \
+                                     PIN_OTYPE_PUSHPULL(GPIOA_LED_PWM    ))
+#define VAL_GPIOA_OSPEEDR           (PIN_OSPEED_VERYLOW(GPIOA_AIN_IA     ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOA_AIN_IB     ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOA_AIN_VA     ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOA_LED_RUN    ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOA_LED_ERR    ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOA_PULSE_CRK  ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOA_AIN_VB     ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOA_PWM_AL     ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOA_AIN_TMOT   ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOA_AIN_TBRDG  ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOA_PWM_BRK    ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOA_USB_DP     ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOA_USB_DM     ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOA_SWD_IO     ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOA_SWD_CLK    ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOA_LED_PWM    ))
+#define VAL_GPIOA_PUPDR             (PIN_PUPDR_FLOATING(GPIOA_AIN_IA     ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOA_AIN_IB     ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOA_AIN_VA     ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOA_LED_RUN    ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOA_LED_ERR    ) |  \
+                                     PIN_PUPDR_PULLDOWN(GPIOA_PULSE_CRK  ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOA_AIN_VB     ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOA_PWM_AL     ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOA_AIN_TMOT   ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOA_AIN_TBRDG  ) |  \
+                                     PIN_PUPDR_PULLDOWN(GPIOA_PWM_BRK    ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOA_USB_DP     ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOA_USB_DM     ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOA_SWD_IO     ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOA_SWD_CLK    ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOA_LED_PWM    ))
+#define VAL_GPIOA_ODR               (PIN_ODR_LOW (GPIOA_AIN_IA     ) |         \
+                                     PIN_ODR_LOW (GPIOA_AIN_IB     ) |         \
+                                     PIN_ODR_LOW (GPIOA_AIN_VA     ) |         \
+                                     PIN_ODR_HIGH(GPIOA_LED_RUN    ) |         \
+                                     PIN_ODR_HIGH(GPIOA_LED_ERR    ) |         \
+                                     PIN_ODR_LOW (GPIOA_PULSE_CRK  ) |         \
+                                     PIN_ODR_LOW (GPIOA_AIN_VB     ) |         \
+                                     PIN_ODR_LOW (GPIOA_PWM_AL     ) |         \
+                                     PIN_ODR_LOW (GPIOA_AIN_TMOT   ) |         \
+                                     PIN_ODR_LOW (GPIOA_AIN_TBRDG  ) |         \
+                                     PIN_ODR_LOW (GPIOA_PWM_BRK    ) |         \
+                                     PIN_ODR_LOW (GPIOA_USB_DP     ) |         \
+                                     PIN_ODR_LOW (GPIOA_USB_DM     ) |         \
+                                     PIN_ODR_LOW (GPIOA_SWD_IO     ) |         \
+                                     PIN_ODR_LOW (GPIOA_SWD_CLK    ) |         \
+                                     PIN_ODR_HIGH(GPIOA_LED_PWM    ))
+#define VAL_GPIOA_AFRL              (PIN_AFIO_AF(GPIOA_AIN_IA     , 0U) |     \
+                                     PIN_AFIO_AF(GPIOA_AIN_IB     , 0U) |     \
+                                     PIN_AFIO_AF(GPIOA_AIN_VA     , 0U) |     \
+                                     PIN_AFIO_AF(GPIOA_LED_RUN    , 0U) |     \
+                                     PIN_AFIO_AF(GPIOA_LED_ERR    , 0U) |     \
+                                     PIN_AFIO_AF(GPIOA_PULSE_CRK  , 2U) |     \
+                                     PIN_AFIO_AF(GPIOA_AIN_VB     , 0U) |     \
+                                     PIN_AFIO_AF(GPIOA_PWM_AL     , 4U))
+#define VAL_GPIOA_AFRH              (PIN_AFIO_AF(GPIOA_AIN_TMOT   , 0U) |     \
+                                     PIN_AFIO_AF(GPIOA_AIN_TBRDG  , 0U) |     \
+                                     PIN_AFIO_AF(GPIOA_PWM_BRK    ,11U) |     \
+                                     PIN_AFIO_AF(GPIOA_USB_DP     , 0U) |     \
+                                     PIN_AFIO_AF(GPIOA_USB_DM     , 0U) |     \
+                                     PIN_AFIO_AF(GPIOA_SWD_IO     , 0U) |     \
+                                     PIN_AFIO_AF(GPIOA_SWD_CLK    , 0U) |     \
+                                     PIN_AFIO_AF(GPIOA_LED_PWM    , 0U))
 
 /*
  * GPIOB setup:
  *
- * PB0  - TEMP_MOTOR                (analog).
+ * PB0  - PWM_BL                    (alternate 4).
  * PB1  - AIN_IC                    (analog).
- * PB2  - OCP_B                     (input pulldown).
- * PB3  - TRACESWO                  (alternate 0).
- * PB4  - PIN4                      (analog).
- * PB5  - FDCAN2_RX                 (alternate 9).
- * PB6  - FDCAN2_TX                 (alternate 9).
- * PB7  - IABC_NCS                  (output pushpull minimum).
- * PB8  - PIN8                      (analog).
- * PB9  - OCP_HVDC                  (input pulldown).
- * PB10 - PWM_HWBREAK               (alternate 12).
- * PB11 - GATE_EN                   (output pushpull minimum).
- * PB12 - OVP_B                     (input pulldown).
- * PB13 - SPI2_SCK                  (alternate 5).
- * PB14 - SPI2_MISO                 (alternate 5).
- * PB15 - SPI2_MOSI                 (alternate 5).
+ * PB2  - PULSE_MOT                 (alternate 2).
+ * PB3  - CAN_RX                    (alternate 11).
+ * PB4  - CAN_TX                    (alternate 11).
+ * PB5  - PWM_CL                    (alternate 3).
+ * PB6  - PWM_AH                    (alternate 5).
+ * PB7  - CAN_SLP                   (output pushpull minimum).
+ * PB8  - PWM_BH                    (alternate 10).
+ * PB9  - PWM_CH                    (alternate 10).
+ * PB10 - DISP_TX                   (alternate 7).
+ * PB11 - DISP_RX                   (alternate 7).
+ * PB12 - AIN_VDC                   (analog).
+ * PB13 - AIN_VC                    (analog).
+ * PB14 - AIN_CRK_TRQ               (analog).
+ * PB15 - PWM_BRK                   (output opendrain minimum).
  */
-#define VAL_GPIOB_MODER             (PIN_MODE_ANALOG(GPIOB_TEMP_MOTOR   ) |  \
-                                     PIN_MODE_ANALOG(GPIOB_AIN_IC       ) |  \
-                                     PIN_MODE_INPUT(GPIOB_OCP_B         ) |  \
-                                     PIN_MODE_ALTERNATE(GPIOB_TRACESWO  ) |  \
-                                     PIN_MODE_ANALOG(GPIOB_PIN4         ) |  \
-                                     PIN_MODE_ALTERNATE(GPIOB_FDCAN2_RX ) |  \
-                                     PIN_MODE_ALTERNATE(GPIOB_FDCAN2_TX ) |  \
-                                     PIN_MODE_OUTPUT(GPIOB_IABC_NCS     ) |  \
-                                     PIN_MODE_ANALOG(GPIOB_PIN8         ) |  \
-                                     PIN_MODE_INPUT(GPIOB_OCP_HVDC      ) |  \
-                                     PIN_MODE_ALTERNATE(GPIOB_PWM_HWBREAK)|  \
-                                     PIN_MODE_OUTPUT(GPIOB_GATE_EN      ) |  \
-                                     PIN_MODE_INPUT(GPIOB_OVP_B         ) |  \
-                                     PIN_MODE_ALTERNATE(GPIOB_SPI2_SCK  ) |  \
-                                     PIN_MODE_ALTERNATE(GPIOB_SPI2_MISO ) |  \
-                                     PIN_MODE_ALTERNATE(GPIOB_SPI2_MOSI ))
-#define VAL_GPIOB_OTYPER            (PIN_OTYPE_PUSHPULL(GPIOB_TEMP_MOTOR   ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOB_AIN_IC       ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOB_OCP_B        ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOB_TRACESWO     ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOB_PIN4         ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOB_FDCAN2_RX    ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOB_FDCAN2_TX    ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOB_IABC_NCS     ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOB_PIN8         ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOB_OCP_HVDC     ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOB_PWM_HWBREAK  ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOB_GATE_EN      ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOB_OVP_B        ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOB_SPI2_SCK     ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOB_SPI2_MISO    ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOB_SPI2_MOSI    ))
-#define VAL_GPIOB_OSPEEDR           (PIN_OSPEED_VERYLOW(GPIOB_TEMP_MOTOR   ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOB_AIN_IC       ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOB_OCP_B        ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOB_TRACESWO     ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOB_PIN4         ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOB_FDCAN2_RX    ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOB_FDCAN2_TX    ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOB_IABC_NCS     ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOB_PIN8         ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOB_OCP_HVDC     ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOB_PWM_HWBREAK  ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOB_GATE_EN      ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOB_OVP_B        ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOB_SPI2_SCK     ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOB_SPI2_MISO    ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOB_SPI2_MOSI    ))
-#define VAL_GPIOB_PUPDR             (PIN_PUPDR_FLOATING(GPIOB_TEMP_MOTOR   ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOB_AIN_IC       ) |  \
-                                     PIN_PUPDR_PULLDOWN(GPIOB_OCP_B        ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOB_TRACESWO     ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOB_PIN4         ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOB_FDCAN2_RX    ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOB_FDCAN2_TX    ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOB_IABC_NCS     ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOB_PIN8         ) |  \
-                                     PIN_PUPDR_PULLDOWN(GPIOB_OCP_HVDC     ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOB_PWM_HWBREAK  ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOB_GATE_EN      ) |  \
-                                     PIN_PUPDR_PULLDOWN(GPIOB_OVP_B        ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOB_SPI2_SCK     ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOB_SPI2_MISO    ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOB_SPI2_MOSI    ))
-#define VAL_GPIOB_ODR               (PIN_ODR_LOW(GPIOB_TEMP_MOTOR   ) |  \
-                                     PIN_ODR_LOW(GPIOB_AIN_IC       ) |  \
-                                     PIN_ODR_LOW(GPIOB_OCP_B        ) |  \
-                                     PIN_ODR_LOW(GPIOB_TRACESWO     ) |  \
-                                     PIN_ODR_LOW(GPIOB_PIN4         ) |  \
-                                     PIN_ODR_LOW(GPIOB_FDCAN2_RX    ) |  \
-                                     PIN_ODR_LOW(GPIOB_FDCAN2_TX    ) |  \
-                                     PIN_ODR_LOW(GPIOB_IABC_NCS     ) |  \
-                                     PIN_ODR_LOW(GPIOB_PIN8         ) |  \
-                                     PIN_ODR_LOW(GPIOB_OCP_HVDC     ) |  \
-                                     PIN_ODR_LOW(GPIOB_PWM_HWBREAK  ) |  \
-                                     PIN_ODR_LOW(GPIOB_GATE_EN      ) |  \
-                                     PIN_ODR_LOW(GPIOB_OVP_B        ) |  \
-                                     PIN_ODR_LOW(GPIOB_SPI2_SCK     ) |  \
-                                     PIN_ODR_LOW(GPIOB_SPI2_MISO    ) |  \
-                                     PIN_ODR_LOW(GPIOB_SPI2_MOSI    ))
-#define VAL_GPIOB_AFRL              (PIN_AFIO_AF(GPIOB_TEMP_MOTOR   , 0U) |          \
+#define VAL_GPIOB_MODER             (PIN_MODE_ALTERNATE  (GPIOB_PWM_BL      ) |  \
+                                     PIN_MODE_ANALOG     (GPIOB_AIN_IC      ) |  \
+                                     PIN_MODE_ALTERNATE  (GPIOB_PULSE_MOT   ) |  \
+                                     PIN_MODE_ALTERNATE  (GPIOB_CAN_RX      ) |  \
+                                     PIN_MODE_ALTERNATE  (GPIOB_CAN_TX      ) |  \
+                                     PIN_MODE_ALTERNATE  (GPIOB_PWM_CL      ) |  \
+                                     PIN_MODE_ALTERNATE  (GPIOB_PWM_AH      ) |  \
+                                     PIN_MODE_OUTPUT     (GPIOB_CAN_SLP     ) |  \
+                                     PIN_MODE_ALTERNATE  (GPIOB_PWM_BH      ) |  \
+                                     PIN_MODE_ALTERNATE  (GPIOB_PWM_CH      ) |  \
+                                     PIN_MODE_ALTERNATE  (GPIOB_DISP_TX     )|  \
+                                     PIN_MODE_ALTERNATE  (GPIOB_DISP_RX     ) |  \
+                                     PIN_MODE_ANALOG     (GPIOB_AIN_VDC     ) |  \
+                                     PIN_MODE_ANALOG     (GPIOB_AIN_VC      ) |  \
+                                     PIN_MODE_ANALOG     (GPIOB_AIN_CRK_TRQ ) |  \
+                                     PIN_MODE_OUTPUT     (GPIOB_PWM_BRK     ))
+#define VAL_GPIOB_OTYPER            (PIN_OTYPE_PUSHPULL (GPIOB_PWM_BL      ) |  \
+                                     PIN_OTYPE_PUSHPULL (GPIOB_AIN_IC      ) |  \
+                                     PIN_OTYPE_PUSHPULL (GPIOB_PULSE_MOT   ) |  \
+                                     PIN_OTYPE_PUSHPULL (GPIOB_CAN_RX      ) |  \
+                                     PIN_OTYPE_PUSHPULL (GPIOB_CAN_TX      ) |  \
+                                     PIN_OTYPE_PUSHPULL (GPIOB_PWM_CL      ) |  \
+                                     PIN_OTYPE_PUSHPULL (GPIOB_PWM_AH      ) |  \
+                                     PIN_OTYPE_PUSHPULL (GPIOB_CAN_SLP     ) |  \
+                                     PIN_OTYPE_PUSHPULL (GPIOB_PWM_BH      ) |  \
+                                     PIN_OTYPE_PUSHPULL (GPIOB_PWM_CH      ) |  \
+                                     PIN_OTYPE_PUSHPULL (GPIOB_DISP_TX     ) |  \
+                                     PIN_OTYPE_PUSHPULL (GPIOB_DISP_RX     ) |  \
+                                     PIN_OTYPE_PUSHPULL (GPIOB_AIN_VDC     ) |  \
+                                     PIN_OTYPE_PUSHPULL (GPIOB_AIN_VC      ) |  \
+                                     PIN_OTYPE_PUSHPULL (GPIOB_AIN_CRK_TRQ ) |  \
+                                     PIN_OTYPE_OPENDRAIN(GPIOB_PWM_BRK     ))
+#define VAL_GPIOB_OSPEEDR           (PIN_OSPEED_VERYLOW(GPIOB_PWM_BL      ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOB_AIN_IC      ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOB_PULSE_MOT   ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOB_CAN_RX      ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOB_CAN_TX      ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOB_PWM_CL      ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOB_PWM_AH      ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOB_CAN_SLP     ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOB_PWM_BH      ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOB_PWM_CH      ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOB_DISP_TX     ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOB_DISP_RX     ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOB_AIN_VDC     ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOB_AIN_VC      ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOB_AIN_CRK_TRQ ) |  \
+                                     PIN_OSPEED_VERYLOW(GPIOB_PWM_BRK     ))
+#define VAL_GPIOB_PUPDR             (PIN_PUPDR_FLOATING(GPIOB_PWM_BL      ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOB_AIN_IC      ) |  \
+                                     PIN_PUPDR_PULLDOWN(GPIOB_PULSE_MOT   ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOB_CAN_RX      ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOB_CAN_TX      ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOB_PWM_CL      ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOB_PWM_AH      ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOB_CAN_SLP     ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOB_PWM_BH      ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOB_PWM_CH      ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOB_DISP_TX     ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOB_DISP_RX     ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOB_AIN_VDC     ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOB_AIN_VC      ) |  \
+                                     PIN_PUPDR_FLOATING(GPIOB_AIN_CRK_TRQ ) |  \
+                                     PIN_PUPDR_PULLUP  (GPIOB_PWM_BRK     ))
+#define VAL_GPIOB_ODR               (PIN_ODR_LOW (GPIOB_PWM_BL      ) |  \
+                                     PIN_ODR_LOW (GPIOB_AIN_IC      ) |  \
+                                     PIN_ODR_LOW (GPIOB_PULSE_MOT   ) |  \
+                                     PIN_ODR_LOW (GPIOB_CAN_RX      ) |  \
+                                     PIN_ODR_LOW (GPIOB_CAN_TX      ) |  \
+                                     PIN_ODR_LOW (GPIOB_PWM_CL      ) |  \
+                                     PIN_ODR_LOW (GPIOB_PWM_AH      ) |  \
+                                     PIN_ODR_LOW (GPIOB_CAN_SLP     ) |  \
+                                     PIN_ODR_LOW (GPIOB_PWM_BH      ) |  \
+                                     PIN_ODR_LOW (GPIOB_PWM_CH      ) |  \
+                                     PIN_ODR_LOW (GPIOB_DISP_TX     ) |  \
+                                     PIN_ODR_LOW (GPIOB_DISP_RX     ) |  \
+                                     PIN_ODR_LOW (GPIOB_AIN_VDC     ) |  \
+                                     PIN_ODR_LOW (GPIOB_AIN_VC      ) |  \
+                                     PIN_ODR_LOW (GPIOB_AIN_CRK_TRQ ) |  \
+                                     PIN_ODR_LOW (GPIOB_PWM_BRK     ))
+#define VAL_GPIOB_AFRL              (PIN_AFIO_AF(GPIOB_PWM_BL       , 4U) |          \
                                      PIN_AFIO_AF(GPIOB_AIN_IC       , 0U) |          \
-                                     PIN_AFIO_AF(GPIOB_OCP_B        , 0U) |          \
-                                     PIN_AFIO_AF(GPIOB_TRACESWO     , 0U) |          \
-                                     PIN_AFIO_AF(GPIOB_PIN4         , 0U) |          \
-                                     PIN_AFIO_AF(GPIOB_FDCAN2_RX    , 9U) |          \
-                                     PIN_AFIO_AF(GPIOB_FDCAN2_TX    , 9U) |          \
-                                     PIN_AFIO_AF(GPIOB_IABC_NCS     , 0U))
-#define VAL_GPIOB_AFRH              (PIN_AFIO_AF(GPIOB_PIN8         , 0U) |          \
-                                     PIN_AFIO_AF(GPIOB_OCP_HVDC     , 0U) |          \
-                                     PIN_AFIO_AF(GPIOB_PWM_HWBREAK  , 12U)|          \
-                                     PIN_AFIO_AF(GPIOB_GATE_EN      , 0U) |          \
-                                     PIN_AFIO_AF(GPIOB_OVP_B        , 0U) |          \
-                                     PIN_AFIO_AF(GPIOB_SPI2_SCK     , 5U) |          \
-                                     PIN_AFIO_AF(GPIOB_SPI2_MISO    , 5U) |          \
-                                     PIN_AFIO_AF(GPIOB_SPI2_MOSI    , 5U))
+                                     PIN_AFIO_AF(GPIOB_PULSE_MOT    , 2U) |          \
+                                     PIN_AFIO_AF(GPIOB_CAN_RX       ,11U) |          \
+                                     PIN_AFIO_AF(GPIOB_CAN_TX       ,11U) |          \
+                                     PIN_AFIO_AF(GPIOB_PWM_CL       , 3U) |          \
+                                     PIN_AFIO_AF(GPIOB_PWM_AH       , 5U) |          \
+                                     PIN_AFIO_AF(GPIOB_CAN_SLP      , 0U))
+#define VAL_GPIOB_AFRH              (PIN_AFIO_AF(GPIOB_PWM_BH       ,10U) |          \
+                                     PIN_AFIO_AF(GPIOB_PWM_CH       ,10U) |          \
+                                     PIN_AFIO_AF(GPIOB_DISP_TX      , 7U)|          \
+                                     PIN_AFIO_AF(GPIOB_DISP_RX      , 7U) |          \
+                                     PIN_AFIO_AF(GPIOB_AIN_VDC      , 0U) |          \
+                                     PIN_AFIO_AF(GPIOB_AIN_VC       , 0U) |          \
+                                     PIN_AFIO_AF(GPIOB_AIN_CRK_TRQ  , 0U) |          \
+                                     PIN_AFIO_AF(GPIOB_PWM_BRK      , 0U))
 
 /*
  * GPIOC setup:
