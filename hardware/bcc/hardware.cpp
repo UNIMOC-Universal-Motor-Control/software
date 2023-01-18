@@ -29,7 +29,7 @@
 
 
 ///< CAN Driver instances if redundant. Instance 0 is always master CAN
-CANDriver* pcan[HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES] = {&CAND1};
+CANDriver* pcan[HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES] = {&CAND3};
 
 ///< embedded flash eeprom driver config
 MFSConfig mfscfg1 = {
@@ -70,7 +70,7 @@ void hardware::Init()
  */
 uint8_t hardware::digital::hall::State(void)
 {
-	return 0;
+	return palReadGroup(GPIOC, 0x0007, 13);
 }
 
 /**

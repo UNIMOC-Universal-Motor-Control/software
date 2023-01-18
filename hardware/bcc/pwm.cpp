@@ -306,8 +306,6 @@ void hardware::pwm::output::Enable(void)
 	{
 		// reset the break state
 		PWMP->tim->BDTR |= STM32_TIM_BDTR_AOE;
-
-		palSetLine(LINE_GATE_EN);
 	}
 }
 
@@ -316,7 +314,6 @@ void hardware::pwm::output::Enable(void)
  */
 void hardware::pwm::output::Disable(void)
 {
-	palClearLine(LINE_GATE_EN);
 	// break pwm
 	PWMP->tim->BDTR &= ~STM32_TIM_BDTR_AOE;
 }
@@ -329,12 +326,10 @@ bool hardware::pwm::output::Active(void)
 {
 	if (PWMP->tim->BDTR & STM32_TIM_BDTR_MOE)
 	{
-		palSetLine(LINE_GATE_EN);
 		return true;
 	}
 	else
 	{
-		palClearLine(LINE_GATE_EN);
 		return false;
 	}
 }

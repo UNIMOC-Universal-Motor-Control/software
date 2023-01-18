@@ -36,13 +36,13 @@ static void adcerrorcallback(ADCDriver *adcp, adcerror_t err);
 static void adccallback(ADCDriver *adcp);
 
 ///< absolute maximum current FIXME Current resolution not fix.
-constexpr float hardware::analog::current::MAX = 100.0f;
+constexpr float hardware::analog::current::MAX = 66.0f;
 
 ///< scaling current to adc range
 constexpr float ADC2CURRENT = hardware::analog::current::MAX /(2048.0f);
 
 ///< absolute maximum voltage FIXME Current resolution not fix.
-constexpr float hardware::analog::voltage::MAX = 1000.0f;
+constexpr float hardware::analog::voltage::MAX = 112.2f;
 
 ///< scaling voltage to adc range
 constexpr float ADC2VOLTAGE = hardware::analog::voltage::MAX /(2048.0f);
@@ -50,7 +50,7 @@ constexpr float ADC2VOLTAGE = hardware::analog::voltage::MAX /(2048.0f);
 ///< Samples in ADC sequence.
 /// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
 ///          so even length of sequence is best choice.
-constexpr uint32_t LENGTH_ADC_SEQ = 16;
+constexpr uint32_t LENGTH_ADC_SEQ = 8;
 
 ///< ADC sequences in buffer.
 /// Caution: samples are 16bit but the hole sequence must be 32 bit aligned!
@@ -85,40 +85,30 @@ std::int32_t voltage_offset[hardware::PHASES];
  * Pin		Channel			Signal
  *----------------------------------------------
  * PA0		ADC1_IN1		AIN_IA
- * PC1		ADC1_IN7		AIN_ENC_COS
- * PC2		ADC1_IN8		AIN_RES0
- * PA2		ADC1_IN3		AIN_TR0
+ * PA2		ADC1_IN3		AIN_VA
  *----------------------------------------------
  * PA1		ADC2_IN2		AIN_IB
- * PC0		ADC2_IN6		AIN_ENC_SIN
- * PC3		ADC2_IN9		AIN_RES1
+ * PA6		ADC2_IN3		AIN_VB
  *----------------------------------------------
  * PB1		ADC3_IN1		AIN_IC
- * PD12		ADC3_IN9		AIN_T0
- * PB0		ADC3_IN12		AIN_TM
+ * PB13		ADC3_IN5		AIN_VC
  *----------------------------------------------
- * PD10		ADC4_IN7		AIN_IDC
- * PD13		ADC4_IN10		AIN_T1
- * PD9		ADC4_IN13		AIN_T4
+ * PB12		ADC4_IN3		AIN_VDC
+ * PB14		ADC4_IN4		AIN_CRKT
  *----------------------------------------------
- * PD11		ADC5_IN8		AIN_VDC
- * PA8		ADC5_IN1		AIN_TC
- * PD14		ADC5_IN11		AIN_T2
- * PD8		ADC5_IN12		AIN_TR1
+ * PA8		ADC5_IN1		AIN_TMOT
+ * PA9		ADC5_IN2		AIN_TBRDG
  */
 
 /**
  * ADC conversion group.
  * Mode:        Continuous, Dual Mode
- * ADC1 Channels:    AIN_IA, AIN_ENC_COS, AIN_RES0, AIN_TR0. */
+ * ADC1 Channels:    AIN_IA, AIN_VA */
 constexpr std::uint32_t AIN_IA = ADC_CHANNEL_IN1;
-constexpr std::uint32_t AIN_ENC_COS = ADC_CHANNEL_IN7;
-constexpr std::uint32_t AIN_TR0 = ADC_CHANNEL_IN3;
-constexpr std::uint32_t AIN_RES0 = ADC_CHANNEL_IN8;
-/**ADC2 Channels:    AIN_IA, AIN_ENC_COS, AIN_RES0. */
+constexpr std::uint32_t AIN_VA = ADC_CHANNEL_IN3;
+/**ADC2 Channels:    AIN_IB, AIN_VB */
 constexpr std::uint32_t AIN_IB = ADC_CHANNEL_IN2;
-constexpr std::uint32_t AIN_ENC_SIN = ADC_CHANNEL_IN6;
-constexpr std::uint32_t AIN_RES1 = ADC_CHANNEL_IN9;
+constexpr std::uint32_t AIN_VB = ADC_CHANNEL_IN3;
 /*************************************************************/
 static ADCConversionGroup adcgrpcfg12 = {
 	true,
@@ -149,64 +139,61 @@ static ADCConversionGroup adcgrpcfg12 = {
 	ADC_CCR_DUAL_FIELD(1),
 	/* ADC SMPRx registers initialization data.*/
 	ADC_SMPR1_SMP_AN1(ADC_SMPR_SMP_2P5) |
-	ADC_SMPR1_SMP_AN3(ADC_SMPR_SMP_2P5) |
-	ADC_SMPR1_SMP_AN7(ADC_SMPR_SMP_2P5) |
-	ADC_SMPR1_SMP_AN8(ADC_SMPR_SMP_2P5),                  /* SMPR1 */
+	ADC_SMPR1_SMP_AN3(ADC_SMPR_SMP_2P5),                  /* SMPR1 */
 	0,                                                    /* SMPR2 */
 	/* ADC SQRx register initialization data.*/
+	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) |
 	ADC_SQR1_SQ1_N(AIN_IA) |
 	ADC_SQR1_SQ2_N(AIN_IA) |
 	ADC_SQR1_SQ3_N(AIN_IA) |
 	ADC_SQR1_SQ4_N(AIN_IA),                               /* SQR1  */
-	ADC_SQR2_SQ5_N(AIN_IA) |
-	ADC_SQR2_SQ6_N(AIN_IA) |
-	ADC_SQR2_SQ7_N(AIN_ENC_COS) |
-	ADC_SQR2_SQ8_N(AIN_ENC_COS) |
-	ADC_SQR2_SQ9_N(AIN_ENC_COS),                          /* SQR2  */
-	ADC_SQR3_SQ10_N(AIN_ENC_COS) |
-	ADC_SQR3_SQ11_N(AIN_ENC_COS) |
-	ADC_SQR3_SQ12_N(AIN_ENC_COS) |
-	ADC_SQR3_SQ13_N(AIN_TR0) |
-	ADC_SQR3_SQ14_N(AIN_TR0),                             /* SQR3  */
-	ADC_SQR4_SQ15_N(AIN_RES0) |
-	ADC_SQR4_SQ16_N(AIN_RES0),                             /* SQR4  */
+	ADC_SQR2_SQ5_N(AIN_VA) |
+	ADC_SQR2_SQ6_N(AIN_VA) |
+	ADC_SQR2_SQ7_N(AIN_VA) |
+	ADC_SQR2_SQ8_N(AIN_VA) |
+	ADC_SQR2_SQ9_N(AIN_VA),                               /* SQR2  */
+	ADC_SQR3_SQ10_N(AIN_VA) |
+	ADC_SQR3_SQ11_N(AIN_VA) |
+	ADC_SQR3_SQ12_N(AIN_VA) |
+	ADC_SQR3_SQ13_N(AIN_VA) |
+	ADC_SQR3_SQ14_N(AIN_VA),                             /* SQR3  */
+	ADC_SQR4_SQ15_N(AIN_VA) |
+	ADC_SQR4_SQ16_N(AIN_VA),                             /* SQR4  */
 	/* Slave ADC SMPRx registers initialization data.
 	   NOTE: This field is only present in dual mode.*/
 	ADC_SMPR1_SMP_AN2(ADC_SMPR_SMP_2P5) |
-	ADC_SMPR1_SMP_AN6(ADC_SMPR_SMP_2P5) |
-	ADC_SMPR1_SMP_AN9(ADC_SMPR_SMP_2P5),                  /* SSMPR1 */
+	ADC_SMPR1_SMP_AN3(ADC_SMPR_SMP_2P5),                  /* SSMPR1 */
 	0,                                                    /* SSMPR2 */
 	/* Slave ADC SQRx register initialization data.
 	   NOTE: This field is only present in dual mode.*/
+	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) |
 	ADC_SQR1_SQ1_N(AIN_IB) |
 	ADC_SQR1_SQ2_N(AIN_IB) |
 	ADC_SQR1_SQ3_N(AIN_IB) |
 	ADC_SQR1_SQ4_N(AIN_IB),                               /* SSQR1  */
-	ADC_SQR2_SQ5_N(AIN_IB) |
-	ADC_SQR2_SQ6_N(AIN_IB) |
-	ADC_SQR2_SQ7_N(AIN_ENC_SIN) |
-	ADC_SQR2_SQ8_N(AIN_ENC_SIN) |
-	ADC_SQR2_SQ9_N(AIN_ENC_SIN),                          /* SSQR2  */
-	ADC_SQR3_SQ10_N(AIN_ENC_SIN) |
-	ADC_SQR3_SQ11_N(AIN_ENC_SIN) |
-	ADC_SQR3_SQ12_N(AIN_ENC_SIN) |
-	ADC_SQR3_SQ13_N(AIN_RES1) |
-	ADC_SQR3_SQ14_N(AIN_RES1),                            /* SSQR3  */
-	ADC_SQR4_SQ15_N(AIN_RES1) |
-	ADC_SQR4_SQ16_N(AIN_RES1)                             /* SSQR4  */
+	ADC_SQR2_SQ5_N(AIN_VB) |
+	ADC_SQR2_SQ6_N(AIN_VB) |
+	ADC_SQR2_SQ7_N(AIN_VB) |
+	ADC_SQR2_SQ8_N(AIN_VB) |
+	ADC_SQR2_SQ9_N(AIN_VB),                               /* SSQR2  */
+	ADC_SQR3_SQ10_N(AIN_VB) |
+	ADC_SQR3_SQ11_N(AIN_VB) |
+	ADC_SQR3_SQ12_N(AIN_VB) |
+	ADC_SQR3_SQ13_N(AIN_VB) |
+	ADC_SQR3_SQ14_N(AIN_VB),                              /* SSQR3  */
+	ADC_SQR4_SQ15_N(AIN_VB) |
+	ADC_SQR4_SQ16_N(AIN_VB)                               /* SSQR4  */
 };
 
 /**
  * ADC conversion group.
  * Mode:        Continuous, Dual Mode
- * ADC3 Channels:    AIN_IC, AIN_T0, AIN_TM */
+ * ADC3 Channels:    AIN_IC, AIN_VC */
 constexpr std::uint32_t AIN_IC = ADC_CHANNEL_IN1;
-constexpr std::uint32_t AIN_T0 = ADC_CHANNEL_IN9;
-constexpr std::uint32_t AIN_TM = ADC_CHANNEL_IN12;
-/**ADC4 Channels:    AIN_IDC, AIN_T1, AIN_T4 */
-constexpr std::uint32_t AIN_IDC = ADC_CHANNEL_IN7;
-constexpr std::uint32_t AIN_T1 = ADC_CHANNEL_IN10;
-constexpr std::uint32_t AIN_T4 = ADC_CHANNEL_IN13;
+constexpr std::uint32_t AIN_VC = ADC_CHANNEL_IN5;
+/**ADC4 Channels:    AIN_VDC, AIN_CRKT */
+constexpr std::uint32_t AIN_VDC = ADC_CHANNEL_IN3;
+constexpr std::uint32_t AIN_CRKT = ADC_CHANNEL_IN4;
 /*************************************************************/
 static ADCConversionGroup adcgrpcfg34 = {
 	true,
@@ -237,58 +224,58 @@ static ADCConversionGroup adcgrpcfg34 = {
 	ADC_CCR_DUAL_FIELD(1),
 	/* ADC SMPRx registers initialization data.*/
 	ADC_SMPR1_SMP_AN1(ADC_SMPR_SMP_2P5) |
-	ADC_SMPR1_SMP_AN9(ADC_SMPR_SMP_2P5),                  /* SMPR1 */
-	ADC_SMPR2_SMP_AN12(ADC_SMPR_SMP_2P5),                 /* SMPR2 */
+	ADC_SMPR1_SMP_AN5(ADC_SMPR_SMP_2P5),                  /* SMPR1 */
+	0,                                                    /* SMPR2 */
 	/* ADC SQRx register initialization data.*/
+	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) |
 	ADC_SQR1_SQ1_N(AIN_IC) |
 	ADC_SQR1_SQ2_N(AIN_IC) |
 	ADC_SQR1_SQ3_N(AIN_IC) |
 	ADC_SQR1_SQ4_N(AIN_IC),                               /* SQR1  */
-	ADC_SQR2_SQ5_N(AIN_IC) |
-	ADC_SQR2_SQ6_N(AIN_IC) |
-	ADC_SQR2_SQ7_N(AIN_T0) |
-	ADC_SQR2_SQ8_N(AIN_T0) |
-	ADC_SQR2_SQ9_N(AIN_T0),                               /* SQR2  */
-	ADC_SQR3_SQ10_N(AIN_T0) |
-	ADC_SQR3_SQ11_N(AIN_T0) |
-	ADC_SQR3_SQ12_N(AIN_T0) |
-	ADC_SQR3_SQ13_N(AIN_TM) |
-	ADC_SQR3_SQ14_N(AIN_TM),                              /* SQR3  */
-	ADC_SQR4_SQ15_N(AIN_TM) |
-	ADC_SQR4_SQ16_N(AIN_TM),                              /* SQR4  */
+	ADC_SQR2_SQ5_N(AIN_VC) |
+	ADC_SQR2_SQ6_N(AIN_VC) |
+	ADC_SQR2_SQ7_N(AIN_VC) |
+	ADC_SQR2_SQ8_N(AIN_VC) |
+	ADC_SQR2_SQ9_N(AIN_VC),                               /* SQR2  */
+	ADC_SQR3_SQ10_N(AIN_VC) |
+	ADC_SQR3_SQ11_N(AIN_VC) |
+	ADC_SQR3_SQ12_N(AIN_VC) |
+	ADC_SQR3_SQ13_N(AIN_VC) |
+	ADC_SQR3_SQ14_N(AIN_VC),                              /* SQR3  */
+	ADC_SQR4_SQ15_N(AIN_VC) |
+	ADC_SQR4_SQ16_N(AIN_VC),                              /* SQR4  */
 	/* Slave ADC SMPRx registers initialization data.
 	   NOTE: This field is only present in dual mode.*/
-	ADC_SMPR1_SMP_AN7(ADC_SMPR_SMP_2P5),                  /* SSMPR1 */
-	ADC_SMPR2_SMP_AN10(ADC_SMPR_SMP_2P5) |
-	ADC_SMPR2_SMP_AN13(ADC_SMPR_SMP_2P5),                 /* SSMPR2 */
+	ADC_SMPR1_SMP_AN3(ADC_SMPR_SMP_2P5) |
+	ADC_SMPR1_SMP_AN4(ADC_SMPR_SMP_2P5),                  /* SSMPR1 */
+	0,                                                    /* SSMPR2 */
 	/* Slave ADC SQRx register initialization data.
 	   NOTE: This field is only present in dual mode.*/
-	ADC_SQR1_SQ1_N(AIN_IDC) |
-	ADC_SQR1_SQ2_N(AIN_IDC) |
-	ADC_SQR1_SQ3_N(AIN_IDC) |
-	ADC_SQR1_SQ4_N(AIN_IDC),                              /* SSQR1  */
-	ADC_SQR2_SQ5_N(AIN_IDC) |
-	ADC_SQR2_SQ6_N(AIN_IDC) |
-	ADC_SQR2_SQ7_N(AIN_T1) |
-	ADC_SQR2_SQ8_N(AIN_T1) |
-	ADC_SQR2_SQ9_N(AIN_T1),                               /* SSQR2  */
-	ADC_SQR3_SQ10_N(AIN_T1) |
-	ADC_SQR3_SQ11_N(AIN_T1) |
-	ADC_SQR3_SQ12_N(AIN_T1) |
-	ADC_SQR3_SQ13_N(AIN_T4) |
-	ADC_SQR3_SQ14_N(AIN_T4),                              /* SSQR3  */
-	ADC_SQR4_SQ15_N(AIN_T4) |
-	ADC_SQR4_SQ16_N(AIN_T4)                               /* SSQR4  */
+	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) |
+	ADC_SQR1_SQ1_N(AIN_VDC) |
+	ADC_SQR1_SQ2_N(AIN_VDC) |
+	ADC_SQR1_SQ3_N(AIN_VDC) |
+	ADC_SQR1_SQ4_N(AIN_VDC),                              /* SSQR1  */
+	ADC_SQR2_SQ5_N(AIN_CRKT) |
+	ADC_SQR2_SQ6_N(AIN_CRKT) |
+	ADC_SQR2_SQ7_N(AIN_CRKT) |
+	ADC_SQR2_SQ8_N(AIN_CRKT) |
+	ADC_SQR2_SQ9_N(AIN_CRKT),                               /* SSQR2  */
+	ADC_SQR3_SQ10_N(AIN_CRKT) |
+	ADC_SQR3_SQ11_N(AIN_CRKT) |
+	ADC_SQR3_SQ12_N(AIN_CRKT) |
+	ADC_SQR3_SQ13_N(AIN_CRKT) |
+	ADC_SQR3_SQ14_N(AIN_CRKT),                              /* SSQR3  */
+	ADC_SQR4_SQ15_N(AIN_CRKT) |
+	ADC_SQR4_SQ16_N(AIN_CRKT)                               /* SSQR4  */
 };
 
 /**
  * ADC conversion group.
  * Mode:        Continuous, Dual Mode
- * ADC5 Channels:    AIN_VDC, AIN_T0, AIN_TM, AIN_TR1 */
-constexpr std::uint32_t AIN_VDC = ADC_CHANNEL_IN8;
-constexpr std::uint32_t AIN_TC = ADC_CHANNEL_IN1;
-constexpr std::uint32_t AIN_T2 = ADC_CHANNEL_IN11;
-constexpr std::uint32_t AIN_TR1 = ADC_CHANNEL_IN12;
+ * ADC5 Channels:    AIN_TMOT, AIN_TMOT */
+constexpr std::uint32_t AIN_TMOT = ADC_CHANNEL_IN1;
+constexpr std::uint32_t AIN_TBRDG = ADC_CHANNEL_IN2;
 /*************************************************************/
 static ADCConversionGroup adcgrpcfg5 = {
 	true,
@@ -319,26 +306,26 @@ static ADCConversionGroup adcgrpcfg5 = {
 	0,
 	/* ADC SMPRx registers initialization data.*/
 	ADC_SMPR1_SMP_AN1(ADC_SMPR_SMP_2P5) |
-	ADC_SMPR1_SMP_AN8(ADC_SMPR_SMP_2P5),                  /* SMPR1 */
-	ADC_SMPR2_SMP_AN11(ADC_SMPR_SMP_2P5) |
-	ADC_SMPR2_SMP_AN12(ADC_SMPR_SMP_2P5),                 /* SMPR2 */
+	ADC_SMPR1_SMP_AN2(ADC_SMPR_SMP_2P5),                  /* SMPR1 */
+	0,                                                    /* SMPR2 */
 	/* ADC SQRx register initialization data.*/
-	ADC_SQR1_SQ1_N(AIN_VDC) |
-	ADC_SQR1_SQ2_N(AIN_VDC) |
-	ADC_SQR1_SQ3_N(AIN_VDC) |
-	ADC_SQR1_SQ4_N(AIN_VDC),                               /* SQR1  */
-	ADC_SQR2_SQ5_N(AIN_VDC) |
-	ADC_SQR2_SQ6_N(AIN_VDC) |
-	ADC_SQR2_SQ7_N(AIN_TC) |
-	ADC_SQR2_SQ8_N(AIN_TC) |
-	ADC_SQR2_SQ9_N(AIN_TC),                               /* SQR2  */
-	ADC_SQR3_SQ10_N(AIN_TC) |
-	ADC_SQR3_SQ11_N(AIN_T2) |
-	ADC_SQR3_SQ12_N(AIN_T2) |
-	ADC_SQR3_SQ13_N(AIN_T2) |
-	ADC_SQR3_SQ14_N(AIN_T2),                              /* SQR3  */
-	ADC_SQR4_SQ15_N(AIN_TR1) |
-	ADC_SQR4_SQ16_N(AIN_TR1),                             /* SQR4  */
+	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) |
+	ADC_SQR1_SQ1_N(AIN_TMOT) |
+	ADC_SQR1_SQ2_N(AIN_TMOT) |
+	ADC_SQR1_SQ3_N(AIN_TMOT) |
+	ADC_SQR1_SQ4_N(AIN_TMOT),                               /* SQR1  */
+	ADC_SQR2_SQ5_N(AIN_TBRDG) |
+	ADC_SQR2_SQ6_N(AIN_TBRDG) |
+	ADC_SQR2_SQ7_N(AIN_TBRDG) |
+	ADC_SQR2_SQ8_N(AIN_TBRDG) |
+	ADC_SQR2_SQ9_N(AIN_TBRDG),                               /* SQR2  */
+	ADC_SQR3_SQ10_N(AIN_TBRDG) |
+	ADC_SQR3_SQ11_N(AIN_TBRDG) |
+	ADC_SQR3_SQ12_N(AIN_TBRDG) |
+	ADC_SQR3_SQ13_N(AIN_TBRDG) |
+	ADC_SQR3_SQ14_N(AIN_TBRDG),                              /* SQR3  */
+	ADC_SQR4_SQ15_N(AIN_TBRDG) |
+	ADC_SQR4_SQ16_N(AIN_TBRDG),                             /* SQR4  */
 	/* Slave ADC SMPRx registers initialization data.
 	   NOTE: This field is only present in dual mode.*/
 	0,                                                    /* SSMPR1 */
@@ -382,16 +369,14 @@ void hardware::analog::current::Phase(systems::abc& currents)
 	for(std::uint_fast8_t i = 0; i < PHASES; i++)
 	{
 		std::int_fast32_t sum = 0;
-		std::int_fast32_t cnt = 0;
 
 		for (std::uint_fast8_t s = 0; s < ADC_SEQ_BUFFERED; s++)
 		{
-			for (std::uint_fast8_t a = 0; a < 6; a++)
+			for (std::uint_fast8_t a = 0; a < LENGTH_ADC_SEQ/2; a++)
 			{
 				sum += samples[i][s][a];
-				cnt += 2;
 			}
-			currents.array[i] = ADC2CURRENT * (float)(current_offset[i] - sum) / (float)cnt;
+			currents.array[i] = ADC2CURRENT * (float)(current_offset[i] - sum) / (float)(LENGTH_ADC_SEQ/2);
 		}
 	}
 }
@@ -402,7 +387,19 @@ void hardware::analog::current::Phase(systems::abc& currents)
  */
 void hardware::analog::voltage::Phase(systems::abc& voltages)
 {
-	(void)voltages; /// TODO need SPI for Voltage ADCs
+	for(std::uint_fast8_t i = 0; i < PHASES; i++)
+	{
+		std::int_fast32_t sum = 0;
+
+		for (std::uint_fast8_t s = 0; s < ADC_SEQ_BUFFERED; s++)
+		{
+			for (std::uint_fast8_t a = LENGTH_ADC_SEQ/2; a < LENGTH_ADC_SEQ; a++)
+			{
+				sum += samples[i][s][a];
+			}
+			voltages.array[i] = ADC2CURRENT * (float)(voltage_offset[i] - sum) / (float)(LENGTH_ADC_SEQ/2);
+		}
+	}
 }
 
 /**
@@ -416,7 +413,7 @@ void hardware::analog::current::SetOffset(void)
 
 		for (std::uint_fast8_t s = 0; s < ADC_SEQ_BUFFERED; s++)
 		{
-			for (std::uint_fast8_t a = 0; a < 6; a++)
+			for (std::uint_fast8_t a = 0; a < LENGTH_ADC_SEQ/2; a++)
 			{
 				sum += samples[i][s][a];
 			}
@@ -430,7 +427,19 @@ void hardware::analog::current::SetOffset(void)
  */
 void hardware::analog::voltage::SetOffset(void)
 {
-	(void)voltage_offset; /// TODO need SPI for Voltage ADCs
+	for(std::uint_fast8_t i = 0; i < PHASES; i++)
+	{
+		std::int_fast32_t sum = 0;
+
+		for (std::uint_fast8_t s = 0; s < ADC_SEQ_BUFFERED; s++)
+		{
+			for (std::uint_fast8_t a = LENGTH_ADC_SEQ/2; a < LENGTH_ADC_SEQ; a++)
+			{
+				sum += samples[i][s][a];
+			}
+		}
+		voltage_offset[i] = sum;
+	}
 }
 
 /**
@@ -442,17 +451,15 @@ float hardware::analog::voltage::DCBus(void)
 	float result = 0.0f;
 
 	std::int_fast32_t sum = 0;
-	std::int_fast32_t cnt = 0;
 
 	for (std::uint_fast8_t s = 0; s < ADC_SEQ_BUFFERED; s++)
 	{
-		for (std::uint_fast8_t a = 0; a < 6; a++)
+		for (std::uint_fast8_t a = 0; a < LENGTH_ADC_SEQ/2; a++)
 		{
-			sum += samples[4][s][a];
-			cnt += 2;
+			sum += samples[3][s][a];
 		}
 	}
-	result = ADC2VOLTAGE * (float)sum / (float)cnt;
+	result = ADC2VOLTAGE * (float)sum / (float)(LENGTH_ADC_SEQ/2);
 	return (result);
 }
 
@@ -463,7 +470,19 @@ float hardware::analog::voltage::DCBus(void)
  */
 float hardware::analog::temperature::Bridge(void)
 {
-	return 0.0f;
+	float result = 0.0f;
+
+	std::int_fast32_t sum = 0;
+
+	for (std::uint_fast8_t s = 0; s < ADC_SEQ_BUFFERED; s++)
+	{
+		for (std::uint_fast8_t a = LENGTH_ADC_SEQ/2; a < LENGTH_ADC_SEQ; a++)
+		{
+			sum += samples[4][s][a];
+		}
+	}
+	result = ADC2VOLTAGE * (float)sum / (float)(LENGTH_ADC_SEQ/2);
+	return (result);
 }
 
 /**
@@ -472,7 +491,19 @@ float hardware::analog::temperature::Bridge(void)
  */
 float hardware::analog::temperature::Motor(void)
 {
-	return 0.0f;
+	float result = 0.0f;
+
+	std::int_fast32_t sum = 0;
+
+	for (std::uint_fast8_t s = 0; s < ADC_SEQ_BUFFERED; s++)
+	{
+		for (std::uint_fast8_t a = 0; a < LENGTH_ADC_SEQ/2; a++)
+		{
+			sum += samples[4][s][a];
+		}
+	}
+	result = ADC2VOLTAGE * (float)sum / (float)(LENGTH_ADC_SEQ/2);
+	return (result);
 }
 
 
@@ -482,7 +513,19 @@ float hardware::analog::temperature::Motor(void)
  */
 float hardware::analog::input(void)
 {
-	return 0.0f;
+	float result = 0.0f;
+
+	std::int_fast32_t sum = 0;
+
+	for (std::uint_fast8_t s = 0; s < ADC_SEQ_BUFFERED; s++)
+	{
+		for (std::uint_fast8_t a = LENGTH_ADC_SEQ/2; a < LENGTH_ADC_SEQ; a++)
+		{
+			sum += samples[3][s][a];
+		}
+	}
+	result = (float)sum / (float)(LENGTH_ADC_SEQ * 2048);
+	return (result);
 }
 
 /**
