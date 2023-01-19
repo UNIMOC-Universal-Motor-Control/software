@@ -46,8 +46,8 @@ REGION_ALIAS("VECTORS_FLASH", flash0);
 REGION_ALIAS("VECTORS_FLASH_LMA", flash0);
 
 /* Flash region to be used for constructors and destructors.*/
-REGION_ALIAS("XTORS_FLASH", flash3);
-REGION_ALIAS("XTORS_FLASH_LMA", flash3);
+REGION_ALIAS("XTORS_FLASH", flash0);
+REGION_ALIAS("XTORS_FLASH_LMA", flash0);
 
 /* Flash region to be used for code text.*/
 REGION_ALIAS("TEXT_FLASH", flash3);
@@ -74,7 +74,7 @@ REGION_ALIAS("PROCESS_STACK_RAM", ram0);
 
 /* RAM region to be used for data segment.*/
 REGION_ALIAS("DATA_RAM", ram0);
-REGION_ALIAS("DATA_RAM_LMA", flash3);
+REGION_ALIAS("DATA_RAM_LMA", flash0);
 
 /* RAM region to be used for BSS segment.*/
 REGION_ALIAS("BSS_RAM", ram0);

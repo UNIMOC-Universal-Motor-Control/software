@@ -20,9 +20,9 @@
 MEMORY
 {
     flash0 (rx) : org = 0x08000000, len = 2k
-    flash1 (rx) : org = 0x00000000, len = 2k
-    flash2 (rx) : org = 0x00000000, len = 2k
-    flash3 (rx) : org = 0x00000000, len = 506k
+    flash1 (rx) : org = 0x08000800, len = 2k
+    flash2 (rx) : org = 0x08001000, len = 2k
+    flash3 (rx) : org = 0x08001800, len = 506k
     flash4 (rx) : org = 0x00000000, len = 0
     flash5 (rx) : org = 0x00000000, len = 0
     flash6 (rx) : org = 0x00000000, len = 0
@@ -45,8 +45,8 @@ REGION_ALIAS("VECTORS_FLASH", flash0);
 REGION_ALIAS("VECTORS_FLASH_LMA", flash0);
 
 /* Flash region to be used for constructors and destructors.*/
-REGION_ALIAS("XTORS_FLASH", flash3);
-REGION_ALIAS("XTORS_FLASH_LMA", flash3);
+REGION_ALIAS("XTORS_FLASH", flash0);
+REGION_ALIAS("XTORS_FLASH_LMA", flash0);
 
 /* Flash region to be used for code text.*/
 REGION_ALIAS("TEXT_FLASH", flash3);
