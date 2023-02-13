@@ -21,6 +21,8 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    Credits to stancecoke's EBiCS/EBiCS_Firmware
  */
 #ifndef INC_DISPLAY_HPP_
 #define INC_DISPLAY_HPP_
