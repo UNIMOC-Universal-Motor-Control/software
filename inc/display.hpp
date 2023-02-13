@@ -68,7 +68,23 @@ namespace  display
 			uint8_t c14;
 		} config_ts;
 
-		static constexpr float  BATTERY_LI_ION_CELLS_NUMBER = 10.0f;
+		/*
+		 * UART driver configuration structure.
+		 */
+		UARTConfig uart_cfg = {
+		  NULL,
+		  NULL,
+		  NULL,
+		  NULL,
+		  NULL,
+		  NULL,
+		  9600,
+		  0,
+		  USART_CR2_LINEN,
+		  0
+		};
+
+		static constexpr float BATTERY_LI_ION_CELLS_NUMBER = 10.0f;
 		static constexpr float COMMUNICATIONS_BATTERY_VOLTAGE	= (BATTERY_LI_ION_CELLS_NUMBER * 3.45f); // example: 7S battery, should be = 24
 
 		// Considering the follow voltage values for each li-ion battery cell
@@ -89,8 +105,58 @@ namespace  display
 		static constexpr float  BATTERY_PACK_VOLTS_20	= (LI_ION_CELL_VOLTS_20  * BATTERY_LI_ION_CELLS_NUMBER) * 256.0f;
 		static constexpr float  BATTERY_PACK_VOLTS_0	= (LI_ION_CELL_VOLTS_0   * BATTERY_LI_ION_CELLS_NUMBER) * 256.0f;
 
+		uint8_t tx_buffer[12];
+		uint8_t last_XOR;
+		uint16_t wheel_period_ms =4500;
+		uint32_t battery_volts= 36;
+		uint8_t battery_soc = 12;
+		uint8_t error;
+		uint8_t rx_buffer[13];
+		uint8_t rx_initial_buffer[13];
+		uint8_t rx_buffer_counter = 0;
+		uint8_t byte_received;
+		uint8_t moving_indication = 0;
+		uint8_t UARTCounter = 0;
+		uint8_t msg_received=0;
+		int16_t eeprom_temp=0;
+		uint8_t gear_ratio = GEAR_RATIO;
+
+		UARTDriver *uartp;
+
+		static void txend1(UARTDriver *uartp)
+		{
+
+			(void)uartp;
+		}
+
+		static void txend2(UARTDriver *uartp)
+		{
+
+			(void)uartp;
+		}
+
+		static void rxend(UARTDriver *uartp)
+		{
+
+			(void)uartp;
+		}
+
+		static void rxchar(UARTDriver *uartp, uint16_t c)
+		{
+
+			(void)uartp;
+			(void)c;
+		}
+
+		static void rxerr(UARTDriver *uartp, uartflags_t e)
+		{
+
+			(void)uartp;
+			(void)e;
+		}
+
 		/**
-		 * initialize display
+		 * initialize thread
 		 */
 		void init(void);
 
