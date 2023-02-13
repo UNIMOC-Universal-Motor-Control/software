@@ -34,7 +34,7 @@
  * Board identifier.
  */
 #define BOARD_UNIMOC_PHHVR1
-#define BOARD_NAME                  "UNIMOC_PHHVr1"
+#define BOARD_NAME                  "UNIMOC_PHHV"
 
 /*
  * Board oscillators-related settings.
