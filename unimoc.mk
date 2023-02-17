@@ -20,6 +20,7 @@ UNIMOCCPPSRC := ${BASEDIR}/src/main.cpp \
                 ${BASEDIR}/src/management.cpp \
                 ${BASEDIR}/src/control_thread.cpp \
                 ${BASEDIR}/src/measurement.cpp \
+                ${BASEDIR}/src/display.cpp \
                 ${CYPHALCPPSRC} \
 
 # Required include directories

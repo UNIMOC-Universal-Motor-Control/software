@@ -48,7 +48,7 @@ namespace  display
 		typedef struct config_s
 		{
 			uint8_t assist_level;
-			uint8_t light;
+			bool    light;
 			uint8_t motor_characteristic;
 			uint8_t wheel_size;
 			uint8_t max_speed;
@@ -81,6 +81,7 @@ namespace  display
 		  9600,
 		  0,
 		  USART_CR2_LINEN,
+		  0,
 		  0
 		};
 
@@ -106,22 +107,11 @@ namespace  display
 		static constexpr float  BATTERY_PACK_VOLTS_0	= (LI_ION_CELL_VOLTS_0   * BATTERY_LI_ION_CELLS_NUMBER) * 256.0f;
 
 		uint8_t tx_buffer[12];
-		uint8_t last_XOR;
-		uint16_t wheel_period_ms =4500;
-		uint32_t battery_volts= 36;
-		uint8_t battery_soc = 12;
 		uint8_t error;
 		uint8_t rx_buffer[13];
-		uint8_t rx_initial_buffer[13];
-		uint8_t rx_buffer_counter = 0;
-		uint8_t byte_received;
-		uint8_t moving_indication = 0;
-		uint8_t UARTCounter = 0;
-		uint8_t msg_received=0;
-		int16_t eeprom_temp=0;
-		uint8_t gear_ratio = GEAR_RATIO;
 
 		UARTDriver *uartp;
+		config_ts config;
 
 		static void txend1(UARTDriver *uartp)
 		{
