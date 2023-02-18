@@ -56,7 +56,7 @@ void hardware::Init()
 	hardware_pwm_Init();
 	hardware_analog_Init();
 	hardware_cordic_Init();
-	hardware_can_Init();
+//	hardware_can_Init();
 
 	trngInit();
 	trngStart(&TRNGD1, NULL);
