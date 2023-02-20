@@ -34,55 +34,6 @@
  */
 namespace values
 {
-
-/**
- * RTT Scope
- */
-namespace scope
-{
-	/**
-	 * SEGGER RTT J-Scope definitions
-	 */
-	constexpr std::uint32_t NUM_OF_RTT_SCOPE_CHANNELS = 8;
-
-	constexpr std::uint32_t BUFFER_SIZE = 4096;
-
-
-	typedef struct scope_s
-	{
-		//std::uint32_t timestamp;
-		float ch[NUM_OF_RTT_SCOPE_CHANNELS];
-	}scope_ts;
-
-	typedef struct string_s
-	{
-		static constexpr char start[] = "JScope_";
-
-		constexpr string_s(void) : str()
-		{
-			for(std::uint32_t i = 0; i < sizeof(start); i++)
-			{
-				str[i] = start[i];
-			}
-
-			for(std::uint32_t i = 0; i < NUM_OF_RTT_SCOPE_CHANNELS; i++)
-			{
-				str[sizeof(start) - 1 + i *2] = 'f';
-				str[sizeof(start) + i *2] = '4';
-			}
-			str[sizeof(start) - 1 + NUM_OF_RTT_SCOPE_CHANNELS *2] = 0;
-		}
-		char str[NUM_OF_RTT_SCOPE_CHANNELS * 2 + sizeof(start)];
-	}string_ts;
-
-
-	extern scope_ts sample;
-
-	extern const string_ts string;
-
-	extern std::uint8_t buffer[BUFFER_SIZE];
-}
-
 	/**
 	 * motor values
 	 */

@@ -33,17 +33,6 @@
  */
 namespace values
 {
-
-	/**
-	 * RTT Scope
-	 */
-	namespace scope
-	{
-		scope_ts sample;
-		const string_ts string;
-		std::uint8_t buffer[BUFFER_SIZE];
-	}
-
 	/**
 	 * motor values
 	 */

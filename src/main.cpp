@@ -29,9 +29,6 @@
 #include "management.hpp"
 #include "control_thread.hpp"
 #include "main.hpp"
-
-#include "SEGGER_SYSVIEW_Chibios.h"
-#include "SEGGER_RTT.h"
 #include "cyphal.hpp"
 
 using namespace chibios_rt;
@@ -54,14 +51,6 @@ int main(void)
 	 */
 	halInit();
 	System::init();
-
-	/* Configure and initialize SystemView with all the needed IRQ Names */
-	SYSVIEW_ChibiOS_Start(STM32_SYSCLK, STM32_SYSCLK, "I#27=DMA1_CH1,I#28=DMA1_CH2,I#29=DMA1_CH3,I#30=DMA1_CH4,I#44=TIM2");
-
-	/*
-	 * Configure J-Scope RTT buffer for one unsigned int and one signed int
-	*/
-	SEGGER_RTT_ConfigUpBuffer(SEGGER_J_SCOPE_CHANNEL, values::scope::string.str, values::scope::buffer, values::scope::BUFFER_SIZE, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
 
 	/*
 	 * initialize hardware with no control thread

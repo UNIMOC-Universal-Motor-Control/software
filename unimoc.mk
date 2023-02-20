@@ -3,11 +3,10 @@ BASEDIR := ../../
 
 # included modules
 include ${BASEDIR}/cyphal/cyphal.mk
-include ${BASEDIR}/systemview/systemview.mk
 
 # List of all the Project related hardware independent files.
 # C code
-UNIMOCSRC := ${CYPHALSRC} ${SYSTEMVIEWSRC}
+UNIMOCSRC := ${CYPHALSRC}
 
 # Cpp code
 UNIMOCCPPSRC := ${BASEDIR}/src/main.cpp \
@@ -26,10 +25,9 @@ UNIMOCCPPSRC := ${BASEDIR}/src/main.cpp \
 # Required include directories
 UNIMOCINC := ${BASEDIR}/inc \
              ${BASEDIR}/hardware/interface \
-             ${CYPHALINC} \
-             ${SYSTEMVIEWINC}
+             ${CYPHALINC} 
              
-UNIMOCXASM := ${SYSTEMVIEWXASM}
+UNIMOCXASM := 
 
 # Shared variables
 ALLCPPSRC += ${UNIMOCCPPSRC}
