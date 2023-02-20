@@ -121,7 +121,7 @@ static ADCConversionGroup adcgrpcfg12 = {
 	   NOTE: The bits @p ADC_CFGR_CONT or @p ADC_CFGR_DISCEN must be
 			 specified in continuous mode or if the buffer depth is
 			 greater than one.*/
-	ADC_CFGR_CONT | ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_0 | ADC_CFGR_EXTSEL_2,
+	ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_0 | ADC_CFGR_EXTSEL_2,
 	/* ADC CFGR2 register initialization data.*/
 	0,
 	/* ADC TR1 register initialization data.*/
@@ -206,7 +206,7 @@ static ADCConversionGroup adcgrpcfg34 = {
 	   NOTE: The bits @p ADC_CFGR_CONT or @p ADC_CFGR_DISCEN must be
 			 specified in continuous mode or if the buffer depth is
 			 greater than one.*/
-	ADC_CFGR_CONT | ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_1 | ADC_CFGR_EXTSEL_2,
+	ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_1 | ADC_CFGR_EXTSEL_2,
 	/* ADC CFGR2 register initialization data.*/
 	0,
 	/* ADC TR1 register initialization data.*/
@@ -288,7 +288,7 @@ static ADCConversionGroup adcgrpcfg5 = {
 	   NOTE: The bits @p ADC_CFGR_CONT or @p ADC_CFGR_DISCEN must be
 			 specified in continuous mode or if the buffer depth is
 			 greater than one.*/
-	ADC_CFGR_CONT | ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_1 | ADC_CFGR_EXTSEL_2,
+	ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_1 | ADC_CFGR_EXTSEL_2,
 	/* ADC CFGR2 register initialization data.*/
 	0,
 	/* ADC TR1 register initialization data.*/

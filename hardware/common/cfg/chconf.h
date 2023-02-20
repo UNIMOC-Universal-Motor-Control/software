@@ -576,7 +576,7 @@
  * @note    The default is @p FALSE.
  */
 #if !defined(CH_DBG_STATISTICS)
-#define CH_DBG_STATISTICS                   FALSE
+#define CH_DBG_STATISTICS                   TRUE
 #endif
 
 /**
@@ -587,7 +587,7 @@
  * @note    The default is @p FALSE.
  */
 #if !defined(CH_DBG_SYSTEM_STATE_CHECK)
-#define CH_DBG_SYSTEM_STATE_CHECK           FALSE
+#define CH_DBG_SYSTEM_STATE_CHECK           TRUE
 #endif
 
 /**
@@ -598,7 +598,7 @@
  * @note    The default is @p FALSE.
  */
 #if !defined(CH_DBG_ENABLE_CHECKS)
-#define CH_DBG_ENABLE_CHECKS                FALSE
+#define CH_DBG_ENABLE_CHECKS                TRUE
 #endif
 
 /**
@@ -610,7 +610,7 @@
  * @note    The default is @p FALSE.
  */
 #if !defined(CH_DBG_ENABLE_ASSERTS)
-#define CH_DBG_ENABLE_ASSERTS               FALSE
+#define CH_DBG_ENABLE_ASSERTS               TRUE
 #endif
 
 /**
@@ -655,7 +655,7 @@
  * @note    The default is @p FALSE.
  */
 #if !defined(CH_DBG_FILL_THREADS)
-#define CH_DBG_FILL_THREADS                 FALSE
+#define CH_DBG_FILL_THREADS                 TRUE
 #endif
 
 /**
@@ -806,6 +806,7 @@
  * accurate.
  */
 #define CH_CFG_IRQ_PROLOGUE_HOOK() {                                        \
+	__dbg_check_enter_isr(); \
 	SEGGER_SYSVIEW_RecordEnterISR();                        \
 }
 
@@ -861,6 +862,7 @@
 #endif
 
 #define CH_CFG_IRQ_EPILOGUE_HOOK() {                      \
+  __dbg_check_leave_isr(); \
   port_lock_from_isr();                                   \
   if (_isr_is_tail() && chSchIsPreemptionRequired()) {    \
     SEGGER_SYSVIEW_RecordExitISRToScheduler();            \

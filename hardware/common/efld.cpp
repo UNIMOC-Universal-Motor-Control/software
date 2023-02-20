@@ -34,6 +34,9 @@ constexpr uint32_t CRC32MASK   		= 0x04C11DB7;
 ///< embedded flash eeprom driver config need to be defined by each hardware
 extern MFSConfig mfscfg1;
 
+///< an non-cacheable MFS buffer.
+mfs_nocache_buffer_t nocache_mfsbuf1;
+
 ///< Managed flash driver instance for embedded flash eeprom emulation
 MFSDriver mfs1;
 
@@ -79,6 +82,8 @@ bool hardware::memory::Read(const void* const buffer, const uint32_t length)
 
 	/* Starting EFL driver.*/
 	eflStart(&EFLD1, NULL);
+
+	mfsObjectInit(&mfs1, &nocache_mfsbuf1);
 
 	error = mfsStart(&mfs1, &mfscfg1);
 

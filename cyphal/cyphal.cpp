@@ -149,11 +149,12 @@ namespace cyphal
 #define NODE_NAME HARDWARE_NAME
 
 ///< heap size for the o1heap instance for cyphal frames
-static constexpr size_t O1HEAP_SIZE = 8192;
+static constexpr size_t O1HEAP_SIZE = 4096;
 
 static constexpr std::uint16_t FRAMES_PER_ITER = 1000;
 
 ///< heap buffer for o1heap instance
+__attribute__((aligned (32)))
 static char o1heap[O1HEAP_SIZE];
 
 ///< o1heap allocator instance pointer
@@ -739,7 +740,7 @@ void cyphal::Init(void)
 						&rx);
 		if (res < 0)
 		{
-			//            return -res;
+			chSysHalt("canard Init failed");
 		}
 	}
 

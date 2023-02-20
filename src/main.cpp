@@ -56,7 +56,7 @@ int main(void)
 	System::init();
 
 	/* Configure and initialize SystemView with all the needed IRQ Names */
-	SYSVIEW_ChibiOS_Start(STM32_SYSCLK, STM32_SYSCLK, "I#27=TIM1_CC,I#44=TIM2,I#73=ADC1,I#74=ADC2,I#76=ADC3");
+	SYSVIEW_ChibiOS_Start(STM32_SYSCLK, STM32_SYSCLK, "I#27=DMA1_CH1,I#28=DMA1_CH2,I#29=DMA1_CH3,I#30=DMA1_CH4,I#44=TIM2");
 
 	/*
 	 * Configure J-Scope RTT buffer for one unsigned int and one signed int
