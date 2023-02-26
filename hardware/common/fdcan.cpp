@@ -284,7 +284,7 @@ bool hardware::can::Transmit(const std::uint_fast8_t interface, const CanardFram
 
 	std::memcpy(txmsg.data8, frame.payload, frame.payload_size);
 
-	msg_t result = canTransmit(pcan[interface], CAN_ANY_MAILBOX, &txmsg, TIME_IMMEDIATE);
+	msg_t result = canTransmitTimeout(pcan[interface], CAN_ANY_MAILBOX, &txmsg, TIME_IMMEDIATE);
 
 	return (result != MSG_OK);
 }
@@ -305,7 +305,7 @@ bool hardware::can::Receive(const std::uint_fast8_t interface, CanardFrame& fram
 	  8U, 12U, 16U, 20U, 24U, 32U, 48U, 64U
 	};
 
-	msg_t result = canReceive(pcan[interface], CAN_ANY_MAILBOX, &rxmsg, TIME_IMMEDIATE);
+	msg_t result = canReceiveTimeout(pcan[interface], CAN_ANY_MAILBOX, &rxmsg, TIME_IMMEDIATE);
 	// only extended id frames are valid frames
 	if(!rxmsg.common.XTD)
 	{
