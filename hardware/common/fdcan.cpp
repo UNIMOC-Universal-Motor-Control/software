@@ -245,6 +245,7 @@ void hardware_can_Init(void)
 			osalSysHalt("no Bit Rate set.");
 			break;
 		}
+		osalThreadSleepMilliseconds(300);
 	}
 }
 
@@ -339,11 +340,11 @@ bool hardware::can::SetBitrate(const std::uint32_t nbitrate, const std::uint32_t
 	if(			nbitrate >= 125000
 			&& 	nbitrate <= 1000000)
 	{
-		result = hardware_can_ComputeTimings(STM32_PCLK1, nbitrate, &ntimings);
+		result = hardware_can_ComputeTimings(STM32_HSECLK, nbitrate, &ntimings);
 
 		if(result && fd_mode)
 		{
-			result = hardware_can_ComputeTimings(STM32_PCLK1, dbitrate, &dtimings);
+			result = hardware_can_ComputeTimings(STM32_HSECLK, dbitrate, &dtimings);
 		}
 
 		if(result)
