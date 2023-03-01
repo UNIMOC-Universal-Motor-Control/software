@@ -58,11 +58,11 @@ static hal_can_config cancfg = {
 	/**
 	 * @brief   CC control register.
 	 */
-	.CCCR = FDCAN_CCCR_TXP,
+	.CCCR = FDCAN_CCCR_TXP | FDCAN_CCCR_DAR | FDCAN_CCCR_TEST,
 	/**
 	 * @brief   Test configuration register.
 	 */
-	.TEST = 0,
+	.TEST = FDCAN_TEST_LBCK,
 	/**
 	 * @brief   Global filter configuration register.
 	 */
