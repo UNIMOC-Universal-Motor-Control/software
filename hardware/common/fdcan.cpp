@@ -237,6 +237,7 @@ void hardware_can_Init(void)
 		if(cur_nbitrate != FALLBACK_BITRATE)
 		{
 			cur_nbitrate = FALLBACK_BITRATE;
+			cur_dbitrate = FALLBACK_BITRATE;
 			cur_fd_mode = false;
 		}
 		else
@@ -280,7 +281,7 @@ bool hardware::can::Transmit(const std::uint_fast8_t interface, const CanardFram
 	if(txmsg.DLC > 8)
 	{
 		txmsg.FDF = 1;
-		txmsg.BPS = 1;  // BRS. Bit rate Switch enabled. driver name is wrong
+		txmsg.BRS = 1;  // BRS. Bit rate Switch enabled. driver name is wrong
 	}
 
 	std::memcpy(txmsg.data8, frame.payload, frame.payload_size);
@@ -345,6 +346,10 @@ bool hardware::can::SetBitrate(const std::uint32_t nbitrate, const std::uint32_t
 		if(result && fd_mode)
 		{
 			result = hardware_can_ComputeTimings(STM32_HSECLK, dbitrate, &dtimings);
+		}
+		else
+		{
+			dtimings = ntimings;
 		}
 
 		if(result)
