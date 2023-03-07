@@ -74,6 +74,12 @@ typedef struct can_timings_s
     uint8_t  max_resync_jump_width;  /// [1, 4] (recommended value is 1)
 } can_timings_ts;
 
+/// translate dlc values to bytes in the message
+static const std::uint8_t dlc_to_bytes[] = {
+  0U,  1U,  2U,  3U,  4U,  5U,  6U,  7U,
+  8U, 12U, 16U, 20U, 24U, 32U, 48U, 64U
+};
+
 ///< currently set bit rate
 std::uint32_t cur_nbitrate = 125000;
 std::uint32_t cur_dbitrate = 1000000;
@@ -276,7 +282,7 @@ bool hardware::can::Transmit(const std::uint_fast8_t interface, const CanardFram
 	if(txmsg.DLC > 8)
 	{
 		txmsg.FDF = 1;
-		txmsg.BRS = 1;  // BRS. Bit rate Switch enabled. driver name is wrong
+		txmsg.BRS = 1;  // BRS. Bit rate Switch enabled.
 	}
 
 	std::memcpy(txmsg.data8, frame.payload, frame.payload_size);
@@ -297,23 +303,13 @@ bool hardware::can::Transmit(const std::uint_fast8_t interface, const CanardFram
 bool hardware::can::Receive(const std::uint_fast8_t interface, CanardFrame& frame)
 {
 	static CANRxFrame rxmsg;
-	static const std::uint8_t dlc_to_bytes[] = {
-	  0U,  1U,  2U,  3U,  4U,  5U,  6U,  7U,
-	  8U, 12U, 16U, 20U, 24U, 32U, 48U, 64U
-	};
 
 	msg_t result = canReceiveTimeout(pcan[interface], CAN_ANY_MAILBOX, &rxmsg, TIME_IMMEDIATE);
-	// only extended id frames are valid frames
-	if(!rxmsg.common.XTD)
-	{
-		result = !MSG_OK;
-	}
-	else
-	{
-		frame.payload_size = dlc_to_bytes[rxmsg.DLC];
-		frame.extended_can_id = rxmsg.ext.EID;
-		frame.payload = rxmsg.data8;
-	}
+
+	frame.payload_size = dlc_to_bytes[rxmsg.DLC];
+	frame.extended_can_id = rxmsg.ext.EID;
+	frame.payload = rxmsg.data8;
+
 
 	return (result == MSG_OK);
 }
