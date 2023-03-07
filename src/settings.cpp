@@ -312,7 +312,7 @@ __attribute__((aligned (32))) settings_ts settings =
 	.cyphal =
 	{
 		///< ID of the node in UAVCAN
-		.node_id = std::numeric_limits<std::uint16_t>::max(),
+		.node_id = 42,//std::numeric_limits<std::uint16_t>::max(),
 
 		///< CAN Bus nominal bit rate.
 		.nbitrate = 500000,

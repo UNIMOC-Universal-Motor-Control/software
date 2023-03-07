@@ -32,7 +32,7 @@
 /// This is defined by the bxCAN hardware.
 /// Devices with only one CAN interface have 14 filters (e.g. F103).
 /// Devices with two CAN interfaces (e.g. F105, F446) have 28 filters, which are shared equally.
-constexpr std::uint8_t BXCAN_NUM_ACCEPTANCE_FILTERS  = 14;
+constexpr std::uint8_t NUM_ACCEPTANCE_FILTERS  = 14;
 
 ///< CAN Driver instances if redundant. Instance 0 is always master CAN
 extern CANDriver* pcan[HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES];
@@ -327,9 +327,9 @@ bool hardware::can::SetBitrate(const std::uint32_t nbitrate, const std::uint32_t
  */
 bool hardware::can::SetFilters(const std::uint8_t num, const CanardFilter* const filters)
 {
-	CANFilter stm_filters[BXCAN_NUM_ACCEPTANCE_FILTERS * HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES];
+	CANFilter stm_filters[NUM_ACCEPTANCE_FILTERS * HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES];
 
-	if(num > BXCAN_NUM_ACCEPTANCE_FILTERS) return false;
+	if(num > NUM_ACCEPTANCE_FILTERS) return false;
 
 	for(std::uint_fast8_t i = 0; i < num; i++)
 	{

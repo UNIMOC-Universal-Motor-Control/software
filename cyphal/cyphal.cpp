@@ -975,7 +975,7 @@ void cyphal::can_heartbeat::main(void)
 					// An error has occurred: either an argument is invalid, the TX queue is full, or we've run out of memory.
 					// It is possible to statically prove that an out-of-memory will never occur for a given application if the
 					// heap is sized correctly; for background, refer to the Robson's Proof and the documentation for O1Heap.
-					osalDbgAssert(result < 0, "cyphal Heartbeat tx push error");
+//					osalDbgAssert(result < 0, "cyphal Heartbeat tx push error");
 				}
 			}
 
@@ -1157,7 +1157,7 @@ void cyphal::can_heartbeat::main(void)
 						// An error has occurred: either an argument is invalid, the TX queue is full, or we've run out of memory.
 						// It is possible to statically prove that an out-of-memory will never occur for a given application if the
 						// heap is sized correctly; for background, refer to the Robson's Proof and the documentation for O1Heap.
-						//osalDbgAssert(result < 0, "cyphal Node Alloc tx push error");
+//						osalDbgAssert(result < 0, "cyphal Node Alloc tx push error");
 					}
 				}
 

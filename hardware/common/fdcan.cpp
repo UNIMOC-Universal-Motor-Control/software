@@ -29,11 +29,6 @@
 #include "settings.hpp"
 
 
-/// This is defined by the bxCAN hardware.
-/// Devices with only one CAN interface have 14 filters (e.g. F103).
-/// Devices with two CAN interfaces (e.g. F105, F446) have 28 filters, which are shared equally.
-constexpr std::uint8_t BXCAN_NUM_ACCEPTANCE_FILTERS  = 14;
-
 ///< CAN Driver instances if redundant. Instance 0 is always master CAN
 extern CANDriver* pcan[HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES];
 
@@ -58,11 +53,11 @@ static hal_can_config cancfg = {
 	/**
 	 * @brief   CC control register.
 	 */
-	.CCCR = FDCAN_CCCR_TXP | FDCAN_CCCR_DAR | FDCAN_CCCR_TEST,
+	.CCCR = FDCAN_CCCR_TXP | FDCAN_CCCR_DAR,
 	/**
 	 * @brief   Test configuration register.
 	 */
-	.TEST = FDCAN_TEST_LBCK,
+	.TEST = 0,
 	/**
 	 * @brief   Global filter configuration register.
 	 */
@@ -71,13 +66,13 @@ static hal_can_config cancfg = {
 
 /// Bit timing parameters. Use bxCANComputeTimings() to derive these from the desired bus data rate.
 /// Some applications may prefer to store pre-computed parameters instead of calculating them at runtime.
-typedef struct bxcan_timings_s
+typedef struct can_timings_s
 {
     uint16_t bit_rate_prescaler;     /// [1, 1024]
     uint8_t  bit_segment_1;          /// [1, 16]
     uint8_t  bit_segment_2;          /// [1, 8]
     uint8_t  max_resync_jump_width;  /// [1, 4] (recommended value is 1)
-} bxcan_timings_ts;
+} can_timings_ts;
 
 ///< currently set bit rate
 std::uint32_t cur_nbitrate = 125000;
@@ -104,7 +99,7 @@ struct hardware::can::events_s hardware::can::event[HARDWARE_CAPABIITY_CAN_NO_OF
  */
 static bool hardware_can_ComputeTimings(const uint32_t      peripheral_clock_rate,  //
                          	 	 	 	const uint32_t      target_bitrate,         //
-										bxcan_timings_ts* const out_timings)
+										can_timings_ts* const out_timings)
 {
     if (target_bitrate < 1000U)
     {
@@ -335,8 +330,8 @@ bool hardware::can::Receive(const std::uint_fast8_t interface, CanardFrame& fram
 bool hardware::can::SetBitrate(const std::uint32_t nbitrate, const std::uint32_t dbitrate, const bool fd_mode)
 {
 	bool result = false;
-	bxcan_timings_ts ntimings;
-	bxcan_timings_ts dtimings;
+	can_timings_ts ntimings;
+	can_timings_ts dtimings;
 
 	if(			nbitrate >= 125000
 			&& 	nbitrate <= 1000000)
