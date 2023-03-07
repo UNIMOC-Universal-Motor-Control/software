@@ -53,7 +53,7 @@ static hal_can_config cancfg = {
 	/**
 	 * @brief   CC control register.
 	 */
-	.CCCR = FDCAN_CCCR_TXP | FDCAN_CCCR_DAR,
+	.CCCR = FDCAN_CCCR_DAR,
 	/**
 	 * @brief   Test configuration register.
 	 */
@@ -61,7 +61,7 @@ static hal_can_config cancfg = {
 	/**
 	 * @brief   Global filter configuration register.
 	 */
-	.RXGFC = 0,
+	.RXGFC = FDCAN_RXGFC_ANFE | FDCAN_RXGFC_RRFE | FDCAN_RXGFC_RRFS,
 };
 
 /// Bit timing parameters. Use bxCANComputeTimings() to derive these from the desired bus data rate.
@@ -365,7 +365,7 @@ bool hardware::can::SetBitrate(const std::uint32_t nbitrate, const std::uint32_t
 			}
 			else
 			{
-				cancfg.CCCR &= ~FDCAN_CCCR_FDOE | FDCAN_CCCR_BRSE;
+				cancfg.CCCR &= ~(FDCAN_CCCR_FDOE | FDCAN_CCCR_BRSE);
 			}
 
 			cur_nbitrate = nbitrate;

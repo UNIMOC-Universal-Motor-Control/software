@@ -272,7 +272,7 @@ static void ProcessGetNodeInfo(const CanardRxTransfer* transfer)
 			// An error has occurred: either an argument is invalid, the TX queue is full, or we've run out of memory.
 			// It is possible to statically prove that an out-of-memory will never occur for a given application if the
 			// heap is sized correctly; for background, refer to the Robson's Proof and the documentation for O1Heap.
-			osalDbgAssert(result < 0, "cyphal Servo Feedback tx push error");
+//			osalDbgAssert(result < 0, "cyphal GetNodeInfo tx push error");
 		}
 	}
 	else
@@ -622,72 +622,71 @@ void cyphal::can_rx::main(void)
 
 	while(TRUE)
 	{
+		CanardFrame received_frame;
+
 		// wait for any frame received
-		const msg_t evt = chEvtWaitAnyTimeout(ALL_EVENTS, OSAL_MS2I(1000));
+		if (chEvtWaitAnyTimeout(ALL_EVENTS, OSAL_MS2I(1000)) == 0)
+			continue;
 
-		if (evt == MSG_OK)
+		// here we received some event. check if its a can message
+		while (hardware::can::Receive(interface, received_frame))
 		{
-			CanardFrame received_frame;
+			CanardMicrosecond rs_timestamp = hardware::GetMonotonicMicroseconds();
 
-			while (hardware::can::Receive(interface, received_frame))
+			const std::int8_t result = canardRxAccept(&canard,
+					rs_timestamp,               // When the frame was received, in microseconds.
+					&received_frame,            // The CAN frame received from the bus.
+					interface,                  // If the transport is not redundant, use 0.
+					&transfer,
+					&subscription);
+
+			if (result < 0)
 			{
-				CanardMicrosecond rs_timestamp = hardware::GetMonotonicMicroseconds();
-
-				const std::int8_t result = canardRxAccept(&canard,
-						rs_timestamp,               // When the frame was received, in microseconds.
-						&received_frame,            // The CAN frame received from the bus.
-						interface,                  // If the transport is not redundant, use 0.
-						&transfer,
-						&subscription);
-
-				if (result < 0)
+				// An error has occurred: either an argument is invalid or we've ran out of memory.
+				// It is possible to statically prove that an out-of-memory will never occur for a given application if
+				// the heap is sized correctly; for background, refer to the Robson's Proof and the documentation for O1Heap.
+				// Reception of an invalid frame is NOT an error.
+			}
+			else if (result == 1)
+			{
+				if (transfer.metadata.transfer_kind == CanardTransferKindMessage)
 				{
-					// An error has occurred: either an argument is invalid or we've ran out of memory.
-					// It is possible to statically prove that an out-of-memory will never occur for a given application if
-					// the heap is sized correctly; for background, refer to the Robson's Proof and the documentation for O1Heap.
-					// Reception of an invalid frame is NOT an error.
-				}
-				else if (result == 1)
-				{
-					if (transfer.metadata.transfer_kind == CanardTransferKindMessage)
+					size_t size = transfer.payload_size;
+					if (transfer.metadata.port_id == uavcan_pnp_NodeIDAllocationData_1_0_FIXED_PORT_ID_)
 					{
-						size_t size = transfer.payload_size;
-						if (transfer.metadata.port_id == uavcan_pnp_NodeIDAllocationData_1_0_FIXED_PORT_ID_)
+						uavcan_pnp_NodeIDAllocationData_1_0 msg;
+						std::memset(&msg, 0, sizeof(msg));
+						if (uavcan_pnp_NodeIDAllocationData_1_0_deserialize_(&msg, (uint8_t*)transfer.payload, &size) >= 0)
 						{
-							uavcan_pnp_NodeIDAllocationData_1_0 msg;
-							std::memset(&msg, 0, sizeof(msg));
-							if (uavcan_pnp_NodeIDAllocationData_1_0_deserialize_(&msg, (uint8_t*)transfer.payload, &size) >= 0)
-							{
-								std::uint64_t uid = DBGMCU->IDCODE;
-								std::uint16_t node_id = msg.allocated_node_id.elements[0].value;
+							std::uint64_t uid = DBGMCU->IDCODE;
+							std::uint16_t node_id = msg.allocated_node_id.elements[0].value;
 
-								if ((node_id <= CANARD_NODE_ID_MAX) && (std::memcmp(&uid, &msg.unique_id_hash, sizeof(uid)) == 0))
-								{
-									settings.cyphal.node_id = node_id;
-								}
+							if ((node_id <= CANARD_NODE_ID_MAX) && (std::memcmp(&uid, &msg.unique_id_hash, sizeof(uid)) == 0))
+							{
+								settings.cyphal.node_id = node_id;
 							}
-						}
-						else
-						{
-							osalDbgAssert(false, "Sub without Handler");  // Seems like we have set up a port subscription without a handler -- bad implementation.
 						}
 					}
 					else
 					{
-						//If a handler was assigned as user reference, call it and pass the transfer.
-						if(subscription->user_reference!=NULL)
-						{
-							((void (*)(const CanardRxTransfer* transfer))subscription->user_reference)(&transfer);
-						}
+						osalDbgAssert(false, "Sub without Handler");  // Seems like we have set up a port subscription without a handler -- bad implementation.
 					}
-					canard.memory_free(&canard, transfer.payload);                  // Deallocate the dynamic memory afterwards.
 				}
 				else
 				{
-					// Nothing to do.
-					// The received frame is either invalid or it's a non-last frame of a multi-frame transfer.
-					// Reception of an invalid frame is NOT reported as an error because it is not an error.
+					//If a handler was assigned as user reference, call it and pass the transfer.
+					if(subscription->user_reference!=NULL)
+					{
+						((void (*)(const CanardRxTransfer* transfer))subscription->user_reference)(&transfer);
+					}
 				}
+				canard.memory_free(&canard, transfer.payload);                  // Deallocate the dynamic memory afterwards.
+			}
+			else
+			{
+				// Nothing to do.
+				// The received frame is either invalid or it's a non-last frame of a multi-frame transfer.
+				// Reception of an invalid frame is NOT reported as an error because it is not an error.
 			}
 		}
 	}
