@@ -390,8 +390,23 @@ bool hardware::can::SetBitrate(const std::uint32_t nbitrate, const std::uint32_t
  */
 bool hardware::can::SetFilters(const std::uint8_t num, const CanardFilter* const filters)
 {
-	(void)num;
-	(void)filters;
+	CANFilter hw_filters[STM32_FDCAN_FLE_NBR];
+
+	for(std::uint8_t i = 0; i < STM32_FDCAN_FLE_NBR; i++)
+	{
+		hw_filters[i].scale = 1;
+		hw_filters[i].filter = i;
+		hw_filters[i].EFT = 2;		// mask filter.
+		hw_filters[i].EFEC = i%2 + 1; // store in fifo 0 and 1 evenly distributed.
+		hw_filters[i].EFID1 = filters[i].extended_can_id;
+		hw_filters[i].EFID2 = filters[i].extended_mask;
+	}
+
+	for(std::uint_fast8_t i = 0; i < HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES; i++)
+	{
+		canSTM32SetFilters(pcan[i], 0, num, hw_filters);
+	}
+
 	return false;
 }
 

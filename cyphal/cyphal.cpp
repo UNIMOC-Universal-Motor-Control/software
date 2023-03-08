@@ -149,44 +149,54 @@ namespace cyphal
 #define NODE_NAME HARDWARE_NAME
 
 ///< heap size for the o1heap instance for cyphal frames
-static constexpr size_t O1HEAP_SIZE = 4096;
-
-static constexpr std::uint16_t FRAMES_PER_ITER = 1000;
+constexpr size_t O1HEAP_SIZE = 4096;
 
 ///< heap buffer for o1heap instance
 __attribute__((aligned (32)))
-static char o1heap[O1HEAP_SIZE];
+char o1heap[O1HEAP_SIZE];
 
 ///< o1heap allocator instance pointer
-static O1HeapInstance* o1allocator;
+O1HeapInstance* o1allocator;
 
 ///< libcanard instance for cyphal communication
-static CanardInstance canard;
+CanardInstance canard;
 
 ///< canard transmission queues for each interface.
-static CanardTxQueue tx_queues[HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES];
+CanardTxQueue tx_queues[HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES];
 
 ///< interface counter for the constructors of the can threads
 std::uint8_t cyphal::can_tx::count = 0;
 std::uint8_t cyphal::can_rx::count = 0;
 
 ///< can transmission handling thread
-static cyphal::can_tx can_send[HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES];
+cyphal::can_tx can_send[HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES];
 
 ///< can receive handling thread
-static cyphal::can_rx can_recv[HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES];
+cyphal::can_rx can_recv[HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES];
 
 ///< can transmission needed event.
-static event_source_t es_tx_needed[HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES];
+event_source_t es_tx_needed[HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES];
 
 ///> uptime counter in seconds
-static std::uint32_t uptime;
+std::uint32_t uptime;
 
 ///< deadline for arming timeout
-static systime_t arm_deadline = 0;
+systime_t arm_deadline = 0;
 
 ///< heartbeat thread
-static cyphal::can_heartbeat heartbeat_thread;
+cyphal::can_heartbeat heartbeat_thread;
+
+///< Maximum number of active can reception filters
+constexpr std::uint8_t MAX_CAN_RECEPTION_FILTERS = 8;
+
+///< can reception filters
+CanardFilter filters[MAX_CAN_RECEPTION_FILTERS];
+
+///< Number of active can reception filters
+std::uint8_t filter_num = 0;
+
+///< can reception filters need a update
+bool filters_update = true;
 
 /**
  * @fn void O1Allocate*(CanardInstance* const, const size_t)
@@ -213,6 +223,47 @@ static void O1Free(CanardInstance* const ins, void* const pointer)
     (void) ins;
     o1heapFree(o1allocator, pointer);
 }
+
+/**
+ * @fn int8_t canardRxSubscribe(CanardInstance* const       ins,
+                         const CanardTransferKind    transfer_kind,
+                         const CanardPortID          port_id,
+                         const size_t                extent,
+                         const CanardMicrosecond     transfer_id_timeout_usec,
+                         CanardRxSubscription* const out_subscription)
+ * @param ins
+ * @param transfer_kind
+ * @param port_id
+ * @param extent
+ * @param transfer_id_timeout_usec
+ * @param out_subscription
+ * @return
+ */
+static std::int8_t RxSubscribe(CanardInstance* const ins,
+                         const CanardTransferKind    transfer_kind,
+                         const CanardPortID          port_id,
+                         const size_t                extent,
+                         const CanardMicrosecond     transfer_id_timeout_usec,
+						 void* user_reference)
+{
+	static CanardRxSubscription rx;
+	// set the request handler
+	rx.user_reference = user_reference;
+	const int8_t res =	canardRxSubscribe(ins,
+								transfer_kind,
+								port_id,
+								extent,
+								transfer_id_timeout_usec,
+								&rx);
+	if (res >= 0)
+	{
+		osalDbgAssert(filter_num < MAX_CAN_RECEPTION_FILTERS, "cyphal to many can reception filters");
+		filters[filter_num] = canardMakeFilterForSubject(port_id);
+		filter_num++;
+	}
+	return res;
+}
+
 
 /**
  * @fn void ProcessGetNodeInfo(const CanardTransfer*)
@@ -983,118 +1034,65 @@ void cyphal::can_heartbeat::main(void)
 			// Service servers:
 			if(was_anonymous)
 			{
-				static CanardRxSubscription rx;
-				// set the request handler
-				rx.user_reference = (void*)ProcessGetNodeInfo;
-				const int8_t                res =
-						canardRxSubscribe(&canard,
+				RxSubscribe(	&canard,
 								CanardTransferKindRequest,
 								uavcan_node_GetInfo_1_0_FIXED_PORT_ID_,
 								uavcan_node_GetInfo_Request_1_0_EXTENT_BYTES_,
 								CANARD_DEFAULT_TRANSFER_ID_TIMEOUT_USEC,
-								&rx);
-				if (res < 0)
-				{
-					//            return -res;
-				}
-			}
+								(void*)ProcessGetNodeInfo);
 
-			if(was_anonymous)
-			{
-				static CanardRxSubscription rx;
-				rx.user_reference = (void*)ProcessRequestExecuteCommand;
-				const int8_t                res =
-						canardRxSubscribe(&canard,
+				RxSubscribe(	&canard,
 								CanardTransferKindRequest,
 								uavcan_node_ExecuteCommand_1_1_FIXED_PORT_ID_,
 								uavcan_node_ExecuteCommand_Request_1_1_EXTENT_BYTES_,
 								CANARD_DEFAULT_TRANSFER_ID_TIMEOUT_USEC,
-								&rx);
-				if (res < 0)
-				{
-					//            return -res;
-				}
-			}
+								(void*)ProcessRequestExecuteCommand);
 
-			if(was_anonymous)
-			{
-				static CanardRxSubscription rx;
-				rx.user_reference = (void*)ProcessRequestRegisterAccess;
-				const int8_t                res =  //
-						canardRxSubscribe(&canard,
+				RxSubscribe(	&canard,
 								CanardTransferKindRequest,
 								uavcan_register_Access_1_0_FIXED_PORT_ID_,
 								uavcan_register_Access_Request_1_0_EXTENT_BYTES_,
 								CANARD_DEFAULT_TRANSFER_ID_TIMEOUT_USEC,
-								&rx);
-				if (res < 0)
-				{
-					//            return -res;
-				}
-			}
+								(void*)ProcessRequestRegisterAccess);
 
-			if(was_anonymous)
-			{
-				static CanardRxSubscription rx;
-				rx.user_reference = (void*)ProcessRequestList;
-				const int8_t                res =  //
-						canardRxSubscribe(&canard,
+				RxSubscribe(	&canard,
 								CanardTransferKindRequest,
 								uavcan_register_List_1_0_FIXED_PORT_ID_,
 								uavcan_register_List_Request_1_0_EXTENT_BYTES_,
 								CANARD_DEFAULT_TRANSFER_ID_TIMEOUT_USEC,
-								&rx);
-				if (res < 0)
-				{
-					//            return -res;
-				}
+								(void*)ProcessRequestList);
 			}
-			was_anonymous = false;
-
 
 			if (   settings.cyphal.subject.servo.setpoint <= CANARD_SUBJECT_ID_MAX
 				&& settings.cyphal.subject.servo.setpoint != old_servo_setpoint)  // Do not subscribe if not configured.
 			{
-				static CanardRxSubscription rx;
-				// set the request handler
-				rx.user_reference = (void*)ProcessMessageServoSetpoint;
-				const int8_t                res =  //
-						canardRxSubscribe(&canard,
-								CanardTransferKindMessage,
-								settings.cyphal.subject.servo.setpoint,
-								reg_udral_physics_dynamics_rotation_Planar_0_1_EXTENT_BYTES_,
-								100000ULL,
-								&rx);
-				if (res < 0)
+				std::int8_t res = RxSubscribe(	&canard,
+												CanardTransferKindMessage,
+												settings.cyphal.subject.servo.setpoint,
+												reg_udral_physics_dynamics_rotation_Planar_0_1_EXTENT_BYTES_,
+												100000ULL,
+												(void*)ProcessMessageServoSetpoint);
+				if(res >= 0)
 				{
-					//    		return -res;
-				}
-				else
-				{
-					 old_servo_setpoint = settings.cyphal.subject.servo.setpoint;
+					old_servo_setpoint = settings.cyphal.subject.servo.setpoint;
+					filters_update = true;
 				}
 			}
 
 			if (	settings.cyphal.subject.servo.readiness <= CANARD_SUBJECT_ID_MAX
 				&&  settings.cyphal.subject.servo.readiness != old_servo_readiness)  // Do not subscribe if not configured.
 			{
-				static CanardRxSubscription rx;
-				// set the request handler
-				rx.user_reference = (void*)ProcessMessageServiceReadiness;
-				const int8_t                res =  //
-						canardRxSubscribe(&canard,
-								CanardTransferKindMessage,
-								settings.cyphal.subject.servo.readiness,
-								reg_udral_service_common_Readiness_0_1_EXTENT_BYTES_,
-								100000ULL,
-								&rx);
-				if (res < 0)
+
+				std::int8_t res = RxSubscribe(	&canard,
+												CanardTransferKindMessage,
+												settings.cyphal.subject.servo.readiness,
+												reg_udral_service_common_Readiness_0_1_EXTENT_BYTES_,
+												100000ULL,
+												(void*)ProcessMessageServiceReadiness);
+				if(res >= 0)
 				{
-					//    		return -res;
-				}
-				else
-				{
-					 old_servo_readiness = settings.cyphal.subject.servo.readiness;
+					old_servo_readiness = settings.cyphal.subject.servo.setpoint;
+					filters_update = true;
 				}
 			}
 
@@ -1104,6 +1102,11 @@ void cyphal::can_heartbeat::main(void)
 				eventflags_t flags = i + 1;
 				osalEventBroadcastFlags(&es_tx_needed[i], flags);
 			}
+
+			hardware::can::SetFilters(filter_num, filters);
+			filters_update = false;
+
+			was_anonymous = false;
 		}
 #if HARDWARE_CAPABIITY_RANDOM == TRUE
 		else // If we don't have a node-ID, obtain one by publishing allocation request messages until we get a response.
