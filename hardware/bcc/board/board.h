@@ -256,7 +256,7 @@
                                      PIN_MODE_INPUT	    (GPIOA_PULSE_CRK  ) |     \
                                      PIN_MODE_ANALOG	(GPIOA_AIN_VB     ) |     \
                                      PIN_MODE_ALTERNATE	(GPIOA_PWM_AL     ) |     \
-                                     PIN_MODE_ANALOG	(GPIOA_AIN_TMOT   ) |     \
+                                     PIN_MODE_ALTERNATE	(GPIOA_AIN_TMOT   ) |     \
                                      PIN_MODE_ANALOG	(GPIOA_AIN_TBRDG  ) |     \
                                      PIN_MODE_ALTERNATE (GPIOA_PWM_BRK    ) |     \
                                      PIN_MODE_ANALOG	(GPIOA_USB_DP     ) |     \

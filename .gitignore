@@ -37,3 +37,4 @@
 *.hex
 *.map
 *.list
+.settings/language.settings.xml
