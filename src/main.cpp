@@ -30,11 +30,12 @@
 #include "control_thread.hpp"
 #include "main.hpp"
 #include "cyphal.hpp"
+#include "display.hpp"
 
 using namespace chibios_rt;
 
-static management::thread manager;
-
+management::thread manager;
+display::thread	disp;
 
 /**
  * Code entry point
@@ -70,6 +71,7 @@ int main(void)
 	hardware::control_thread = controller.start(HIGHPRIO - 1);
 	manager.start(NORMALPRIO + 12);
 	cyphal::Init();
+	disp.start(NORMALPRIO + 1);
 	chThdSetPriority(LOWPRIO);
 
 	/*
@@ -79,6 +81,8 @@ int main(void)
 	while (true)
 	{
 		chThdSleepMilliseconds(250);
+		palToggleLine(LINE_LED_RUN);
+
 		if(settings.battery.limits.i.charge > settings.converter.limits.current)
 			settings.battery.limits.i.charge = settings.converter.limits.current;
 

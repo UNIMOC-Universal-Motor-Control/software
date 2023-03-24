@@ -27,7 +27,7 @@
 
 
 ///< Hardware Node Name
-#define HARDWARE_NAME "UNIMIC-BCC"
+#define HARDWARE_NAME "UNIMOC-BCC"
 
 ///< Hardware supports random number generation: STM32G473 has TRNG
 #define HARDWARE_CAPABIITY_RANDOM 				TRUE
@@ -41,7 +41,13 @@
 ///< Hardware supports display UART
 #define HARDWARE_CAPABIITY_DISPLAY_UART 		TRUE
 
+///< Hardware uart used for display
+#define HARDWARE_DISP_UART						(&UARTD3)
+
 ///< Hardware CAN clock frequency
-#define HARDWARE_CAN_CLOCK						STM32_PLL_Q_CLKOUT
+#define HARDWARE_CAN_CLOCK						(STM32_PLL_Q_CLKOUT)
+
+
+
 
 #endif /* HARDWARE_CONFIG_HPP_ */

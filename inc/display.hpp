@@ -72,17 +72,17 @@ namespace  display
 		 * UART driver configuration structure.
 		 */
 		UARTConfig uart_cfg = {
-		  NULL,
-		  NULL,
-		  NULL,
-		  NULL,
-		  NULL,
-		  NULL,
-		  9600,
-		  0,
-		  USART_CR2_LINEN,
-		  0,
-		  0
+				NULL,
+				NULL,
+				NULL,
+				NULL,
+				NULL,
+				NULL,
+				OSAL_MS2I(1000),
+				9600,
+				0,
+				USART_CR2_LINEN,
+				0
 		};
 
 		static constexpr float BATTERY_LI_ION_CELLS_NUMBER = 10.0f;

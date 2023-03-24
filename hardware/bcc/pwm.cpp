@@ -306,6 +306,7 @@ void hardware::pwm::output::Enable(void)
 	{
 		// reset the break state
 		PWMP->tim->BDTR |= STM32_TIM_BDTR_AOE;
+		palSetLine(LINE_LED_PWM);
 	}
 }
 
@@ -316,6 +317,7 @@ void hardware::pwm::output::Disable(void)
 {
 	// break pwm
 	PWMP->tim->BDTR &= ~STM32_TIM_BDTR_AOE;
+	palClearLine(LINE_LED_PWM);
 }
 
 /**

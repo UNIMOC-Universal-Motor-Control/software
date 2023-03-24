@@ -42,7 +42,7 @@ thread::thread()
 void thread::main(void)
 {
 	using namespace values;
-	setName("Control");
+	setName("Display");
 
 	init();
 
@@ -61,7 +61,7 @@ void thread::main(void)
 		msg = uartReceiveTimeout(uartp, &bytes_received, rx_buffer, OSAL_MS2I(300));
 		if (msg != MSG_OK)
 		{
-			chSysHalt("invalid return code");
+			continue;
 		}
 		// validation of the package data
 		for (j = 0; j < sizeof(rx_buffer); j++)
@@ -183,6 +183,7 @@ void thread::main(void)
 
 void thread::init(void)
 {
+	uartp = HARDWARE_DISP_UART;
 	/*
 	 * Activates the UART driver 2.
 	 */

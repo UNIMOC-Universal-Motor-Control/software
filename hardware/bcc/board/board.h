@@ -185,8 +185,9 @@
 /*
  * IO lines assignments.
  */
-//#define LINE_VDC_NCS                PAL_LINE(GPIOA, 9U)
-
+#define LINE_LED_RUN                PAL_LINE(GPIOA, GPIOA_LED_RUN)
+#define LINE_LED_ERR                PAL_LINE(GPIOA, GPIOA_LED_ERR)
+#define LINE_LED_PWM                PAL_LINE(GPIOA, GPIOA_LED_PWM)
 
 /*===========================================================================*/
 /* Driver pre-compile time settings.                                         */
@@ -258,7 +259,7 @@
                                      PIN_MODE_ALTERNATE	(GPIOA_PWM_AL     ) |     \
                                      PIN_MODE_ANALOG	(GPIOA_AIN_TMOT   ) |     \
                                      PIN_MODE_ANALOG	(GPIOA_AIN_TBRDG  ) |     \
-                                     PIN_MODE_ALTERNATE (GPIOA_PWM_BRK    ) |     \
+                                     PIN_MODE_ANALOG	(GPIOA_PWM_BRK    ) |     \
                                      PIN_MODE_ANALOG	(GPIOA_USB_DP     ) |     \
                                      PIN_MODE_ANALOG	(GPIOA_USB_DM     ) |     \
                                      PIN_MODE_ALTERNATE	(GPIOA_SWD_IO     ) |     \
@@ -380,7 +381,7 @@
                                      PIN_MODE_ANALOG     (GPIOB_AIN_VDC     ) |  \
                                      PIN_MODE_ANALOG     (GPIOB_AIN_VC      ) |  \
                                      PIN_MODE_ANALOG     (GPIOB_AIN_CRK_TRQ ) |  \
-                                     PIN_MODE_OUTPUT     (GPIOB_PWM_BRK     ))
+                                     PIN_MODE_ANALOG     (GPIOB_PWM_BRK     ))
 #define VAL_GPIOB_OTYPER            (PIN_OTYPE_PUSHPULL (GPIOB_PWM_BL      ) |  \
                                      PIN_OTYPE_PUSHPULL (GPIOB_AIN_IC      ) |  \
                                      PIN_OTYPE_PUSHPULL (GPIOB_PULSE_MOT   ) |  \
