@@ -332,11 +332,11 @@ bool hardware::can::SetBitrate(const std::uint32_t nbitrate, const std::uint32_t
 	if(			nbitrate >= 125000
 			&& 	nbitrate <= 1000000)
 	{
-		result = hardware_can_ComputeTimings(STM32_HSECLK, nbitrate, &ntimings);
+		result = hardware_can_ComputeTimings(HARDWARE_CAN_CLOCK, nbitrate, &ntimings);
 
 		if(result && fd_mode)
 		{
-			result = hardware_can_ComputeTimings(STM32_HSECLK, dbitrate, &dtimings);
+			result = hardware_can_ComputeTimings(HARDWARE_CAN_CLOCK, dbitrate, &dtimings);
 		}
 		else
 		{

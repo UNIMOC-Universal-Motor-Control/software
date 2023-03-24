@@ -38,7 +38,10 @@
 ///< Hardware supports 1 CAN Interface
 #define HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES 1
 
-///< Hardware supports Display UART
+///< Hardware supports display UART
 #define HARDWARE_CAPABIITY_DISPLAY_UART 		TRUE
+
+///< Hardware CAN clock frequency
+#define HARDWARE_CAN_CLOCK						STM32_PLL_Q_CLKOUT
 
 #endif /* HARDWARE_CONFIG_HPP_ */

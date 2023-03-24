@@ -109,7 +109,7 @@ namespace cyphal
 		virtual void main(void);
 
 	public:
-		can_rx(void): interface(count) {count++;};
+		can_rx(void): interface(count), subscription(nullptr) {count++;};
 	};
 
 	typedef enum register_type_e
