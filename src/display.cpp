@@ -59,62 +59,61 @@ void thread::main(void)
 		std::size_t bytes_received = sizeof(rx_buffer);
 
 		msg = uartReceiveTimeout(uartp, &bytes_received, rx_buffer, OSAL_MS2I(300));
-		if (msg != MSG_OK)
+		if (msg == MSG_OK)
 		{
-			continue;
-		}
-		// validation of the package data
-		for (j = 0; j < sizeof(rx_buffer); j++)
-		{
-			if (j == 5) continue; // don't xor B5
-			crc ^= rx_buffer[j];
-		}
-
-		// check if end of message is OK
-		if((	(rx_buffer[11]==0x32)
-			||  (rx_buffer[11]==0x37) )
-			&&  (rx_buffer[12]==0x0E) )
-		{
-			// check if CRC is ok
-			if (	((crc ^ 10) == rx_buffer[5])
-				|| 	((crc ^ last_XOR) == rx_buffer[5]) ) // some versions of CRC LCD5 (??)
+			// validation of the package data
+			for (j = 0; j < sizeof(rx_buffer); j++)
 			{
+				if (j == 5) continue; // don't xor B5
+				crc ^= rx_buffer[j];
+			}
 
-				config.assist_level 				= rx_buffer[1] & 0x07;
-				config.light 						= rx_buffer[1] & 0x08;
-				config.motor_characteristic 		= rx_buffer [3];
-				config.wheel_size 					= ((rx_buffer [4] & 192) >> 6) | ((rx_buffer [2] & 7) << 2);
-				config.max_speed 					= (10 + ((rx_buffer [2] & 248) >> 3)) | (rx_buffer [4] & 32);
-				config.power_assist_control_mode 	= rx_buffer [4] & 8;
-				config.controller_max_current 		= rx_buffer [7] & 15;
-
-				config.p1 	= rx_buffer[3];
-				config.p2 	= rx_buffer[4] & 0x07;
-				config.p3 	= rx_buffer[4] & 0x08;
-				config.p4 	= rx_buffer[4] & 0x10;
-				config.p5 	= rx_buffer[0];
-
-				config.c1 	= (rx_buffer[6] & 0x38) >> 3;
-				config.c2 	= (rx_buffer[6] & 0x37);
-				config.c4 	= (rx_buffer[8] & 0xE0) >> 5;
-				config.c5 	= (rx_buffer[7] & 0x0F);
-				config.c12	= (rx_buffer[9] & 0x0F);
-				config.c13 	= (rx_buffer[10] & 0x1C) >> 2;
-				config.c14 	= (rx_buffer[7] & 0x60) >> 5;
-			}//end CRC OK
-			else
-			{ //search for right last XOR
-				crc = 0;
-
-				for (j = 0; j < sizeof(rx_buffer); j++)
+			// check if end of message is OK
+			if((	(rx_buffer[11]==0x32)
+					||  (rx_buffer[11]==0x37) )
+					&&  (rx_buffer[12]==0x0E) )
+			{
+				// check if CRC is ok
+				if (	((crc ^ 10) == rx_buffer[5])
+						|| 	((crc ^ last_XOR) == rx_buffer[5]) ) // some versions of CRC LCD5 (??)
 				{
-					if (j == 5) continue; // don't xor B5
-					crc ^= rx_buffer[j];
-				}
 
-				for (j = 0; j <= 50; j++)
-				{
-					if((crc ^ j) == rx_buffer [5]) last_XOR = j;
+					config.assist_level 				= rx_buffer[1] & 0x07;
+					config.light 						= rx_buffer[1] & 0x08;
+					config.motor_characteristic 		= rx_buffer [3];
+					config.wheel_size 					= ((rx_buffer [4] & 192) >> 6) | ((rx_buffer [2] & 7) << 2);
+					config.max_speed 					= (10 + ((rx_buffer [2] & 248) >> 3)) | (rx_buffer [4] & 32);
+					config.power_assist_control_mode 	= rx_buffer [4] & 8;
+					config.controller_max_current 		= rx_buffer [7] & 15;
+
+					config.p1 	= rx_buffer[3];
+					config.p2 	= rx_buffer[4] & 0x07;
+					config.p3 	= rx_buffer[4] & 0x08;
+					config.p4 	= rx_buffer[4] & 0x10;
+					config.p5 	= rx_buffer[0];
+
+					config.c1 	= (rx_buffer[6] & 0x38) >> 3;
+					config.c2 	= (rx_buffer[6] & 0x37);
+					config.c4 	= (rx_buffer[8] & 0xE0) >> 5;
+					config.c5 	= (rx_buffer[7] & 0x0F);
+					config.c12	= (rx_buffer[9] & 0x0F);
+					config.c13 	= (rx_buffer[10] & 0x1C) >> 2;
+					config.c14 	= (rx_buffer[7] & 0x60) >> 5;
+				}//end CRC OK
+				else
+				{ //search for right last XOR
+					crc = 0;
+
+					for (j = 0; j < sizeof(rx_buffer); j++)
+					{
+						if (j == 5) continue; // don't xor B5
+						crc ^= rx_buffer[j];
+					}
+
+					for (j = 0; j <= 50; j++)
+					{
+						if((crc ^ j) == rx_buffer [5]) last_XOR = j;
+					}
 				}
 			}
 		}
@@ -174,7 +173,7 @@ void thread::main(void)
 		msg = uartSendFullTimeout(uartp, &bytes_send, tx_buffer, OSAL_MS2I(300));
 		if (msg != MSG_OK)
 		{
-			chSysHalt("Display Send Failed, invalid return code");
+			/// FIXME Report error
 		}
 
 		sleep(OSAL_MS2I(100));

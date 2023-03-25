@@ -42,6 +42,9 @@ MFSConfig mfscfg1 = {
   .bank1_sectors    = 1U
 };
 
+///< Option Bytes flash unlock keys
+constexpr uint32_t FLASH_OPTKEY1 = 0x08192A3BU;
+constexpr uint32_t FLASH_OPTKEY2 = 0x4C5D6E7FU;
 
 extern void hardware_pwm_Init(void);
 extern void hardware_analog_Init(void);
@@ -53,6 +56,30 @@ extern void hardware_can_Init(void);
  */
 void hardware::Init()
 {
+	/*
+	 * The boot pin is used as PWM IO which leads to boot issues, that messup the clock tree config.
+	 * So fix the boot config to ignore BOOT0 hw pin
+	 */
+	if (FLASH->OPTR & FLASH_OPTR_nSWBOOT0)
+	{
+		FLASH->OPTKEYR |= FLASH_OPTKEY1;
+		FLASH->OPTKEYR |= FLASH_OPTKEY2;
+
+		// wait for optlock to clear
+		while (FLASH->CR & FLASH_CR_OPTLOCK);
+
+		// fix boot from main flash
+		FLASH->OPTR |=  (FLASH_OPTR_nBOOT0);
+		FLASH->OPTR &= ~(FLASH_OPTR_nSWBOOT0);
+
+		FLASH->OPTR |= FLASH_CR_OPTSTRT;
+
+		/* Wait for busy bit clear.*/
+		while ((FLASH->SR & FLASH_SR_BSY) != 0U);
+
+		FLASH->OPTR |= FLASH_CR_OBL_LAUNCH;
+	}
+
 	hardware_pwm_Init();
 	hardware_analog_Init();
 	hardware_cordic_Init();
