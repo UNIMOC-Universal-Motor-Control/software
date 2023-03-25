@@ -424,8 +424,8 @@
                                      PIN_PUPDR_FLOATING(GPIOB_CAN_SLP     ) |  \
                                      PIN_PUPDR_FLOATING(GPIOB_PWM_BH      ) |  \
                                      PIN_PUPDR_FLOATING(GPIOB_PWM_CH      ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOB_DISP_TX     ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOB_DISP_RX     ) |  \
+                                     PIN_PUPDR_PULLUP  (GPIOB_DISP_TX     ) |  \
+                                     PIN_PUPDR_PULLUP  (GPIOB_DISP_RX     ) |  \
                                      PIN_PUPDR_FLOATING(GPIOB_AIN_VDC     ) |  \
                                      PIN_PUPDR_FLOATING(GPIOB_AIN_VC      ) |  \
                                      PIN_PUPDR_FLOATING(GPIOB_AIN_CRK_TRQ ) |  \
