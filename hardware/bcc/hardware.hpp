@@ -42,7 +42,7 @@
 #define HARDWARE_CAPABIITY_DISPLAY_UART 		TRUE
 
 ///< Hardware uart used for display
-#define HARDWARE_DISP_UART						(&UARTD3)
+#define HARDWARE_DISP_SERIAL					(&SD3)
 
 ///< Hardware CAN clock frequency
 #define HARDWARE_CAN_CLOCK						(STM32_PLL_Q_CLKOUT)

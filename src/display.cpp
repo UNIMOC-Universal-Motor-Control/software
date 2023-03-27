@@ -30,6 +30,15 @@
 namespace  display
 {
 
+///< serial driver configuration
+constexpr SerialConfig serial_config =
+{
+	9600,
+	0,
+	USART_CR2_STOP1_BITS,
+	0
+};
+
 /**
  * generic constructor
  */
@@ -55,10 +64,8 @@ void thread::main(void)
 		std::uint8_t crc = 0;
 		std::uint8_t last_XOR = 0;
 		msg_t msg = MSG_OK;
-		std::size_t bytes_send = sizeof(tx_buffer);
-		std::size_t bytes_received = sizeof(rx_buffer);
 
-		msg = uartReceiveTimeout(uartp, &bytes_received, rx_buffer, OSAL_MS2I(300));
+		msg = sdReadTimeout(sdp, rx_buffer, sizeof(rx_buffer), OSAL_MS2I(300));
 		if (msg == MSG_OK)
 		{
 			// validation of the package data
@@ -170,7 +177,7 @@ void thread::main(void)
 		}
 		tx_buffer [6] = crc;
 
-		msg = uartSendFullTimeout(uartp, &bytes_send, tx_buffer, OSAL_MS2I(300));
+		msg = sdWriteTimeout(sdp, tx_buffer, sizeof(tx_buffer), OSAL_MS2I(300));
 		if (msg != MSG_OK)
 		{
 			/// FIXME Report error
@@ -182,11 +189,11 @@ void thread::main(void)
 
 void thread::init(void)
 {
-	uartp = HARDWARE_DISP_UART;
+	sdp = HARDWARE_DISP_SERIAL;
 	/*
-	 * Activates the UART driver 2.
+	 * Activates the UART driver.
 	 */
-	uartStart(uartp, &uart_cfg);
+	sdStart(sdp, &serial_config);
 }
 
 } /* namespace display */

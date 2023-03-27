@@ -68,23 +68,6 @@ namespace  display
 			uint8_t c14;
 		} config_ts;
 
-		/*
-		 * UART driver configuration structure.
-		 */
-		UARTConfig uart_cfg = {
-				NULL,
-				NULL,
-				NULL,
-				NULL,
-				NULL,
-				NULL,
-				OSAL_MS2I(1000),
-				9600,
-				0,
-				USART_CR2_LINEN,
-				0
-		};
-
 		static constexpr float BATTERY_LI_ION_CELLS_NUMBER = 10.0f;
 		static constexpr float COMMUNICATIONS_BATTERY_VOLTAGE	= (BATTERY_LI_ION_CELLS_NUMBER * 3.45f); // example: 7S battery, should be = 24
 
@@ -110,40 +93,8 @@ namespace  display
 		uint8_t error;
 		uint8_t rx_buffer[13];
 
-		UARTDriver *uartp;
+		SerialDriver *sdp;
 		config_ts config;
-
-		static void txend1(UARTDriver *uartp)
-		{
-
-			(void)uartp;
-		}
-
-		static void txend2(UARTDriver *uartp)
-		{
-
-			(void)uartp;
-		}
-
-		static void rxend(UARTDriver *uartp)
-		{
-
-			(void)uartp;
-		}
-
-		static void rxchar(UARTDriver *uartp, uint16_t c)
-		{
-
-			(void)uartp;
-			(void)c;
-		}
-
-		static void rxerr(UARTDriver *uartp, uartflags_t e)
-		{
-
-			(void)uartp;
-			(void)e;
-		}
 
 		/**
 		 * initialize thread
