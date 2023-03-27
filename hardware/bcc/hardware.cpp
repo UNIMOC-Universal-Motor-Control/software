@@ -62,22 +62,30 @@ void hardware::Init()
 	 */
 	if (FLASH->OPTR & FLASH_OPTR_nSWBOOT0)
 	{
+		/* Starting EFL driver.*/
+		eflStart(&EFLD1, NULL);
+
 		FLASH->OPTKEYR |= FLASH_OPTKEY1;
 		FLASH->OPTKEYR |= FLASH_OPTKEY2;
 
 		// wait for optlock to clear
 		while (FLASH->CR & FLASH_CR_OPTLOCK);
 
+		/* Wait for busy bit clear.*/
+		while ((FLASH->SR & FLASH_SR_BSY) != 0U);
+
 		// fix boot from main flash
 		FLASH->OPTR |=  (FLASH_OPTR_nBOOT0);
 		FLASH->OPTR &= ~(FLASH_OPTR_nSWBOOT0);
 
-		FLASH->OPTR |= FLASH_CR_OPTSTRT;
+		FLASH->CR |= FLASH_CR_OPTSTRT;
 
 		/* Wait for busy bit clear.*/
 		while ((FLASH->SR & FLASH_SR_BSY) != 0U);
 
-		FLASH->OPTR |= FLASH_CR_OBL_LAUNCH;
+		FLASH->CR |= FLASH_CR_OBL_LAUNCH;
+
+		eflStop(&EFLD1);
 	}
 
 	hardware_pwm_Init();

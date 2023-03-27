@@ -38,64 +38,16 @@
 
 namespace  display
 {
-
 	/**
 	 * Display Thread
 	 */
 	class thread : public chibios_rt::BaseStaticThread<2048>
 	{
 	private:
-		typedef struct config_s
-		{
-			uint8_t assist_level;
-			bool    light;
-			uint8_t motor_characteristic;
-			uint8_t wheel_size;
-			uint8_t max_speed;
-			uint8_t power_assist_control_mode;
-			uint8_t controller_max_current;
-			uint8_t p1;
-			uint8_t p2;
-			uint8_t p3;
-			uint8_t p4;
-			uint8_t p5;
-			uint8_t c1;
-			uint8_t c2;
-			uint8_t c4;
-			uint8_t c5;
-			uint8_t c12;
-			uint8_t c13;
-			uint8_t c14;
-		} config_ts;
-
-		static constexpr float BATTERY_LI_ION_CELLS_NUMBER = 10.0f;
-		static constexpr float COMMUNICATIONS_BATTERY_VOLTAGE	= (BATTERY_LI_ION_CELLS_NUMBER * 3.45f); // example: 7S battery, should be = 24
-
-		// Considering the follow voltage values for each li-ion battery cell
-		// State of charge 		| voltage
-		static constexpr float LI_ION_CELL_VOLTS_MAX 	= 4.20f;
-		static constexpr float LI_ION_CELL_VOLTS_100 	= 4.20f;
-		static constexpr float LI_ION_CELL_VOLTS_80 	= 3.86f;// 4.02
-		static constexpr float LI_ION_CELL_VOLTS_60 	= 3.68f;// 3.87
-		static constexpr float LI_ION_CELL_VOLTS_40		= 3.46f;// 3.80
-		static constexpr float LI_ION_CELL_VOLTS_20		= 3.28f;// 3.73
-		static constexpr float LI_ION_CELL_VOLTS_0		= 3.10f;// 3.27
-		static constexpr float LI_ION_CELL_VOLTS_MIN 	= 3.10f;
-
-		static constexpr float  BATTERY_PACK_VOLTS_100	= (LI_ION_CELL_VOLTS_100 * BATTERY_LI_ION_CELLS_NUMBER) * 256.0f;
-		static constexpr float  BATTERY_PACK_VOLTS_80 	= (LI_ION_CELL_VOLTS_80  * BATTERY_LI_ION_CELLS_NUMBER) * 256.0f;
-		static constexpr float  BATTERY_PACK_VOLTS_60	= (LI_ION_CELL_VOLTS_60  * BATTERY_LI_ION_CELLS_NUMBER) * 256.0f;
-		static constexpr float  BATTERY_PACK_VOLTS_40	= (LI_ION_CELL_VOLTS_40  * BATTERY_LI_ION_CELLS_NUMBER) * 256.0f;
-		static constexpr float  BATTERY_PACK_VOLTS_20	= (LI_ION_CELL_VOLTS_20  * BATTERY_LI_ION_CELLS_NUMBER) * 256.0f;
-		static constexpr float  BATTERY_PACK_VOLTS_0	= (LI_ION_CELL_VOLTS_0   * BATTERY_LI_ION_CELLS_NUMBER) * 256.0f;
-
-		uint8_t tx_buffer[12];
-		uint8_t error;
-		uint8_t rx_buffer[13];
+		std::uint8_t tx_buffer[12];
+		std::uint8_t rx_buffer[13];
 
 		SerialDriver *sdp;
-		config_ts config;
-
 		/**
 		 * initialize thread
 		 */
