@@ -5,7 +5,7 @@
 	/ /_/ / /|  // // /  / / /_/ / /___
 	\____/_/ |_/___/_/  /_/\____/\____/
 
-	Universal Motor Control  2022 Alexander <tecnologic86@gmail.com> Evers
+	Universal Motor Control  2023 Alexander <tecnologic86@gmail.com> Evers
 
 	This file is part of UNIMOC.
 
@@ -30,8 +30,10 @@
 #include "hardware_interface.hpp"
 #include "values.hpp"
 #include "pas.hpp"
+#include "observer.hpp"
 
 using namespace chibios_rt;
+
 
 /**
  * @namespace pedal assist system classes
@@ -39,6 +41,8 @@ using namespace chibios_rt;
 namespace pas
 {
 
+	///< observer for cadence
+	observer::mechanic mech;
 	/**
 	 * generic constructor
 	 */
@@ -59,39 +63,56 @@ namespace pas
 		{
 			deadline = chibios_rt::System::getTime();
 
-			values.crank.angle = hardware::crank::Angle(settings.crank.pas.counts);
-			values.crank.torque = hardware::crank::Torque(settings.crank.offset, settings.crank.gain);
-
 			if(settings.crank.enable)
 			{
+		        const float ts = hardware::Tc();
+		        const float tsj = ts/settings.crank.observer.J;
+
+				values::crank::angle = hardware::crank::angle(settings.crank.pas.counts);
+				values::crank::torque = hardware::crank::torque(settings.crank.offset, settings.crank.gain);
+
+		        // omega
+				values::crank::cadence += tsj * (values::crank::torque - torque);
+
+		        if(values::crank::cadence > 20.0f)	// 200rpm
+		        {
+		        	values::crank::cadence > 20.0f;
+		        }
+		        else if(values::crank::cadence < -20.0f)
+		        {
+		        	values::crank::cadence > -20.0f;
+		        }
+
+		        if(!std::isfinite(alues::crank::cadence ))
+		        {
+		        	values::crank::cadence = 0.0f;
+		        }
+
+		        // integrate omega for phi
+		        rotor::phi += unit::Q31R(alues::crank::cadence * ts);
+
+				angle_error = angle - values::crank::angle;
+
+				mech.Update(settings.crank.observer.Q, settings.crank.observer.R, angle_error, out_error);
+
 				// pas mode releases torque only on pedal movement
 				if(settings.crank.pas.enable)
 				{
-					if(std::fabs(values.crank.cadence) > 1.0f)
+					if(std::fabs(values::crank::cadence) > 1.0f)
 					{
-						values.motor.rotor.setpoint.torque = (values.crank.power / values.motor.rotor.omega);
+						values::motor::rotor::setpoint::torque = (values::crank::power / values::motor::rotor::omega);
 					}
 					else
 					{
-						values.motor.rotor.setpoint.torque = 0.0f;
+						values::motor::rotor::setpoint::torque = 0.0f;
 					}
 				}
-				else
-				{
-					palSetLineMode(LINE_AIN_MOT_TEMP, PAL_MODE_INPUT_PULLUP);
-					// reverse on Cadence input
-					if(palReadLine(LINE_AIN_MOT_TEMP))
-					{
-						values.motor.rotor.setpoint.torque = -values.crank.torque;
-					}
-					else
-					{
-						values.motor.rotor.setpoint.torque = values.crank.torque;
-					}
-				}
+				sleepUntilWindowed(deadline, deadline + CYCLE_TIME);
 			}
-
-			sleepUntilWindowed(deadline, deadline + CYCLE_TIME);
+			else
+			{
+				sleepUntilWindowed(deadline, deadline + TIME_MS2I(2000));
+			}
 		}
 	}
 

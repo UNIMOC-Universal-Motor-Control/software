@@ -316,6 +316,42 @@ typedef struct settings_s
 	} throttle;
 
 	/**
+	 * crank settings
+	 */
+	struct crank_s
+	{
+		///< crank torque sensor gain in Nm/Volts
+		float gain;
+
+		///< crank torque sensor offset in Volts
+		float offset;
+
+		///< torque sensor command enable
+		bool enable;
+
+		struct pas_s
+		{
+			///< pas counts per revolution both edges
+			std::uint32_t counts;
+
+			///< pas mode enable
+			bool enable;
+		} pas;
+
+		struct observer_s
+		{
+			///< modell variance
+			float Q;
+
+			///< measurement variance
+			float R;
+
+			///< inertia of of crank and connected known mechanics
+			float J;
+		} observer;
+	} crank;
+
+	/**
 	 * @struct cyphal_s
 	 * @brief cyphal specific values
 	 *

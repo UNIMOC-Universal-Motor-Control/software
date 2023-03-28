@@ -306,6 +306,30 @@ __attribute__((aligned (32))) settings_ts settings =
 	},
 
 	/**
+	 * crank settings
+	 */
+	.crank =
+	{
+		///< crank torque sensor gain in Nm/Volts
+		.gain = 40.0f*9.81f*0.17f,
+
+		///< crank torque sensor offset in Volts
+		.offset = 1.55f,
+
+		///< torque sensor command enable
+		.enable = true,
+
+		.pas =
+		{
+			///< pas counts per revolution both edges
+			.counts = 32,
+
+			///< pas mode enable
+			.enable = true,
+		},
+	},
+
+	/**
 	 * @struct cyphal_s
 	 * @brief cyphal specific values
 	 */

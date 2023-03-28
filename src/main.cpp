@@ -31,11 +31,13 @@
 #include "main.hpp"
 #include "cyphal.hpp"
 #include "display.hpp"
+#include "pas.hpp"
 
 using namespace chibios_rt;
 
 management::thread manager;
 display::thread	disp;
+pas::thread pedel_assist;
 
 /**
  * Code entry point
@@ -72,6 +74,7 @@ int main(void)
 	manager.start(NORMALPRIO + 12);
 	cyphal::Init();
 	disp.start(NORMALPRIO + 1);
+	pedel_assist.start(NORMALPRIO + 2);
 	chThdSetPriority(LOWPRIO);
 
 	/*

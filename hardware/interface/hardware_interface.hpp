@@ -260,6 +260,30 @@ namespace hardware {
 			uint8_t State(void);
 		} /* namespace hall */
 	} /* namespace digital */
+	
+	/**
+	 * crank interface
+	 */
+	namespace crank {
+
+		/**
+		 * Torque on the crank arm
+		 *
+		 * @param offset in Volts
+		 * @param gain in Nm/V
+		 * @return Torque in Nm
+		 */
+		extern float torque(const float offset, const float gain);
+
+		/**
+		 * Angle of the crank arm
+		 *
+		 * @param edge_max Number of edges per revolution
+		 * @return Angle in rads, range 0 - 2*PI
+		 */
+		extern float angle(uint32_t edge_max);
+	} /* namespace crank */
+	
 
 	namespace memory
 	{

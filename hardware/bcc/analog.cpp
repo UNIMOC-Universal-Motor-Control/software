@@ -34,6 +34,7 @@ using namespace hardware::analog;
 
 static void adcerrorcallback(ADCDriver *adcp, adcerror_t err);
 static void adccallback(ADCDriver *adcp);
+static void palcallback(void *arg);
 
 ///< absolute maximum current FIXME Current resolution not fix.
 constexpr float hardware::analog::current::MAX = 66.0f;
@@ -78,6 +79,9 @@ std::int32_t current_offset[hardware::PHASES];
 
 ///< phase voltage offsets
 std::int32_t voltage_offset[hardware::PHASES];
+
+///< cadence signal counter
+std::uint32_t cadence_counter = 0;
 
 /**
  * ADC Channel Mapping
@@ -358,6 +362,9 @@ void hardware_analog_Init(void)
 	adcStartConversion(&ADCD3, &adcgrpcfg34, &samples[1][0][0], ADC_SEQ_BUFFERED);
 	adcStartConversion(&ADCD5, &adcgrpcfg5,  &samples[2][0][0], ADC_SEQ_BUFFERED);
 
+	/* Enabling events on both edges of the button line.*/
+	palEnableLineEvent(LINE_CADENCE, PAL_EVENT_MODE_BOTH_EDGES);
+	palSetLineCallback(LINE_CADENCE, palcallback, NULL);
 }
 
 /**
@@ -529,6 +536,50 @@ float hardware::analog::input(void)
 }
 
 /**
+ * Torque on the crank arm
+ *
+ * @param offset in Volts
+ * @param gain in Nm/V
+ * @return Torque in Nm
+ */
+float hardware::crank::torque(const float offset, const float gain)
+{
+	constexpr float ADC2VOLTAGE = 3.3f/(4096.0f * 2.0f * ADC_SEQ_BUFFERED);
+	uint32_t sum = 0;
+	float torque;
+
+	for(std::uint_fast32_t i = 0; i < ADC_SEQ_BUFFERED; i++)
+	{
+		sum += samples[2][i][0];
+		sum += samples[2][i][2];
+	}
+	torque = (((float)sum * ADC2VOLTAGE) - offset) * gain;
+
+	return torque;
+}
+
+/**
+ * Angle of the crank arm
+ *
+ * @param edge_max Number of edges per revolution
+ * @return Angle in rads, range 0 - 2*PI
+ */
+float hardware::crank::angle(uint32_t edge_max)
+{
+	static float angle = 0.0f;
+
+	if(cadence_counter)
+	{
+		angle += (float)cadence_counter/(float)edge_max * math::_2PI;
+		cadence_counter = 0;
+	}
+
+	if(angle > math::_2PI) angle -= math::_2PI;
+
+	return angle;
+}
+
+/**
  *  ADC errors callback, should never happen.
  * @param adcp
  * @param err
@@ -561,3 +612,12 @@ static void adccallback(ADCDriver *adcp)
 	}
 }
 
+/**
+ * callback from pal driver on each edge of the PAS Cadence signal
+ * @param arg
+ */
+static void palcallback(void *arg)
+{
+	(void)arg;
+	cadence_counter++;
+}

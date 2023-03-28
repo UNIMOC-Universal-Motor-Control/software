@@ -206,16 +206,30 @@ namespace values
 	namespace sense
 	{
 		///< feedback sensor position value
-		extern std::uint16_t position;
+		extern std::uint32_t position;
 
 		///< feedback sensor rotor angle
-		extern float angle;
+		extern std::uint32_t angle;
 	} /* namespace sense */
+
+	/**
+	 * pedal assist system values
+	 */
+	namespace crank
+	{
+		///< crank angle in rad
+		extern float angle;
+
+		///< pedal cadence in rad/s
+		extern float cadence;
+
+		///< pedal torque in Nm
+		extern float torque;
+
+		///< pedal power in W
+		extern float power;
+	} /* namespace crank */
 } /* namespace values */
-
-
-
-
 
 #endif /* INC_VALUES_HPP_ */
 

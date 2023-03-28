@@ -205,11 +205,29 @@ namespace values
 	namespace sense
 	{
 		///< feedback sensor position value
-		std::uint16_t position = 0;
+		std::uint32_t position = 0;
 
 		///< feedback sensor rotor angle
-		float angle = 0.0f;
+		std::uint32_t angle = 0;
 	} /* namespace sense */
+
+	/**
+	 * pedal assist system values
+	 */
+	namespace crank
+	{
+		///< crank angle in rad
+		float angle = 0.0f;
+
+		///< pedal cadence in rad/s
+		float cadence = 0.0f;
+
+		///< pedal torque in Nm
+		 float torque = 0.0f;
+
+		///< pedal power in W
+		float power = 0.0f;
+	} /* namespace crank */
 } /* namespace values */
 
 #pragma GCC pop_options

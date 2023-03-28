@@ -188,6 +188,7 @@
 #define LINE_LED_RUN                PAL_LINE(GPIOA, GPIOA_LED_RUN)
 #define LINE_LED_ERR                PAL_LINE(GPIOA, GPIOA_LED_ERR)
 #define LINE_LED_PWM                PAL_LINE(GPIOA, GPIOA_LED_PWM)
+#define LINE_CADENCE                PAL_LINE(GPIOA, GPIOA_PULSE_CRK)
 
 /*===========================================================================*/
 /* Driver pre-compile time settings.                                         */
