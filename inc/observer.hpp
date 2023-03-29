@@ -42,38 +42,61 @@ namespace observer
 	class mechanic
 	{
 	private:
-		///< 1.5
-		static constexpr float _3by2 = 3.0f/2.0f;
-
 		///< new covariance matrix
-		float p[3][3];
+		std::array<std::array<float, 3>, 3> p;
 		///< current covariance matrix
-		float pk[3][3];
+		std::array<std::array<float, 3>, 3> pk;
 		///< kalman gain
-		float k[3];
+		std::array<float, 3> k;
 
 		float s;
 		float sigma;
 
+		std::array<float, 3> out_error;
+
+		float& torque_drive;
+		float& torque_load;
+
+		float& omega;
+		std::int32_t& phi;
+
+		float& J;
+		float& Q;
+		float& R;
+
+		float& omega_limit_positive;
+		float& omega_limit_negative;
 
 	public:
 		/**
-		 * @brief minimal constructor
+		 * constructor with all internal references
+		 * @param drive	torque input
+		 * @param load torque output
+		 * @param omega angular velocity
+		 * @param phi angular position Q31
+		 * @param J inertia
+		 * @param Q kalman Q gain
+		 * @param R kalman R gain
+		 * @param P kalman initial covariance
+		 * @param omega_limit_positive positive limit for omega
+		 * @param omega_limit_negative negative limit for omega
 		 */
-		mechanic(void);
+		mechanic(float& drive,
+				float& load,
+				float& omega,
+				std::int32_t& phi,
+				float& J,
+				float& Q,
+				float& R,
+				const float P,
+				float& omega_limit_positive,
+				float& omega_limit_negative);
 
 		/**
 		 * @brief calculate the mechanic model to estimate rotor angle.
 		 * @param i rotor currents
 		 */
-		static void Predict(const systems::dq& i);
-
-		/**
-		 * @brief correct the mechanic model to estimate rotor angle.
-		 *
-		 * @param error  state error feedback
-		 */
-		static void Correct(const std::array<float, 3> error);
+		void Predict(void);
 
 		/**
 		 * @brief calculate the kalman correction.
@@ -82,7 +105,7 @@ namespace observer
 		 * @param   angle error signal
 		 * @retval  model error correction
 		 */
-		void Update(const float Q, const float R, const float angle_error, std::array<float, 3>& out_error);
+		void Update(const float angle_error);
 	};
 
 	/**

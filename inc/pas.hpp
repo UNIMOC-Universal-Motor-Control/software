@@ -29,6 +29,7 @@
 #include "controller.hpp"
 #include "values.hpp"
 #include "settings.hpp"
+#include "observer.hpp"
 
 
 /**
@@ -45,12 +46,13 @@ namespace pas
 		static constexpr systime_t 	CYCLE_TIME = TIME_MS2I(1);
 		systime_t 					deadline;
 
-		float angle_error;
-		float angle;
+		observer::mechanic mech;
+		std::int32_t angle_error;
+		std::int32_t phi;
 		float cadence;
 		float torque;
-
-		std::array<float, 3> out_error;
+		float cadence_limit_positive;
+		float cadence_limit_negative;
 
 	protected:
 		/**

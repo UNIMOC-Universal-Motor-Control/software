@@ -68,6 +68,23 @@ namespace control
 	void Overmodulation(systems::abc& u, float ubat, systems::abc& dutys);
 
 	/**
+	 * Get electric torque generated from dq currents
+	 * @param i dq currents
+	 * @param l dq inductances
+	 * @param psi flux linkage
+	 * @return electric torque
+	 */
+	constexpr float ElectricTorque(const systems::dq& i, const systems::dq& l, const float& psi)
+	{
+		///< 1.5
+		constexpr float _3by2 = 3.0f/2.0f;
+
+		return (_3by2 * (psi * i.q + (l.d - l.q) * i.d * i.q));
+	}
+
+
+
+	/**
 	 * pi controller with anti windup
 	 */
 	class pi

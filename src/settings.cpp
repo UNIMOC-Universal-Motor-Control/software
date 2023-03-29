@@ -327,6 +327,18 @@ __attribute__((aligned (32))) settings_ts settings =
 			///< pas mode enable
 			.enable = true,
 		},
+
+		.observer =
+		{
+			///< modell variance
+			.Q = 1e-5f,
+
+			///< measurement variance
+			.R = 1e-4f,
+
+			///< inertia of of crank and connected known mechanics
+			.J = 1e-4f,
+		},
 	},
 
 	/**

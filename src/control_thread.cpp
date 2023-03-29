@@ -40,7 +40,14 @@ namespace control
 	/**
 	 * generic constructor
 	 */
-	thread::thread():flux(), mech(), hall(), foc()
+	thread::thread():
+			flux(),
+			mech(values::motor::torque::electric, values::motor::torque::load,
+					values::motor::rotor::omega, values::motor::rotor::phi,
+					settings.mechanics.J, settings.observer.mech.Q, settings.observer.mech.R, 100.0f,
+					settings.motor.limits.omega.forwards, settings.motor.limits.omega.backwards),
+			hall(),
+			foc()
 	{}
 
 	/**
@@ -112,6 +119,8 @@ namespace control
 			motor::rotor::i = systems::transform::Park(motor::stator::i, i_sc);
 			motor::rotor::u = systems::transform::Park(motor::stator::u, u_sc);
 
+			motor::torque::electric = ElectricTorque(motor::rotor::i, settings.motor.l, settings.motor.psi);
+
 			//sample currents for frequency analysis
 			motor::rotor::gid = motor::rotor::i.d;
 			motor::rotor::giq = motor::rotor::i.q;
@@ -148,11 +157,10 @@ namespace control
 
 			if(management::observer::flux)
 			{
-				std::array<float, 3> correction;
 				float error;
 
 				// Predict the new rotor position
-				mech.Predict(motor::rotor::i);
+				mech.Predict();
 
 				// calculate the flux observer
 				flux.Calculate(motor::rotor::flux::set, motor::rotor::flux::act, motor::rotor::flux::C);
@@ -166,11 +174,8 @@ namespace control
 		    		error = motor::rotor::flux::act.q;
 		    	}
 
-		    	// Update the
-				mech.Update(settings.observer.mech.Q, settings.observer.mech.R, error, correction);
-
-				// correct the prediction
-				mech.Correct(correction);
+		    	// Update the prediction
+				mech.Update(error);
 			}
 			else
 			{
@@ -178,8 +183,9 @@ namespace control
 				motor::rotor::flux::act.d = motor::rotor::flux::set.d;
 				motor::rotor::flux::act.q  = motor::rotor::flux::set.q;
 
-				systems::dq i = {0.0f, 0.0f};
-				mech.Predict(i);
+				motor::torque::electric = 0.0f;
+
+				mech.Predict();
 
 			}
 

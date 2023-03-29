@@ -218,7 +218,7 @@ namespace values
 	namespace crank
 	{
 		///< crank angle in rad
-		extern float angle;
+		extern std::int32_t phi;
 
 		///< pedal cadence in rad/s
 		extern float cadence;

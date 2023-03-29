@@ -40,13 +40,22 @@ using namespace chibios_rt;
  */
 namespace pas
 {
-
-	///< observer for cadence
-	observer::mechanic mech;
 	/**
 	 * generic constructor
 	 */
-	thread::thread(): deadline(0) {};
+	thread::thread():
+			deadline(0),
+			mech(values::crank::torque, torque, cadence, phi, settings.crank.observer.J,
+				settings.crank.observer.Q, settings.crank.observer.R, 100.0f, cadence_limit_positive, cadence_limit_negative),
+			angle_error(0.0f),
+			phi(0),
+			cadence(0.0f),
+			torque(0.0f),
+			cadence_limit_positive(20.0f),
+			cadence_limit_negative(-20.0f)
+	{
+
+	};
 
 	/**
 	 * @brief Thread main function
@@ -65,35 +74,18 @@ namespace pas
 
 			if(settings.crank.enable)
 			{
-		        const float ts = hardware::Tc();
-		        const float tsj = ts/settings.crank.observer.J;
-
-				values::crank::angle = hardware::crank::angle(settings.crank.pas.counts);
+				values::crank::phi = hardware::crank::angle(settings.crank.pas.counts);
 				values::crank::torque = hardware::crank::torque(settings.crank.offset, settings.crank.gain);
 
-		        // omega
-				values::crank::cadence += tsj * (values::crank::torque - torque);
+				// Predict the cadence and next angle
+		        mech.Predict();
 
-		        if(values::crank::cadence > 20.0f)	// 200rpm
-		        {
-		        	values::crank::cadence > 20.0f;
-		        }
-		        else if(values::crank::cadence < -20.0f)
-		        {
-		        	values::crank::cadence > -20.0f;
-		        }
+		        // determine agular error in Q31 and give value in rad to Update
+		        angle_error = unit::Rad(values::crank::phi - phi);
+		        mech.Update(angle_error);
 
-		        if(!std::isfinite(alues::crank::cadence ))
-		        {
-		        	values::crank::cadence = 0.0f;
-		        }
-
-		        // integrate omega for phi
-		        rotor::phi += unit::Q31R(alues::crank::cadence * ts);
-
-				angle_error = angle - values::crank::angle;
-
-				mech.Update(settings.crank.observer.Q, settings.crank.observer.R, angle_error, out_error);
+		        // use the "load" torque as filtered Torque for the power measurement
+		        values::crank::power = cadence * torque;
 
 				// pas mode releases torque only on pedal movement
 				if(settings.crank.pas.enable)

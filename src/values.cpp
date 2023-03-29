@@ -207,8 +207,8 @@ namespace values
 		///< feedback sensor position value
 		std::uint32_t position = 0;
 
-		///< feedback sensor rotor angle
-		std::uint32_t angle = 0;
+		///< feedback sensor rotor angle in Q31
+		std::int32_t phi = 0;
 	} /* namespace sense */
 
 	/**
@@ -216,8 +216,8 @@ namespace values
 	 */
 	namespace crank
 	{
-		///< crank angle in rad
-		float angle = 0.0f;
+		///< crank angle in Q31
+		std::int32_t phi = 0;
 
 		///< pedal cadence in rad/s
 		float cadence = 0.0f;

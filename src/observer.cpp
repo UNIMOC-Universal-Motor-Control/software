@@ -36,63 +36,68 @@
  */
 namespace observer
 {
-    /**
-     * @brief minimal constructor
-     *
-     * @param q model uncertainty
-     * @param r measurement uncertainty
-     */
-    mechanic::mechanic(void) {}
+	/**
+	 * constructor with all internal references
+	 * @param drive	torque input
+	 * @param load torque output
+	 * @param omega angular velocity
+	 * @param phi angular position Q31
+	 * @param J inertia
+	 * @param Q kalman Q gain
+	 * @param R kalman R gain
+	 * @param omega_limit_positive positive limit for omega
+	 * @param omega_limit_negative negative limit for omega
+	 */
+	mechanic::mechanic(float& drive,
+			float& load,
+			float& omega,
+			std::int32_t& phi,
+			float& J,
+			float& Q,
+			float& R,
+			const float P,
+			float& omega_limit_positive,
+			float& omega_limit_negative)
+			: p{0.0f}, pk{0.0f}, k{0.0f}, s(0.0f), sigma(0.0f), out_error{0.0f},
+			  torque_drive(drive), torque_load(load), omega(omega), phi(phi), J(J), Q(Q), R(R),
+			  omega_limit_positive(omega_limit_positive), omega_limit_negative(omega_limit_negative)
+			{
+				// set initial covariance
+				p[0][0] = P;
+				p[1][1] = P;
+				p[2][2] = P;
+			}
 
     /**
      * @brief calculate the mechanic model to estimate rotor angle.
      * @param i rotor currents
      */
-    void mechanic::Predict(const systems::dq& i)
+    void mechanic::Predict()
     {
-    	using namespace values::motor;
-
-        // update constants
+    	// update constants
         const float ts = hardware::Tc();
-        const float tsj = ts/settings.mechanics.J;
-
-        // electric torque
-        torque::electric = _3by2 * (settings.motor.psi * i.q +
-        							(settings.motor.l.d - settings.motor.l.q) * i.d * i.q);
+        const float tsj = ts/J;
 
         // omega
-        rotor::omega += tsj * (torque::electric - torque::load);
+        omega += tsj * (torque_drive - torque_load);
 
-        if(rotor::omega > 2.0f * settings.motor.limits.omega.forwards)
+        // apply limits not directly to have margin for control
+        if(omega > 2.0f * omega_limit_positive)
         {
-        	rotor::omega = 2.0f * settings.motor.limits.omega.forwards;
+        	omega = 2.0f * omega_limit_positive;
         }
-        else if(rotor::omega < 2.0f * settings.motor.limits.omega.backwards)
+        else if(omega < 2.0f * omega_limit_negative)
         {
-        	rotor::omega = 2.0f * settings.motor.limits.omega.backwards;
+        	omega = 2.0f * omega_limit_negative;
         }
 
-        if(!std::isfinite(rotor::omega))
+        if(!std::isfinite(omega))
         {
-        	rotor::omega = 0.0f;
+        	omega = 0.0f;
         }
 
         // integrate omega for phi
-        rotor::phi += unit::Q31R(rotor::omega * ts);
-    }
-
-    /**
-     * @brief correct the mechanic model to estimate rotor angle.
-     *
-     * @param error  state error feedback
-     */
-    void mechanic::Correct(const std::array<float, 3> error)
-    {
-    	using namespace values::motor;
-
-        rotor::omega += error[0];
-        rotor::phi += unit::Q31R(error[1]);
-        torque::load += error[2];
+        phi += unit::Q31R(omega * ts);
     }
 
 	/**
@@ -102,10 +107,10 @@ namespace observer
 	 * @param   angle error signal
 	 * @retval  model error correction
 	 */
-	void mechanic::Update(const float Q, const float R, const float angle_error, std::array<float, 3>& out_error)
+	void mechanic::Update(const float angle_error)
     {
         const float ts = hardware::Tc();
-        const float tsj = ts/settings.mechanics.J;
+        const float tsj = ts/J;
 
         /// kalman filter for flux error
         pk[0][2] = p[0][2] - p[2][2] * tsj;
@@ -140,9 +145,9 @@ namespace observer
         p[1][2] = - pk[1][2] * k_1;
         p[2][2] = pk[2][2] - k[2] * pk[1][2];
 
-        out_error[0] = k[0] * angle_error;
-        out_error[1] = k[1] * angle_error;
-        out_error[2] = k[2] * angle_error;
+        omega 		+= k[0] * angle_error;
+        phi 		+= unit::Q31R(k[1] * angle_error);
+        torque_load += k[2] * angle_error;
     }
 
     /**
