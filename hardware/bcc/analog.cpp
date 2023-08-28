@@ -125,7 +125,7 @@ static ADCConversionGroup adcgrpcfg12 = {
 	   NOTE: The bits @p ADC_CFGR_CONT or @p ADC_CFGR_DISCEN must be
 			 specified in continuous mode or if the buffer depth is
 			 greater than one.*/
-	ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_0 | ADC_CFGR_EXTSEL_2,
+	ADC_CFGR_CONT,//ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_0 | ADC_CFGR_EXTSEL_2,
 	/* ADC CFGR2 register initialization data.*/
 	0,
 	/* ADC TR1 register initialization data.*/
@@ -142,8 +142,8 @@ static ADCConversionGroup adcgrpcfg12 = {
 	   NOTE: Put this field to zero if not using oversampling.*/
 	ADC_CCR_DUAL_FIELD(1),
 	/* ADC SMPRx registers initialization data.*/
-	ADC_SMPR1_SMP_AN1(ADC_SMPR_SMP_2P5) |
-	ADC_SMPR1_SMP_AN3(ADC_SMPR_SMP_2P5),                  /* SMPR1 */
+	ADC_SMPR1_SMP_AN1(ADC_SMPR_SMP_640P5) |
+	ADC_SMPR1_SMP_AN3(ADC_SMPR_SMP_640P5),                  /* SMPR1 */
 	0,                                                    /* SMPR2 */
 	/* ADC SQRx register initialization data.*/
 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) |
@@ -154,19 +154,19 @@ static ADCConversionGroup adcgrpcfg12 = {
 	ADC_SQR2_SQ5_N(AIN_VA) |
 	ADC_SQR2_SQ6_N(AIN_VA) |
 	ADC_SQR2_SQ7_N(AIN_VA) |
-	ADC_SQR2_SQ8_N(AIN_VA) |
-	ADC_SQR2_SQ9_N(AIN_VA),                               /* SQR2  */
-	ADC_SQR3_SQ10_N(AIN_VA) |
+	ADC_SQR2_SQ8_N(AIN_VA) /*|
+	ADC_SQR2_SQ9_N(AIN_VA)*/,                              /* SQR2  */
+	/*ADC_SQR3_SQ10_N(AIN_VA) |
 	ADC_SQR3_SQ11_N(AIN_VA) |
 	ADC_SQR3_SQ12_N(AIN_VA) |
 	ADC_SQR3_SQ13_N(AIN_VA) |
-	ADC_SQR3_SQ14_N(AIN_VA),                             /* SQR3  */
-	ADC_SQR4_SQ15_N(AIN_VA) |
-	ADC_SQR4_SQ16_N(AIN_VA),                             /* SQR4  */
+	ADC_SQR3_SQ14_N(AIN_VA)*/ 0,                           /* SQR3  */
+	/*ADC_SQR4_SQ15_N(AIN_VA) |
+	ADC_SQR4_SQ16_N(AIN_VA) */ 0,                          /* SQR4  */
 	/* Slave ADC SMPRx registers initialization data.
 	   NOTE: This field is only present in dual mode.*/
-	ADC_SMPR1_SMP_AN2(ADC_SMPR_SMP_2P5) |
-	ADC_SMPR1_SMP_AN3(ADC_SMPR_SMP_2P5),                  /* SSMPR1 */
+	ADC_SMPR1_SMP_AN2(ADC_SMPR_SMP_640P5) |
+	ADC_SMPR1_SMP_AN3(ADC_SMPR_SMP_640P5),                  /* SSMPR1 */
 	0,                                                    /* SSMPR2 */
 	/* Slave ADC SQRx register initialization data.
 	   NOTE: This field is only present in dual mode.*/
@@ -178,15 +178,15 @@ static ADCConversionGroup adcgrpcfg12 = {
 	ADC_SQR2_SQ5_N(AIN_VB) |
 	ADC_SQR2_SQ6_N(AIN_VB) |
 	ADC_SQR2_SQ7_N(AIN_VB) |
-	ADC_SQR2_SQ8_N(AIN_VB) |
-	ADC_SQR2_SQ9_N(AIN_VB),                               /* SSQR2  */
-	ADC_SQR3_SQ10_N(AIN_VB) |
+	ADC_SQR2_SQ8_N(AIN_VB) /*|
+	ADC_SQR2_SQ9_N(AIN_VB)*/  ,                           /* SSQR2  */
+	/*ADC_SQR3_SQ10_N(AIN_VB) |
 	ADC_SQR3_SQ11_N(AIN_VB) |
 	ADC_SQR3_SQ12_N(AIN_VB) |
 	ADC_SQR3_SQ13_N(AIN_VB) |
-	ADC_SQR3_SQ14_N(AIN_VB),                              /* SSQR3  */
-	ADC_SQR4_SQ15_N(AIN_VB) |
-	ADC_SQR4_SQ16_N(AIN_VB)                               /* SSQR4  */
+	ADC_SQR3_SQ14_N(AIN_VB) */ 0,                         /* SSQR3  */
+	/*ADC_SQR4_SQ15_N(AIN_VB) |
+	ADC_SQR4_SQ16_N(AIN_VB)*/ 0                           /* SSQR4  */
 };
 
 /**
@@ -210,7 +210,7 @@ static ADCConversionGroup adcgrpcfg34 = {
 	   NOTE: The bits @p ADC_CFGR_CONT or @p ADC_CFGR_DISCEN must be
 			 specified in continuous mode or if the buffer depth is
 			 greater than one.*/
-	ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_1 | ADC_CFGR_EXTSEL_2,
+	ADC_CFGR_CONT,//ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_1 | ADC_CFGR_EXTSEL_2,
 	/* ADC CFGR2 register initialization data.*/
 	0,
 	/* ADC TR1 register initialization data.*/
@@ -227,8 +227,8 @@ static ADCConversionGroup adcgrpcfg34 = {
 	   NOTE: Put this field to zero if not using oversampling.*/
 	ADC_CCR_DUAL_FIELD(1),
 	/* ADC SMPRx registers initialization data.*/
-	ADC_SMPR1_SMP_AN1(ADC_SMPR_SMP_2P5) |
-	ADC_SMPR1_SMP_AN5(ADC_SMPR_SMP_2P5),                  /* SMPR1 */
+	ADC_SMPR1_SMP_AN1(ADC_SMPR_SMP_640P5) |
+	ADC_SMPR1_SMP_AN5(ADC_SMPR_SMP_640P5),                  /* SMPR1 */
 	0,                                                    /* SMPR2 */
 	/* ADC SQRx register initialization data.*/
 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) |
@@ -239,19 +239,19 @@ static ADCConversionGroup adcgrpcfg34 = {
 	ADC_SQR2_SQ5_N(AIN_VC) |
 	ADC_SQR2_SQ6_N(AIN_VC) |
 	ADC_SQR2_SQ7_N(AIN_VC) |
-	ADC_SQR2_SQ8_N(AIN_VC) |
-	ADC_SQR2_SQ9_N(AIN_VC),                               /* SQR2  */
-	ADC_SQR3_SQ10_N(AIN_VC) |
+	ADC_SQR2_SQ8_N(AIN_VC) /* |
+	ADC_SQR2_SQ9_N(AIN_VC)*/,                            /* SQR2  */
+	/*ADC_SQR3_SQ10_N(AIN_VC) |
 	ADC_SQR3_SQ11_N(AIN_VC) |
 	ADC_SQR3_SQ12_N(AIN_VC) |
 	ADC_SQR3_SQ13_N(AIN_VC) |
-	ADC_SQR3_SQ14_N(AIN_VC),                              /* SQR3  */
-	ADC_SQR4_SQ15_N(AIN_VC) |
-	ADC_SQR4_SQ16_N(AIN_VC),                              /* SQR4  */
+	ADC_SQR3_SQ14_N(AIN_VC)*/ 0,                         /* SQR3  */
+	/*ADC_SQR4_SQ15_N(AIN_VC) |
+	ADC_SQR4_SQ16_N(AIN_VC) */ 0,                        /* SQR4  */
 	/* Slave ADC SMPRx registers initialization data.
 	   NOTE: This field is only present in dual mode.*/
-	ADC_SMPR1_SMP_AN3(ADC_SMPR_SMP_2P5) |
-	ADC_SMPR1_SMP_AN4(ADC_SMPR_SMP_2P5),                  /* SSMPR1 */
+	ADC_SMPR1_SMP_AN3(ADC_SMPR_SMP_640P5) |
+	ADC_SMPR1_SMP_AN4(ADC_SMPR_SMP_640P5),                  /* SSMPR1 */
 	0,                                                    /* SSMPR2 */
 	/* Slave ADC SQRx register initialization data.
 	   NOTE: This field is only present in dual mode.*/
@@ -263,15 +263,15 @@ static ADCConversionGroup adcgrpcfg34 = {
 	ADC_SQR2_SQ5_N(AIN_CRKT) |
 	ADC_SQR2_SQ6_N(AIN_CRKT) |
 	ADC_SQR2_SQ7_N(AIN_CRKT) |
-	ADC_SQR2_SQ8_N(AIN_CRKT) |
-	ADC_SQR2_SQ9_N(AIN_CRKT),                               /* SSQR2  */
-	ADC_SQR3_SQ10_N(AIN_CRKT) |
+	ADC_SQR2_SQ8_N(AIN_CRKT) /*|
+	ADC_SQR2_SQ9_N(AIN_CRKT)*/,                          /* SSQR2  */
+	/*ADC_SQR3_SQ10_N(AIN_CRKT) |
 	ADC_SQR3_SQ11_N(AIN_CRKT) |
 	ADC_SQR3_SQ12_N(AIN_CRKT) |
 	ADC_SQR3_SQ13_N(AIN_CRKT) |
-	ADC_SQR3_SQ14_N(AIN_CRKT),                              /* SSQR3  */
-	ADC_SQR4_SQ15_N(AIN_CRKT) |
-	ADC_SQR4_SQ16_N(AIN_CRKT)                               /* SSQR4  */
+	ADC_SQR3_SQ14_N(AIN_CRKT)*/ 0,                       /* SSQR3  */
+	/*ADC_SQR4_SQ15_N(AIN_CRKT) |
+	ADC_SQR4_SQ16_N(AIN_CRKT)*/ 0,                       /* SSQR4  */
 };
 
 /**
@@ -292,7 +292,7 @@ static ADCConversionGroup adcgrpcfg5 = {
 	   NOTE: The bits @p ADC_CFGR_CONT or @p ADC_CFGR_DISCEN must be
 			 specified in continuous mode or if the buffer depth is
 			 greater than one.*/
-	ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_1 | ADC_CFGR_EXTSEL_2,
+	ADC_CFGR_CONT, //ADC_CFGR_EXTEN_1 | ADC_CFGR_EXTSEL_1 | ADC_CFGR_EXTSEL_2,
 	/* ADC CFGR2 register initialization data.*/
 	0,
 	/* ADC TR1 register initialization data.*/
@@ -309,8 +309,8 @@ static ADCConversionGroup adcgrpcfg5 = {
 	   NOTE: Put this field to zero if not using oversampling.*/
 	0,
 	/* ADC SMPRx registers initialization data.*/
-	ADC_SMPR1_SMP_AN1(ADC_SMPR_SMP_2P5) |
-	ADC_SMPR1_SMP_AN2(ADC_SMPR_SMP_2P5),                  /* SMPR1 */
+	ADC_SMPR1_SMP_AN1(ADC_SMPR_SMP_640P5) |
+	ADC_SMPR1_SMP_AN2(ADC_SMPR_SMP_640P5),                  /* SMPR1 */
 	0,                                                    /* SMPR2 */
 	/* ADC SQRx register initialization data.*/
 	ADC_SQR1_NUM_CH(LENGTH_ADC_SEQ) |
@@ -348,6 +348,11 @@ static ADCConversionGroup adcgrpcfg5 = {
  */
 void hardware_analog_Init(void)
 {
+    /*
+     * Enable Internal Voltage Reference with 2048mV and output to VREF+ Pin
+     */
+    VREFBUF->CSR = VREFBUF_CSR_ENVR;
+
 	/*
 	 * Activates the ADC drivers and the VREF input.
 	 */
@@ -601,15 +606,18 @@ static void adcerrorcallback(ADCDriver *adcp, adcerror_t err)
 static void adccallback(ADCDriver *adcp)
 {
 	(void)adcp;
+	static volatile uint32_t i = 0;
+
+	i++;
 
 
-	if(!hardware::control_thread.isNull())
-	{
-		/* Wakes up the thread.*/
-		osalSysLockFromISR();
-		chEvtSignalI(hardware::control_thread.getInner(), (eventmask_t)1);
-		osalSysUnlockFromISR();
-	}
+//	if(!hardware::control_thread.isNull())
+//	{
+//		/* Wakes up the thread.*/
+//		osalSysLockFromISR();
+//		chEvtSignalI(hardware::control_thread.getInner(), (eventmask_t)1);
+//		osalSysUnlockFromISR();
+//	}
 }
 
 /**
