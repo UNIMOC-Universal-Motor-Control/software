@@ -33,7 +33,7 @@
 /*
  * Board identifier.
  */
-#define BOARD_UNIMOC_PHHVR1
+#define BOARD_UNIMOC_BCC
 #define BOARD_NAME                  "UNIMOC_BCC"
 
 /*
@@ -78,7 +78,7 @@
 #define GPIOA_USB_DM                12U
 #define GPIOA_SWD_IO                13U
 #define GPIOA_SWD_CLK               14U
-#define GPIOA_LED_PWM               15U
+#define GPIOA_SWO                   15U
 
 #define GPIOB_PWM_BL                0U
 #define GPIOB_AIN_IC                1U
@@ -187,7 +187,7 @@
  */
 #define LINE_LED_RUN                PAL_LINE(GPIOA, GPIOA_LED_RUN)
 #define LINE_LED_ERR                PAL_LINE(GPIOA, GPIOA_LED_ERR)
-#define LINE_LED_PWM                PAL_LINE(GPIOA, GPIOA_LED_PWM)
+#define LINE_LED_PWM                PAL_LINE(GPIOA, GPIOA_SWO)
 #define LINE_CADENCE                PAL_LINE(GPIOA, GPIOA_PULSE_CRK)
 
 /*===========================================================================*/
@@ -265,7 +265,7 @@
                                      PIN_MODE_ANALOG	(GPIOA_USB_DM     ) |     \
                                      PIN_MODE_ALTERNATE	(GPIOA_SWD_IO     ) |     \
                                      PIN_MODE_ALTERNATE	(GPIOA_SWD_CLK    ) |     \
-                                     PIN_MODE_OUTPUT	(GPIOA_LED_PWM    ))
+                                     PIN_MODE_ALTERNATE	(GPIOA_SWO        ))
 #define VAL_GPIOA_OTYPER            (PIN_OTYPE_PUSHPULL(GPIOA_AIN_IA     ) |  \
                                      PIN_OTYPE_PUSHPULL(GPIOA_AIN_IB     ) |  \
                                      PIN_OTYPE_PUSHPULL(GPIOA_AIN_VA     ) |  \
@@ -281,7 +281,7 @@
                                      PIN_OTYPE_PUSHPULL(GPIOA_USB_DM     ) |  \
                                      PIN_OTYPE_PUSHPULL(GPIOA_SWD_IO     ) |  \
                                      PIN_OTYPE_PUSHPULL(GPIOA_SWD_CLK    ) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOA_LED_PWM    ))
+                                     PIN_OTYPE_PUSHPULL(GPIOA_SWO        ))
 #define VAL_GPIOA_OSPEEDR           (PIN_OSPEED_VERYLOW(GPIOA_AIN_IA     ) |  \
                                      PIN_OSPEED_VERYLOW(GPIOA_AIN_IB     ) |  \
                                      PIN_OSPEED_VERYLOW(GPIOA_AIN_VA     ) |  \
@@ -293,11 +293,11 @@
                                      PIN_OSPEED_VERYLOW(GPIOA_AIN_TMOT   ) |  \
                                      PIN_OSPEED_VERYLOW(GPIOA_AIN_TBRDG  ) |  \
                                      PIN_OSPEED_VERYLOW(GPIOA_PWM_BRK    ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOA_USB_DP     ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOA_USB_DM     ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOA_SWD_IO     ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOA_SWD_CLK    ) |  \
-                                     PIN_OSPEED_VERYLOW(GPIOA_LED_PWM    ))
+                                     PIN_OSPEED_HIGH    (GPIOA_USB_DP    ) |  \
+                                     PIN_OSPEED_HIGH    (GPIOA_USB_DM    ) |  \
+                                     PIN_OSPEED_HIGH    (GPIOA_SWD_IO    ) |  \
+                                     PIN_OSPEED_HIGH    (GPIOA_SWD_CLK   ) |  \
+                                     PIN_OSPEED_HIGH    (GPIOA_SWO       ))
 #define VAL_GPIOA_PUPDR             (PIN_PUPDR_FLOATING(GPIOA_AIN_IA     ) |  \
                                      PIN_PUPDR_FLOATING(GPIOA_AIN_IB     ) |  \
                                      PIN_PUPDR_FLOATING(GPIOA_AIN_VA     ) |  \
@@ -311,9 +311,9 @@
                                      PIN_PUPDR_PULLDOWN(GPIOA_PWM_BRK    ) |  \
                                      PIN_PUPDR_FLOATING(GPIOA_USB_DP     ) |  \
                                      PIN_PUPDR_FLOATING(GPIOA_USB_DM     ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOA_SWD_IO     ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOA_SWD_CLK    ) |  \
-                                     PIN_PUPDR_FLOATING(GPIOA_LED_PWM    ))
+                                     PIN_PUPDR_PULLUP  (GPIOA_SWD_IO     ) |  \
+                                     PIN_PUPDR_PULLUP  (GPIOA_SWD_CLK    ) |  \
+                                     PIN_PUPDR_PULLUP  (GPIOA_SWO        ))
 #define VAL_GPIOA_ODR               (PIN_ODR_LOW (GPIOA_AIN_IA     ) |         \
                                      PIN_ODR_LOW (GPIOA_AIN_IB     ) |         \
                                      PIN_ODR_LOW (GPIOA_AIN_VA     ) |         \
@@ -329,7 +329,7 @@
                                      PIN_ODR_LOW (GPIOA_USB_DM     ) |         \
                                      PIN_ODR_LOW (GPIOA_SWD_IO     ) |         \
                                      PIN_ODR_LOW (GPIOA_SWD_CLK    ) |         \
-                                     PIN_ODR_HIGH(GPIOA_LED_PWM    ))
+                                     PIN_ODR_LOW (GPIOA_SWO        ))
 #define VAL_GPIOA_AFRL              (PIN_AFIO_AF(GPIOA_AIN_IA     , 0U) |     \
                                      PIN_AFIO_AF(GPIOA_AIN_IB     , 0U) |     \
                                      PIN_AFIO_AF(GPIOA_AIN_VA     , 0U) |     \
@@ -345,7 +345,7 @@
                                      PIN_AFIO_AF(GPIOA_USB_DM     , 0U) |     \
                                      PIN_AFIO_AF(GPIOA_SWD_IO     , 0U) |     \
                                      PIN_AFIO_AF(GPIOA_SWD_CLK    , 0U) |     \
-                                     PIN_AFIO_AF(GPIOA_LED_PWM    , 0U))
+                                     PIN_AFIO_AF(GPIOA_SWO        , 0U))
 
 /*
  * GPIOB setup:
