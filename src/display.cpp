@@ -189,15 +189,6 @@ enum soc_e
 	SOC_4_BAR = 16,
 } soc = SOC_CHARGING;
 
-///< wheel speed as ms per rotation
-std::uint16_t wheel_period_ms = 4000;
-
-///< power in increments of 13W
-std::uint8_t power = 0;
-
-///< motor temperature with 15 degrees C offset. 0 => 15C
-std::uint8_t temp = 23 + 15;
-
 /**
  * generic constructor
  */
@@ -214,10 +205,8 @@ void thread::main(void)
 
 	init();
 
-	wheel_period_ms = 4000;
-	soc = SOC_CHARGING;
-	moving_indication = MOVING_INDICATION_CRUISE;
-	temp = 42;
+	soc = SOC_3_BAR;
+	moving_indication = MOVING_INDICATION_ASSIST;
 
 	/*
 	 * Normal main() thread activity
@@ -286,28 +275,14 @@ void thread::main(void)
 				}
 			}
 
-			//// FIXME simu for display test
-			static std::uint8_t cyc = 10;
-			//// FIXME simu for display test
-			if (cyc)
-			{
-				cyc--;
-			}
-			else{
-				cyc = 10;
-
-				wheel_period_ms--;
-				if (wheel_period_ms < 100) wheel_period_ms = 4000;
-
-				power++;
-			}
+			std::uint16_t wheel_period_ms = static_cast<std::uint16_t>(1000.0f * settings.motor.P * (math::_2PI) / values::motor::rotor::omega);
 
 			tx_buffer [0] =  65;
 			// B1: battery level
 			tx_buffer [1] = soc;
 			// B2: Controller Voltage, just fixed
 			tx_buffer [2] = 48;
-			// B3: speed, wheel rotation period, ms; period(ms)=B3*256+B4;
+			// B3: speed, wheel rotation period, ms; period(ms)=B3*256+B4; wheel speed as ms per rotation
 			tx_buffer [3] = (wheel_period_ms >> 8) & 0xff;
 			tx_buffer [4] = (wheel_period_ms) & 0xff;
 
@@ -324,9 +299,9 @@ void thread::main(void)
 			// - B8 = 255, LCD shows 1912 watts
 			// - B8 = 250, LCD shows 1875 watts
 			// - B8 = 100, LCD shows 750 watts
-			tx_buffer [8] =  power;  //13W pro digit
-			// B9: motor temperature
-			tx_buffer [9] = temp + 14;
+			tx_buffer [8] =  static_cast<uint8_t>(values::crank::power / 13.0f);  //13W pro digit
+			// B9: temperature with 15 degrees C offset. 0 => 15C
+			tx_buffer [9] = static_cast<int8_t>(values::converter::temp - 15.0f);
 			// B10 and B11: 0
 			tx_buffer [10] = 0;
 			tx_buffer [11] = 0;
