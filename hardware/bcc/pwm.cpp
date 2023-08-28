@@ -30,7 +30,7 @@ using namespace hardware;
 using namespace hardware::pwm;
 
 ///< PWM driver instance
-PWMDriver* PWMP = &PWMD1;
+PWMDriver* PWMP = &PWMD8;
 
 ///< ADC trigger timer driver instance
 PWMDriver* ADC_TRIGP = &PWMD4;
@@ -166,7 +166,7 @@ void hardware_pwm_Init(void)
 	/* start the ADC trigger timer */
 	pwmStart(ADC_TRIGP, &adctriggercfg);
 	ADC_TRIGP->tim->CR1 &=~ STM32_TIM_CR1_CEN; // timer stop
-	ADC_TRIGP->tim->SMCR |= STM32_TIM_SMCR_SMS(4) | STM32_TIM_SMCR_MSM;
+	ADC_TRIGP->tim->SMCR |= STM32_TIM_SMCR_SMS(4) | STM32_TIM_SMCR_MSM | STM32_TIM_SMCR_TS(1) | STM32_TIM_SMCR_TS2(1);
 	ADC_TRIGP->tim->CR1 |= STM32_TIM_CR1_CEN; // adc trigger timer start again
 
 	/* set adc trigger offset = minimal */
