@@ -35,10 +35,10 @@ CANDriver* pcan[HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES] = {&CAND3};
 MFSConfig mfscfg1 = {
   .flashp           = (BaseFlash *)&EFLD1,
   .erased           = 0xFFFFFFFFU,
-  .bank_size        = 2048U,
-  .bank0_start      = 1U,
+  .bank_size        = 4096U,
+  .bank0_start      = 30U,
   .bank0_sectors    = 1U,
-  .bank1_start      = 2U,
+  .bank1_start      = 31U,
   .bank1_sectors    = 1U
 };
 
@@ -56,38 +56,6 @@ extern void hardware_can_Init(void);
  */
 void hardware::Init()
 {
-	/*
-	 * The boot pin is used as PWM IO which leads to boot issues, that messup the clock tree config.
-	 * So fix the boot config to ignore BOOT0 hw pin
-	 */
-	if (FLASH->OPTR & FLASH_OPTR_nSWBOOT0)
-	{
-		/* Starting EFL driver.*/
-		eflStart(&EFLD1, NULL);
-
-		FLASH->OPTKEYR |= FLASH_OPTKEY1;
-		FLASH->OPTKEYR |= FLASH_OPTKEY2;
-
-		// wait for optlock to clear
-		while (FLASH->CR & FLASH_CR_OPTLOCK);
-
-		/* Wait for busy bit clear.*/
-		while ((FLASH->SR & FLASH_SR_BSY) != 0U);
-
-		// fix boot from main flash
-		FLASH->OPTR |=  (FLASH_OPTR_nBOOT0);
-		FLASH->OPTR &= ~(FLASH_OPTR_nSWBOOT0);
-
-		FLASH->CR |= FLASH_CR_OPTSTRT;
-
-		/* Wait for busy bit clear.*/
-		while ((FLASH->SR & FLASH_SR_BSY) != 0U);
-
-		FLASH->CR |= FLASH_CR_OBL_LAUNCH;
-
-		eflStop(&EFLD1);
-	}
-
 	hardware_pwm_Init();
 	hardware_analog_Init();
 	hardware_cordic_Init();
