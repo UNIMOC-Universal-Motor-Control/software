@@ -30,12 +30,21 @@
 #define HARDWARE_NAME "UNIMIC-PHHVr1"
 
 ///< Hardware supports random number generation: STM32G473 has TRNG
-#define HARDWARE_CAPABIITY_RANDOM 				TRUE
+#define HARDWARE_CAPABIITY_RANDOM               TRUE
 
 ///< Hardware supports CAN-FD: STM32F446 has CAN-FD
-#define HARDWARE_CAPABIITY_CAN_FD				TRUE
+#define HARDWARE_CAPABIITY_CAN_FD               TRUE
 
 ///< Hardware supports 1 CAN Interface
 #define HARDWARE_CAPABIITY_CAN_NO_OF_INTERFACES 1
+
+///< Hardware supports display UART
+#define HARDWARE_CAPABIITY_DISPLAY_UART         FALSE
+
+///< Hardware uart used for display
+#define HARDWARE_DISP_SERIAL                    (&SD1)
+
+///< Hardware CAN clock frequency
+#define HARDWARE_CAN_CLOCK                      (STM32_PLL_Q_CLKOUT)
 
 #endif /* HARDWARE_CONFIG_HPP_ */

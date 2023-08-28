@@ -83,3 +83,32 @@ bool hardware::random::Generate(std::uint8_t* buffer, const std::uint32_t size)
 	return trngGenerate(&TRNGD1, size, buffer);
 }
 
+/**
+ * Torque on the crank arm
+ *
+ * @param offset in Volts
+ * @param gain in Nm/V
+ * @return Torque in Nm
+ */
+float hardware::crank::torque(const float offset, const float gain)
+{
+    float torque = 0.0f;
+
+
+    return torque;
+}
+
+/**
+ * Angle of the crank arm
+ *
+ * @param edge_max Number of edges per revolution
+ * @return Angle in rads, range 0 - 2*PI
+ */
+float hardware::crank::angle(uint32_t edge_max)
+{
+    static float angle = 0.0f;
+
+
+    return angle;
+}
+

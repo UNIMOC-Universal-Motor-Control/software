@@ -187,8 +187,8 @@
  */
 #define LINE_VDC_NCS                PAL_LINE(GPIOA, 9U)
 #define LINE_IABC_NCS               PAL_LINE(GPIOB, 7U)
-#define LINE_LED_RED                PAL_LINE(GPIOE, 4U)
-#define LINE_LED_GREEN              PAL_LINE(GPIOE, 7U)
+#define LINE_LED_ERR                PAL_LINE(GPIOE, 4U)
+#define LINE_LED_RUN              PAL_LINE(GPIOE, 7U)
 #define LINE_RES_NSTANDBY           PAL_LINE(GPIOA, 3U)
 #define LINE_RES_NFAULT             PAL_LINE(GPIOA, 10U)
 #define LINE_GATE_EN                PAL_LINE(GPIOB, 11U)
