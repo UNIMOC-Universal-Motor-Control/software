@@ -335,6 +335,8 @@ bool settings_s::Load(void)
 	// align to cache lines for better cache handling
 	__attribute__((aligned (32))) settings_ts tmp;
 
+	std::memset(&tmp, 0, sizeof(tmp));
+
  	hardware::memory::Read(0, &tmp, sizeof(settings_ts));
 
 	if(tmp.crc == hardware::memory::Crc32(&tmp, offsetof(settings_ts, crc)))

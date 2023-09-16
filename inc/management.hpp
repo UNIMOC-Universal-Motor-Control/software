@@ -109,6 +109,8 @@ namespace management
 		{
 			STARTUP,
 			CURRENT_OFFSETS,
+			ACTIVATE_MODE,
+			RETURN_MODE,
 			RUN,
 			MEASURE_RS,
 			MEASURE_LS,

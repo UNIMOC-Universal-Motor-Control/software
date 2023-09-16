@@ -15,9 +15,9 @@ void _exit(int status){
    while(TRUE){}
 }
 
-pid_t _getpid(void){
-   return 1;
-}
+//pid_t _getpid(void){
+//   return 1;
+//}
 
 #undef errno
 extern int errno;

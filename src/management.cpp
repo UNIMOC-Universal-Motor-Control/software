@@ -37,6 +37,7 @@
 using namespace chibios_rt;
 
 volatile bool save = false;
+volatile bool dig_input_state = false;
 
 
 /**
@@ -374,7 +375,45 @@ void management::thread::main(void)
 			else
 			{
 				hardware::analog::current::SetOffset();
+				hardware::pwm::output::Disable();
+				sequencer = ACTIVATE_MODE;
+				delay = 1000;
+				dig_input_state = hardware::digital::input(hardware::digital::MOTOR_TEMP_DI);
+			}
+			break;
+		/* activate high power mode */
+		case ACTIVATE_MODE:
+			if(delay)
+			{
+				delay--;
+			}
+			else
+			{
+				sequencer = RUN;
+			}
 
+			if(hardware::digital::input(hardware::digital::MOTOR_TEMP_DI) != dig_input_state)
+			{
+				delay = 1000;
+				sequencer = RETURN_MODE;
+			}
+			break;
+		/* wait for user to release Throttle */
+		case RETURN_MODE:
+			if(delay)
+			{
+				delay--;
+			}
+			else
+			{
+				sequencer = RUN;
+			}
+
+			if(hardware::digital::input(hardware::digital::MOTOR_TEMP_DI) == dig_input_state)
+			{
+				// High Power Mode
+				settings.motor.limits.i = 80.0f;
+				settings.motor.limits.omega.forwards = 1000.0f;
 				sequencer = RUN;
 			}
 			break;
